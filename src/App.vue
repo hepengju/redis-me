@@ -3,5 +3,15 @@ import RedisMain from '@/views/RedisMain.vue'
 </script>
 
 <template>
-  <RedisMain/>
+  <div class="app">
+    <RedisMain/>
+  </div>
 </template>
+
+<style lang="scss">
+.app {
+  padding: 5px;
+  height: calc(100vh - 10px);
+  overflow: hidden;
+}
+</style>

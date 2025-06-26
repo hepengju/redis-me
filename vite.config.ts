@@ -41,7 +41,7 @@ export default defineConfig(async () => ({
         // 解决IconsResolver无法动态引入图标的问题
         // https://github.com/Jevon617/unplugin-svg-component
         UnpluginSvgComponent({
-            iconDir: ['src/assets/', 'src/assets/database', 'src/assets/language'],
+            iconDir: ['src/assets/'],
             preserveColor: '',
             treeShaking: false,
         }),
