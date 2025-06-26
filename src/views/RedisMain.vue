@@ -4,19 +4,14 @@ import RedisTag from './RedisTag.vue'
 </script>
 
 <template>
-  <div class="container">
-    <el-splitter>
-      <!-- 左侧键 -->
-      <el-splitter-panel :min="250" size="30%">
-        <RedisKey/>
-      </el-splitter-panel>
-
-      <!-- 右侧值 -->
-      <el-splitter-panel :min="250">
-        <RedisTag/>
-      </el-splitter-panel>
-    </el-splitter>
-  </div>
+  <el-splitter class="container">
+    <el-splitter-panel :min="250" size="30%">
+      <RedisKey/>
+    </el-splitter-panel>
+    <el-splitter-panel :min="250">
+      <RedisTag/>
+    </el-splitter-panel>
+  </el-splitter>
 </template>
 
 <style scoped lang="scss">

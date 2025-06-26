@@ -5,15 +5,25 @@ import SimpleKey from "./detail/SimpleKey.vue";
 </script>
 
 <template>
-  <div class="container">
+  <div class="key-main">
     <SearchKey/>
-    <SimpleKey/>
+    <div class="key-list">
+      <SimpleKey/>
+    </div>
   </div>
 </template>
 
 <style scoped lang="scss">
-.container {
-  height: 100%;
-  overflow: hidden;
+.key-main {
+  margin-top: 10px;
+  flex-grow: 1;
+  display: flex;
+  flex-direction: column;
+
+  .key-list {
+    flex-grow: 1;
+    border: 1px solid var(--el-border-color);
+    border-top: none;
+  }
 }
 </style>

@@ -6,7 +6,7 @@ const connList = ref([])
 </script>
 
 <template>
-  <div class="container">
+  <div class="key-header">
     <el-select v-model="connName" filterable class="conn" :disabled="connList.length == 0" placeholder="请选择连接">
       <el-option v-for="item in connList" :label="item.name" :value="item.name"></el-option>
     </el-select>
@@ -27,7 +27,7 @@ const connList = ref([])
 
             <el-dropdown-item divided><el-icon><el-icon-data-board/>          </el-icon><span>标记颜色</span></el-dropdown-item>
             <el-dropdown-item>        <el-icon><my-icon-memory />             </el-icon><span>内存分析</span></el-dropdown-item>
-            <el-dropdown-item>        <el-icon><my-icon-hour-glass/>          </el-icon><span>慢查询</span></el-dropdown-item>
+            <el-dropdown-item>        <el-icon><my-icon-slow/>          </el-icon><span>慢查询</span></el-dropdown-item>
 
             <el-dropdown-item divided><el-icon><el-icon-download/>            </el-icon><span>导入键</span></el-dropdown-item>
             <el-dropdown-item>        <el-icon><el-icon-warn-triangle-filled/></el-icon><span>删除所有键</span></el-dropdown-item>
@@ -43,7 +43,7 @@ const connList = ref([])
 </template>
 
 <style scoped lang="scss">
-.container {
+.key-header {
   display: flex;
 
   .conn {

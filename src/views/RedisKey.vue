@@ -2,46 +2,38 @@
 import KeyHeader from '@/views/key/KeyHeader.vue'
 import KeyMain from '@/views/key/KeyMain.vue'
 import KeyFooter from '@/views/key/KeyFooter.vue'
-
 </script>
 
 <template>
-  <el-container class="container">
-    <el-header class="header">
+  <div class="container">
+    <div class="key">
       <KeyHeader/>
-    </el-header>
-    <el-main class="main">
       <KeyMain/>
-    </el-main>
-    <el-footer class="footer">
+    </div>
+    <div class="footer">
       <KeyFooter/>
-    </el-footer>
-  </el-container>
+    </div>
+  </div>
 </template>
 
 <style scoped lang="scss">
 .container {
   position: relative;
 
-  .header {
-    height: auto;
-    --el-header-padding: 0px;
-  }
-
-  .main {
-    margin-top: 10px;
-    padding: 0;
-    border: 1px solid red;
+  .key {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
   }
 
   .footer {
-    width: 100%;
-    height: auto;
-    padding: 10px;
-
     position: absolute;
-    bottom: 0;
-    left: 0;
+    left: 5px;
+    right: 5px;
+    bottom: 5px;
   }
 }
+
+
+
 </style>

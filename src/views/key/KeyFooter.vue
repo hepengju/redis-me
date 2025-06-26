@@ -3,22 +3,22 @@
 </script>
 
 <template>
-  <div class="container">
-    <div class="left">DB1</div>
-    <div class="right">88/5000</div>
+  <div class="key-footer">
+    <div class="db-select">DB1</div>
+    <div class="key-count">88/5000</div>
   </div>
 </template>
 
 <style scoped lang="scss">
-.container {
+.key-footer {
   display: flex;
   justify-content: space-between;
 
-  .left {
+  .db-select {
     background-color: skyblue;
   }
 
-  .right {
+  .key-count {
     background-color: skyblue;
   }
 }
