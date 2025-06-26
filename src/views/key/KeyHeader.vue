@@ -19,15 +19,15 @@ const connList = ref([])
         <el-button type="success"><el-icon><el-icon-operation/></el-icon></el-button>
         <template #dropdown>
           <el-dropdown-menu>
-            <el-dropdown-item>        <el-icon><he-icon-shutdown/>            </el-icon><span>关闭连接</span></el-dropdown-item>
+            <el-dropdown-item>        <el-icon><my-icon-shutdown/>            </el-icon><span>关闭连接</span></el-dropdown-item>
             <el-dropdown-item>        <el-icon><el-icon-edit/>                </el-icon><span>编辑连接</span></el-dropdown-item>
             <el-dropdown-item>        <el-icon><el-icon-delete/>              </el-icon><span>删除连接</span></el-dropdown-item>
             <el-dropdown-item>        <el-icon><el-icon-copy-document/>       </el-icon><span>复制连接</span></el-dropdown-item>
 
 
             <el-dropdown-item divided><el-icon><el-icon-data-board/>          </el-icon><span>标记颜色</span></el-dropdown-item>
-            <el-dropdown-item>        <el-icon><he-icon-memory />             </el-icon><span>内存分析</span></el-dropdown-item>
-            <el-dropdown-item>        <el-icon><he-icon-hour-glass/>          </el-icon><span>慢查询</span></el-dropdown-item>
+            <el-dropdown-item>        <el-icon><my-icon-memory />             </el-icon><span>内存分析</span></el-dropdown-item>
+            <el-dropdown-item>        <el-icon><my-icon-hour-glass/>          </el-icon><span>慢查询</span></el-dropdown-item>
 
             <el-dropdown-item divided><el-icon><el-icon-download/>            </el-icon><span>导入键</span></el-dropdown-item>
             <el-dropdown-item>        <el-icon><el-icon-warn-triangle-filled/></el-icon><span>删除所有键</span></el-dropdown-item>

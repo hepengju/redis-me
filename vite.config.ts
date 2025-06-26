@@ -44,6 +44,7 @@ export default defineConfig(async () => ({
             iconDir: ['src/assets/'],
             preserveColor: '',
             treeShaking: false,
+            prefix: 'my-icon'
         }),
     ],
 

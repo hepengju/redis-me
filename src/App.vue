@@ -8,7 +8,7 @@ import RedisMain from '@/views/RedisMain.vue'
   </div>
 </template>
 
-<style lang="scss">
+<style scoped lang="scss">
 .app {
   padding: 5px;
   height: calc(100vh - 10px);

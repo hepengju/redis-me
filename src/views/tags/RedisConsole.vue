@@ -3,7 +3,7 @@
 </script>
 
 <template>
-  <el-tab-pane label="控制台">RedisConsole控制台</el-tab-pane>
+  <div>控制台</div>
 </template>
 
 <style scoped lang="scss">
