@@ -12,7 +12,7 @@ export const mockConnList: RedisProperties[] = [
         readonly: false,
         order: 1,
 
-        color: 'blue'
+        color: '#409EFF'
     },
     {
         id: 'dev',
@@ -25,7 +25,7 @@ export const mockConnList: RedisProperties[] = [
         readonly: false,
         order: 2,
 
-        color: 'pink'
+        color: '#67C23A'
     },
     {
         id: 'sit',
@@ -38,7 +38,7 @@ export const mockConnList: RedisProperties[] = [
         readonly: true,
         order: 3,
 
-        color: 'red'
+        color: '#F56C6C'
     }
 ]
 

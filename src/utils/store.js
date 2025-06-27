@@ -1,4 +1,6 @@
 import {computed, reactive} from 'vue'
+import {scan} from '../api'
+import {sleep} from './util.js'
 
 // 全局共享的状态
 const store = reactive({
@@ -12,9 +14,20 @@ const store = reactive({
     exact: false,          // 精确搜索
     keyword: '',           // 查询关键字
     activeTabName: 'info', // 激活Tab名称
+    loading: {
+        keys: false
+    }
 })
 
 export const colorStyle = computed(() => {
     return {color: store.conn?.color}
 })
+
+export async function scanKeys (){
+    store.loading.keys = true
+    store.keys = scan(store.conn.id, store.keyword)
+    await sleep(500)
+    store.loading.keys = false
+}
+
 export default store

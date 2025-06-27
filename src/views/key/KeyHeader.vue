@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import MetaIcon from '@/components/MetaIcon.vue'
-import store from '@/utils/store.ts'
-import {colorStyle} from '@/utils/store.ts'
+import store, {scanKeys} from '@/utils/store.js'
+import {colorStyle} from '@/utils/store.js'
 
 </script>
 
@@ -23,7 +23,7 @@ import {colorStyle} from '@/utils/store.ts'
 
     <div class="btns">
       <el-tooltip content="刷新">
-        <el-button type="primary" icon="el-icon-refresh"></el-button>
+        <el-button type="primary" icon="el-icon-refresh" @click="scanKeys"></el-button>
       </el-tooltip>
 
       <el-dropdown style="margin-left: 10px" size="small" placement="bottom-end">

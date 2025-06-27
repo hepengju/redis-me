@@ -1,4 +1,4 @@
-import {mockInfo, mockConnList, mockScan, mockGet} from './mock.ts'
+import {mockConnList, mockGet, mockInfo, mockScan} from './mock.ts'
 import RedisKey from '../views/RedisKey.vue'
 import RedisValue from '../views/tag/RedisValue.vue'
 
