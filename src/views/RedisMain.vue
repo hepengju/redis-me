@@ -1,6 +1,19 @@
 <script setup lang="ts">
 import RedisKey from './RedisKey.vue'
 import RedisTag from './RedisTag.vue'
+import {onMounted} from 'vue'
+
+import store from '@/utils/store.ts'
+import {connList, scan} from '@/api/index.ts'
+
+onMounted(() => {
+  // TODO 应用进入选择连接
+  store.connList = connList()
+  store.conn = store.connList[0]
+
+  // 选择连接后，调用scan扫描
+  store.keys = scan(store.conn.id, store.keyword)
+})
 </script>
 
 <template>

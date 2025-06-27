@@ -1,9 +1,9 @@
-import {reactive} from 'vue'
+import {computed, reactive} from 'vue'
 
 // 全局共享的状态
 const store = reactive({
     connList: [],          // 连接列表
-    conn: null,            // 当前连接
+    conn: {},              // 当前连接
     info: '',              // 获取的Redis服务器信息
     keys: [],              // 键集合
     redisValue: null,      // 点击键，获取到的redis值
@@ -14,4 +14,7 @@ const store = reactive({
     activeTabName: 'info', // 激活Tab名称
 })
 
+export const colorStyle = computed(() => {
+    return {color: store.conn?.color}
+})
 export default store

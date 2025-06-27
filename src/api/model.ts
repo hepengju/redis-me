@@ -14,6 +14,9 @@ interface RedisProperties {
     order: number,
 
     sslOption?: SSLOptions
+
+    // 其他辅助信息
+    color: string
 }
 
 interface SSLOptions {

@@ -1,40 +1,40 @@
 <script setup lang="ts">
-// 获取连接
-const connName = ref('')
-const connList = ref([])
+import MetaIcon from '@/components/MetaIcon.vue'
+import store from '@/utils/store.ts'
+import {colorStyle} from '@/utils/store.ts'
 
 </script>
 
 <template>
   <div class="key-header">
-    <el-select v-model="connName" filterable class="conn" :disabled="connList.length == 0" placeholder="请选择连接">
-      <el-option v-for="item in connList" :label="item.name" :value="item.name"></el-option>
+    <el-select v-model="store.conn" placeholder="请选择连接" class="conn"
+               filterable :disabled="store.connList.length == 0" value-key="id">
+      <el-option v-for="item in store.connList" :label="item.name" :value="item" :key="item.id">
+        <div :style="{color: item?.color}">{{ item.name }}</div>
+      </el-option>
+
+      <template #label="{ value }">
+        <div :style="colorStyle">{{ value.name }}</div>
+      </template>
+      <template #prefix>
+        <MetaIcon icon="my-icon-redis"/>
+      </template>
     </el-select>
 
     <div class="btns">
-      <el-tooltip content="新建连接">
-        <el-button type="primary"><el-icon><el-icon-plus/></el-icon></el-button>
+      <el-tooltip content="刷新">
+        <el-button type="primary" icon="el-icon-refresh"></el-button>
       </el-tooltip>
+
       <el-dropdown style="margin-left: 10px" size="small" placement="bottom-end">
         <el-button type="success"><el-icon><el-icon-operation/></el-icon></el-button>
         <template #dropdown>
           <el-dropdown-menu>
-            <el-dropdown-item>        <el-icon><my-icon-shutdown/>            </el-icon><span>关闭连接</span></el-dropdown-item>
-            <el-dropdown-item>        <el-icon><el-icon-edit/>                </el-icon><span>编辑连接</span></el-dropdown-item>
-            <el-dropdown-item>        <el-icon><el-icon-delete/>              </el-icon><span>删除连接</span></el-dropdown-item>
-            <el-dropdown-item>        <el-icon><el-icon-copy-document/>       </el-icon><span>复制连接</span></el-dropdown-item>
-
-
-            <el-dropdown-item divided><el-icon><el-icon-data-board/>          </el-icon><span>标记颜色</span></el-dropdown-item>
-            <el-dropdown-item>        <el-icon><my-icon-memory />             </el-icon><span>内存分析</span></el-dropdown-item>
-            <el-dropdown-item>        <el-icon><my-icon-slow/>          </el-icon><span>慢查询</span></el-dropdown-item>
-
-            <el-dropdown-item divided><el-icon><el-icon-download/>            </el-icon><span>导入键</span></el-dropdown-item>
-            <el-dropdown-item>        <el-icon><el-icon-warn-triangle-filled/></el-icon><span>删除所有键</span></el-dropdown-item>
-
-
-            <el-dropdown-item divided><el-icon><el-icon-setting/>             </el-icon><span>基础设置</span></el-dropdown-item>
-            <el-dropdown-item>        <el-icon><el-icon-odometer/>            </el-icon><span>命令日志</span></el-dropdown-item>
+            <el-dropdown-item><MetaIcon name="编辑连接" icon="el-icon-edit"/></el-dropdown-item>
+            <el-dropdown-item divided><MetaIcon name="导入键" icon="el-icon-download"/></el-dropdown-item>
+            <el-dropdown-item><MetaIcon name="删除所有键" icon="el-icon-warn-triangle-filled"/></el-dropdown-item>
+            <el-dropdown-item><MetaIcon name="应用日志" icon="el-icon-stopwatch"/></el-dropdown-item>
+            <el-dropdown-item divided><MetaIcon name="基础设置" icon="el-icon-setting"/></el-dropdown-item>
           </el-dropdown-menu>
         </template>
       </el-dropdown>

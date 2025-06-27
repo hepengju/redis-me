@@ -3,36 +3,42 @@ import RedisValue from '../views/tag/RedisValue.vue'
 export const mockConnList: RedisProperties[] = [
     {
         id: 'local',
-        name: '本机Redis',
+        name: '127.0.0.1-本机',
         host: '127.0.0.1',
         port: 6379,
         username: '',
         password: '',
         cluster: false,
         readonly: false,
-        order: 1
+        order: 1,
+
+        color: 'blue'
     },
     {
         id: 'dev',
-        name: 'dev-ssl-10.106.100.140',
+        name: '10.106.100.140-开发',
         host: '10.106.100.140',
         port: 7001,
         username: '',
         password: 'Jiyu1212',
         cluster: true,
         readonly: false,
-        order: 2
+        order: 2,
+
+        color: 'pink'
     },
     {
         id: 'sit',
-        name: 'sit-ssl-10.106.0.167',
+        name: '10.106.0.167-测试',
         host: '10.106.0.167',
         port: 7001,
         username: '',
         password: 'Jiyu1212',
         cluster: true,
         readonly: true,
-        order: 3
+        order: 3,
+
+        color: 'red'
     }
 ]
 
