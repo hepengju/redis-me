@@ -1,10 +1,10 @@
 <script setup lang="ts">
-import RedisInfo from '@/views/tags/RedisInfo.vue'
-import RedisValue from '@/views/tags/RedisValue.vue'
-import RedisConsole from '@/views/tags/RedisConsole.vue'
+import RedisInfo from '@/views/tag/RedisInfo.vue'
+import RedisValue from '@/views/tag/RedisValue.vue'
+import RedisConsole from '@/views/tag/RedisConsole.vue'
 import MetaIcon from '@/components/MetaIcon.vue'
-import RedisSlow from '@/views/tags/RedisSlow.vue'
-import RedisMemory from '@/views/tags/RedisMemory.vue'
+import RedisSlow from '@/views/tag/RedisSlow.vue'
+import RedisMemory from '@/views/tag/RedisMemory.vue'
 
 const activeTabName = ref('info')
 </script>
