@@ -17,7 +17,7 @@ onMounted(() => {
 </script>
 
 <template>
-  <el-splitter class="container">
+  <el-splitter class="redis-main">
     <el-splitter-panel :min="250" size="30%">
       <RedisKey/>
     </el-splitter-panel>
@@ -28,13 +28,12 @@ onMounted(() => {
 </template>
 
 <style scoped lang="scss">
-.container {
-  height: 100%;
-  overflow: hidden;
-  box-sizing: border-box;
+.redis-main {
+  //box-sizing: border-box;
+  //border: 2px solid blue;
 }
 
-// 中间分隔面板的样式调整
+//中间分隔面板的样式调整
 :deep(.el-splitter-bar) {
   width: 10px !important;
 
@@ -44,7 +43,7 @@ onMounted(() => {
 
     // 定制化两个竖线
     display: inline-block;
-    width: 4px;
+    width: 3px;
     height: 20px;
     border-left: 1px solid #adabab;
     border-right: 1px solid #adabab;

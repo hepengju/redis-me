@@ -10,7 +10,7 @@ const activeTabName = ref('info')
 </script>
 
 <template>
-  <el-tabs v-model="activeTabName" type="border-card" class="container">
+  <el-tabs v-model="activeTabName" type="border-card" class="redis-tag">
     <el-tab-pane name="info">
       <template #label>
         <MetaIcon name="信息" icon="el-icon-calendar"/>
@@ -47,3 +47,12 @@ const activeTabName = ref('info')
     </el-tab-pane>
   </el-tabs>
 </template>
+
+<style scoped lang="scss">
+.redis-tag {
+  box-sizing: border-box;
+  border: 2px solid red;
+
+  height: 100%;
+}
+</style>

@@ -15,8 +15,15 @@ import SimpleKey from "./detail/SimpleKey.vue";
 
 <style scoped lang="scss">
 .key-main {
-  margin-top: 10px;
+  //box-sizing: border-box;
+  //border: 2px solid red;
   flex-grow: 1;
+
+  // 滚动条显示在键的区域，而不是整个左侧区域
+  // 原理：需要指定下高度。此处指定为0，弹性扩展
+  height: 0;
+
+  margin-top: 10px;
   display: flex;
   flex-direction: column;
 
@@ -24,6 +31,10 @@ import SimpleKey from "./detail/SimpleKey.vue";
     flex-grow: 1;
     border: 1px solid var(--el-border-color);
     border-top: none;
+
+    height: 100%;
+    padding: 5px;
+    overflow: auto;
   }
 }
 </style>

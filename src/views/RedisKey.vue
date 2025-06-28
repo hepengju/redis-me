@@ -5,35 +5,41 @@ import KeyFooter from '@/views/key/KeyFooter.vue'
 </script>
 
 <template>
-  <div class="container">
-    <div class="key">
+  <div class="redis-key">
+    <div class="redis-key-container">
       <KeyHeader/>
       <KeyMain/>
     </div>
-    <div class="footer">
+    <div class="redis-key-footer">
       <KeyFooter/>
     </div>
   </div>
 </template>
 
 <style scoped lang="scss">
-.container {
+.redis-key {
+  //box-sizing: border-box;
+  //border: 2px solid red;
+  height: 100%;
   position: relative;
 
-  .key {
+  // 高度占据全部
+  .redis-key-container {
+    //box-sizing: border-box;
+    //border: 2px solid pink;
     height: 100%;
+
+    // 让redis-main可以弹性扩充
     display: flex;
     flex-direction: column;
   }
 
-  .footer {
+  // 绝对定位，放在左下角和右下角
+  .redis-key-footer {
     position: absolute;
     left: 5px;
     right: 5px;
     bottom: 5px;
   }
 }
-
-
-
 </style>

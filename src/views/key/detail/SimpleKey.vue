@@ -2,7 +2,7 @@
 import store from '@/utils/store.js'
 import {colorStyle} from '@/utils/store.js'
 
-const filterKeys = computed(() => store.keys)
+const filterKeys = computed(() => store.keys.slice(0, 50))
 
 </script>
 
@@ -15,7 +15,6 @@ const filterKeys = computed(() => store.keys)
 
 <style scoped lang="scss">
 .key {
-  margin: 1px 10px;
   cursor: pointer;
   font-size: 12px;
   color: var(--el-color-primary);
