@@ -22,9 +22,7 @@ import {colorStyle} from '@/utils/store.ts'
     </el-select>
 
     <div class="btns">
-      <el-tooltip content="刷新">
-        <el-button type="primary" icon="el-icon-refresh" @click="scanKey"></el-button>
-      </el-tooltip>
+      <MetaButton content="刷新连接" type="primary" icon="el-icon-refresh" @click="scanKey"></MetaButton>
 
       <el-dropdown style="margin-left: 10px" size="small" placement="bottom-end">
         <el-button type="success"><el-icon><el-icon-operation/></el-icon></el-button>

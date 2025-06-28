@@ -13,8 +13,8 @@ import store, {filterKeys} from '@/utils/store.ts'
       <el-text size="large" type="primary">{{filterKeys.length}} / {{store.keys.length}}</el-text>
 
       <el-button-group>
-        <MetaButton tooltip="获取更多" icon="el-icon-bottom" type="primary"/>
-        <MetaButton tooltip="获取所有" icon="el-icon-download" type="warning"/>
+        <MetaButton tooltip="加载更多" icon="el-icon-bottom" type="primary"/>
+        <MetaButton tooltip="加载所有" icon="el-icon-download" type="warning"/>
       </el-button-group>
   </div>
 </template>

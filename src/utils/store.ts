@@ -60,5 +60,5 @@ export async function scanKey (){
 }
 
 
-
+// ~~~~~~~~~~~~~默认导出~~~~~~~~~~~~~
 export default store

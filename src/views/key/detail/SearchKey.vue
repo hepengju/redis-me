@@ -7,8 +7,8 @@
     </template>
     <template #append>
       <el-button-group>
-        <el-button @click="scanKey"><el-icon><el-icon-search/></el-icon></el-button>
-        <el-button @click="addKey" style="border-color: var(--el-button-border-color)" v-if="!store.readonly"><el-icon><el-icon-plus/></el-icon></el-button>
+        <meta-button tooltip="刷新键" @click="scanKey" icon="el-icon-search"></meta-button>
+        <meta-button tooltip="新增键" @click="addKey" style="border-color: var(--el-button-border-color)" v-if="!store.readonly" icon="el-icon-plus"></meta-button>
       </el-button-group>
     </template>
   </el-input>
