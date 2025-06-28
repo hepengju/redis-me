@@ -3,16 +3,17 @@ import RedisKey from './RedisKey.vue'
 import RedisTag from './RedisTag.vue'
 import {onMounted} from 'vue'
 
-import store, {scanKeys} from '@/utils/store.js'
-import {connList} from '@/api/index.ts'
+import {initConnList, initDbList, scanKey} from '@/utils/store.ts'
 
 onMounted(() => {
   // TODO 应用进入选择连接
-  store.connList = connList()
-  store.conn = store.connList[0]
+  initConnList()
+
+  // 获取数据库列表，并默认选择第一个
+  initDbList()
 
   // 选择连接后，调用scan扫描
-  scanKeys()
+  scanKey()
 })
 </script>
 

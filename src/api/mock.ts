@@ -42,6 +42,24 @@ export const mockConnList: RedisProperties[] = [
     }
 ]
 
+export const mockDbList: RedisDB[] = [
+    {
+        index: 0,
+        label: 'DB0',
+        name: ''
+    },
+    {
+        index: 1,
+        label: 'DB1',
+        name: ''
+    },
+    {
+        index: 2,
+        label: 'DB2',
+        name: ''
+    },
+]
+
 export const mockInfo = `
 # Server
 redis_version:7.4.1

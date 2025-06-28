@@ -35,6 +35,10 @@ import SimpleKey from "./detail/SimpleKey.vue";
     height: 100%;
     padding: 5px;
     overflow: auto;
+
+    // 简单键列表和文件夹列表共享的属性
+    font-size: 12px;
+    color: var(--el-color-primary);
   }
 }
 </style>

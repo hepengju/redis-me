@@ -1,9 +1,6 @@
 <script setup>
-import store from '@/utils/store.js'
-import {colorStyle} from '@/utils/store.js'
-
-const filterKeys = computed(() => store.keys.slice(0, 50))
-
+import {filterKeys} from '@/utils/store.ts'
+import {colorStyle} from '@/utils/store.ts'
 </script>
 
 <template>
@@ -12,12 +9,10 @@ const filterKeys = computed(() => store.keys.slice(0, 50))
   </div>
 </template>
 
-
 <style scoped lang="scss">
+// 可以点击的键
 .key {
   cursor: pointer;
-  font-size: 12px;
-  color: var(--el-color-primary);
 
   // 省略号
   overflow: hidden;

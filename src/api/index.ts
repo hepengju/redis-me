@@ -1,4 +1,4 @@
-import {mockConnList, mockGet, mockInfo, mockScan} from './mock.ts'
+import {mockConnList, mockDbList, mockGet, mockInfo, mockScan} from './mock.ts'
 import RedisKey from '../views/RedisKey.vue'
 import RedisValue from '../views/tag/RedisValue.vue'
 
@@ -12,6 +12,11 @@ export function connList(): RedisProperties[] {
 // 获取Redis基本信息
 export function info(id: string): string {
     return mockInfo
+}
+
+// db集合
+export function dbList(): RedisDB[] {
+    return mockDbList
 }
 
 // 扫描键

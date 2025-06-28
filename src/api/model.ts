@@ -25,6 +25,12 @@ interface SSLOptions {
     ca: string,
 }
 
+interface RedisDB {
+    index: number,
+    label: string
+    name: string,
+}
+
 interface RedisKey {
     key: string,
     bytes: string,
@@ -45,4 +51,27 @@ interface RedisValue {
     value: object,
     rawValue: object,
     ttl: number,
+}
+
+// ~~~~~~~~全局数据类型
+interface IStore {
+    connList: RedisProperties[]
+    conn: RedisProperties
+    info: string,
+    keys: RedisKey[],
+    redisValue: RedisValue
+
+    dbList: RedisDB[]
+    db: RedisDB
+
+    exact: boolean,
+    keyword: string,
+    readonly: boolean,
+    activeTabName: string,
+
+    loading: ILoading
+}
+
+interface ILoading {
+    keys: boolean
 }
