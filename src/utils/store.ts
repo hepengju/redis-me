@@ -1,5 +1,5 @@
 import {computed, Reactive, reactive} from 'vue'
-import {connList, dbList, scan} from './api.ts'
+import {connList, dbList, scan, get} from './api.ts'
 import {sleep} from './util.js'
 
 // ~~~~~~~~~~~~~数据定义~~~~~~~~~~~~~
@@ -9,7 +9,7 @@ const store: Reactive<IStore> = reactive({
     connList: [],          // 连接列表
     conn: null,            // 当前连接
     info: '',              // 获取的Redis服务器信息
-    redisKeyList: [],              // 键集合
+    redisKeyList: [],      // 键集合
     redisKey: null,        // 当前选中的key
     redisValue: null,      // 点击键，获取到的redis值
 
@@ -22,8 +22,9 @@ const store: Reactive<IStore> = reactive({
     keyword: '',           // 查询关键字
     readonly: false,       // 只读
     activeTabName: 'info', // 激活Tab名称
-    loading: {
-        keys: false
+    loading: {             // 加载中状态，以便显示loading
+        redisKeyList: false,
+        redisKey: false
     }
 })
 
@@ -54,12 +55,19 @@ export function initDbList() {
     }
 }
 export async function scanKey (){
-    store.loading.keys = true
+    store.loading.redisKeyList = true
     store.redisKeyList = scan(store.conn.id, store.keyword)
     await sleep(500)
-    store.loading.keys = false
+    store.loading.redisKeyList = false
 }
 
+export async function getKey(redisKey: RedisKey): RedisValue {
+    store.loading.redisKey = true
+    store.redisKey = redisKey
+    await sleep(500)
+    store.redisValue = get(store.conn.id, redisKey)
+    store.loading.redisKey = false
+}
 
 // ~~~~~~~~~~~~~默认导出~~~~~~~~~~~~~
 export default store

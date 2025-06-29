@@ -10,7 +10,7 @@ import store, {colorStyle} from "@/utils/store.ts";
     <SearchKey/>
     <div class="key-list"
          :style="colorStyle"
-         v-loading="store.loading.keys"
+         v-loading="store.loading.redisKeyList"
          element-loading-text="扫描中...">
       <SimpleKey/>
     </div>

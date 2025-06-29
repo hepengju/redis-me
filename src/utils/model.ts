@@ -73,6 +73,8 @@ interface IStore {
     loading: ILoading
 }
 
+// 加载中
 interface ILoading {
-    keys: boolean
+    redisKeyList: boolean
+    redisKey: boolean
 }

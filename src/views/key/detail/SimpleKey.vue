@@ -1,10 +1,14 @@
 <script setup>
-import {filterKeys} from '@/utils/store.ts'
+import store, {filterKeys, getKey} from '@/utils/store.ts'
+
+function customType(item) {
+  return item.bytes === store.redisKey?.bytes ? 'success' : 'primary'
+}
 </script>
 
 <template>
-  <div v-for="item in filterKeys">
-    <el-link type="primary" icon="el-icon-key" underline="never">
+  <div v-for="item in filterKeys" @click="getKey(item)">
+    <el-link :type="customType(item)" icon="el-icon-key" underline="never">
       <span class="key">{{ item.key }}</span>
     </el-link>
   </div>
@@ -12,8 +16,8 @@ import {filterKeys} from '@/utils/store.ts'
 
 <style scoped lang="scss">
 .key {
-    //overflow: hidden;
-    white-space: nowrap;
-    //text-overflow: ellipsis;
+  //overflow: hidden;
+  white-space: nowrap;
+  //text-overflow: ellipsis;
 }
 </style>
