@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import MetaIcon from '@/components/MetaIcon.vue'
+import MeIcon from '@/components/MeIcon.vue'
 import store, {scanKey} from '@/utils/store.ts'
 import {colorStyle} from '@/utils/store.ts'
 
@@ -17,22 +17,22 @@ import {colorStyle} from '@/utils/store.ts'
         <div :style="colorStyle">{{ value.name }}</div>
       </template>
       <template #prefix>
-        <MetaIcon icon="my-icon-redis"/>
+        <MeIcon icon="me-icon-redis"/>
       </template>
     </el-select>
 
     <div class="btns">
-      <MetaButton content="刷新连接" type="primary" icon="el-icon-refresh" @click="scanKey"></MetaButton>
+      <me-button content="刷新连接" type="primary" icon="el-icon-refresh" @click="scanKey"></me-button>
 
       <el-dropdown style="margin-left: 10px" size="small" placement="bottom-end">
         <el-button type="success"><el-icon><el-icon-operation/></el-icon></el-button>
         <template #dropdown>
           <el-dropdown-menu>
-            <el-dropdown-item><MetaIcon name="编辑连接" icon="el-icon-edit"/></el-dropdown-item>
-            <el-dropdown-item divided><MetaIcon name="导入键" icon="el-icon-download"/></el-dropdown-item>
-            <el-dropdown-item><MetaIcon name="删除所有键" icon="el-icon-warn-triangle-filled"/></el-dropdown-item>
-            <el-dropdown-item><MetaIcon name="应用日志" icon="el-icon-stopwatch"/></el-dropdown-item>
-            <el-dropdown-item divided><MetaIcon name="基础设置" icon="el-icon-setting"/></el-dropdown-item>
+            <el-dropdown-item><MeIcon name="编辑连接" icon="el-icon-edit"/></el-dropdown-item>
+            <el-dropdown-item divided><MeIcon name="导入键" icon="el-icon-download"/></el-dropdown-item>
+            <el-dropdown-item><MeIcon name="删除所有键" icon="el-icon-warn-triangle-filled"/></el-dropdown-item>
+            <el-dropdown-item><MeIcon name="应用日志" icon="el-icon-stopwatch"/></el-dropdown-item>
+            <el-dropdown-item divided><MeIcon name="基础设置" icon="el-icon-setting"/></el-dropdown-item>
           </el-dropdown-menu>
         </template>
       </el-dropdown>

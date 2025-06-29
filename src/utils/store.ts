@@ -1,5 +1,5 @@
 import {computed, Reactive, reactive} from 'vue'
-import {connList, dbList, scan} from '../api'
+import {connList, dbList, scan} from './api.ts'
 import {sleep} from './util.js'
 
 // ~~~~~~~~~~~~~数据定义~~~~~~~~~~~~~

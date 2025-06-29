@@ -1,13 +1,14 @@
 <script setup lang="ts">
 import SearchKey from "./detail/SearchKey.vue";
 import SimpleKey from "./detail/SimpleKey.vue";
+import store from "@/utils/store.ts";
 
 </script>
 
 <template>
   <div class="key-main">
     <SearchKey/>
-    <div class="key-list">
+    <div class="key-list" :v-loading="store.loading.keys">
       <SimpleKey/>
     </div>
   </div>

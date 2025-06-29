@@ -1,7 +1,6 @@
-import {mockConnList, mockDbList, mockGet, mockInfo, mockScan} from './mock.ts'
+import {mockConnList, mockDbList, mockGet, mockInfo, mockScan} from './api-mock.ts'
 import RedisKey from '../views/RedisKey.vue'
 import RedisValue from '../views/tag/RedisValue.vue'
-
 import {random} from 'lodash'
 
 // 获取连接配置信息
@@ -15,13 +14,13 @@ export function info(id: string): string {
 }
 
 // db集合
-export function dbList(): RedisDB[] {
+export function dbList(id: string): RedisDB[] {
     return mockDbList
 }
 
 // 扫描键
 export function scan(id: string, match: string, count: number = 1000): RedisKey[] {
-    return mockScan
+    return mockScan.slice(0, random(1000))
 }
 
 // 获取值
