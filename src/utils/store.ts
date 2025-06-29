@@ -1,5 +1,5 @@
 import {computed, Reactive, reactive} from 'vue'
-import {connList, dbList, scan, get} from './api.ts'
+import {connList, dbList, info, scan, get} from './api.ts'
 import {sleep} from './util.js'
 
 // ~~~~~~~~~~~~~数据定义~~~~~~~~~~~~~
@@ -24,6 +24,7 @@ const store: Reactive<IStore> = reactive({
     activeTabName: 'info', // 激活Tab名称
     loading: {             // 加载中状态，以便显示loading
         redisKeyList: false,
+        info: false,
         redisKey: false
     }
 })
@@ -39,6 +40,23 @@ export const filterKeys = computed(() =>
 )
 
 // ~~~~~~~~~~~~~通用方法~~~~~~~~~~~~~
+/**
+ * 进入应用的主方法
+ */
+export function initMain(){
+    // TODO 应用进入选择连接
+    initConnList()
+
+    // 获取数据库列表，并默认选择第一个
+    initDbList()
+
+    // 获取服务器信息
+    getInfo()
+
+    // 选择连接后，调用scan扫描
+    scanKey()
+}
+
 export function initConnList() {
     store.connList = connList()
     store.conn = store.connList[0]
@@ -54,9 +72,16 @@ export function initDbList() {
         store.db = store.dbList[0]
     }
 }
+
+export async function getInfo() {
+    store.info = info(store.conn.id)
+    await sleep(500)
+}
+
 export async function scanKey (){
     store.loading.redisKeyList = true
     store.redisKeyList = scan(store.conn.id, store.keyword)
+    store.redisKey = null
     await sleep(500)
     store.loading.redisKeyList = false
 }

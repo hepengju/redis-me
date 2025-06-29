@@ -1,8 +1,6 @@
 <script setup lang="ts">
 import MeIcon from '@/components/MeIcon.vue'
-import store, {scanKey} from '@/utils/store.ts'
-import {colorStyle} from '@/utils/store.ts'
-
+import store, {colorStyle, initMain} from '@/utils/store.ts'
 </script>
 
 <template>
@@ -22,7 +20,7 @@ import {colorStyle} from '@/utils/store.ts'
     </el-select>
 
     <div class="btns">
-      <me-button content="刷新连接" type="primary" icon="el-icon-refresh" @click="scanKey"></me-button>
+      <me-button content="刷新连接" type="primary" icon="el-icon-refresh" @click="initMain"></me-button>
 
       <el-dropdown style="margin-left: 10px" size="small" placement="bottom-end">
         <el-button type="success"><el-icon><el-icon-operation/></el-icon></el-button>

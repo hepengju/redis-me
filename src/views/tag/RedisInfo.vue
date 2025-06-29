@@ -1,9 +1,18 @@
-<script setup lang="ts"></script>
+<script setup lang="ts">
+import store from "@/utils/store.ts";
+</script>
 
 <template>
-  <div>Redis服务器的详细信息</div>
+  <div class="redis-info" v-loading="store.loading.info">
+    <pre>
+{{ store.info }}
+    </pre>
+  </div>
+
 </template>
 
 <style scoped lang="scss">
-
+.redis-info {
+  overflow: auto;
+}
 </style>
