@@ -15,7 +15,7 @@ const store: Reactive<IStore> = reactive({
 
     // redis支持db0 ~ db15 16个数据库; 集群只支持db0，
     dbList: [],            // db集合
-    dbIndex: null,         // 当前db
+    db: null,              // 当前db
 
     // 其他界面辅助
     exact: false,          // 精确搜索
@@ -23,9 +23,9 @@ const store: Reactive<IStore> = reactive({
     readonly: false,       // 只读
     activeTabName: 'info', // 激活Tab名称
     loading: {             // 加载中状态，以便显示loading
-        redisKeyList: false,
-        info: false,
-        redisKey: false
+        info: false,           // 获取RedisInfo
+        redisKeyList: false,   // 获取键列表
+        redisValue: false      // 获取键的值
     }
 })
 
@@ -74,8 +74,10 @@ export function initDbList() {
 }
 
 export async function getInfo() {
+    store.loading.info = true
     store.info = info(store.conn.id)
     await sleep(500)
+    store.loading.info = false
 }
 
 export async function scanKey (){

@@ -59,11 +59,11 @@ interface IStore {
     conn: RedisProperties
     info: string,
     redisKeyList: RedisKey[],
-    redisKey: RedisKey,
-    redisValue: RedisValue
+    redisKey: RedisKey | null,
+    redisValue: RedisValue | null
 
     dbList: RedisDB[]
-    db: RedisDB
+    db: RedisDB | null
 
     exact: boolean,
     keyword: string,
@@ -75,6 +75,7 @@ interface IStore {
 
 // 加载中
 interface ILoading {
+    info: boolean
     redisKeyList: boolean
-    redisKey: boolean
+    redisValue: boolean
 }

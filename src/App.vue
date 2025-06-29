@@ -3,15 +3,17 @@ import RedisMain from '@/views/RedisMain.vue'
 </script>
 
 <template>
-  <div class="app">
-    <RedisMain/>
-  </div>
+  <RedisMain/>
 </template>
 
-<style scoped lang="scss">
-.app {
+<style lang="scss">
+#app {
   padding: 5px;
-  height: calc(100vh - 10px);
+  height: 100%;
   overflow: hidden;
+
+  //所有元素的box-sizing设置后，下面的计算方法底部有些空白（原因暂不明），因此改为height: 100%（需要html/body也设置height: 100%）
+  //height: calc(100vh - 10px);
+  //background-color: yellow;
 }
 </style>

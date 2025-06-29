@@ -13,35 +13,35 @@ const activeTabName = ref('info')
   <el-tabs v-model="activeTabName" type="border-card" class="redis-tag">
     <el-tab-pane name="info">
       <template #label>
-        <MeIcon name="信息" icon="el-icon-calendar"/>
+        <me-icon name="信息" icon="el-icon-calendar"/>
       </template>
       <RedisInfo/>
     </el-tab-pane>
 
     <el-tab-pane name="value" lazy>
       <template #label>
-        <MeIcon name="键值" icon="el-icon-key"/>
+        <me-icon name="键值" icon="el-icon-key"/>
       </template>
       <RedisValue/>
     </el-tab-pane>
 
     <el-tab-pane name="console" lazy>
       <template #label>
-        <MeIcon name="终端" icon="me-icon-console"/>
+        <me-icon name="终端" icon="me-icon-console"/>
       </template>
       <RedisConsole/>
     </el-tab-pane>
 
     <el-tab-pane name="memory" lazy>
       <template #label>
-        <MeIcon name="内存分析" icon="me-icon-memory"/>
+        <me-icon name="内存分析" icon="me-icon-memory"/>
       </template>
       <RedisMemory/>
     </el-tab-pane>
 
     <el-tab-pane name="slow" lazy>
       <template #label>
-        <MeIcon name="慢查询" icon="me-icon-slow"/>
+        <me-icon name="慢查询" icon="me-icon-slow"/>
       </template>
       <RedisSlow/>
     </el-tab-pane>
@@ -50,9 +50,9 @@ const activeTabName = ref('info')
 
 <style scoped lang="scss">
 .redis-tag {
-  box-sizing: border-box;
   border: 2px solid red;
 
   height: 100%;
+  //overflow: auto;
 }
 </style>

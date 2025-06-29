@@ -15,7 +15,7 @@ import store, {colorStyle, initMain} from '@/utils/store.ts'
         <div :style="colorStyle">{{ value.name }}</div>
       </template>
       <template #prefix>
-        <MeIcon icon="me-icon-redis"/>
+        <me-icon icon="me-icon-redis"/>
       </template>
     </el-select>
 
@@ -26,11 +26,11 @@ import store, {colorStyle, initMain} from '@/utils/store.ts'
         <el-button type="success"><el-icon><el-icon-operation/></el-icon></el-button>
         <template #dropdown>
           <el-dropdown-menu>
-            <el-dropdown-item><MeIcon name="编辑连接" icon="el-icon-edit"/></el-dropdown-item>
-            <el-dropdown-item divided><MeIcon name="导入键" icon="el-icon-download"/></el-dropdown-item>
-            <el-dropdown-item><MeIcon name="删除所有键" icon="el-icon-warn-triangle-filled"/></el-dropdown-item>
-            <el-dropdown-item><MeIcon name="应用日志" icon="el-icon-stopwatch"/></el-dropdown-item>
-            <el-dropdown-item divided><MeIcon name="基础设置" icon="el-icon-setting"/></el-dropdown-item>
+            <el-dropdown-item><me-icon name="编辑连接" icon="el-icon-edit"/></el-dropdown-item>
+            <el-dropdown-item divided><me-icon name="导入键" icon="el-icon-download"/></el-dropdown-item>
+            <el-dropdown-item><me-icon name="删除所有键" icon="el-icon-warn-triangle-filled"/></el-dropdown-item>
+            <el-dropdown-item><me-icon name="应用日志" icon="el-icon-stopwatch"/></el-dropdown-item>
+            <el-dropdown-item divided><me-icon name="基础设置" icon="el-icon-setting"/></el-dropdown-item>
           </el-dropdown-menu>
         </template>
       </el-dropdown>

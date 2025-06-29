@@ -19,7 +19,6 @@ import store, {colorStyle} from "@/utils/store.ts";
 
 <style scoped lang="scss">
 .key-main {
-  //box-sizing: border-box;
   //border: 2px solid red;
   flex-grow: 1;
 

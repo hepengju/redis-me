@@ -20,7 +20,6 @@ onMounted(() => initMain())
 
 <style scoped lang="scss">
 .redis-main {
-  //box-sizing: border-box;
   //border: 2px solid blue;
 }
 

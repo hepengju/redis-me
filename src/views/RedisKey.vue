@@ -14,7 +14,6 @@ import KeyFooter from '@/views/key/KeyFooter.vue'
 
 <style scoped lang="scss">
 .redis-key {
-  //box-sizing: border-box;
   //border: 2px solid red;
   height: 100%;
   //position: relative;
@@ -24,7 +23,6 @@ import KeyFooter from '@/views/key/KeyFooter.vue'
 
   //// 高度占据全部
   //.redis-key-container {
-  //  //box-sizing: border-box;
   //  //border: 2px solid pink;
   //  height: 100%;
   //
