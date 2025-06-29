@@ -37,7 +37,7 @@ import store, {colorStyle} from "@/utils/store.ts";
 
     height: 100%;
     padding: 5px;
-    overflow: auto;
+    overflow: hidden auto; // 隐藏水平滚动条，仅显示竖直滚动条
 
     // 简单键列表和文件夹列表共享的属性
     //font-size: 12px;
