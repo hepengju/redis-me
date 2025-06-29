@@ -3,19 +3,17 @@ import {filterKeys} from '@/utils/store.ts'
 </script>
 
 <template>
-  <div v-for="item in filterKeys" class="key">
-    {{item.key}}
+  <div v-for="item in filterKeys">
+    <el-link type="primary" icon="el-icon-key" underline="never">
+      <span class="key">{{ item.key }}</span>
+    </el-link>
   </div>
 </template>
 
 <style scoped lang="scss">
-// 可以点击的键
 .key {
-  cursor: pointer;
-
-  // 省略号
-  overflow: hidden;
-  white-space: nowrap;
-  text-overflow: ellipsis;
+    //overflow: hidden;
+    white-space: nowrap;
+    //text-overflow: ellipsis;
 }
 </style>

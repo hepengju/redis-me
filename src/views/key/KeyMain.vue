@@ -41,8 +41,12 @@ import store, {colorStyle} from "@/utils/store.ts";
     overflow: auto;
 
     // 简单键列表和文件夹列表共享的属性
-    font-size: 12px;
-    color: var(--el-color-primary);
+    //font-size: 12px;
+    //color: var(--el-color-primary);
+
+    :deep(.el-link) {
+      font-size: 12px;
+    }
   }
 }
 </style>

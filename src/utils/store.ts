@@ -9,7 +9,8 @@ const store: Reactive<IStore> = reactive({
     connList: [],          // 连接列表
     conn: null,            // 当前连接
     info: '',              // 获取的Redis服务器信息
-    keys: [],              // 键集合
+    redisKeyList: [],              // 键集合
+    redisKey: null,        // 当前选中的key
     redisValue: null,      // 点击键，获取到的redis值
 
     // redis支持db0 ~ db15 16个数据库; 集群只支持db0，
@@ -32,7 +33,7 @@ export const colorStyle = computed(() => {
 })
 
 export const filterKeys = computed(() =>
-    store.keys
+    store.redisKeyList
         .filter(redisKey => !store.keyword || redisKey.key.toLowerCase().indexOf(store.keyword.toLowerCase()) > -1)
 )
 
@@ -54,7 +55,7 @@ export function initDbList() {
 }
 export async function scanKey (){
     store.loading.keys = true
-    store.keys = scan(store.conn.id, store.keyword)
+    store.redisKeyList = scan(store.conn.id, store.keyword)
     await sleep(500)
     store.loading.keys = false
 }

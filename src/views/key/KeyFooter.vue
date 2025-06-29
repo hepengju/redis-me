@@ -10,7 +10,7 @@ import store, {filterKeys} from '@/utils/store.ts'
                    :value="item"
                    :key="item.index"/>
       </el-select>
-      <el-text size="large" type="primary">{{filterKeys.length}} / {{store.keys.length}}</el-text>
+      <el-text size="large" type="primary">{{ filterKeys.length }} / {{ store.redisKeyList.length }}</el-text>
 
       <el-button-group>
         <me-button tooltip="加载更多" icon="el-icon-bottom" type="primary"/>

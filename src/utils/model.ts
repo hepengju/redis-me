@@ -58,7 +58,8 @@ interface IStore {
     connList: RedisProperties[]
     conn: RedisProperties
     info: string,
-    keys: RedisKey[],
+    redisKeyList: RedisKey[],
+    redisKey: RedisKey,
     redisValue: RedisValue
 
     dbList: RedisDB[]
