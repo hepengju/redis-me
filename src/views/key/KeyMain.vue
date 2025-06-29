@@ -1,14 +1,17 @@
 <script setup lang="ts">
 import SearchKey from "./detail/SearchKey.vue";
 import SimpleKey from "./detail/SimpleKey.vue";
-import store from "@/utils/store.ts";
+import store, {colorStyle} from "@/utils/store.ts";
 
 </script>
 
 <template>
   <div class="key-main">
     <SearchKey/>
-    <div class="key-list" :v-loading="store.loading.keys">
+    <div class="key-list"
+         :style="colorStyle"
+         v-loading="store.loading.keys"
+         element-loading-text="扫描中...">
       <SimpleKey/>
     </div>
   </div>

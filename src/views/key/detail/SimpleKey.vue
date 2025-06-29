@@ -1,10 +1,9 @@
 <script setup>
 import {filterKeys} from '@/utils/store.ts'
-import {colorStyle} from '@/utils/store.ts'
 </script>
 
 <template>
-  <div v-for="item in filterKeys" class="key" :style="colorStyle">
+  <div v-for="item in filterKeys" class="key">
     {{item.key}}
   </div>
 </template>
