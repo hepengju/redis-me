@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import store, {filterKeys, scanKey} from '@/utils/store.ts'
+import store, {filterKeys, scanKey, scanMore, scanAll} from '@/utils/store.ts'
 </script>
 
 <template>

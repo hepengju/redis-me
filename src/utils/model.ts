@@ -2,16 +2,16 @@
  * Redis连接信息
  */
 interface RedisProperties {
-    id: string,
-    name: string,
+    id: string
+    name: string
 
-    host: string,
-    port: number,
-    username?: string,
-    password?: string,
-    cluster: boolean,
-    readonly: boolean,
-    order: number,
+    host: string
+    port: number
+    username?: string
+    password?: string
+    cluster: boolean
+    readonly: boolean
+    order: number
 
     sslOption?: SSLOptions
 
@@ -20,57 +20,59 @@ interface RedisProperties {
 }
 
 interface SSLOptions {
-    key: string,
-    cert: string,
-    ca: string,
+    key: string
+    cert: string
+    ca: string
 }
 
 interface RedisDB {
-    index: number,
+    index: number
     label: string
-    name: string,
+    name: string
 }
 
 interface RedisKey {
-    key: string,
-    bytes: string,
+    key: string
+    bytes: string
 }
 
 interface RedisSet extends RedisKey {
-    value: string,
+    value: string
     ttl: number
 }
 
 interface RedisHash extends RedisKey {
-    hashKey: string,
+    hashKey: string
     hashValue: string
 }
 
 interface RedisValue {
-    type: string,
-    value: object,
-    rawValue: object,
-    ttl: number,
+    type: string
+    value: object
+    rawValue: object
+    ttl: number
 }
 
 // ~~~~~~~~全局数据类型
 interface IStore {
     connList: RedisProperties[]
     conn: RedisProperties
-    info: string,
-    redisKeyList: RedisKey[],
-    redisKey: RedisKey | null,
+    info: string
+    redisKeyList: RedisKey[]
+    redisKey: RedisKey | null
     redisValue: RedisValue | null
 
     dbList: RedisDB[]
     db: RedisDB | null
 
-    exact: boolean,
-    keyword: string,
-    readonly: boolean,
-    activeTabName: string,
+    exact: boolean
+    keyword: string
+    readonly: boolean
+    activeTabName: string
 
     loading: ILoading
+    dialog: IDialog
+    setting: ISettings
 }
 
 // 加载中
@@ -78,4 +80,17 @@ interface ILoading {
     info: boolean
     redisKeyList: boolean
     redisValue: boolean
+}
+
+// 弹框
+interface IDialog {
+    editConn: boolean,
+    setting: boolean
+}
+
+interface ISettings {
+    theme: string
+    language: string
+    zoomFactor: number
+    scanCount: number
 }

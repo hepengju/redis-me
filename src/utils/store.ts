@@ -22,10 +22,25 @@ const store: Reactive<IStore> = reactive({
     keyword: '',           // 查询关键字
     readonly: false,       // 只读
     activeTabName: 'info', // 激活Tab名称
-    loading: {             // 加载中状态，以便显示loading
+
+    // 加载中状态，以便显示loading
+    loading: {
         info: false,           // 获取RedisInfo
         redisKeyList: false,   // 获取键列表
         redisValue: false      // 获取键的值
+    },
+
+    // 弹框
+    dialog: {
+        editConn: false,       // 编辑连接
+        setting: false         // 基础设置
+    },
+
+    setting: {
+        theme: 'system',
+        language: 'cn',
+        zoomFactor: 1.0,
+        scanCount: 1000
     }
 })
 
