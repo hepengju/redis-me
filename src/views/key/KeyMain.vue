@@ -34,6 +34,7 @@ import store, {colorStyle} from "@/utils/store.ts";
     flex-grow: 1;
     border: 1px solid var(--el-border-color);
     border-top: none;
+    border-bottom: none;
 
     height: 100%;
     padding: 5px;

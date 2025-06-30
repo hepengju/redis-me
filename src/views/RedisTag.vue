@@ -51,8 +51,10 @@ const activeTabName = ref('info')
 <style scoped lang="scss">
 .redis-tag {
   border: 2px solid red;
-
   height: 100%;
-  //overflow: auto;
+
+  :deep(.el-tab-pane) {
+    height: 100%;
+  }
 }
 </style>

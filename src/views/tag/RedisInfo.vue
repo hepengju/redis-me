@@ -13,6 +13,8 @@ import store from "@/utils/store.ts";
 
 <style scoped lang="scss">
 .redis-info {
-  overflow: auto;
+  height: 100%;
+  overflow-y: auto;
+  overflow-x: hidden;
 }
 </style>
