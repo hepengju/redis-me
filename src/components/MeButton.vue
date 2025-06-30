@@ -8,7 +8,7 @@ const {tooltip} = defineProps({
 </script>
 
 <template>
-  <el-tooltip :content="tooltip">
+  <el-tooltip :content="tooltip" :show-after="500">
     <el-button v-bind="attrs"></el-button>
   </el-tooltip>
 </template>
