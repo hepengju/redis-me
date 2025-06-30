@@ -1,21 +1,37 @@
 <script setup>
-const {name} = defineProps({
+const {name, placement} = defineProps({
   name: {type: String, default: ''},
   icon: {type: String, default: ''},
   tooltip: {type: Boolean, default: false},
+  tooltipContent: {type: String, default: ''},
+  placement: {type: String, default: 'right'},
 })
 </script>
 
 <template>
   <div class="icon-main">
-    <template v-if="tooltip">
-      <el-tooltip placement="right" :content="name">
+    <!-- 图标 + 文字 + 额外提示 -->
+    <template v-if="tooltipContent">
+      <el-tooltip :placement="placement" :content="tooltipContent">
+        <el-icon v-if="icon.startsWith('el-icon-')">
+          <Component :is="icon"/>
+        </el-icon>
+        <SvgIcon v-else :name="icon" class="icon"/>
+      </el-tooltip>
+      <span class="name" v-if="name">{{ name }}</span>
+    </template>
+
+    <!-- 图标 + 文字提示 -->
+    <template v-else-if="tooltip">
+      <el-tooltip :placement="placement" :content="name">
         <el-icon v-if="icon.startsWith('el-icon-')">
           <Component :is="icon"/>
         </el-icon>
         <SvgIcon v-else :name="icon" class="icon"/>
       </el-tooltip>
     </template>
+
+    <!-- 图标 + 文字 -->
     <template v-else>
       <el-icon v-if="icon.startsWith('el-icon-')">
         <Component :is="icon"/>

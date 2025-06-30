@@ -84,7 +84,7 @@ interface ILoading {
 
 // 弹框
 interface IDialog {
-    editConn: boolean,
+    conn: boolean,
     setting: boolean
 }
 

@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import RedisKey from './RedisKey.vue'
 import RedisTag from './RedisTag.vue'
-import AppSetting from '@/views/dialog/AppSetting.vue'
+import Setting from '@/views/dialog/Setting.vue'
 
 import {onMounted} from 'vue'
 import store, {initMain} from '@/utils/store.ts'
@@ -19,7 +19,8 @@ onMounted(() => initMain())
     </el-splitter-panel>
   </el-splitter>
 
-  <AppSetting v-if="store.dialog.setting"/>
+  <!-- 对话框  -->
+  <Setting/>
 </template>
 
 <style scoped lang="scss">

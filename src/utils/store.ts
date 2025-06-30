@@ -32,7 +32,7 @@ const store: Reactive<IStore> = reactive({
 
     // 弹框
     dialog: {
-        editConn: false,       // 编辑连接
+        conn: false,           // 编辑连接
         setting: false         // 基础设置
     },
 
