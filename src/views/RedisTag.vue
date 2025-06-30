@@ -50,7 +50,7 @@ const activeTabName = ref('info')
 
 <style scoped lang="scss">
 .redis-tag {
-  border: 2px solid red;
+  //border: 2px solid red;
   height: 100%;
 
   :deep(.el-tab-pane) {

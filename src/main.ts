@@ -4,6 +4,8 @@ import SvgIcon from '~virtual/svg-component'
 import './styles/index.scss'
 import 'element-plus/dist/index.css'
 import 'element-plus/theme-chalk/dark/css-vars.css'
+import './styles/dark.scss'
+
 import * as ElementPlusIcons from '@element-plus/icons-vue'
 
 const app = createApp(App)

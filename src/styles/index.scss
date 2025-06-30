@@ -6,24 +6,6 @@ html, body {
   height: 100%;
 }
 
-html {
-  --hint-color: #22A;
-  --drag-color: #BBB;
-  --drag-hover-color: #36AD6A;
-  --btns-backgroud-color: #EBEBEB;
-}
-
-html.dark {
-  --hint-color: pink;
-  --drag-color: #666;
-  --drag-hover-color: #36AD6A;
-  --btns-backgroud-color: #3B3D3E;
-
-  // ElementPlus的黑色背景优化
-  --el-bg-color: #2b2b2b !important;
-  --menu-color: #363636
-}
-
 // SVG点击后外围方框的问题
 svg {
   outline: none;
