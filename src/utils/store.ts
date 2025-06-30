@@ -88,6 +88,21 @@ export async function scanKey (){
     store.loading.redisKeyList = false
 }
 
+/**
+ * 加载更多
+ */
+export async function scanMore() {
+    // TODO
+}
+
+/**
+ * 加载所有
+ */
+export async function scanAll() {
+    // TODO
+}
+
+
 export async function getKey(redisKey: RedisKey): RedisValue {
     store.loading.redisKey = true
     store.redisKey = redisKey
