@@ -12,7 +12,8 @@ import {ElementPlusResolver} from 'unplugin-vue-components/resolvers'
 import path from 'path'
 
 // ts-expect-error process is a nodejs global
-const host = process.env.TAURI_DEV_HOST
+// const host = process.env.TAURI_DEV_HOST
+const host = '0.0.0.0'
 
 // https://vitejs.dev/config/
 export default defineConfig(async () => ({
@@ -38,6 +39,7 @@ export default defineConfig(async () => ({
         Components({
             resolvers: [ElementPlusResolver()],
         }),
+
         // 解决IconsResolver无法动态引入图标的问题
         // https://github.com/Jevon617/unplugin-svg-component
         UnpluginSvgComponent({

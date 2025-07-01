@@ -1,9 +1,10 @@
 html.dark {
+
   /* 自定义深色背景颜色 */
-  background-color: #2b2b2b;
+  --me-bg-color: #2b2b2b;
 
-
-  --el-bg-color: #2b2b2b;         // el-dialog的背景色: 基础设置-标题
-  --el-card-bg-color: #2b2b2b;    // el-tab的背景色: 基础设置-外观
-  --el-bg-color-overlay: #2b2b2b; // el-tabs的背景色: Redis信息
+  background-color: var(--me-bg-color);
+  --el-bg-color: var(--me-bg-color);         // el-dialog的背景色: 基础设置-标题
+  --el-card-bg-color: var(--me-bg-color);    // el-tab的背景色: 基础设置-外观
+  --el-bg-color-overlay: var(--me-bg-color); // el-tabs的背景色: Redis信息
 }

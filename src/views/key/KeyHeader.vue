@@ -2,12 +2,17 @@
 import MeIcon from '@/components/MeIcon.vue'
 import store, {colorStyle, initMain} from '@/utils/store.ts'
 
-/**
- * 下拉框命令
- */
-function handleCommand(command: string){
+// 新增连接
+function addConn(){
+
+}
+
+// 扩展命令
+function handleCommand(command: string) {
   if (command === 'setting') {
     store.dialog.setting = true
+  } else if (command === 'refreshConn') {
+    initMain()
   }
 }
 </script>
@@ -29,16 +34,18 @@ function handleCommand(command: string){
     </el-select>
 
     <div class="btns">
-      <me-button content="刷新连接" type="primary" icon="el-icon-refresh" @click="initMain"></me-button>
+      <me-button content="新增连接" type="primary" icon="el-icon-plus" @click="addConn"></me-button>
 
       <el-dropdown style="margin-left: 10px" placement="bottom-end" @command="handleCommand">
-        <el-button type="success"><el-icon><el-icon-operation/></el-icon></el-button>
+        <el-button type="success" icon="el-icon-operation"/>
         <template #dropdown>
           <el-dropdown-menu>
+            <el-dropdown-item command="refreshConn"><me-icon name="刷新连接" icon="el-icon-refresh"/></el-dropdown-item>
             <el-dropdown-item command="editConn"><me-icon name="编辑连接" icon="el-icon-edit"/></el-dropdown-item>
+            <el-dropdown-item command="deleteConn"><me-icon name="删除连接" icon="el-icon-delete"/></el-dropdown-item>
             <el-dropdown-item command="import" divided><me-icon name="导入键" icon="el-icon-download"/></el-dropdown-item>
             <el-dropdown-item command="flush"><me-icon name="删除所有键" icon="el-icon-warn-triangle-filled"/></el-dropdown-item>
-            <el-dropdown-item command="appLog"><me-icon name="应用日志" icon="el-icon-stopwatch"/></el-dropdown-item>
+            <el-dropdown-item command="appLog" divided><me-icon name="应用日志" icon="el-icon-stopwatch"/></el-dropdown-item>
             <el-dropdown-item command="setting" divided><me-icon name="基础设置" icon="el-icon-setting"/></el-dropdown-item>
           </el-dropdown-menu>
         </template>
@@ -59,5 +66,10 @@ function handleCommand(command: string){
     margin-left: 10px;
     flex-shrink: 0;
   }
+}
+
+// 避免点击后，鼠标浮动上去的outline（缺点：Tab键聚集到此按钮没有outline了）
+.el-dropdown .el-button:focus-visible {
+  outline: none;
 }
 </style>
