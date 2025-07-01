@@ -12,8 +12,8 @@ import {ElementPlusResolver} from 'unplugin-vue-components/resolvers'
 import path from 'path'
 
 // ts-expect-error process is a nodejs global
-// const host = process.env.TAURI_DEV_HOST
-const host = '0.0.0.0'
+const host = process.env.TAURI_DEV_HOST
+// const host = '0.0.0.0'
 
 // https://vitejs.dev/config/
 export default defineConfig(async () => ({

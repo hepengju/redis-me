@@ -20,6 +20,7 @@
     "element-plus": "^2.10.2",
     "jsonpath-plus": "^10.3.0",
     "lodash": "^4.17.21",
+    "nanoid": "^5.1.5",
     "vue": "^3.5.17"
   },
   "devDependencies": {

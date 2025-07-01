@@ -2,11 +2,12 @@
 import RedisKey from './RedisKey.vue'
 import RedisTag from './RedisTag.vue'
 import Setting from '@/views/dialog/Setting.vue'
-
-import {onMounted} from 'vue'
 import store, {initMain} from '@/utils/store.ts'
+import Conn from '@/views/dialog/Conn.vue'
 
-onMounted(() => initMain())
+// 初始化
+initMain()
+
 </script>
 
 <template>

@@ -57,7 +57,7 @@ function changeZoomFactor(value: number) {
 </script>
 
 <template>
-  <el-dialog title="基础设置" v-model="store.dialog.setting" align-center width="666">
+  <el-dialog title="基础设置" v-model="store.dialog.setting" width="650">
     <el-card header="外观" header-class="me-card">
       <el-form inline label-position="left">
         <el-form-item label="主题">
@@ -92,7 +92,7 @@ function changeZoomFactor(value: number) {
       <el-link underline="always" class="me-link">清除缓存</el-link>
       <el-link underline="always" class="me-link">检查更新</el-link>
       <el-link underline="always" class="me-link">手动下载</el-link>
-      <el-link underline="always" class="me-link">项目主页</el-link>
+      <el-link underline="always" class="me-link" href="https://gitee.com/hepengju/redis-app" target="_blank">项目主页</el-link>
     </el-card>
     <!-- 目前看下来似乎不需要底部按钮
     <template #footer>

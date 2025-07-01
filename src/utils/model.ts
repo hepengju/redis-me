@@ -6,17 +6,18 @@ interface RedisProperties {
     name: string
 
     host: string
-    port: number
+    port: string
     username?: string
     password?: string
     cluster: boolean
     readonly: boolean
-    order: number
 
-    sslOption?: SSLOptions
+    ssl: boolean
+    sslOption: SSLOptions
 
     // 其他辅助信息
     color: string
+    order: number
 }
 
 interface SSLOptions {

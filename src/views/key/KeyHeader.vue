@@ -1,14 +1,24 @@
 <script setup lang="ts">
 import MeIcon from '@/components/MeIcon.vue'
 import store, {colorStyle, initMain} from '@/utils/store.ts'
+import Conn from '@/views/dialog/Conn.vue'
+import {useTemplateRef} from 'vue'
 const disabled = computed(() => store.conn === null)
+
+const connRef = useTemplateRef('conn')
 
 // 扩展命令
 function handleCommand(command: string) {
-  if (command === 'setting') {
-    store.dialog.setting = true
+  if (command === 'addConn') {
+    connRef.value.open('add')
+  } else if (command === 'editConn') {
+    connRef.value.open('edit')
+  } else if (command === 'deleteConn') {
+    // TODO 删除连接
   } else if (command === 'refreshConn') {
     initMain()
+  } else if (command === 'setting') {
+    store.dialog.setting = true
   }
 }
 </script>
@@ -47,6 +57,8 @@ function handleCommand(command: string) {
       </el-dropdown>
     </div>
   </div>
+
+  <Conn ref="conn"/>
 </template>
 
 <style scoped lang="scss">
