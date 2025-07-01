@@ -21,6 +21,7 @@ import store, {filterKeys, scanKey, scanMore, scanAll} from '@/utils/store.ts'
 
 <style scoped lang="scss">
 .key-footer {
+  margin-top: 5px;
   display: flex;
   align-items: center;
   justify-content: space-between;
