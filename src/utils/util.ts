@@ -1,3 +1,12 @@
+import {sampleSize} from 'lodash'
+
+/**
+ * 随机N个字符
+ */
+const CHAR_ARRAY = [...'abcdefghigklmnopqrstuvwxyz0123456789']
+export function randomString(n: number): string {
+    return sampleSize(CHAR_ARRAY, n).join('')
+}
 /**
  * redis字符串信息转换为Map
  */

@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import store from '@/utils/store.ts'
 import {nanoid} from 'nanoid'
-import {ref, reactive, toRaw} from 'vue'
+import {ref, reactive, toRaw, useTemplateRef} from 'vue'
+import {randomString} from "@/utils/util.ts";
 
 const form: RedisProperties = reactive({
   id: '',
@@ -25,29 +26,43 @@ const form: RedisProperties = reactive({
   order: 0,
 })
 
+
 const rules = {
   host: [{required: true, message: '请输入主机'}],
-  port: [{required: true, message: '请输入端口'}],
-  name: [{required: true, message: '名称不能为空'}],
+  port: [{required: true, message: '请输入端口'}]
 }
 
 // 打开对话框
 const mode = ref('add')
-
+const formRef = useTemplateRef('formRef')
 function open(value: string) {
   mode.value = value
-  if (value === 'add') {
-    form.id = nanoid()
-  } else if (value === 'edit') {
+  if (value === 'edit') {
     Object.assign(form, toRaw(store.conn))
   }
 }
 
 // 确定
-function confirm() {
-  store.dialog.conn = false
-  console.log(store.conn)
-  Object.assign(store.conn, toRaw(form))
+function submitForm() {
+  formRef.value.validate( valid => {
+    if (valid) {
+      if (mode.value === 'add') {
+        form.id = nanoid()
+        if (!form.name) {
+          form.name = form.host + '@' + form.port
+        }
+
+        if (store.connList.find(c => c.name === form.name)) {
+          form.name += ' (' + randomString(3) + ')'
+        }
+
+        store.connList.push(toRaw(form))
+      } else if (mode.value === 'edit') {
+        Object.assign(store.conn, toRaw(form))
+      }
+      store.dialog.conn = false
+    }
+  })
 }
 
 // 暴露方法
@@ -85,7 +100,7 @@ defineExpose({open})
       </el-row>
 
       <el-form-item label="名称" prop="name">
-        <el-input v-model.trim="form.name" placeholder="连接名称（默认自动根据地址和端口生成）"/>
+        <el-input v-model.trim="form.name" placeholder="默认自动根据地址和端口生成"/>
       </el-form-item>
 
       <el-row :gutter="24">
@@ -121,7 +136,7 @@ defineExpose({open})
     <template #footer>
       <div class="dialog-footer">
         <el-button @click="store.dialog.conn = false">取消</el-button>
-        <el-button type="primary" @click="confirm">确定</el-button>
+        <el-button type="primary" @click="submitForm">确定</el-button>
       </div>
     </template>
   </el-dialog>
