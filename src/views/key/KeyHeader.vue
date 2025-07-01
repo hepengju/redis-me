@@ -3,6 +3,7 @@ import MeIcon from '@/components/MeIcon.vue'
 import store, {colorStyle, initMain} from '@/utils/store.ts'
 import Conn from '@/views/dialog/Conn.vue'
 import {nextTick, useTemplateRef} from 'vue'
+import {ElMessage, ElMessageBox} from "element-plus";
 const disabled = computed(() => store.conn === null)
 
 const connRef = useTemplateRef('conn')
@@ -16,7 +17,16 @@ function handleCommand(command: string) {
     store.dialog.conn = true
     nextTick(() => connRef.value.open('edit'))
   } else if (command === 'deleteConn') {
-    // TODO 删除连接
+    ElMessageBox.confirm(`确认删除连接【${store.conn.name}】吗`, {type: 'warning'})
+        .then(() => {
+          const index = store.connList.findIndex(c => c.id === store.conn.id)
+          if (index > -1) {
+            store.connList.splice(index, 1)
+          }
+          store.conn = null
+          ElMessage({type: 'success', message: '删除成功'})
+        })
+        .catch(() => {})
   } else if (command === 'refreshConn') {
     initMain()
   } else if (command === 'setting') {

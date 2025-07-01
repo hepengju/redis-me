@@ -72,6 +72,13 @@ export function initMain(){
     scanKey()
 }
 
+/**
+ * 重置为初始状态
+ */
+export function resetInit() {
+    // TODO
+}
+
 export function initConnList() {
     store.connList = connList()
     store.conn = store.connList[0]
