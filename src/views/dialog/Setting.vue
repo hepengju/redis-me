@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import store from '@/utils/store.ts'
-import { useDark, usePreferredDark } from '@vueuse/core'
-import {onMounted} from 'vue'
+import {useDark, usePreferredDark, useStorage} from '@vueuse/core'
+
 // 主题
 const themeList = [
   {value: 'system', label: '跟随系统'},
@@ -20,31 +20,38 @@ const languageList = [
  */
 const isPreferredDark = usePreferredDark()
 const isDark = useDark()
+// const factor = useZoomFactor()
+const zoomFactor = useStorage('zoomFactor', 1)
 
 // 主题初始化值
-onMounted(() => {
-  if (isPreferredDark.value) {
-    store.setting.theme = 'system'
-  } else {
-    store.setting.theme = isDark.value ? 'dark' : 'light'
-  }
-})
+if (isPreferredDark.value) {
+  store.setting.theme = 'system'
+} else {
+  store.setting.theme = isDark.value ? 'dark' : 'light'
+}
 
+store.setting.zoomFactor = zoomFactor.value
+document.body.style.zoom = zoomFactor.value
+
+// 切换主题
 function changeTheme(theme: string) {
   if (theme === 'system') {
     isDark.value = isPreferredDark.value
-  } else if (theme === 'light') {
-    isDark.value = false
-  } else if (theme === 'dark') {
-    isDark.value = true
+  } else {
+    isDark.value = theme === 'dark'
   }
 }
 
-/**
- * 切换语言
- */
+// 切换语言
 function changeLanguage() {
   // TODO i18n 多语言支持
+}
+
+// 切换缩放因子
+function changeZoomFactor(value: number) {
+  // chrome ok, firefox效果不是很好
+  document.body.style.zoom = value + '';
+  zoomFactor.value = value
 }
 
 </script>
@@ -64,7 +71,7 @@ function changeLanguage() {
           </el-select>
         </el-form-item>
         <el-form-item label="缩放">
-          <el-input-number v-model="store.setting.zoomFactor"
+          <el-input-number v-model="store.setting.zoomFactor" @change="changeZoomFactor"
                            :min="0.5" :max="2" :step="0.1" :precision="1" style="width: 120px"/>
         </el-form-item>
       </el-form>
