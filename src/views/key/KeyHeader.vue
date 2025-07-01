@@ -2,7 +2,7 @@
 import MeIcon from '@/components/MeIcon.vue'
 import store, {colorStyle, initMain} from '@/utils/store.ts'
 import Conn from '@/views/dialog/Conn.vue'
-import {useTemplateRef} from 'vue'
+import {nextTick, useTemplateRef} from 'vue'
 const disabled = computed(() => store.conn === null)
 
 const connRef = useTemplateRef('conn')
@@ -10,9 +10,11 @@ const connRef = useTemplateRef('conn')
 // 扩展命令
 function handleCommand(command: string) {
   if (command === 'addConn') {
-    connRef.value.open('add')
+    store.dialog.conn = true
+    nextTick(() => connRef.value.open('add'))
   } else if (command === 'editConn') {
-    connRef.value.open('edit')
+    store.dialog.conn = true
+    nextTick(() => connRef.value.open('edit'))
   } else if (command === 'deleteConn') {
     // TODO 删除连接
   } else if (command === 'refreshConn') {
@@ -58,7 +60,7 @@ function handleCommand(command: string) {
     </div>
   </div>
 
-  <Conn ref="conn"/>
+  <Conn ref="conn" v-if="store.dialog.conn"/>
 </template>
 
 <style scoped lang="scss">

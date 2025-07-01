@@ -25,18 +25,17 @@ const form: RedisProperties = reactive({
   order: 0,
 })
 
-const rules = reactive({
+const rules = {
   host: [{required: true, message: '请输入主机'}],
   port: [{required: true, message: '请输入端口'}],
   name: [{required: true, message: '名称不能为空'}],
-})
+}
 
 // 打开对话框
 const mode = ref('add')
 
 function open(value: string) {
   mode.value = value
-  store.dialog.conn = true
   if (value === 'add') {
     form.id = nanoid()
   } else if (value === 'edit') {
@@ -47,6 +46,8 @@ function open(value: string) {
 // 确定
 function confirm() {
   store.dialog.conn = false
+  console.log(store.conn)
+  Object.assign(store.conn, toRaw(form))
 }
 
 // 暴露方法
@@ -55,7 +56,7 @@ defineExpose({open})
 
 <template>
   <el-dialog :title="mode === 'add' ? '新增连接' : '编辑连接'"
-             v-model="store.dialog.conn" width="600" append-to-body>
+             v-model="store.dialog.conn" width="600" append-to-body destroy-on-close>
     <el-form ref="formRef" :model="form" :rules="rules" label-position="right" label-width="auto">
       <el-row :gutter="24">
         <el-col :span="12">
@@ -125,7 +126,3 @@ defineExpose({open})
     </template>
   </el-dialog>
 </template>
-
-<style scoped lang="scss">
-
-</style>
