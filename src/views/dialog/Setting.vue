@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import store from '@/utils/store.ts'
 import { useDark, usePreferredDark } from '@vueuse/core'
+import {onMounted} from 'vue'
 // 主题
 const themeList = [
   {value: 'system', label: '跟随系统'},
@@ -19,6 +20,16 @@ const languageList = [
  */
 const isPreferredDark = usePreferredDark()
 const isDark = useDark()
+
+// 主题初始化值
+onMounted(() => {
+  if (isPreferredDark.value) {
+    store.setting.theme = 'system'
+  } else {
+    store.setting.theme = isDark.value ? 'dark' : 'light'
+  }
+})
+
 function changeTheme(theme: string) {
   if (theme === 'system') {
     isDark.value = isPreferredDark.value
