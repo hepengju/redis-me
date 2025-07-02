@@ -22,7 +22,7 @@ function handleCommand(){
         <me-icon name="加载更多"       icon="me-icon-load-more" tooltip placement="top" @click="scanMore"/>
         <me-icon name="加载剩余所有键" icon="me-icon-load-all"  tooltip placement="top" @click="scanAll"/>
         <el-dropdown placement="top-end" @command="handleCommand">
-          <me-icon icon="el-icon-more"></me-icon>
+          <me-icon icon="el-icon-more-filled"></me-icon>
           <template #dropdown>
             <el-dropdown-menu>
               <el-dropdown-item command="import" ><me-icon name="导入数据" icon="el-icon-download"/></el-dropdown-item>
