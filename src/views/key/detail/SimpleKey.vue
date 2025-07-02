@@ -7,7 +7,7 @@ function customType(item) {
 </script>
 
 <template>
-  <div v-for="item in filterKeys" @click="getKey(item)">
+  <div v-for="item in filterKeys" @click="getKey(item)" >
     <el-link :type="customType(item)" icon="el-icon-key" underline="never">
       <span class="key">{{ item.key }}</span>
     </el-link>

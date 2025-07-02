@@ -60,8 +60,6 @@ function handleCommand(command: string) {
             <el-dropdown-item command="addConn"><me-icon name="新增连接" icon="el-icon-plus"/></el-dropdown-item>
             <el-dropdown-item command="editConn" :disabled><me-icon name="编辑连接" icon="el-icon-edit"/></el-dropdown-item>
             <el-dropdown-item command="deleteConn" :disabled><me-icon name="删除连接" icon="el-icon-delete"/></el-dropdown-item>
-            <el-dropdown-item command="import" divided :disabled><me-icon name="导入键" icon="el-icon-download"/></el-dropdown-item>
-            <el-dropdown-item command="flush" :disabled><me-icon name="删除所有键" icon="el-icon-warn-triangle-filled"/></el-dropdown-item>
             <el-dropdown-item command="appLog" divided><me-icon name="命令日志" icon="el-icon-stopwatch"/></el-dropdown-item>
             <el-dropdown-item command="setting"><me-icon name="基础设置" icon="el-icon-setting"/></el-dropdown-item>
           </el-dropdown-menu>
