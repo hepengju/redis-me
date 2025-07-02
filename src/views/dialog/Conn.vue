@@ -3,6 +3,7 @@ import store from '@/utils/store.ts'
 import {nanoid} from 'nanoid'
 import {ref, reactive, toRaw, useTemplateRef} from 'vue'
 import {randomString} from "@/utils/util.ts";
+import {ElMessage} from 'element-plus'
 
 const form: RedisProperties = reactive({
   id: '',
@@ -44,24 +45,25 @@ function open(value: string) {
 
 // 确定
 function submitForm() {
-  formRef.value.validate( valid => {
-    if (valid) {
-      if (mode.value === 'add') {
-        form.id = nanoid()
-        if (!form.name) {
-          form.name = form.host + '@' + form.port
-        }
-
-        if (store.connList.find(c => c.name === form.name)) {
-          form.name += ' (' + randomString(3) + ')'
-        }
-
-        store.connList.push(toRaw(form))
-      } else if (mode.value === 'edit') {
-        Object.assign(store.conn, toRaw(form))
+  formRef.value.validate(valid => {
+    if (!valid) return
+    if (mode.value === 'add') {
+      form.id = nanoid()
+      if (!form.name) {
+        form.name = form.host + '@' + form.port
       }
-      store.dialog.conn = false
+
+      if (store.connList.find(c => c.name === form.name)) {
+        form.name += ' (' + randomString(3) + ')'
+      }
+
+      store.connList.push(toRaw(form))
+      ElMessage({type: 'success', message: '新增成功'})
+    } else if (mode.value === 'edit') {
+      Object.assign(store.conn, toRaw(form))
+      ElMessage({type: 'success', message: '保存成功'})
     }
+    store.dialog.conn = false
   })
 }
 

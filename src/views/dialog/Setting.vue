@@ -10,9 +10,9 @@ const themeList = [
 ]
 
 const languageList = [
+  {value: 'en', label: 'English'},
   {value: 'cn', label: '简体中文'},
   {value: 'tw', label: '繁体中文'},
-  {value: 'en', label: 'English'},
 ]
 
 /**
@@ -94,6 +94,7 @@ function changeZoomFactor(value: number) {
       <el-link underline="always" class="me-link">手动下载</el-link>
       <el-link underline="always" class="me-link" href="https://gitee.com/hepengju/redis-app" target="_blank">项目主页</el-link>
     </el-card>
+
     <!-- 目前看下来似乎不需要底部按钮
     <template #footer>
       <div class="dialog-footer">
