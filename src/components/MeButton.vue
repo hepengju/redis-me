@@ -4,7 +4,7 @@ const attrs = useAttrs()
 
 const {tooltip} = defineProps({
   tooltip: {type: String, default: '请添加按钮提示'},
-  placement: {type: String, default: ''},
+  placement: {type: String, default: 'auto'},
 })
 </script>
 

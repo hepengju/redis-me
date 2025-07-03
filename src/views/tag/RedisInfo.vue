@@ -2,6 +2,7 @@
 import store from '@/utils/store.ts'
 import {sleep} from '@/utils/util.ts'
 import {info} from '@/utils/api.ts'
+import {useTemplateRef} from 'vue'
 
 /**
  * redis字符串信息转换为Map
@@ -67,14 +68,20 @@ const tableData = computed(() => {
   const key = data.keyword.toLowerCase()
   return list?.filter(d => !key || d.key.toLowerCase().indexOf(key) > -1 || d.value.toLowerCase().indexOf(key) > -1)
 })
+
 async function refresh() {
   data.loading = true
   data.raw = info(store.conn.id)
   await sleep(500)
   data.loading = false
 }
-
 refresh()
+
+const tableRef = useTemplateRef('tableRef')
+function clickTag(tag) {
+  data.tagSelected = tag
+  tableRef.value.scrollTo(0, 0) // 滚动条归零
+}
 </script>
 
 <template>
@@ -92,6 +99,7 @@ refresh()
           <me-icon class="description-refresh" name="刷新" icon="el-icon-refresh-right" placement="left" tooltip @click="refresh"/>
         </div>
       </template>
+
       <el-descriptions-item>
         <template #label><me-icon name="运行时间" icon="el-icon-timer"/></template>
         {{data.dic['uptime_in_days']}}天
@@ -107,19 +115,22 @@ refresh()
         {{data.dic['connected_clients']}} <el-text type="info"> [ {{data.dic['maxclients']}} ]</el-text>
       </el-descriptions-item>
 
-      <el-descriptions-item>
+      <el-descriptions-item :span="3">
         <template #label><me-icon name="内存" icon="me-icon-memory"/></template>
-        {{data.dic['used_memory_human']}} <el-text type="info"> [ {{data.dic['total_system_memory_human']}} ]</el-text>
+        {{data.dic['used_memory_human']}}
+        <el-text type="info">
+          [
+            <span style="margin-left:  0px">峰值: {{data.dic['used_memory_peak_human']}}</span>
+            <span style="margin-left: 20px">RSS:  {{data.dic['used_memory_rss_human']}}</span>
+            <span style="margin-left: 20px">LUA: {{data.dic['used_memory_lua_human']}}</span>
+            <span style="margin-left: 20px">系统: {{data.dic['total_system_memory_human']}}</span>
+          ]
+        </el-text>
       </el-descriptions-item>
 
       <el-descriptions-item :span="2">
         <template #label><me-icon name="系统" icon="el-icon-monitor"/></template>
-        {{data.dic['os']}}
-      </el-descriptions-item>
-
-      <el-descriptions-item>
-        <template #label><me-icon name="CPU" icon="el-icon-cpu"/></template>
-        10%
+        {{data.dic['os']}} <el-text type="info"> [ PID: {{data.dic['process_id']}} ]</el-text>
       </el-descriptions-item>
 
       <el-descriptions-item :span="2">
@@ -153,12 +164,12 @@ refresh()
 
       <div class="detail-main">
         <div class="tags">
-          <el-button class="tag" plain v-for="(_, key) in data.tag"
-                     @click="data.tagSelected = key">
-            <span :style="{color: data.tagSelected === key ? 'var(--el-color-primary)' : ''}">{{key}}</span>
+          <el-button class="tag" plain v-for="(_, tag) in data.tag"
+                     @click="clickTag(tag)">
+            <span :style="{color: data.tagSelected === tag ? 'var(--el-color-primary)' : ''}">{{tag}}</span>
           </el-button>
         </div>
-        <el-table :data="tableData" border height="100%">
+        <el-table ref="tableRef" :data="tableData" border height="100%">
           <el-table-column prop="key" label="键" />
           <el-table-column prop="value" label="值" />
         </el-table>

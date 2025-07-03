@@ -4,7 +4,7 @@ const {name, placement} = defineProps({
   icon: {type: String, default: ''},
   tooltip: {type: Boolean, default: false},
   tooltipContent: {type: String, default: ''},
-  placement: {type: String, default: 'right'},
+  placement: {type: String, default: 'auto'},
 })
 </script>
 
