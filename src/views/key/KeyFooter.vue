@@ -53,10 +53,6 @@ function handleCommand(){
     justify-content: space-between;
     color: var(--el-color-info);
     cursor: pointer;
-
-    & .icon-main:hover {
-      color: var(--el-color-primary);
-    }
   }
 }
 </style>

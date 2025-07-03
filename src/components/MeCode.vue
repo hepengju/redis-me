@@ -3,18 +3,13 @@
 import CodeMirror from 'codemirror-editor-vue3'
 
 // 语言
-// import 'codemirror/mode/sql/sql.js'
-// import 'codemirror/mode/clike/clike.js'  // java
-// import 'codemirror/mode/rust/rust.js'
-// import 'codemirror/mode/go/go.js'
-
 import 'codemirror/mode/javascript/javascript.js'
 import "codemirror/mode/properties/properties.js"
 
 // 主题
-// import "codemirror/theme/monokai.css"
 import 'codemirror/theme/idea.css'
-import 'codemirror/theme/darcula.css'
+// import 'codemirror/theme/darcula.css'
+import "codemirror/theme/monokai.css"
 import 'codemirror/addon/display/autorefresh'
 import {useDark} from '@vueuse/core'
 
@@ -26,42 +21,20 @@ import 'codemirror/addon/dialog/dialog.css'
 import 'codemirror/addon/selection/mark-selection.js'
 
 // prop
-const {language, readOnly} = defineProps({
-  language: {type: String, default: 'sql'},
+const {mode, readOnly} = defineProps({
+  mode: {type: String, default: 'application/json'},
   readOnly: {type: Boolean, default: false, required: false},
 })
 
-const initOptions = reactive({
-  // theme: "darcula",
-  // mode: "text/sql",
+const initOptions = {
   lineNumbers: true,     // 显示行号
   scrollbarStyle: null,  // 不显示滚动条
-  readOnly: false,       // 只读
   styleActiveLine: true, // 高亮当前行
-  border: false,
-})
-
-const mode = computed(() => {
-  const lang = language.toLowerCase()
-  switch (lang) {
-    case 'java'      :
-      return 'text/x-java'
-    case 'rust'      :
-      return 'rust'
-    case 'go'        :
-      return 'go'
-    case 'javascript':
-      return 'javascript'
-    case 'js'        :
-      return 'javascript'
-    case 'json'      :
-      return 'application/json'
-  }
-  return 'sql'
-})
+  border: false
+}
 
 const isDark = useDark()
-const cmOptions = computed(() => ({...initOptions, mode, readOnly, theme: isDark.value ? 'darcula' : 'idea'}))
+const cmOptions = computed(() => ({...initOptions, mode, readOnly, theme: isDark.value ? 'monokai' : 'idea'}))
 const cm = useTemplateRef('cm')
 onMounted(() => {
   cm.value.refresh()
@@ -69,17 +42,20 @@ onMounted(() => {
 </script>
 
 <template>
-  <CodeMirror v-bind="$attrs" ref="cm" :options="cmOptions" original-style
-              :class="readOnly ? ['is-disabled', 'codemirror-opacity'] : []"/>
+  <CodeMirror v-bind="$attrs" ref="cm" :options="cmOptions" :class="readOnly ? ['codemirror-opacity'] : []"/>
 </template>
 
 <style scoped lang="scss">
 .codemirror-container {
-  font-size: 20px;
+  font-size: 14px;
 }
 </style>
+
 <style>
 .CodeMirror-search-field {
   font-family: Consolas !important;
+}
+.codemirror-opacity {
+  opacity: 0.6;
 }
 </style>
