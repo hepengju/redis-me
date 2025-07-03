@@ -3,6 +3,7 @@ import store from '@/utils/store.ts'
 import {sleep} from '@/utils/util.ts'
 import {info} from '@/utils/api.ts'
 import {useTemplateRef} from 'vue'
+import MeIcon from "@/components/MeIcon.vue";
 
 /**
  * redis字符串信息转换为Map
@@ -96,7 +97,8 @@ function clickTag(tag) {
             <el-tag type="success" style="margin-left: 10px" v-if="data.dic['role']">{{data.dic['role']}}</el-tag>
           </div>
 
-          <me-icon class="description-refresh" name="刷新" icon="el-icon-refresh-right" placement="left" tooltip @click="refresh"/>
+          <me-icon class="description-refresh" name="刷新"
+                   icon="el-icon-refresh-right" placement="left" tooltip @click="refresh"/>
         </div>
       </template>
 
@@ -112,48 +114,58 @@ function clickTag(tag) {
 
       <el-descriptions-item>
         <template #label><me-icon name="连接数" icon="me-icon-conn"/></template>
-        {{data.dic['connected_clients']}} <el-text type="info"> [ {{data.dic['maxclients']}} ]</el-text>
+        {{data.dic['connected_clients']}}
+        <el-text type="info" style="margin-left: 10px">
+          [ {{data.dic['maxclients']}} ]
+        </el-text>
       </el-descriptions-item>
 
-      <el-descriptions-item :span="3">
+      <el-descriptions-item :span="1">
+        <template #label><me-icon name="持久化" icon="me-icon-save"/></template>
+        <!-- TODO rdb需要通过config get save命令去确认 -->
+        <el-tag type="info" v-if="data.dic['rdb_saves']">rdb</el-tag>
+        <el-tag type="info" v-if="data.dic['aof_enabled'] === '1'">aof</el-tag>
+      </el-descriptions-item>
+
+      <el-descriptions-item :span="2">
         <template #label><me-icon name="内存" icon="me-icon-memory"/></template>
         {{data.dic['used_memory_human']}}
-        <el-text type="info">
+        <el-text type="info" style="margin-left: 10px">
           [
             <span style="margin-left:  0px">峰值: {{data.dic['used_memory_peak_human']}}</span>
             <span style="margin-left: 20px">RSS:  {{data.dic['used_memory_rss_human']}}</span>
-            <span style="margin-left: 20px">LUA: {{data.dic['used_memory_lua_human']}}</span>
             <span style="margin-left: 20px">系统: {{data.dic['total_system_memory_human']}}</span>
           ]
         </el-text>
       </el-descriptions-item>
 
-      <el-descriptions-item :span="2">
-        <template #label><me-icon name="系统" icon="el-icon-monitor"/></template>
-        {{data.dic['os']}} <el-text type="info"> [ PID: {{data.dic['process_id']}} ]</el-text>
-      </el-descriptions-item>
-
-      <el-descriptions-item :span="2">
-        <template #label><me-icon name="持久化" icon="me-icon-save"/></template>
-        <el-tag type="success" v-if="data.dic['rdb_saves']">rdb</el-tag>
-        <el-tag type="success" v-if="data.dic['aof_enabled'] === '1'">aof</el-tag>
-      </el-descriptions-item>
-
       <el-descriptions-item :span="3">
         <template #label><me-icon name="执行程序" icon="el-icon-video-play"/></template>
         {{data.dic['executable']}}
+        <el-text type="info" style="margin-left: 10px">
+          [ 配置: {{data.dic['config_file']}} ]
+        </el-text>
       </el-descriptions-item>
 
       <el-descriptions-item :span="3">
-        <template #label><me-icon name="配置文件" icon="el-icon-memo"/></template>
-        {{data.dic['config_file']}}
+        <template #label><me-icon name="系统" icon="el-icon-monitor"/></template>
+        {{data.dic['os']}}
+        <el-text type="info" style="margin-left: 10px">
+          [ PID: {{data.dic['process_id']}} ]
+        </el-text>
       </el-descriptions-item>
     </el-descriptions>
 
     <el-card class="detail-card">
       <template #header>
         <div class="detail-header">
-          <el-text size="large">参数详情</el-text>
+          <div>
+            <el-text size="large">参数详情</el-text>
+            <el-link type="success" target="_blank" style="margin-left: 10px"
+                     href="https://redis.ac.cn/docs/latest/commands/info/">
+              <me-icon icon="me-icon-link"/>
+            </el-link>
+          </div>
 
           <div class="detail-header-right">
             <me-icon icon="me-icon-raw" class="raw-info" @click="data.dialog.raw = true"/>

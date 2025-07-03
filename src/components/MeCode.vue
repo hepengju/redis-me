@@ -29,7 +29,7 @@ const {mode, readOnly} = defineProps({
 const initOptions = {
   lineNumbers: true,     // 显示行号
   scrollbarStyle: null,  // 不显示滚动条
-  styleActiveLine: true, // 高亮当前行
+  styleActiveLine: false, // 高亮当前行
   border: false
 }
 
