@@ -8,7 +8,7 @@ const store: Reactive<IStore> = reactive({
     // 核心数据
     connList: [],          // 连接列表
     conn: null,            // 当前连接
-    info: '',              // 获取的Redis服务器信息
+    // info: '',              // 获取的Redis服务器信息
     redisKeyList: [],      // 键集合
     redisKey: null,        // 当前选中的key
     redisValue: null,      // 点击键，获取到的redis值
@@ -59,7 +59,7 @@ export function initMain(){
     initDbList()
 
     // 获取服务器信息
-    getInfo()
+    //getInfo()
 
     // 选择连接后，调用scan扫描
     scanKey()
@@ -86,13 +86,6 @@ export function initDbList() {
         store.dbList = dbList()
         store.db = store.dbList[0]
     }
-}
-
-export async function getInfo() {
-    store.loading.info = true
-    store.info = info(store.conn.id)
-    await sleep(500)
-    store.loading.info = false
 }
 
 export async function scanKey (){

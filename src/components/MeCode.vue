@@ -3,11 +3,13 @@
 import CodeMirror from 'codemirror-editor-vue3'
 
 // 语言
-import 'codemirror/mode/sql/sql.js'
-import 'codemirror/mode/clike/clike.js'  // java
+// import 'codemirror/mode/sql/sql.js'
+// import 'codemirror/mode/clike/clike.js'  // java
+// import 'codemirror/mode/rust/rust.js'
+// import 'codemirror/mode/go/go.js'
+
 import 'codemirror/mode/javascript/javascript.js'
-import 'codemirror/mode/rust/rust.js'
-import 'codemirror/mode/go/go.js'
+import "codemirror/mode/properties/properties.js"
 
 // 主题
 // import "codemirror/theme/monokai.css"

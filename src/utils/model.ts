@@ -73,7 +73,7 @@ interface IStore {
 
     loading: ILoading
     dialog: IDialog
-    setting: ISettings
+    // setting: ISettings
 }
 
 // 加载中
@@ -89,9 +89,9 @@ interface IDialog {
     setting: boolean
 }
 
-interface ISettings {
-    theme: string
-    language: string
-    zoomFactor: number
-    scanCount: number
-}
+// interface ISettings {
+//     theme: string
+//     language: string
+//     zoomFactor: number
+//     scanCount: number
+// }
