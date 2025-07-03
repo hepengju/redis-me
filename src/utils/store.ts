@@ -35,13 +35,6 @@ const store: Reactive<IStore> = reactive({
         conn: false,           // 编辑连接
         setting: false         // 基础设置
     },
-
-    setting: {
-        theme: 'system',
-        language: 'cn',
-        zoomFactor: 1.0,
-        scanCount: 1000
-    }
 })
 
 // ~~~~~~~~~~~~~计算属性~~~~~~~~~~~~~

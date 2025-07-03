@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import store from '@/utils/store.ts'
 import {useDark, usePreferredDark, useStorage} from '@vueuse/core'
+import {reactive} from 'vue'
 
 // 主题
 const themeList = [
@@ -15,6 +16,12 @@ const languageList = [
   {value: 'tw', label: '繁体中文'},
 ]
 
+const setting = reactive({
+  theme: 'system',
+  language: 'cn',
+  zoomFactor: 1.0,
+})
+
 /**
  * 切换主题
  */
@@ -25,12 +32,12 @@ const zoomFactor = useStorage('zoomFactor', 1)
 
 // 主题初始化值
 if (isPreferredDark.value) {
-  store.setting.theme = 'system'
+  setting.theme = 'system'
 } else {
-  store.setting.theme = isDark.value ? 'dark' : 'light'
+  setting.theme = isDark.value ? 'dark' : 'light'
 }
 
-store.setting.zoomFactor = zoomFactor.value
+setting.zoomFactor = zoomFactor.value
 document.body.style.zoom = zoomFactor.value
 
 // 切换主题
@@ -61,25 +68,26 @@ function changeZoomFactor(value: number) {
     <el-card header="外观" header-class="me-card">
       <el-form inline label-position="left">
         <el-form-item label="主题">
-          <el-select v-model="store.setting.theme" style="width: 120px" @change="changeTheme">
+          <el-select v-model="setting.theme" style="width: 120px" @change="changeTheme">
             <el-option v-for="item in themeList" :label="item.label" :value="item.value" :key="item.value"/>
           </el-select>
         </el-form-item>
         <el-form-item label="语言">
-          <el-select v-model="store.setting.language" style="width: 120px" @change="changeLanguage">
+          <el-select v-model="setting.language" style="width: 120px" @change="changeLanguage">
             <el-option v-for="item in languageList" :label="item.label" :value="item.value" :key="item.value"/>
           </el-select>
         </el-form-item>
         <el-form-item label="缩放">
-          <el-input-number v-model="store.setting.zoomFactor" @change="changeZoomFactor"
+          <el-input-number v-model="setting.zoomFactor" @change="changeZoomFactor"
                            :min="0.5" :max="2" :step="0.1" :precision="1" style="width: 120px"/>
         </el-form-item>
       </el-form>
     </el-card>
+    <!--
     <el-card header="通用" header-class="me-card" style="margin-top: 10px">
       <el-form>
         <el-form-item label="加载数量">
-          <el-input-number v-model="store.setting.scanCount" :min="500" :max="2000" :step="100"/>
+          <el-input-number v-model="setting.scanCount" :min="500" :max="2000" :step="100"/>
           <template #label>
             <me-icon name="加载数量" icon="el-icon-question-filled"
                      tooltipContent="每次扫描加载的key数量，设置过大可能会影响性能" placement="top-start"/>
@@ -87,6 +95,7 @@ function changeZoomFactor(value: number) {
         </el-form-item>
       </el-form>
     </el-card>
+    -->
     <el-card header="当前版本" header-class="me-card" style="margin-top: 10px">
       <el-link underline="always" class="me-link">快捷键</el-link>
       <el-link underline="always" class="me-link">清除缓存</el-link>
@@ -98,7 +107,7 @@ function changeZoomFactor(value: number) {
     <!-- 目前看下来似乎不需要底部按钮
     <template #footer>
       <div class="dialog-footer">
-        <el-button @click="store.dialog.setting = false">取消</el-button>
+        <el-button @click="dialog.setting = false">取消</el-button>
         <el-button type="primary" @click="confirm">确定</el-button>
       </div>
     </template>
