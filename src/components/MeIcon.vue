@@ -51,9 +51,10 @@ const {name, placement} = defineProps({
     margin-left: 5px;
   }
 
-  :hover {
-    color: var(--el-color-primary)
-  }
+  //:hover {
+  //  color: var(--el-color-primary)
+  //}
+
   // 避免下拉框里面自带的 .el-dropdown-menu__item i 导致宽度过大
   i {
     margin-right: 0px;

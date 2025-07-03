@@ -89,9 +89,8 @@ refresh()
             <el-tag type="success" style="margin-left: 10px" v-if="data.dic['role']">{{data.dic['role']}}</el-tag>
           </div>
 
-          <me-button circle tooltip="刷新" icon="el-icon-refresh" placement="left" @click="refresh"/>
+          <me-icon class="description-refresh" name="刷新" icon="el-icon-refresh-right" placement="left" tooltip @click="refresh"/>
         </div>
-
       </template>
       <el-descriptions-item>
         <template #label><me-icon name="运行时间" icon="el-icon-timer"/></template>
@@ -195,8 +194,18 @@ refresh()
   .description-title {
     display: flex;
     justify-content: space-between;
+    align-items: center;
   }
 
+  .description-refresh {
+    font-size: 20px;
+    color: var(--el-color-success);
+    cursor: pointer;
+    & :hover {
+      color: var(--el-color-primary);
+    }
+
+  }
   //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   .detail-card {
     margin-top: 10px;
@@ -215,9 +224,14 @@ refresh()
         display: flex;
 
         .raw-info {
+          cursor: pointer;
           margin-right: 10px;
           font-size: 20px;
-          color: var(--el-color-success)
+          color: var(--el-color-success);
+
+          & :hover {
+            color: var(--el-color-primary);
+          }
         }
       }
     }
