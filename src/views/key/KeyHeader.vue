@@ -1,10 +1,10 @@
 <script>
-import {apiConnList} from '@/utils/api.ts'
+import {apiConnList} from '@/utils/api.js'
 import Setting from '@/views/key/detail/Setting.vue'
 import SaveConn from '@/views/key/detail/SaveConn.vue'
 import {nanoid} from 'nanoid'
 import {randomString} from '@/utils/util.js'
-import {EVENT} from '@/utils/event.js'
+import {CONN_REFRESH} from '@/utils/constant.js'
 import useStore from '@/utils/store.js'
 import {mapStores} from 'pinia'
 
@@ -28,7 +28,7 @@ export default {
     conn(newValue, _) {
       console.log('watch', newValue)
       this.store.conn = newValue
-      this.$bus.emit(EVENT.CONN_REFRESH)
+      this.$bus.emit(CONN_REFRESH)
     }
   },
   mounted() {

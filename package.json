@@ -27,11 +27,8 @@
   },
   "devDependencies": {
     "@tauri-apps/cli": "^2.6.0",
-    "@types/node": "^24.0.4",
     "@vitejs/plugin-vue": "^6.0.0",
-    "@vue/tsconfig": "^0.7.0",
     "sass-embedded": "^1.89.2",
-    "typescript": "~5.8.3",
     "unplugin-auto-import": "^19.3.0",
     "unplugin-svg-component": "^0.12.1",
     "unplugin-vue-components": "^28.7.0",

@@ -1,4 +1,4 @@
-export const mockConnList: RedisProperties[] = [
+export const mockConnList = [
     {
         id: 'local',
         name: '127.0.0.1-本机',
@@ -45,7 +45,7 @@ export const mockConnList: RedisProperties[] = [
     }
 ]
 
-export const mockDbList: RedisDB[] = [
+export const mockDbList = [
     {
         index: 0,
         label: 'DB0',
@@ -309,7 +309,7 @@ cluster_enabled:1
 db0:keys=4522,expires=2061,avg_ttl=0,subexpiry=0
 `.trim()
 
-export const mockScan: RedisKey[] =
+export const mockScan =
     [
         {
             "key": "BUS:ACCOUNT:CORE:CACHE_COUNTRY_NUMBER_CODE:004",
@@ -4313,7 +4313,7 @@ export const mockScan: RedisKey[] =
         }
     ]
 
-export const mockGet: RedisValue = {
+export const mockGet = {
     "type": "string",
     "ttl": -1,
     "value": "\"巴林\"",

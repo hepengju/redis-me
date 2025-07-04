@@ -1,7 +1,7 @@
 <script>
-import {apiInfo} from '@/utils/api'
-import {sleep} from '@/utils/util'
-import {EVENT} from '@/utils/event'
+import {apiInfo} from '@/utils/api.js'
+import {sleep} from '@/utils/util.js'
+import {CONN_REFRESH} from '@/utils/constant.js'
 import useStore from '@/utils/store.js'
 import {mapStores} from 'pinia'
 
@@ -74,7 +74,7 @@ export default {
     ...mapStores(useStore)
   },
   mounted() {
-    this.$bus.on(EVENT.CONN_REFRESH, this.refresh)
+    this.$bus.on(CONN_REFRESH, this.refresh)
   },
   methods: {
     async refresh() {
