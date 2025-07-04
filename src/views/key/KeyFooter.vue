@@ -31,8 +31,8 @@ function scanAll(){
       <el-text class="tip" size="large" type="primary">{{ filterKeys.length }} / {{ redisKeyList.length }}</el-text>
 
       <div class="btns">
-        <me-icon name="加载更多"       icon="me-icon-load-more" tooltip placement="top" @click="scanMore"/>
-        <me-icon name="加载剩余所有键" icon="me-icon-load-all"  tooltip placement="top" @click="scanAll"/>
+        <me-icon name="加载更多"       icon="me-icon-load-more" hint placement="top" @click="scanMore"/>
+        <me-icon name="加载剩余所有键" icon="me-icon-load-all"  hint placement="top" @click="scanAll"/>
         <el-dropdown placement="top-end" @command="handleCommand">
           <me-icon icon="el-icon-more-filled"></me-icon>
           <template #dropdown>

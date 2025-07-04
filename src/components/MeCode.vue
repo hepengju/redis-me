@@ -1,4 +1,4 @@
-<script setup>
+<script>
 // https://rennzhang.github.io/codemirror-editor-vue3/zh-CN/guide/getting-started
 import CodeMirror from 'codemirror-editor-vue3'
 
@@ -20,25 +20,33 @@ import 'codemirror/addon/dialog/dialog.js'
 import 'codemirror/addon/dialog/dialog.css'
 import 'codemirror/addon/selection/mark-selection.js'
 
-// prop
-const {mode, readOnly} = defineProps({
-  mode: {type: String, default: 'application/json'},
-  readOnly: {type: Boolean, default: false, required: false},
-})
-
-const initOptions = {
-  lineNumbers: true,     // 显示行号
-  scrollbarStyle: null,  // 不显示滚动条
-  styleActiveLine: false, // 高亮当前行
-  border: false
+export default {
+  components: {CodeMirror},
+  props: {
+    mode: {type: String, default: 'application/json'},
+    readOnly: {type: Boolean, default: false, required: false},
+  },
+  data() {
+    return {
+      initOptions : {
+        lineNumbers: true,     // 显示行号
+        scrollbarStyle: null,  // 不显示滚动条
+        styleActiveLine: false, // 高亮当前行
+        border: false
+      }
+    }
+  },
+  computed: {
+    cmOptions() {
+      return ({
+        ...this.initOptions,
+        mode: this.mode,
+        readOnly: this.readOnly,
+        theme: 'monokai'
+      })
+    }
+  }
 }
-
-const isDark = useDark()
-const cmOptions = computed(() => ({...initOptions, mode, readOnly, theme: isDark.value ? 'monokai' : 'idea'}))
-const cm = useTemplateRef('cm')
-onMounted(() => {
-  cm.value.refresh()
-})
 </script>
 
 <template>

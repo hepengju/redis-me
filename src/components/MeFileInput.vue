@@ -5,7 +5,3 @@
     </template>
   </el-input>
 </template>
-
-<style scoped lang="scss">
-
-</style>

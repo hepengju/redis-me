@@ -91,7 +91,7 @@ function changeZoomFactor(value: number) {
           <el-input-number v-model="setting.scanCount" :min="500" :max="2000" :step="100"/>
           <template #label>
             <me-icon name="加载数量" icon="el-icon-question-filled"
-                     tooltipContent="每次扫描加载的key数量，设置过大可能会影响性能" placement="top-start"/>
+                     info="每次扫描加载的key数量，设置过大可能会影响性能" placement="top-start"/>
           </template>
         </el-form-item>
       </el-form>

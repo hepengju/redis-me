@@ -103,7 +103,7 @@ export default {
           </div>
 
           <me-icon class="description-refresh" name="刷新"
-                   icon="el-icon-refresh-right" placement="left" tooltip @click="refresh"/>
+                   icon="el-icon-refresh-right" placement="left" hint @click="refresh"/>
         </div>
       </template>
 
