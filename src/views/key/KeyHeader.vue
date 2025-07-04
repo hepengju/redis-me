@@ -66,10 +66,10 @@ export default {
     handleCommand(command) {
       if (command === 'addConn') {
         this.dialog.conn = true
-        this.$nextTick(() => this.$refs.connRef.open('add'))
+        this.$nextTick(() => this.$refs.conn.open('add'))
       } else if (command === 'editConn') {
         this.dialog.conn = true
-        this.$nextTick(() => this.$refs.connRef.open('edit', this.conn))
+        this.$nextTick(() => this.$refs.conn.open('edit', this.conn))
       } else if (command === 'deleteConn') {
         this.$confirm(`确认删除连接【${this.conn.name}】吗`, {type: 'warning'})
             .then(() => {
@@ -83,9 +83,10 @@ export default {
             .catch(() => {
             })
       } else if (command === 'refreshConn') {
-        this.$bus.emit(EVENT.CONN_REFRESH)
+        this.$bus.emit(CONN_REFRESH)
       } else if (command === 'setting') {
         this.dialog.setting = true
+        this.$nextTick(() => this.$refs.setting.open())
       }
     },
   },
@@ -125,12 +126,8 @@ export default {
     </div>
   </div>
 
-  <!-- 每次编辑需要初始化表格，所以关闭后销毁 -->
-  <Conn ref="connRef" v-if="dialog.conn" @success="saveConn" @closed="dialog.conn = false"/>
-
-  <!-- 启动时需要初始化下主题和语言，因此组件要一致存在 -->
-  <Setting :dialog="dialog"/>
-
+  <Conn    ref="conn"    v-if="dialog.conn"    @success="saveConn" @closed="dialog.conn = false"/>
+  <Setting ref="setting" v-if="dialog.setting" @closed="dialog.setting = false"/>
 </template>
 
 <style scoped lang="scss">

@@ -1,86 +1,60 @@
-<script setup lang="ts">
-import {useDark, usePreferredDark, useStorage} from '@vueuse/core'
-import {reactive} from 'vue'
+<script>
+export default {
+  data() {
+    return {
+      themeList: [
+        {value: 'system', label: '跟随系统'},
+        {value: 'light', label: '浅色主题'},
+        {value: 'dark', label: '深色主题'},
+      ],
+      languageList: [
+        {value: 'en', label: 'English'},
+        {value: 'zh-cn', label: '简体中文'},
+        {value: 'zh-tw', label: '繁体中文'},
+      ],
 
-const {dialog} = defineProps({
-  dialog: {type: Object, default: {}},
-})
+      visible: false,
+      theme: 'system',
+      language: 'zh-cn',
+      zoomFactor: 1.0,
 
-// 主题
-const themeList = [
-  {value: 'system', label: '跟随系统'},
-  {value: 'light', label: '浅色主题'},
-  {value: 'dark', label: '深色主题'},
-]
+      scanCount: 1000,
+      hscanCount: 100,
+    }
+  },
+  methods: {
+    open() {
+      this.visible = true
+    },
+    changeTheme(theme) {
+      // TODO
+    },
+    changeLanguage(language) {
+      // TODO
+    },
+    changeZoomFactor() {
 
-const languageList = [
-  {value: 'en', label: 'English'},
-  {value: 'cn', label: '简体中文'},
-  {value: 'tw', label: '繁体中文'},
-]
-
-const data = reactive({
-  theme: 'system',
-  language: 'cn',
-  zoomFactor: 1.0,
-})
-
-/**
- * 切换主题
- */
-const isPreferredDark = usePreferredDark()
-const isDark = useDark()
-// const factor = useZoomFactor()
-const zoomFactor = useStorage('zoomFactor', 1)
-
-// 主题初始化值
-if (isPreferredDark.value) {
-  data.theme = 'system'
-} else {
-  data.theme = isDark.value ? 'dark' : 'light'
-}
-
-data.zoomFactor = zoomFactor.value
-document.body.style.zoom = zoomFactor.value
-
-// 切换主题
-function changeTheme(theme: string) {
-  if (theme === 'system') {
-    isDark.value = isPreferredDark.value
-  } else {
-    isDark.value = theme === 'dark'
+    }
   }
-}
 
-// 切换语言
-function changeLanguage() {
-  // TODO i18n 多语言支持
-}
-
-// 切换缩放因子
-function changeZoomFactor(value: number) {
-  // chrome ok, firefox效果不是很好
-  document.body.style.zoom = value + '';
-  zoomFactor.value = value
 }
 </script>
-
 <template>
-  <el-dialog title="基础设置" v-model="dialog.setting" width="650">
+  <el-dialog title="基础设置" v-model="visible" width="650" @closed="$emit('closed')">
     <el-card header="外观" header-class="me-card">
       <el-form inline label-position="left">
         <el-form-item label="主题">
-          <el-select v-model="data.theme" style="width: 120px" @change="changeTheme">
+          <el-select v-model="theme" style="width: 120px" @change="changeTheme">
             <el-option v-for="item in themeList" :label="item.label" :value="item.value" :key="item.value"/>
           </el-select>
         </el-form-item>
         <el-form-item label="语言">
-          <el-select v-model="data.language" style="width: 120px" @change="changeLanguage">
+          <el-select v-model="language" style="width: 120px" @change="changeLanguage">
             <el-option v-for="item in languageList" :label="item.label" :value="item.value" :key="item.value"/>
           </el-select>
         </el-form-item>
         <el-form-item label="缩放">
-          <el-input-number v-model="data.zoomFactor" @change="changeZoomFactor"
+          <el-input-number v-model="zoomFactor" @change="changeZoomFactor"
                            :min="0.5" :max="2" :step="0.1" :precision="1" style="width: 120px"/>
         </el-form-item>
       </el-form>
@@ -88,7 +62,7 @@ function changeZoomFactor(value: number) {
     <el-card header="通用" header-class="me-card" style="margin-top: 10px">
       <el-form>
         <el-form-item label="加载数量">
-          <el-input-number v-model="setting.scanCount" :min="500" :max="2000" :step="100"/>
+          <el-input-number v-model="scanCount" :min="500" :max="2000" :step="100"/>
           <template #label>
             <me-icon name="加载数量" icon="el-icon-question-filled"
                      info="每次扫描加载的key数量，设置过大可能会影响性能" placement="top-start"/>

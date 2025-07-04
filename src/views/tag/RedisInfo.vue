@@ -189,7 +189,7 @@ export default {
         <div class="tags">
           <el-button class="tag" plain v-for="(_, tagName) in tag"
                      @click="clickTag(tagName)">
-            <span :style="{color: tagSelected === tagName ? 'var(--el-color-primary)' : ''}">{{tagName}}</span>
+            <span :style="{fontWeight: 600, color: tagSelected === tagName ? 'var(--el-color-primary)' : ''}">{{tagName}}</span>
           </el-button>
         </div>
         <el-table ref="tableRef" :data="tableData" border height="100%">
