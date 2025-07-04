@@ -15,8 +15,10 @@
 </template>
 
 <script setup>
-import store, {scanKey} from "@/utils/store.ts";
+import store from "@/utils/store.js";
+function scanKey(){
 
+}
 function addKey() {}
 </script>
 <style scoped lang="scss">

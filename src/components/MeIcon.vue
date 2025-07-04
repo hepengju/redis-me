@@ -1,11 +1,13 @@
-<script setup>
-const {name, placement} = defineProps({
-  name: {type: String, default: ''},
-  icon: {type: String, default: ''},
-  tooltip: {type: Boolean, default: false},
-  tooltipContent: {type: String, default: ''},
-  placement: {type: String, default: 'auto'},
-})
+<script>
+export default {
+  props: {
+    name: {type: String, default: ''},
+    icon: {type: String, default: ''},
+    tooltip: {type: Boolean, default: false},
+    tooltipContent: {type: String, default: ''},
+    placement: {type: String, default: 'auto'},
+  }
+}
 </script>
 
 <template>
@@ -50,10 +52,6 @@ const {name, placement} = defineProps({
   .name {
     margin-left: 5px;
   }
-
-  //:hover {
-  //  color: var(--el-color-primary)
-  //}
 
   // 避免下拉框里面自带的 .el-dropdown-menu__item i 导致宽度过大
   i {

@@ -1,100 +1,105 @@
-<script setup lang="ts">
-import store from '@/utils/store.ts'
-import {sleep} from '@/utils/util.ts'
-import {info} from '@/utils/api.ts'
-import {useTemplateRef} from 'vue'
-import MeIcon from "@/components/MeIcon.vue";
+<script>
+import {apiInfo} from '@/utils/api'
+import {sleep} from '@/utils/util'
+import {EVENT} from '@/utils/event'
+import useStore from '@/utils/store.js'
+import {mapStores} from 'pinia'
 
-/**
- * redis字符串信息转换为Map
- */
-const data = reactive({
-  loading: false,
-  raw: '',         // 原始信息
-  dic: {},         // 字典形式
-  tag: {},         // 标签形式， key标签名称，value表格数据
+export default {
+  data() {
+    return {
+      loading: false,
+      raw: '',         // 原始信息
+      dic: {},         // 字典形式
+      tag: {},         // 标签形式， key标签名称，value表格数据
 
-  keyCount: null,  // 键数量
-  keyword: '',     // 关键字过滤
-  tagSelected: '', // 选中的标签
+      keyCount: null,  // 键数量
+      keyword: '',     // 关键字过滤
+      tagSelected: '', // 选中的标签
 
-  dialog: {
-    raw: false,
-  }
-})
-
-watch(() => data.raw, () => {
-  const lines: string[] = data.raw.split('\n')
-
-  let dicObj = {}
-  let tagObj = {}
-  let tag = ''
-  let tagList = []
-  lines.forEach(line => {
-    if (line.startsWith('#')) {
-      if (tag !== '') {
-        tagObj[tag] = tagList
-      }
-
-      tag = line.substring(1).trim()
-      tagList = []
-    } else {
-      const index = line.indexOf(':')
-      const key = line.substring(0, index)
-      const value = line.substring(index + 1)
-
-      if (key !== '') {
-        tagList.push({key, value})
-        dicObj[key] = value
-      }
-
-      // db0:keys=14410,expires=3997,avg_ttl=736124073
-      if (key === 'db0') {
-        try {
-          data.keyCount = value.split(',')[0].split('=')[1]
-        } catch (e) {
-        }
+      dialog: {
+        raw: false,
       }
     }
-  })
+  },
 
-  data.tag = tagObj
-  data.dic = dicObj
+  watch: {
+    raw(newValue) {
+      const lines = newValue.split('\n')
 
-  data.tagSelected = Object.keys(tagObj)[0]
-})
+      let dicObj = {}
+      let tagObj = {}
+      let tag = ''
+      let tagList = []
+      lines.forEach(line => {
+        if (line.startsWith('#')) {
+          if (tag !== '') {
+            tagObj[tag] = tagList
+          }
 
-const tableData = computed(() => {
-  const list = data.tag[data.tagSelected]
-  const key = data.keyword.toLowerCase()
-  return list?.filter(d => !key || d.key.toLowerCase().indexOf(key) > -1 || d.value.toLowerCase().indexOf(key) > -1)
-})
+          tag = line.substring(1).trim()
+          tagList = []
+        } else {
+          const index = line.indexOf(':')
+          const key = line.substring(0, index)
+          const value = line.substring(index + 1)
 
-async function refresh() {
-  data.loading = true
-  data.raw = info(store.conn.id)
-  await sleep(500)
-  data.loading = false
-}
-refresh()
+          if (key !== '') {
+            tagList.push({key, value})
+            dicObj[key] = value
+          }
 
-const tableRef = useTemplateRef('tableRef')
-function clickTag(tag) {
-  data.tagSelected = tag
-  tableRef.value.scrollTo(0, 0) // 滚动条归零
+          // db0:keys=14410,expires=3997,avg_ttl=736124073
+          if (key === 'db0') {
+            try {
+              this.keyCount = value.split(',')[0].split('=')[1]
+            } catch (e) {
+            }
+          }
+        }
+      })
+
+      this.tag = tagObj
+      this.dic = dicObj
+
+      this.tagSelected = Object.keys(tagObj)[0]
+    }
+  },
+  computed: {
+    tableData(){
+      const list = this.tag[this.tagSelected]
+      const key = this.keyword.toLowerCase()
+      return list?.filter(d => !key || d.key.toLowerCase().indexOf(key) > -1 || d.value.toLowerCase().indexOf(key) > -1)
+    },
+    ...mapStores(useStore)
+  },
+  mounted() {
+    this.$bus.on(EVENT.CONN_REFRESH, this.refresh)
+  },
+  methods: {
+    async refresh() {
+      this.loading = true
+      this.raw = apiInfo(this.store.conn?.id)
+      await sleep(500)
+      this.loading = false
+    },
+    clickTag(tag) {
+      this.tagSelected = tag
+      this.$refs.tableRef.scrollTo(0, 0) // 滚动条归零
+    }
+  }
 }
 </script>
-
 <template>
-  <div class="redis-info" v-loading="data.loading">
+  <div class="redis-info" v-loading="loading" v-if="store.conn">
     <el-descriptions border>
       <template #title>
         <div class="description-title">
           <div>
             <el-text size="large" style="margin-left: 5px">{{store.conn.host + '@' + store.conn.port}}</el-text>
-            <el-tag style="margin-left: 10px">v{{data.dic['redis_version']}}</el-tag>
-            <el-tag type="success" style="margin-left: 10px" v-if="data.dic['redis_mode']">{{data.dic['redis_mode']}}</el-tag>
-            <el-tag type="success" style="margin-left: 10px" v-if="data.dic['role']">{{data.dic['role']}}</el-tag>
+            <el-tag style="margin-left: 10px">v{{dic['redis_version']}}</el-tag>
+            <el-tag type="success" style="margin-left: 10px" v-if="dic['redis_mode']">{{dic['redis_mode']}}</el-tag>
+            <el-tag type="success" style="margin-left: 10px" v-if="dic['role']">{{dic['role']}}</el-tag>
           </div>
 
           <me-icon class="description-refresh" name="刷新"
@@ -104,54 +109,54 @@ function clickTag(tag) {
 
       <el-descriptions-item>
         <template #label><me-icon name="运行时间" icon="el-icon-timer"/></template>
-        {{data.dic['uptime_in_days']}}天
+        {{dic['uptime_in_days']}}天
       </el-descriptions-item>
 
       <el-descriptions-item>
         <template #label><me-icon name="键数量" icon="el-icon-key"/></template>
-        {{ data.keyCount }}
+        {{ keyCount }}
       </el-descriptions-item>
 
       <el-descriptions-item>
         <template #label><me-icon name="连接数" icon="me-icon-conn"/></template>
-        {{data.dic['connected_clients']}}
+        {{dic['connected_clients']}}
         <el-text type="info" style="margin-left: 10px">
-          [ {{data.dic['maxclients']}} ]
+          [ {{dic['maxclients']}} ]
         </el-text>
       </el-descriptions-item>
 
       <el-descriptions-item :span="1">
         <template #label><me-icon name="持久化" icon="me-icon-save"/></template>
         <!-- TODO rdb需要通过config get save命令去确认 -->
-        <el-tag type="info" v-if="data.dic['rdb_saves']">rdb</el-tag>
-        <el-tag type="info" v-if="data.dic['aof_enabled'] === '1'">aof</el-tag>
+        <el-tag type="info" v-if="dic['rdb_saves']">rdb</el-tag>
+        <el-tag type="info" v-if="dic['aof_enabled'] === '1'">aof</el-tag>
       </el-descriptions-item>
 
       <el-descriptions-item :span="2">
         <template #label><me-icon name="内存" icon="me-icon-memory"/></template>
-        {{data.dic['used_memory_human']}}
+        {{dic['used_memory_human']}}
         <el-text type="info" style="margin-left: 10px">
           [
-            <span style="margin-left:  0px">峰值: {{data.dic['used_memory_peak_human']}}</span>
-            <span style="margin-left: 20px">RSS:  {{data.dic['used_memory_rss_human']}}</span>
-            <span style="margin-left: 20px">系统: {{data.dic['total_system_memory_human']}}</span>
+            <span style="margin-left:  0px">峰值: {{dic['used_memory_peak_human']}}</span>
+            <span style="margin-left: 20px">RSS:  {{dic['used_memory_rss_human']}}</span>
+            <span style="margin-left: 20px">系统: {{dic['total_system_memory_human']}}</span>
           ]
         </el-text>
       </el-descriptions-item>
 
       <el-descriptions-item :span="3">
         <template #label><me-icon name="执行程序" icon="el-icon-video-play"/></template>
-        {{data.dic['executable']}}
+        {{dic['executable']}}
         <el-text type="info" style="margin-left: 10px">
-          [ 配置: {{data.dic['config_file']}} ]
+          [ 配置: {{dic['config_file']}} ]
         </el-text>
       </el-descriptions-item>
 
       <el-descriptions-item :span="3">
         <template #label><me-icon name="系统" icon="el-icon-monitor"/></template>
-        {{data.dic['os']}}
+        {{dic['os']}}
         <el-text type="info" style="margin-left: 10px">
-          [ PID: {{data.dic['process_id']}} ]
+          [ PID: {{dic['process_id']}} ]
         </el-text>
       </el-descriptions-item>
     </el-descriptions>
@@ -168,17 +173,17 @@ function clickTag(tag) {
           </div>
 
           <div class="detail-header-right">
-            <me-icon icon="me-icon-raw" class="raw-info" @click="data.dialog.raw = true"/>
-            <el-input v-model="data.keyword" clearable style="width: 200px" prefix-icon="el-icon-search" placeholder="关键字过滤"/>
+            <me-icon icon="me-icon-raw" class="raw-info" @click="dialog.raw = true"/>
+            <el-input v-model="keyword" clearable style="width: 200px" prefix-icon="el-icon-search" placeholder="关键字过滤"/>
           </div>
         </div>
       </template>
 
       <div class="detail-main">
         <div class="tags">
-          <el-button class="tag" plain v-for="(_, tag) in data.tag"
-                     @click="clickTag(tag)">
-            <span :style="{color: data.tagSelected === tag ? 'var(--el-color-primary)' : ''}">{{tag}}</span>
+          <el-button class="tag" plain v-for="(_, tagName) in tag"
+                     @click="clickTag(tagName)">
+            <span :style="{color: tagSelected === tagName ? 'var(--el-color-primary)' : ''}">{{tagName}}</span>
           </el-button>
         </div>
         <el-table ref="tableRef" :data="tableData" border height="100%">
@@ -189,8 +194,8 @@ function clickTag(tag) {
     </el-card>
   </div>
 
-  <el-dialog title="Info" v-model="data.dialog.raw" width="60vw" align-center draggable>
-    <me-code :value="data.raw" mode="properties" read-only height="60vh" />
+  <el-dialog title="Info" v-model="dialog.raw" width="60vw" align-center draggable>
+    <me-code :value="raw" mode="properties" read-only height="60vh" />
   </el-dialog>
 </template>
 

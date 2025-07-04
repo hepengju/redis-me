@@ -1,7 +1,10 @@
 <script setup lang="ts">
-import store from '@/utils/store.ts'
 import {useDark, usePreferredDark, useStorage} from '@vueuse/core'
 import {reactive} from 'vue'
+
+const {dialog} = defineProps({
+  dialog: {type: Object, default: {}},
+})
 
 // 主题
 const themeList = [
@@ -16,7 +19,7 @@ const languageList = [
   {value: 'tw', label: '繁体中文'},
 ]
 
-const setting = reactive({
+const data = reactive({
   theme: 'system',
   language: 'cn',
   zoomFactor: 1.0,
@@ -32,12 +35,12 @@ const zoomFactor = useStorage('zoomFactor', 1)
 
 // 主题初始化值
 if (isPreferredDark.value) {
-  setting.theme = 'system'
+  data.theme = 'system'
 } else {
-  setting.theme = isDark.value ? 'dark' : 'light'
+  data.theme = isDark.value ? 'dark' : 'light'
 }
 
-setting.zoomFactor = zoomFactor.value
+data.zoomFactor = zoomFactor.value
 document.body.style.zoom = zoomFactor.value
 
 // 切换主题
@@ -60,30 +63,28 @@ function changeZoomFactor(value: number) {
   document.body.style.zoom = value + '';
   zoomFactor.value = value
 }
-
 </script>
 
 <template>
-  <el-dialog title="基础设置" v-model="store.dialog.setting" width="650">
+  <el-dialog title="基础设置" v-model="dialog.setting" width="650">
     <el-card header="外观" header-class="me-card">
       <el-form inline label-position="left">
         <el-form-item label="主题">
-          <el-select v-model="setting.theme" style="width: 120px" @change="changeTheme">
+          <el-select v-model="data.theme" style="width: 120px" @change="changeTheme">
             <el-option v-for="item in themeList" :label="item.label" :value="item.value" :key="item.value"/>
           </el-select>
         </el-form-item>
         <el-form-item label="语言">
-          <el-select v-model="setting.language" style="width: 120px" @change="changeLanguage">
+          <el-select v-model="data.language" style="width: 120px" @change="changeLanguage">
             <el-option v-for="item in languageList" :label="item.label" :value="item.value" :key="item.value"/>
           </el-select>
         </el-form-item>
         <el-form-item label="缩放">
-          <el-input-number v-model="setting.zoomFactor" @change="changeZoomFactor"
+          <el-input-number v-model="data.zoomFactor" @change="changeZoomFactor"
                            :min="0.5" :max="2" :step="0.1" :precision="1" style="width: 120px"/>
         </el-form-item>
       </el-form>
     </el-card>
-    <!--
     <el-card header="通用" header-class="me-card" style="margin-top: 10px">
       <el-form>
         <el-form-item label="加载数量">
@@ -95,7 +96,6 @@ function changeZoomFactor(value: number) {
         </el-form-item>
       </el-form>
     </el-card>
-    -->
     <el-card header="当前版本" header-class="me-card" style="margin-top: 10px">
       <el-link underline="always" class="me-link">快捷键</el-link>
       <el-link underline="always" class="me-link">清除缓存</el-link>

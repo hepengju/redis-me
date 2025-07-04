@@ -1,16 +1,22 @@
 <script setup lang="ts">
 import SearchKey from "./detail/SearchKey.vue";
 import SimpleKey from "./detail/SimpleKey.vue";
-import store, {colorStyle} from "@/utils/store.ts";
+import store from "@/utils/store.js";
+import {reactive} from 'vue'
 
+// 数据定义
+const data = reactive({
+  loading: false,
+  keyList: [],
+  keyword: '',
+})
 </script>
 
 <template>
   <div class="key-main">
     <SearchKey/>
     <div class="key-list"
-         :style="colorStyle"
-         v-loading="store.loading.redisKeyList"
+         :v-loading="false"
          element-loading-text="扫描中...">
       <SimpleKey/>
     </div>

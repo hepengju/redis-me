@@ -1,8 +1,20 @@
 <script setup lang="ts">
-import store, {filterKeys, scanKey, scanMore, scanAll} from '@/utils/store.ts'
+import store from '@/utils/store.js'
 import MeIcon from '@/components/MeIcon.vue'
 
+const filterKeys = []
+const redisKeyList = []
 function handleCommand(){
+
+}
+
+function scanKey(){
+
+}
+function scanMore(){
+
+}
+function scanAll(){
 
 }
 </script>
@@ -16,7 +28,7 @@ function handleCommand(){
                    :key="item.index"/>
       </el-select>
 
-      <el-text class="tip" size="large" type="primary">{{ filterKeys.length }} / {{ store.redisKeyList.length }}</el-text>
+      <el-text class="tip" size="large" type="primary">{{ filterKeys.length }} / {{ redisKeyList.length }}</el-text>
 
       <div class="btns">
         <me-icon name="加载更多"       icon="me-icon-load-more" tooltip placement="top" @click="scanMore"/>

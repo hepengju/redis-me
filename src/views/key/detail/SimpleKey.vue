@@ -1,6 +1,10 @@
 <script setup>
-import store, {filterKeys, getKey} from '@/utils/store.ts'
+import store from '@/utils/store.js'
 
+const filterKeys = reactive([])
+function getKey(){
+
+}
 function customType(item) {
   return item.bytes === store.redisKey?.bytes ? 'success' : 'primary'
 }
