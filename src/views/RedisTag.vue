@@ -1,12 +1,18 @@
-<script setup lang="ts">
+<script>
 import RedisInfo from '@/views/tag/RedisInfo.vue'
 import RedisValue from '@/views/tag/RedisValue.vue'
 import RedisConsole from '@/views/tag/RedisConsole.vue'
-import MeIcon from '@/components/MeIcon.vue'
 import RedisSlow from '@/views/tag/RedisSlow.vue'
 import RedisMemory from '@/views/tag/RedisMemory.vue'
 
-const activeTabName = ref('info')
+export default {
+  components: {RedisInfo, RedisValue, RedisConsole, RedisSlow, RedisMemory},
+  data() {
+    return {
+      activeTabName: 'info',
+    }
+  },
+}
 </script>
 
 <template>
