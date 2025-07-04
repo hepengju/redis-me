@@ -119,10 +119,12 @@ export default {
 
       <el-descriptions-item>
         <template #label><me-icon name="连接数" icon="me-icon-conn"/></template>
-        {{dic['connected_clients']}}
-        <el-text type="info" style="margin-left: 10px">
-          [ {{dic['maxclients']}} ]
-        </el-text>
+        <me-flex>
+          {{dic['connected_clients']}}
+          <el-text type="info" style="margin-left: 10px">
+            [ 限制: {{dic['maxclients']}} ]
+          </el-text>
+        </me-flex>
       </el-descriptions-item>
 
       <el-descriptions-item :span="1">
@@ -134,30 +136,36 @@ export default {
 
       <el-descriptions-item :span="2">
         <template #label><me-icon name="内存" icon="me-icon-memory"/></template>
-        {{dic['used_memory_human']}}
-        <el-text type="info" style="margin-left: 10px">
-          [
-            <span style="margin-left:  0px">峰值: {{dic['used_memory_peak_human']}}</span>
-            <span style="margin-left: 20px">RSS:  {{dic['used_memory_rss_human']}}</span>
-            <span style="margin-left: 20px">系统: {{dic['total_system_memory_human']}}</span>
-          ]
-        </el-text>
+        <me-flex>
+          {{dic['used_memory_human']}}
+          <el-text type="info" style="margin-left: 10px">
+            [
+              <span style="margin-left:  0px">峰值: {{dic['used_memory_peak_human']}}</span>
+              <span style="margin-left: 20px">RSS:  {{dic['used_memory_rss_human']}}</span>
+              <span style="margin-left: 20px">系统: {{dic['total_system_memory_human']}}</span>
+            ]
+          </el-text>
+        </me-flex>
       </el-descriptions-item>
 
       <el-descriptions-item :span="3">
         <template #label><me-icon name="执行程序" icon="el-icon-video-play"/></template>
-        {{dic['executable']}}
-        <el-text type="info" style="margin-left: 10px">
-          [ 配置: {{dic['config_file']}} ]
-        </el-text>
+        <me-flex>
+          {{dic['executable']}}
+          <el-text type="info" style="margin-left: 10px">
+            [ 配置: {{dic['config_file']}} ]
+          </el-text>
+        </me-flex>
       </el-descriptions-item>
 
       <el-descriptions-item :span="3">
         <template #label><me-icon name="系统" icon="el-icon-monitor"/></template>
-        {{dic['os']}}
-        <el-text type="info" style="margin-left: 10px">
-          [ PID: {{dic['process_id']}} ]
-        </el-text>
+        <me-flex>
+          {{dic['os']}}
+          <el-text type="info" style="margin-left: 10px">
+            [ PID: {{dic['process_id']}} ]
+          </el-text>
+        </me-flex>
       </el-descriptions-item>
     </el-descriptions>
 
