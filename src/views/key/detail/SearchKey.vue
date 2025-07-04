@@ -1,26 +1,36 @@
+<script>
+export default {
+  data() {
+    return {
+      keyword: '',
+      exact: true,
+    }
+  },
+  methods: {
+    scanKey() {
+    },
+    addKey() {
+    }
+  }
+}
+</script>
+
 <template>
-  <el-input class="custom" v-model="store.keyword" placeholder="Enter 键进行搜索" @keyup.enter="scanKey" clearable>
+  <el-input class="custom" v-model="keyword" placeholder="Enter 键进行搜索" @keyup.enter="scanKey" clearable>
     <template #prepend>
       <el-tooltip content="精确搜素">
-        <el-checkbox size="small" v-model="store.exact"/>
+        <el-checkbox size="small" v-model="exact"/>
       </el-tooltip>
     </template>
     <template #append>
       <el-button-group>
         <me-button info="刷新键" @click="scanKey" icon="el-icon-search"></me-button>
-        <me-button info="新增键" @click="addKey" style="border-color: var(--el-button-border-color)" v-if="!store.readonly" icon="el-icon-plus"></me-button>
+        <me-button info="新增键" @click="addKey" style="border-color: var(--el-button-border-color)" icon="el-icon-plus"></me-button>
       </el-button-group>
     </template>
   </el-input>
 </template>
 
-<script setup>
-import store from "@/utils/store.js";
-function scanKey(){
-
-}
-function addKey() {}
-</script>
 <style scoped lang="scss">
 .custom {
   // 复选框显示尽量为方形

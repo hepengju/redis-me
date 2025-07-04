@@ -4,19 +4,19 @@ import RedisValue from '@/views/tag/RedisValue.vue'
 import RedisConsole from '@/views/tag/RedisConsole.vue'
 import RedisSlow from '@/views/tag/RedisSlow.vue'
 import RedisMemory from '@/views/tag/RedisMemory.vue'
+import {mapStores} from 'pinia'
+import useGlobalStore from '@/utils/store.js'
 
 export default {
   components: {RedisInfo, RedisValue, RedisConsole, RedisSlow, RedisMemory},
-  data() {
-    return {
-      activeTabName: 'info',
-    }
-  },
+  computed: {
+    ...mapStores(useGlobalStore)
+  }
 }
 </script>
 
 <template>
-  <el-tabs v-model="activeTabName" type="border-card" class="redis-tag">
+  <el-tabs v-model="global.tabName" type="border-card" class="redis-tag">
     <el-tab-pane name="info">
       <template #label>
         <me-icon name="信息" icon="el-icon-calendar"/>

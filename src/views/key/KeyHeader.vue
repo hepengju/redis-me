@@ -5,7 +5,7 @@ import SaveConn from '@/views/key/detail/SaveConn.vue'
 import {nanoid} from 'nanoid'
 import {randomString} from '@/utils/util.js'
 import {CONN_REFRESH} from '@/utils/const.js'
-import useStore from '@/utils/store.js'
+import useGlobalStore from '@/utils/store.js'
 import {mapStores} from 'pinia'
 
 export default {
@@ -22,12 +22,12 @@ export default {
     }
   },
   computed: {
-    ...mapStores(useStore)
+    ...mapStores(useGlobalStore)
   },
   watch: {
     conn(newValue, _) {
       console.log('watch', newValue)
-      this.store.conn = newValue
+      this.global.conn = newValue
       this.$bus.emit(CONN_REFRESH)
     }
   },

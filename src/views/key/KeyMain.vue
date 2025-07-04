@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import SearchKey from "./detail/SearchKey.vue";
 import SimpleKey from "./detail/SimpleKey.vue";
-import store from "@/utils/store.js";
 import {reactive} from 'vue'
 
 // 数据定义

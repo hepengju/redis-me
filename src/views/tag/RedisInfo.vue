@@ -2,7 +2,7 @@
 import {apiInfo} from '@/utils/api.js'
 import {sleep} from '@/utils/util.js'
 import {CONN_REFRESH} from '@/utils/const.js'
-import useStore from '@/utils/store.js'
+import useGlobalStore from '@/utils/store.js'
 import {mapStores} from 'pinia'
 
 export default {
@@ -71,7 +71,7 @@ export default {
       const key = this.keyword.toLowerCase()
       return list?.filter(d => !key || d.key.toLowerCase().indexOf(key) > -1 || d.value.toLowerCase().indexOf(key) > -1)
     },
-    ...mapStores(useStore)
+    ...mapStores(useGlobalStore)
   },
   mounted() {
     this.$bus.on(CONN_REFRESH, this.refresh)
@@ -79,7 +79,7 @@ export default {
   methods: {
     async refresh() {
       this.loading = true
-      this.raw = apiInfo(this.store.conn?.id)
+      this.raw = apiInfo(this.global.conn?.id)
       await sleep(500)
       this.loading = false
     },
@@ -91,12 +91,12 @@ export default {
 }
 </script>
 <template>
-  <div class="redis-info" v-loading="loading" v-if="store.conn">
+  <div class="redis-info" v-loading="loading" v-if="global.conn">
     <el-descriptions border>
       <template #title>
         <div class="description-title">
           <div>
-            <el-text size="large" style="margin-left: 5px">{{store.conn.host + '@' + store.conn.port}}</el-text>
+            <el-text size="large" style="margin-left: 5px">{{global.conn.host + '@' + global.conn.port}}</el-text>
             <el-tag style="margin-left: 10px">v{{dic['redis_version']}}</el-tag>
             <el-tag type="success" style="margin-left: 10px" v-if="dic['redis_mode']">{{dic['redis_mode']}}</el-tag>
             <el-tag type="success" style="margin-left: 10px" v-if="dic['role']">{{dic['role']}}</el-tag>
