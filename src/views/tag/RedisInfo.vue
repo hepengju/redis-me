@@ -94,17 +94,15 @@ export default {
   <div class="redis-info" v-loading="loading" v-if="global.conn">
     <el-descriptions border>
       <template #title>
-        <div class="description-title">
+        <me-flex>
           <div>
-            <el-text size="large" style="margin-left: 5px">{{global.conn.host + '@' + global.conn.port}}</el-text>
-            <el-tag style="margin-left: 10px">v{{dic['redis_version']}}</el-tag>
-            <el-tag type="success" style="margin-left: 10px" v-if="dic['redis_mode']">{{dic['redis_mode']}}</el-tag>
-            <el-tag type="success" style="margin-left: 10px" v-if="dic['role']">{{dic['role']}}</el-tag>
+            <el-text size="large" style="margin-left: 5px">{{ global.conn.host + '@' + global.conn.port }}</el-text>
+            <el-tag style="margin-left: 10px">v{{ dic['redis_version'] }}</el-tag>
+            <el-tag type="success" style="margin-left: 10px" v-if="dic['redis_mode']">{{ dic['redis_mode'] }}</el-tag>
+            <el-tag type="success" style="margin-left: 10px" v-if="dic['role']">{{ dic['role'] }}</el-tag>
           </div>
-
-          <me-icon class="description-refresh" name="刷新"
-                   icon="el-icon-refresh-right" placement="left" hint @click="refresh"/>
-        </div>
+          <me-icon class="refresh" name="刷新" icon="el-icon-refresh-right" placement="left" hint @click="refresh"/>
+        </me-flex>
       </template>
 
       <el-descriptions-item>
@@ -171,7 +169,7 @@ export default {
 
     <el-card class="detail-card">
       <template #header>
-        <div class="detail-header">
+        <me-flex class="detail-header">
           <div>
             <el-text size="large">参数详情</el-text>
             <el-link type="success" target="_blank" style="margin-left: 10px"
@@ -184,7 +182,7 @@ export default {
             <me-icon icon="me-icon-raw" class="raw-info" @click="dialog.raw = true"/>
             <el-input v-model="keyword" clearable style="width: 200px" prefix-icon="el-icon-search" placeholder="关键字过滤"/>
           </div>
-        </div>
+        </me-flex>
       </template>
 
       <div class="detail-main">
@@ -227,13 +225,7 @@ export default {
     padding: 10px;
   }
 
-  .description-title {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-  }
-
-  .description-refresh {
+  .refresh {
     font-size: 20px;
     color: var(--el-color-success);
     cursor: pointer;
@@ -252,8 +244,6 @@ export default {
     }
 
     .detail-header {
-      display: flex;
-      justify-content: space-between;
       font-weight: bold;
 
       .detail-header-right {
