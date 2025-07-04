@@ -4,7 +4,7 @@ import Setting from '@/views/key/detail/Setting.vue'
 import SaveConn from '@/views/key/detail/SaveConn.vue'
 import {nanoid} from 'nanoid'
 import {randomString} from '@/utils/util.js'
-import {CONN_REFRESH} from '@/utils/constant.js'
+import {CONN_REFRESH} from '@/utils/const.js'
 import useStore from '@/utils/store.js'
 import {mapStores} from 'pinia'
 

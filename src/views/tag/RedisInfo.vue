@@ -1,7 +1,7 @@
 <script>
 import {apiInfo} from '@/utils/api.js'
 import {sleep} from '@/utils/util.js'
-import {CONN_REFRESH} from '@/utils/constant.js'
+import {CONN_REFRESH} from '@/utils/const.js'
 import useStore from '@/utils/store.js'
 import {mapStores} from 'pinia'
 
