@@ -1,3 +1,4 @@
+import {bus, CONN_REFRESH} from '@/utils/util.js'
 import {defineStore, setMapStoreSuffix} from 'pinia'
 
 
@@ -16,7 +17,8 @@ export const useGlobalStore = defineStore('global', {
     hscanCount: 100,
   }),
   getters: {},
-  actions: {},
+  actions: {
+  },
 })
 
 export default useGlobalStore

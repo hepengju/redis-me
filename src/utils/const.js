@@ -1,1 +1,0 @@
-export const CONN_REFRESH = 'CONN_REFRESH'

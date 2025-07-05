@@ -1,108 +1,95 @@
-<script>
+<script setup>
 import {apiConnList} from '@/utils/api.js'
-import Setting from '@/views/key/detail/Setting.vue'
-import SaveConn from '@/views/key/detail/SaveConn.vue'
-import {nanoid} from 'nanoid'
-import {randomString} from '@/utils/util.js'
-import {CONN_REFRESH} from '@/utils/const.js'
 import useGlobalStore from '@/utils/store.js'
-import {mapStores} from 'pinia'
+import {bus, CONN_REFRESH, randomString} from '@/utils/util.js'
+import {ElMessage, ElMessageBox} from 'element-plus'
+import {nanoid} from 'nanoid'
+import {nextTick, reactive, ref, useTemplateRef, computed} from 'vue'
+import SaveConn from '@/views/key/detail/SaveConn.vue'
+import Setting from '@/views/key/detail/Setting.vue'
 
-export default {
-  components: {Setting, Conn: SaveConn},
-  data() {
-    return {
-      connList: [],          // 连接列表
-      conn: null,            // 当前连接
+// 全局对象
+const global = useGlobalStore()
+const btnDisable = computed(() => global.conn == null)
 
-      dialog: {
-        conn: false,         // 编辑连接
-        setting: false,      // 基础设置
-      },
+// 弹出框
+const dialog = reactive({
+  conn: false,         // 编辑连接
+  setting: false,      // 基础设置
+})
+
+// 连接列表
+const connList = ref([])
+function getConnList() {
+  connList.value = apiConnList()
+  if (connList.value.length > 0) {
+    global.conn = connList.value[0]
+  }
+}
+getConnList()
+
+// 保存连接
+function saveConn(conn, mode) {
+  if (mode === 'add') {
+    conn.id = nanoid()
+    if (!conn.name) {
+      conn.name = conn.host + '@' + conn.port
     }
-  },
-  computed: {
-    ...mapStores(useGlobalStore)
-  },
-  watch: {
-    conn(newValue, _) {
-      console.log('watch', newValue)
-      this.global.conn = newValue
-      this.$bus.emit(CONN_REFRESH)
+
+    if (connList.value.find(c => c.name === conn.name)) {
+      conn.name += ' (' + randomString(3) + ')'
     }
-  },
-  mounted() {
-    this.getConnList()
-  },
-  methods: {
-    // 获取连接
-    getConnList() {
-      this.connList = apiConnList()
-      if (this.connList.length > 0) {
-        this.conn = this.connList[0]
-      }
-    },
+    connList.value.push(conn)
+    ElMessage.success('新增成功')
+  } else if (mode === 'edit') {
+    global.conn = conn
+    bus.emit(CONN_REFRESH)
+    ElMessage.success('保存成功')
+  }
+}
 
-    // 保存连接
-    saveConn(form, mode) {
-      if (mode === 'add') {
-        form.id = nanoid()
-        if (!form.name) {
-          form.name = form.host + '@' + form.port
-        }
-
-        if (this.connList.find(c => c.name === form.name)) {
-          form.name += ' (' + randomString(3) + ')'
-        }
-        this.connList.push(form)
-        this.$message.success('新增成功')
-      } else if (mode === 'edit') {
-        this.conn = form
-        this.$message.success('保存成功')
-      }
-    },
-
-    // 扩展命令
-    handleCommand(command) {
-      if (command === 'addConn') {
-        this.dialog.conn = true
-        this.$nextTick(() => this.$refs.conn.open('add'))
-      } else if (command === 'editConn') {
-        this.dialog.conn = true
-        this.$nextTick(() => this.$refs.conn.open('edit', this.conn))
-      } else if (command === 'deleteConn') {
-        this.$confirm(`确认删除连接【${this.conn.name}】吗`, {type: 'warning'})
-            .then(() => {
-              const index = this.connList.findIndex(c => c.id === this.conn.id)
-              if (index > -1) {
-                this.connList.splice(index, 1)
-              }
-              this.conn = null
-              this.$message.success('删除成功')
-            })
-            .catch(() => {
-            })
-      } else if (command === 'refreshConn') {
-        this.$bus.emit(CONN_REFRESH)
-      } else if (command === 'setting') {
-        this.dialog.setting = true
-        this.$nextTick(() => this.$refs.setting.open())
-      }
-    },
-  },
+// 处理额外命令
+const connRef = useTemplateRef('conn')
+const settingRef = useTemplateRef('setting')
+function handleCommand(command) {
+  if (command === 'addConn') {
+    dialog.conn = true
+    nextTick(() => connRef.value.open('add'))
+  } else if (command === 'editConn') {
+    dialog.conn = true
+    nextTick(() => connRef.value.open('edit', global.conn))
+  } else if (command === 'deleteConn') {
+    ElMessageBox.confirm(`确认删除连接【${global.conn.name}】吗`, {type: 'warning'})
+        .then(() => {
+          const index = connList.value.findIndex(c => c.id === global.conn.id)
+          if (index > -1) {
+            connList.value.splice(index, 1)
+          }
+          global.conn = null
+          bus.emit(CONN_REFRESH)
+          ElMessage.success('删除成功')
+        })
+        .catch(() => {
+        })
+  } else if (command === 'refreshConn') {
+    bus.emit(CONN_REFRESH)
+  } else if (command === 'setting') {
+    dialog.setting = true
+    nextTick(() => settingRef.value.open())
+  }
 }
 </script>
 
 <template>
   <div class="key-header">
-    <el-select v-model="conn" placeholder="请选择连接" class="conn"
-               filterable :disabled="connList.length == 0" value-key="id">
+    <el-select v-model="global.conn" placeholder="请选择连接" class="conn"
+               filterable :disabled="connList.length == 0" value-key="id" @change="bus.emit(CONN_REFRESH)">
       <el-option v-for="item in connList" :label="item.name" :value="item" :key="item.id">
         <div :style="{color: item?.color}">{{ item.name }}</div>
       </el-option>
 
       <template #label="{ value }">
-        <div :style="{color: conn?.color}">{{ value.name }}</div>
+        <div :style="{color: global.conn?.color}">{{ value.name }}</div>
       </template>
       <template #prefix>
         <me-icon icon="me-icon-redis"/>
@@ -114,10 +101,10 @@ export default {
         <el-button type="success" icon="el-icon-operation"/>
         <template #dropdown>
           <el-dropdown-menu>
-            <el-dropdown-item command="refreshConn" :disabled="conn === null"><me-icon name="刷新连接" icon="el-icon-refresh"/></el-dropdown-item>
+            <el-dropdown-item command="refreshConn" :disabled="btnDisable"><me-icon name="刷新连接" icon="el-icon-refresh"/></el-dropdown-item>
             <el-dropdown-item command="addConn"><me-icon name="新增连接" icon="el-icon-plus"/></el-dropdown-item>
-            <el-dropdown-item command="editConn" :disabled="conn === null"><me-icon name="编辑连接" icon="el-icon-edit"/></el-dropdown-item>
-            <el-dropdown-item command="deleteConn" :disabled="conn === null"><me-icon name="删除连接" icon="el-icon-delete"/></el-dropdown-item>
+            <el-dropdown-item command="editConn" :disabled="btnDisable"><me-icon name="编辑连接" icon="el-icon-edit"/></el-dropdown-item>
+            <el-dropdown-item command="deleteConn" :disabled="btnDisable"><me-icon name="删除连接" icon="el-icon-delete"/></el-dropdown-item>
             <el-dropdown-item command="appLog" divided><me-icon name="命令日志" icon="el-icon-stopwatch"/></el-dropdown-item>
             <el-dropdown-item command="setting"><me-icon name="基础设置" icon="el-icon-setting"/></el-dropdown-item>
           </el-dropdown-menu>
@@ -126,7 +113,7 @@ export default {
     </div>
   </div>
 
-  <Conn ref="conn" v-if="dialog.conn" @success="saveConn" @closed="dialog.conn = false"/>
+  <SaveConn ref="conn" v-if="dialog.conn" @success="saveConn" @closed="dialog.conn = false"/>
 
   <!--为了方便主题语言等初始化，组件一直存在；为了方便v-model直接绑定弹框是否显示直接传入dialog-->
   <Setting :dialog="dialog"/>

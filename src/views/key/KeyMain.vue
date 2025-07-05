@@ -1,24 +1,41 @@
-<script setup lang="ts">
-import SearchKey from "./detail/SearchKey.vue";
-import SimpleKey from "./detail/SimpleKey.vue";
-import {reactive} from 'vue'
+<script setup>
+import KeyFooter from '@/views/key/detail/KeyFooter.vue'
+import SearchKey from './detail/SearchKey.vue'
+import SimpleKey from './detail/SimpleKey.vue'
+import {reactive, computed} from 'vue'
 
-// 数据定义
-const data = reactive({
-  loading: false,
-  keyList: [],
-  keyword: '',
+// 查询
+const searchData = reactive({
+  keyword: '',  // 关键字
+  exact: false, // 是否精确查询
+
+  // 限制Redis的key类型
+  keyTypeList: ['string', 'hash', 'list', 'set', 'zset'],
+  keyType: '',
 })
+
+// 键列表
+const keyList = reactive([])
+const filterKeyList = computed(() => {
+    return []
+})
+
+// 底部扩展
+const footerData = reactive({
+  db: 'db0',
+
+})
+
+
 </script>
 
 <template>
   <div class="key-main">
     <SearchKey/>
-    <div class="key-list"
-         :v-loading="false"
-         element-loading-text="扫描中...">
+    <div class="key-list" :v-loading="false" element-loading-text="扫描中...">
       <SimpleKey/>
     </div>
+    <KeyFooter/>
   </div>
 </template>
 
