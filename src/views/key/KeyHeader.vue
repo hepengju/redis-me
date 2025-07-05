@@ -26,7 +26,7 @@ function getConnList() {
     global.conn = connList.value[0]
   }
 }
-getConnList()
+// getConnList()
 
 // 保存连接
 function saveConn(conn, mode) {

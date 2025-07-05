@@ -3,7 +3,9 @@ import {useDark, usePreferredDark, useStorage} from '@vueuse/core'
 import {ref} from 'vue'
 import useGlobalStore from '@/utils/store.js'
 
-const {dialog} = defineProps(['dialog'])
+const {dialog} = defineProps({
+  dialog: {type: Object, default: {setting: false}},
+})
 const global = useGlobalStore()
 
 // 主题

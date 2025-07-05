@@ -9,7 +9,7 @@ export const mockConnList = [
         cluster: false,
         readonly: false,
 
-        ssl: false,
+        ssl: true,
         sslOption: {},
         order: 1,
         color: '#409EFF',
@@ -38,7 +38,7 @@ export const mockConnList = [
         password: 'Jiyu1212',
         cluster: true,
         readonly: true,
-        ssl: false,
+        ssl: true,
         sslOption: {},
         order: 3,
         color: '#F56C6C'
