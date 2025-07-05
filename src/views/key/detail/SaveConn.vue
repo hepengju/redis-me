@@ -1,61 +1,63 @@
-<script>
+<script setup>
 import {cloneDeep} from 'lodash'
+import {ref, useTemplateRef} from 'vue'
 
-export default {
-  emits: ['success', 'closed'],
-  expose: ['open'],
-  data() {
-    return {
-      form: {
-        id: '',
-        name: '',
+const form = ref({
+  id: '',
+  name: '',
 
-        host: '127.0.0.1',
-        port: '6379',
-        username: '',
-        password: '',
+  host: '127.0.0.1',
+  port: '6379',
+  username: '',
+  password: '',
 
-        readonly: false,
-        cluster: false,
-        ssl: false,
-        sslOption: {
-          key: '',
-          cert: '',
-          ca: '',
-        },
-
-        color: '',
-        order: 0,
-      },
-      rules: {
-        host: [{required: true, message: '请输入主机'}],
-        port: [{required: true, message: '请输入端口'}]
-      },
-
-      mode: 'add',
-      visible: false
-    }
+  readonly: false,
+  cluster: false,
+  ssl: false,
+  sslOption: {
+    key: '',
+    cert: '',
+    ca: ''
   },
-  methods: {
-    open(mode, data) {
-      this.visible = true
-      this.mode = mode
-      if (data) {
-        Object.assign(this.form, cloneDeep(data))
-      }
-    },
-    submit(){
-      this.$refs.formRef.validate(valid => {
-        if (!valid) return
-        this.$emit('success', this.form, this.mode)
-        this.visible = false
-      })
-    }
+
+  color: '#409eff',
+  order: 0
+})
+const rules = {
+  host: [{required: true, message: '请输入主机'}],
+  port: [{required: true, message: '请输入端口'}]
+}
+const predefineColors = [
+    '#409eff',  // primary
+    '#67c23a',  // success
+    '#e6a23c',  // warning
+    '#f56c6c',  // danger
+    '#909399',  // info
+]
+
+defineExpose({open})
+const visible = ref(false)
+const mode = ref('add')
+function open(modeValue, data) {
+  visible.value = true
+  mode.value = modeValue
+  if (data) {
+    Object.assign(form.value, cloneDeep(data))
   }
+}
+
+const formRef = useTemplateRef('formRef')
+const emit = defineEmits(['success', 'closed'])
+function submit() {
+  formRef.value.validate(valid => {
+    if (!valid) return
+    emit('success', form.value, mode.value)
+    visible.value = false
+  })
 }
 </script>
 <template>
-  <el-dialog :title="mode === 'add' ? '新增连接' : '编辑连接'" @closed="$emit('closed')"
+  <el-dialog :title="mode === 'add' ? '新增连接' : '编辑连接'" @closed="emit('closed')"
              v-model="visible" width="600" append-to-body destroy-on-close>
     <el-form ref="formRef" :model="form" :rules="rules" label-position="right" label-width="60">
       <el-row :gutter="24">
@@ -91,7 +93,7 @@ export default {
       <el-row :gutter="24">
         <el-col :span="5">
           <el-form-item label="颜色">
-            <el-color-picker v-model="form.color"/>
+            <el-color-picker v-model="form.color" :predefine="predefineColors"/>
           </el-form-item>
         </el-col>
         <el-col :span="19">
