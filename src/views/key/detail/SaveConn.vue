@@ -2,6 +2,9 @@
 import {cloneDeep} from 'lodash'
 import {ref, useTemplateRef} from 'vue'
 
+const emit = defineEmits(['success', 'closed'])
+
+// 表单和校验规则
 const form = ref({
   id: '',
   name: '',
@@ -35,6 +38,7 @@ const predefineColors = [
     '#909399',  // info
 ]
 
+// 外部打开对话框
 defineExpose({open})
 const visible = ref(false)
 const mode = ref('add')
@@ -46,8 +50,8 @@ function open(modeValue, data) {
   }
 }
 
+// 提交表单
 const formRef = useTemplateRef('formRef')
-const emit = defineEmits(['success', 'closed'])
 function submit() {
   formRef.value.validate(valid => {
     if (!valid) return
