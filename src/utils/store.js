@@ -1,17 +1,26 @@
-import {defineStore, setMapStoreSuffix } from 'pinia'
+import {defineStore, setMapStoreSuffix} from 'pinia'
+
 
 // 不要添加后缀，应用就使用全局的一个store状态
 setMapStoreSuffix('')
-const useGlobalStore = defineStore('global', {
+
+/**
+ * 全局变量
+ */
+export const useGlobalStore = defineStore('global', {
   state: () => ({
-    conn: null,     // 当前连接
-    tabName: 'info' // 当前tab标签
+    conn: null,        // 当前连接
+    tabName: 'info',   // 当前tab标签
+
+    scanCount: 1000,
+    hscanCount: 100,
   }),
   getters: {},
   actions: {},
 })
 
 export default useGlobalStore
+
 // import {computed, Reactive, reactive} from 'vue'
 // import {connList, apiDbList, apiInfo, apiScan, apiGet} from './api.ts'
 // import {sleep} from './util.js'

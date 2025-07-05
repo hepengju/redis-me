@@ -126,8 +126,10 @@ export default {
     </div>
   </div>
 
-  <Conn    ref="conn"    v-if="dialog.conn"    @success="saveConn" @closed="dialog.conn = false"/>
-  <Setting ref="setting" v-if="dialog.setting" @closed="dialog.setting = false"/>
+  <Conn ref="conn" v-if="dialog.conn" @success="saveConn" @closed="dialog.conn = false"/>
+
+  <!--为了方便主题语言等初始化，组件一直存在；为了方便v-model直接绑定弹框是否显示直接传入dialog-->
+  <Setting :dialog="dialog"/>
 </template>
 
 <style scoped lang="scss">

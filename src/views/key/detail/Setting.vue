@@ -1,46 +1,66 @@
-<script>
-export default {
-  data() {
-    return {
-      themeList: [
-        {value: 'system', label: '跟随系统'},
-        {value: 'light', label: '浅色主题'},
-        {value: 'dark', label: '深色主题'},
-      ],
-      languageList: [
-        {value: 'en', label: 'English'},
-        {value: 'zh-cn', label: '简体中文'},
-        {value: 'zh-tw', label: '繁体中文'},
-      ],
+<script setup>
+import {useDark, usePreferredDark, useStorage} from '@vueuse/core'
+import {ref} from 'vue'
+import useGlobalStore from '@/utils/store.js'
 
-      visible: false,
-      theme: 'system',
-      language: 'zh-cn',
-      zoomFactor: 1.0,
+const {dialog} = defineProps(['dialog'])
+const global = useGlobalStore()
 
-      scanCount: 1000,
-      hscanCount: 100,
-    }
-  },
-  methods: {
-    open() {
-      this.visible = true
-    },
-    changeTheme(theme) {
-      // TODO
-    },
-    changeLanguage(language) {
-      // TODO
-    },
-    changeZoomFactor() {
+// 主题
+const theme = ref('system')
+const themeList = [
+  {value: 'system', label: '跟随系统'},
+  {value: 'light', label: '浅色主题'},
+  {value: 'dark', label: '深色主题'}
+]
 
-    }
+// 主题初始化值
+const isPreferredDark = usePreferredDark()
+const isDark = useDark()
+if (isPreferredDark.value) { // 如果为true，表示浏览器设置为dark模式，采用系统设置即可
+  theme.value = 'system'
+} else { // 否则只有手动设置过dark才会是dark
+  theme.value = isDark.value ? 'dark' : 'light'
+}
+
+// 切换主题
+function changeTheme(theme) {
+  if (theme === 'system') {
+    isDark.value = isPreferredDark.value
+  } else {
+    isDark.value = theme === 'dark'
   }
+}
 
+//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+// 语言
+const language = ref('zh-CN')
+const languageList = [
+  {value: 'en', label: 'English'},
+  {value: 'zh-CN', label: '简体中文'},
+  {value: 'zh-TW', label: '繁体中文'}
+]
+
+// 切换语言
+function changeLanguage() {
+  // TODO i18n 多语言支持
+}
+
+//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+// 缩放
+const zoomFactor = useStorage('zoomFactor', 1)
+document.body.style.zoom = zoomFactor.value
+
+// 切换缩放因子
+function changeZoomFactor(value) {
+  // chrome ok, firefox效果不是很好
+  document.body.style.zoom = value + ''
+  zoomFactor.value = value
 }
 </script>
+
 <template>
-  <el-dialog title="基础设置" v-model="visible" width="650" @closed="$emit('closed')">
+  <el-dialog title="基础设置" v-model="dialog.setting" width="666">
     <el-card header="外观" header-class="me-card">
       <el-form inline label-position="left">
         <el-form-item label="主题">
@@ -60,13 +80,16 @@ export default {
       </el-form>
     </el-card>
     <el-card header="通用" header-class="me-card" style="margin-top: 10px">
-      <el-form>
-        <el-form-item label="加载数量">
-          <el-input-number v-model="scanCount" :min="500" :max="2000" :step="100"/>
+      <el-form inline>
+        <el-form-item label="scan数量">
+          <el-input-number v-model="global.scanCount" :min="500" :max="2000" :step="100"/>
           <template #label>
-            <me-icon name="加载数量" icon="el-icon-question-filled"
+            <me-icon name="scan数量" icon="el-icon-question-filled"
                      info="每次扫描加载的key数量，设置过大可能会影响性能" placement="top-start"/>
           </template>
+        </el-form-item>
+        <el-form-item label="hscan数量">
+          <el-input-number v-model="global.hscanCount" :min="100" :max="2000" :step="100"/>
         </el-form-item>
       </el-form>
     </el-card>
@@ -75,17 +98,9 @@ export default {
       <el-link underline="always" class="me-link">清除缓存</el-link>
       <el-link underline="always" class="me-link">检查更新</el-link>
       <el-link underline="always" class="me-link">手动下载</el-link>
-      <el-link underline="always" class="me-link" href="https://gitee.com/hepengju/redis-app" target="_blank">项目主页</el-link>
+      <el-link underline="always" class="me-link" href="https://gitee.com/hepengju/redis-app" target="_blank">项目主页
+      </el-link>
     </el-card>
-
-    <!-- 目前看下来似乎不需要底部按钮
-    <template #footer>
-      <div class="dialog-footer">
-        <el-button @click="dialog.setting = false">取消</el-button>
-        <el-button type="primary" @click="confirm">确定</el-button>
-      </div>
-    </template>
-    -->
   </el-dialog>
 </template>
 
