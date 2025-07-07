@@ -30,3 +30,9 @@ svg {
 .el-dropdown *:focus-visible {
   outline: none;
 }
+
+.single-line-ellipsis {
+  white-space: nowrap;     /* 禁止文本换行 */
+  overflow: hidden;        /* 隐藏超出范围的内容 */
+  text-overflow: ellipsis; /* 使用省略号 */
+}

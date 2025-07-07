@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import RedisKey from './RedisKey.vue'
 import RedisTag from './RedisTag.vue'
-import RedisConn from './RedisConn.vue'
-import useGlobalStore from '@/utils/store'
+import RedisConn from './tag/RedisConn.vue'
+import useGlobalStore from '@/utils/store.js'
 import Setting from "@/views/key/detail/Setting.vue";
 
 const global = useGlobalStore()
@@ -10,28 +10,26 @@ const global = useGlobalStore()
 
 <template>
   <div class="redis-main">
-    <!-- 连接列表 -->
-    <RedisConn v-if="global.conn == null"/>
-
     <!-- 选定连接 -->
-    <el-splitter  v-else>
+    <el-splitter>
       <el-splitter-panel :min="250" size="30%">
-        <RedisKey/>
+        <RedisKey />
       </el-splitter-panel>
       <el-splitter-panel :min="250">
-        <RedisTag/>
+        <RedisConn v-if="global.conn == null" />
+        <RedisTag v-else />
       </el-splitter-panel>
     </el-splitter>
 
     <!-- 系统设置: 初始化主题、语言等 -->
-    <Setting/>
+    <Setting />
   </div>
 </template>
 
 <style scoped lang="scss">
 .redis-main {
   height: 100%;
-  border: 2px solid blue;
+  //border: 2px solid blue;
 }
 
 //中间分隔面板的样式调整

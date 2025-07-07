@@ -16,7 +16,7 @@ export const mockConnList = [
     },
     {
         id: 'dev',
-        name: '10.106.100.140-开发',
+        name: '10.106.100.140-开发111111',
         host: '10.106.100.140',
         port: '7001',
         username: '',

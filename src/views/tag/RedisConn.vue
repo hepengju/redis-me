@@ -13,6 +13,7 @@ function getConnList() {
   //   global.conn = connList.value[0]
   // }
 }
+
 getConnList()
 
 const predefineColors = [
@@ -23,31 +24,34 @@ const predefineColors = [
   '#909399',  // info
 ]
 
+function descContentStyle(conn) {
+  return {color: conn.color, width: '150px'}
+}
 </script>
 
 <template>
   <div class="redis-conn">
     <el-descriptions v-for="conn in connList"
                      :column="1" border class="desc" label-width="80">
-      <el-descriptions-item>
+      <el-descriptions-item class-name="single-line-ellipsis">
         <template #label>
           <me-icon name="名称" icon="el-icon-tickets"/>
         </template>
-        <span :style="{color: conn.color}">{{conn.name}}</span>
+        <div :style="descContentStyle(conn)" class="single-line-ellipsis">{{ conn.name }}</div>
       </el-descriptions-item>
       <el-descriptions-item>
         <template #label>
           <me-icon name="主机" icon="el-icon-data-board"/>
         </template>
-        <span :style="{color: conn.color}">{{conn.host}}@{{conn.port}}</span>
+        <span :style="descContentStyle(conn)" class="single-line-ellipsis">{{ conn.host }}@{{ conn.port }}</span>
       </el-descriptions-item>
       <el-descriptions-item>
         <template #label>
           <me-icon name="其他" icon="el-icon-memo"/>
         </template>
         <el-color-picker v-model="conn.color" :predefine="predefineColors"/>
-        <el-tag v-if="conn.ssl"><span :style="{color: conn.color}">ssl</span></el-tag>
-        <el-tag v-if="conn.cluster"><span :style="{color: conn.color}">cluster</span></el-tag>
+        <el-tag type="info" v-if="conn.ssl">ssl</el-tag>
+        <el-tag type="info" v-if="conn.cluster">cluster</el-tag>
       </el-descriptions-item>
     </el-descriptions>
 
@@ -59,14 +63,15 @@ const predefineColors = [
 
 <style scoped lang="scss">
 .redis-conn {
-  border: 1px solid red;
+  //border: 1px solid red;
   height: 100%;
   display: flex;
   justify-content: center;
   align-items: center;
+  flex-wrap: wrap;
 
   .desc {
-    margin: 10px;
+    margin: 20px;
     width: 250px;
     height: 150px;
     border: var(--el-border);
