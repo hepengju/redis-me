@@ -1,6 +1,7 @@
 <script setup>
 import {cloneDeep} from 'lodash'
 import {ref, useTemplateRef} from 'vue'
+import {PREDEFINE_COLORS} from '@/utils/util.js'
 
 const emit = defineEmits(['success', 'closed'])
 
@@ -30,13 +31,6 @@ const rules = {
   host: [{required: true, message: '请输入主机'}],
   port: [{required: true, message: '请输入端口'}]
 }
-const predefineColors = [
-    '#409eff',  // primary
-    '#67c23a',  // success
-    '#e6a23c',  // warning
-    '#f56c6c',  // danger
-    '#909399',  // info
-]
 
 // 外部打开对话框
 defineExpose({open})
@@ -97,7 +91,7 @@ function submit() {
       <el-row :gutter="24">
         <el-col :span="5">
           <el-form-item label="颜色">
-            <el-color-picker v-model="form.color" :predefine="predefineColors"/>
+            <el-color-picker v-model="form.color" :predefine="PREDEFINE_COLORS"/>
           </el-form-item>
         </el-col>
         <el-col :span="19">

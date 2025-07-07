@@ -2,11 +2,20 @@ import mitt from 'mitt'
 import {sampleSize} from 'lodash'
 
 
+// 全局事件总线: setup直接导入，app全局属性也添加
+export const bus = mitt()
+
 // 常量
 export const CONN_REFRESH = 'CONN_REFRESH'
 
-// 全局事件总线: setup直接导入，app全局属性也添加
-export const bus = mitt()
+// 预设颜色
+export const PREDEFINE_COLORS = [
+    '#409eff',  // primary
+    '#67c23a',  // success
+    '#e6a23c',  // warning
+    '#f56c6c',  // danger
+    '#909399',  // info
+]
 
 // 随机N个字符
 const CHAR_ARRAY = [...'abcdefghigklmnopqrstuvwxyz0123456789']

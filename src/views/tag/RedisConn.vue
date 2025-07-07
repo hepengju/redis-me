@@ -2,6 +2,7 @@
 import {apiConnList} from '@/utils/api.js'
 import {ref} from 'vue'
 import useGlobalStore from '@/utils/store.js'
+import {PREDEFINE_COLORS} from '@/utils/util.js'
 
 const global = useGlobalStore()
 // 连接列表
@@ -15,14 +16,6 @@ function getConnList() {
 }
 
 getConnList()
-
-const predefineColors = [
-  '#409eff',  // primary
-  '#67c23a',  // success
-  '#e6a23c',  // warning
-  '#f56c6c',  // danger
-  '#909399',  // info
-]
 
 function descContentStyle(conn) {
   return {color: conn.color, width: '150px'}
@@ -49,9 +42,9 @@ function descContentStyle(conn) {
         <template #label>
           <me-icon name="其他" icon="el-icon-memo"/>
         </template>
-        <el-color-picker v-model="conn.color" :predefine="predefineColors"/>
-        <el-tag type="info" v-if="conn.ssl">ssl</el-tag>
-        <el-tag type="info" v-if="conn.cluster">cluster</el-tag>
+          <el-color-picker size="small" v-model="conn.color" :predefine="PREDEFINE_COLORS"/>
+          <el-tag style="margin-left: 10px" type="info" v-if="conn.ssl">ssl</el-tag>
+          <el-tag style="margin-left: 10px" type="info" v-if="conn.cluster">cluster</el-tag>
       </el-descriptions-item>
     </el-descriptions>
 
@@ -63,17 +56,18 @@ function descContentStyle(conn) {
 
 <style scoped lang="scss">
 .redis-conn {
-  //border: 1px solid red;
+  border: var(--el-border);
   height: 100%;
+
   display: flex;
   justify-content: center;
   align-items: center;
   flex-wrap: wrap;
 
   .desc {
-    margin: 20px;
+    margin: 10px;
     width: 250px;
-    height: 150px;
+    //height: 150px;
     border: var(--el-border);
     cursor: pointer;
 
@@ -85,7 +79,7 @@ function descContentStyle(conn) {
   .add {
     margin: 10px;
     width: 250px;
-    height: 150px;
+    height: 122px;
 
     display: flex;
     align-items: center;
