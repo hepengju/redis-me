@@ -5,14 +5,10 @@ import path from 'path'
 
 // https://vitejs.dev/config/
 export default defineConfig(async () => ({
-    // 打包为utools插件需配置
-    base: './',
-
     resolve: {
         alias: {
             // 配置绝对路径别名@
-            '@': path.resolve(__dirname, 'src'),
-            'art-template': 'art-template/lib/template-web.js',
+            '@': path.resolve(__dirname, 'src')
         },
     },
 

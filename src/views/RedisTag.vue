@@ -1,11 +1,11 @@
 <script>
-import RedisInfo from '@/views/tag/RedisInfo.vue'
-import RedisValue from '@/views/tag/RedisValue.vue'
-import RedisConsole from '@/views/tag/RedisConsole.vue'
-import RedisSlow from '@/views/tag/RedisSlow.vue'
-import RedisMemory from '@/views/tag/RedisMemory.vue'
-import {mapStores} from 'pinia'
 import useGlobalStore from '@/utils/store.js'
+import {mapStores} from 'pinia'
+import RedisConsole from './tag/RedisConsole.vue'
+import RedisInfo from './tag/RedisInfo.vue'
+import RedisMemory from './tag/RedisMemory.vue'
+import RedisSlow from './tag/RedisSlow.vue'
+import RedisValue from './tag/RedisValue.vue'
 
 export default {
   components: {RedisInfo, RedisValue, RedisConsole, RedisSlow, RedisMemory},

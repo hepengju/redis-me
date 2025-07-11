@@ -1,4 +1,4 @@
-<script setup lang="ts">
+<script setup>
 import store from '@/utils/store.js'
 import MeIcon from '@/components/MeIcon.vue'
 

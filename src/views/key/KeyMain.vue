@@ -1,8 +1,7 @@
 <script setup>
-import KeyFooter from '@/views/key/detail/KeyFooter.vue'
+import {computed, reactive} from 'vue'
 import SearchKey from './detail/SearchKey.vue'
 import SimpleKey from './detail/SimpleKey.vue'
-import {reactive, computed} from 'vue'
 
 // 查询
 const searchData = reactive({
@@ -25,8 +24,6 @@ const footerData = reactive({
   db: 'db0',
 
 })
-
-
 </script>
 
 <template>
@@ -35,7 +32,6 @@ const footerData = reactive({
     <div class="key-list" :v-loading="false" element-loading-text="扫描中...">
       <SimpleKey/>
     </div>
-    <KeyFooter/>
   </div>
 </template>
 

@@ -1,28 +1,27 @@
-<script setup lang="ts">
+<script setup>
+import useGlobalStore from '@/utils/store.js'
 import RedisKey from './RedisKey.vue'
 import RedisTag from './RedisTag.vue'
-import RedisConn from './tag/RedisConn.vue'
-import useGlobalStore from '@/utils/store.js'
-import Setting from "@/views/key/detail/Setting.vue";
+import RedisConn from './RedisConn.vue'
 
 const global = useGlobalStore()
 </script>
 
 <template>
   <div class="redis-main">
-    <!-- 选定连接 -->
     <el-splitter>
+      <!-- 左侧键 -->
       <el-splitter-panel :min="250" size="30%">
-        <RedisKey />
+        <RedisKey/>
       </el-splitter-panel>
+
+      <!-- 右侧值 -->
       <el-splitter-panel :min="250">
-        <RedisConn v-if="global.conn == null" />
-        <RedisTag v-else />
+        <!-- 默认显示连接列表，选中后显示连接详情Tab页面 -->
+        <RedisConn v-if="global.conn == null"/>
+        <RedisTag v-else/>
       </el-splitter-panel>
     </el-splitter>
-
-    <!-- 系统设置: 初始化主题、语言等 -->
-    <Setting />
   </div>
 </template>
 
@@ -34,25 +33,11 @@ const global = useGlobalStore()
 
 //中间分隔面板的样式调整
 :deep(.el-splitter-bar) {
-  width: 10px !important;
+  width: 5px !important;
 
   .el-splitter-bar__dragger-horizontal:before {
     width: 0; // 宽度为0，不显示原始的竖线
     background-color: transparent;
-
-    // 定制化两个竖线
-    display: inline-block;
-    width: 3px;
-    height: 20px;
-    border-left: 1px solid #adabab;
-    border-right: 1px solid #adabab;
-
-    position: absolute;
-    top: 0;
-    bottom: 0;
-    left: 5px;
-    right: 0;
-    margin: auto;
   }
 }
 </style>

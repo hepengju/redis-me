@@ -5,7 +5,7 @@ import {bus, CONN_REFRESH, randomString} from '@/utils/util.js'
 import {ElMessage, ElMessageBox} from 'element-plus'
 import {nanoid} from 'nanoid'
 import {nextTick, reactive, ref, useTemplateRef, computed} from 'vue'
-import SaveConn from '@/views/tag/detail/SaveConn.vue'
+import SaveConn from '@/views/conn/SaveConn.vue'
 import Setting from '@/views/key/detail/Setting.vue'
 
 // 全局对象

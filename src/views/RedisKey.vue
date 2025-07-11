@@ -1,12 +1,14 @@
 <script setup>
-import KeyHeader from '@/views/key/KeyHeader.vue'
-import KeyMain from '@/views/key/KeyMain.vue'
+import KeyFooter from './key/KeyFooter.vue'
+import KeyHeader from './key/KeyHeader.vue'
+import KeyMain from './key/KeyMain.vue'
 </script>
 
 <template>
   <div class="redis-key">
     <KeyHeader/>
     <KeyMain/>
+    <KeyFooter/>
   </div>
 </template>
 
