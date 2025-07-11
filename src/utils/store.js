@@ -10,9 +10,11 @@ setMapStoreSuffix('')
  */
 export const useGlobalStore = defineStore('global', {
   state: () => ({
+    connList: [],      // 连接列表
     conn: null,        // 当前连接
     tabName: 'info',   // 当前tab标签
 
+    // 系统配置调整的值
     scanCount: 1000,
     hscanCount: 100,
   }),

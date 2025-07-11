@@ -4,12 +4,21 @@ import useGlobalStore from '@/utils/store.js'
 import {bus, CONN_REFRESH, randomString} from '@/utils/util.js'
 import {ElMessage, ElMessageBox} from 'element-plus'
 import {nanoid} from 'nanoid'
-import {nextTick, reactive, ref, useTemplateRef, computed} from 'vue'
+import {nextTick, reactive, ref, useTemplateRef, computed, watch} from 'vue'
 import SaveConn from '@/views/conn/SaveConn.vue'
 import Setting from '@/views/key/detail/Setting.vue'
 
 // 全局对象
 const global = useGlobalStore()
+
+// 监控全局连接的变化，发出事件
+// watch(() => global.conn, (newValue, oldValue) => {
+//   console.log('全局连接发生变化', newValue, oldValue)
+//   if (newValue.id !== oldValue.id) {
+//     bus.emit(CONN_REFRESH)
+//   }
+// })
+
 const btnDisable = computed(() => global.conn == null)
 
 // 弹出框
@@ -43,7 +52,7 @@ function saveConn(conn, mode) {
     ElMessage.success('新增成功')
   } else if (mode === 'edit') {
     global.conn = conn
-    bus.emit(CONN_REFRESH)
+
     ElMessage.success('保存成功')
   }
 }
@@ -66,7 +75,6 @@ function handleCommand(command) {
             connList.value.splice(index, 1)
           }
           global.conn = null
-          bus.emit(CONN_REFRESH)
           ElMessage.success('删除成功')
         })
         .catch(() => {
@@ -83,7 +91,7 @@ function handleCommand(command) {
 <template>
   <div class="key-header">
     <el-select v-model="global.conn" placeholder="请选择连接" class="conn"
-               filterable :disabled="connList.length == 0" value-key="id" @change="bus.emit(CONN_REFRESH)">
+               filterable :disabled="connList.length == 0" value-key="id">
       <el-option v-for="item in connList" :label="item.name" :value="item" :key="item.id">
         <div :style="{color: item?.color}">{{ item.name }}</div>
       </el-option>

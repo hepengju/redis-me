@@ -1,57 +1,107 @@
 <script setup>
 import {apiConnList} from '@/utils/api.js'
-import {ref} from 'vue'
 import useGlobalStore from '@/utils/store.js'
-import {PREDEFINE_COLORS} from '@/utils/util.js'
+import {bus, CONN_REFRESH, PREDEFINE_COLORS} from '@/utils/util.js'
+import SaveConn from '@/views/conn/SaveConn.vue'
+import {ElMessage, ElMessageBox} from 'element-plus'
+import {nextTick, useTemplateRef} from 'vue'
 
+// 全局属性
 const global = useGlobalStore()
-// 连接列表
-const connList = ref([])
 
+// 获取连接列表
 function getConnList() {
-  connList.value = apiConnList()
-  // if (connList.value.length > 0) {
-  //   global.conn = connList.value[0]
-  // }
+  global.connList = apiConnList()
 }
-
 getConnList()
 
-function descContentStyle(conn) {
-  return {color: conn.color, width: '150px'}
+function colorStyle(conn) {
+  return {color: conn.color}
 }
+
+// 选中连接
+function selectConn(conn) {
+  global.conn = conn
+  bus.emit(CONN_REFRESH)
+}
+
+// 新增、编辑连接
+const dialog = reactive({
+  conn: false
+})
+const connRef = useTemplateRef('conn')
+function addConn() {
+  dialog.conn = true
+  nextTick(() => connRef.value.open('add'))
+}
+function editConn(conn) {
+  dialog.conn = true
+  nextTick(() => connRef.value.open('edit', conn))
+}
+function doNothing(){}
+
+// 删除连接
+function deleteConn(conn) {
+  ElMessageBox.confirm(`确认删除连接【${conn.name}】吗`, {type: 'warning'})
+      .then(() => {
+        const index = global.connList.findIndex(c => c.id === conn.id)
+        if (index > -1) {
+          global.connList.splice(index, 1)
+        }
+        ElMessage.success('删除成功')
+      })
+      .catch(() => {
+      })
+}
+
+
 </script>
 
 <template>
   <div class="redis-conn">
-    <el-descriptions v-for="conn in connList"
-                     :column="1" border class="desc" label-width="80">
+    <el-descriptions class="desc" v-for="conn in global.connList" :column="1" border label-width="80" @click="selectConn(conn)">
       <el-descriptions-item class-name="single-line-ellipsis">
         <template #label>
           <me-icon name="名称" icon="el-icon-tickets"/>
         </template>
-        <div :style="descContentStyle(conn)" class="single-line-ellipsis">{{ conn.name }}</div>
+        <div :style="colorStyle(conn)" class="single-line-ellipsis" style="width: 150px">{{ conn.name }}</div>
       </el-descriptions-item>
       <el-descriptions-item>
         <template #label>
           <me-icon name="主机" icon="el-icon-data-board"/>
         </template>
-        <span :style="descContentStyle(conn)" class="single-line-ellipsis">{{ conn.host }}@{{ conn.port }}</span>
+        <span :style="colorStyle(conn)" class="single-line-ellipsis" style="width: 150px">{{ conn.host }}@{{ conn.port }}</span>
       </el-descriptions-item>
       <el-descriptions-item>
         <template #label>
           <me-icon name="其他" icon="el-icon-memo"/>
         </template>
-          <el-color-picker size="small" v-model="conn.color" :predefine="PREDEFINE_COLORS"/>
-          <el-tag style="margin-left: 10px" type="info" v-if="conn.ssl">ssl</el-tag>
-          <el-tag style="margin-left: 10px" type="info" v-if="conn.cluster">cluster</el-tag>
+          <me-flex  @click.stop="doNothing">
+            <div>
+              <el-color-picker size="small" v-model="conn.color" :predefine="PREDEFINE_COLORS"/>
+              <!--
+              <el-tag style="margin-left: 10px" type="info" v-if="conn.ssl">SSL</el-tag>
+              <el-tag style="margin-left: 10px" type="info" v-if="conn.cluster">集群</el-tag>
+              -->
+            </div>
+            <me-flex :style="colorStyle(conn)">
+              <me-icon name="编辑" icon="el-icon-edit"   hint placement="top" @click="editConn(conn)"/>
+              <me-icon name="删除" icon="el-icon-delete" hint placement="top" style="margin-left: 10px" @click="deleteConn(conn)"/>
+            </me-flex>
+          </me-flex>
+
+          <!--
+
+          -->
       </el-descriptions-item>
     </el-descriptions>
 
-    <div class="add">
+    <div class="add" @click="addConn">
       <el-button plain icon="el-icon-plus">新增连接</el-button>
     </div>
   </div>
+
+  <SaveConn ref="conn" v-if="dialog.conn" @closed="dialog.conn = false"/>
 </template>
 
 <style scoped lang="scss">
@@ -73,6 +123,12 @@ function descContentStyle(conn) {
 
     &:hover {
       border-color: var(--el-color-primary);
+    }
+
+    .icon-main {
+      &:hover {
+        color: pink !important;
+      }
     }
   }
 

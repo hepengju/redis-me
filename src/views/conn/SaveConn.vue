@@ -1,12 +1,15 @@
 <script setup>
+import useGlobalStore from '@/utils/store.js'
+import {ElMessage} from 'element-plus'
 import {cloneDeep} from 'lodash'
+import {nanoid} from 'nanoid'
 import {ref, useTemplateRef} from 'vue'
-import {PREDEFINE_COLORS} from '@/utils/util.js'
+import {PREDEFINE_COLORS, randomString} from '@/utils/util.js'
 
-const emit = defineEmits(['success', 'closed'])
+const emit = defineEmits(['closed'])
 
 // 表单和校验规则
-const form = ref({
+const form = reactive({
   id: '',
   name: '',
 
@@ -40,24 +43,52 @@ function open(modeValue, data) {
   visible.value = true
   mode.value = modeValue
   if (data) {
-    Object.assign(form.value, cloneDeep(data))
+    Object.assign(form, cloneDeep(data))
   }
 }
 
 // 提交表单
+const global = useGlobalStore()
 const formRef = useTemplateRef('formRef')
 function submit() {
   formRef.value.validate(valid => {
     if (!valid) return
-    emit('success', form.value, mode.value)
+    //emit('success', form.value, mode.value)
+    if (mode.value === 'add') {
+      form.id = nanoid()
+      autoGenName()
+      global.connList.push(form)
+      ElMessage.success('新增成功')
+    } else if (mode.value === 'edit') {
+      autoGenName()
+      const conn = global.connList.filter(c => c.id === form.id)[0]
+      Object.assign(conn, cloneDeep(form))
+      ElMessage.success('保存成功')
+    }
     visible.value = false
   })
 }
+
+// 自动生成名称
+function autoGenName() {
+  if (!form.name) {
+    form.name = form.host + '@' + form.port
+  }
+
+  if (global.connList.find(c => c.name === form.name && c.id !== form.id)) {
+    form.name += ' (' + randomString(3) + ')'
+  }
+}
 </script>
+
 <template>
   <el-dialog :title="mode === 'add' ? '新增连接' : '编辑连接'" @closed="emit('closed')"
              v-model="visible" width="600" append-to-body destroy-on-close>
     <el-form ref="formRef" :model="form" :rules="rules" label-position="right" label-width="60">
+      <el-form-item label="名称" prop="name">
+        <el-input v-model.trim="form.name" placeholder="【可选】默认自动根据地址和端口生成"/>
+      </el-form-item>
+
       <el-row :gutter="24">
         <el-col :span="12">
           <el-form-item label="地址" prop="host">
@@ -83,10 +114,6 @@ function submit() {
           </el-form-item>
         </el-col>
       </el-row>
-
-      <el-form-item label="名称" prop="name">
-        <el-input v-model.trim="form.name" placeholder="默认自动根据地址和端口生成"/>
-      </el-form-item>
 
       <el-row :gutter="24">
         <el-col :span="5">
