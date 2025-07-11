@@ -17,7 +17,7 @@
     "codemirror": "^5.65.19",
     "codemirror-editor-vue3": "^2.8.0",
     "dayjs": "^1.11.13",
-    "element-plus": "^2.10.2",
+    "element-plus": "^2.10.4",
     "jsonpath-plus": "^10.3.0",
     "lodash": "^4.17.21",
     "mitt": "^3.0.1",
@@ -26,14 +26,13 @@
     "vue": "^3.5.17"
   },
   "devDependencies": {
-    "@tauri-apps/cli": "^2.6.0",
+    "@tauri-apps/cli": "^2.6.2",
     "@vitejs/plugin-vue": "^6.0.0",
     "sass-embedded": "^1.89.2",
     "unplugin-auto-import": "^19.3.0",
     "unplugin-svg-component": "^0.12.1",
-    "unplugin-vue-components": "^28.7.0",
+    "unplugin-vue-components": "^28.8.0",
     "utools-api-types": "^6.1.0",
-    "vite": "^7.0.0",
-    "vue-tsc": "^2.2.10"
+    "vite": "^7.0.4"
   }
 }
