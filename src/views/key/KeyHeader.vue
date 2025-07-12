@@ -1,61 +1,32 @@
 <script setup>
-import {apiConnList} from '@/utils/api.js'
 import useGlobalStore from '@/utils/store.js'
-import {bus, CONN_REFRESH, randomString} from '@/utils/util.js'
-import {ElMessage, ElMessageBox} from 'element-plus'
-import {nanoid} from 'nanoid'
-import {nextTick, reactive, ref, useTemplateRef, computed, watch} from 'vue'
+import {bus, CONN_REFRESH} from '@/utils/util.js'
 import SaveConn from '@/views/conn/SaveConn.vue'
 import Setting from '@/views/key/detail/Setting.vue'
+import {computed, nextTick, reactive, useTemplateRef} from 'vue'
 
 // 全局对象
 const global = useGlobalStore()
 
-// 监控全局连接的变化，发出事件
-// watch(() => global.conn, (newValue, oldValue) => {
-//   console.log('全局连接发生变化', newValue, oldValue)
-//   if (newValue.id !== oldValue.id) {
-//     bus.emit(CONN_REFRESH)
-//   }
-// })
-
+// 按钮禁用
 const btnDisable = computed(() => global.conn == null)
+
+// 切换连接
+function changeConn() {
+  bus.emit(CONN_REFRESH)
+}
+// 保存连接后触发刷新
+function saveConn(_, mode) {
+  if (mode === 'edit') {
+    bus.emit(CONN_REFRESH)
+  }
+}
 
 // 弹出框
 const dialog = reactive({
   conn: false,         // 编辑连接
   setting: false,      // 基础设置
 })
-
-// 连接列表
-const connList = ref([])
-function getConnList() {
-  connList.value = apiConnList()
-  if (connList.value.length > 0) {
-    global.conn = connList.value[0]
-  }
-}
-// getConnList()
-
-// 保存连接
-function saveConn(conn, mode) {
-  if (mode === 'add') {
-    conn.id = nanoid()
-    if (!conn.name) {
-      conn.name = conn.host + '@' + conn.port
-    }
-
-    if (connList.value.find(c => c.name === conn.name)) {
-      conn.name += ' (' + randomString(3) + ')'
-    }
-    connList.value.push(conn)
-    ElMessage.success('新增成功')
-  } else if (mode === 'edit') {
-    global.conn = conn
-
-    ElMessage.success('保存成功')
-  }
-}
 
 // 处理额外命令
 const connRef = useTemplateRef('conn')
@@ -68,17 +39,7 @@ function handleCommand(command) {
     dialog.conn = true
     nextTick(() => connRef.value.open('edit', global.conn))
   } else if (command === 'deleteConn') {
-    ElMessageBox.confirm(`确认删除连接【${global.conn.name}】吗`, {type: 'warning'})
-        .then(() => {
-          const index = connList.value.findIndex(c => c.id === global.conn.id)
-          if (index > -1) {
-            connList.value.splice(index, 1)
-          }
-          global.conn = null
-          ElMessage.success('删除成功')
-        })
-        .catch(() => {
-        })
+    global.deleteConn(global.conn, true)
   } else if (command === 'refreshConn') {
     bus.emit(CONN_REFRESH)
   } else if (command === 'setting') {
@@ -91,8 +52,8 @@ function handleCommand(command) {
 <template>
   <div class="key-header">
     <el-select v-model="global.conn" placeholder="请选择连接" class="conn"
-               filterable :disabled="connList.length == 0" value-key="id">
-      <el-option v-for="item in connList" :label="item.name" :value="item" :key="item.id">
+               filterable :disabled="global.connList.length == 0" value-key="id" @change="changeConn">
+      <el-option v-for="item in global.connList" :label="item.name" :value="item" :key="item.id">
         <div :style="{color: item?.color}">{{ item.name }}</div>
       </el-option>
 

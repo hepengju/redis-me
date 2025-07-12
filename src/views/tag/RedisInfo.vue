@@ -1,94 +1,91 @@
-<script>
+<script setup>
 import {apiInfo} from '@/utils/api.js'
 import useGlobalStore from '@/utils/store.js'
-import {CONN_REFRESH, sleep} from '@/utils/util.js'
-import {mapStores} from 'pinia'
+import {bus, CONN_REFRESH, sleep} from '@/utils/util.js'
+import {useTemplateRef} from 'vue'
 
-export default {
-  data() {
-    return {
-      loading: false,
-      raw: '',         // 原始信息
-      dic: {},         // 字典形式
-      tag: {},         // 标签形式， key标签名称，value表格数据
+const global = useGlobalStore()
 
-      keyCount: null,  // 键数量
-      keyword: '',     // 关键字过滤
-      tagSelected: '', // 选中的标签
+// 数据
+const raw = ref('') // 原始信息
+const dic = ref({}) // 字典形式
+const tag = ref({}) // 标签形式， key标签名称，value表格数据
+const keyCount = ref(0)      // 键数量
+const keyword = ref('')      // 关键字过滤
+const tagSelected = ref('')  // 选中的标签
+const dialog = reactive({
+  raw: false
+})
+const loading = ref(false)
 
-      dialog: {
-        raw: false,
+// raw原始值发生变化后，其他的值重新计算
+watchEffect(() => {
+  const lines = raw.value.split('\n')
+
+  let dicObj = {}
+  let tagObj = {}
+  let tagKey = ''
+  let tagList = []
+  lines.forEach(line => {
+    if (line.startsWith('#')) {
+      if (tagKey !== '') {
+        tagObj[tagKey] = tagList
+      }
+
+      tagKey = line.substring(1).trim()
+      tagList = []
+    } else {
+      const index = line.indexOf(':')
+      const key = line.substring(0, index)
+      const value = line.substring(index + 1)
+
+      if (key !== '') {
+        tagList.push({key, value})
+        dicObj[key] = value
+      }
+
+      // db0:keys=14410,expires=3997,avg_ttl=736124073
+      if (key === 'db0') {
+        try {
+          keyCount.value = value.split(',')[0].split('=')[1]
+        } catch (e) {
+        }
       }
     }
-  },
+  })
 
-  watch: {
-    raw(newValue) {
-      const lines = newValue.split('\n')
+  tag.value = tagObj
+  dic.value = dicObj
+  tagSelected.value = Object.keys(tagObj)[0]
+})
 
-      let dicObj = {}
-      let tagObj = {}
-      let tag = ''
-      let tagList = []
-      lines.forEach(line => {
-        if (line.startsWith('#')) {
-          if (tag !== '') {
-            tagObj[tag] = tagList
-          }
+// 表格数据
+const tableData = computed(() => {
+  const list = tag.value[tagSelected.value]
+  const key = keyword.value.toLowerCase()
+  return list?.filter(d => !key || d.key.toLowerCase().indexOf(key) > -1 || d.value.toLowerCase().indexOf(key) > -1)
 
-          tag = line.substring(1).trim()
-          tagList = []
-        } else {
-          const index = line.indexOf(':')
-          const key = line.substring(0, index)
-          const value = line.substring(index + 1)
+})
 
-          if (key !== '') {
-            tagList.push({key, value})
-            dicObj[key] = value
-          }
+// 监听刷新事件
+bus.on(CONN_REFRESH, refresh)
 
-          // db0:keys=14410,expires=3997,avg_ttl=736124073
-          if (key === 'db0') {
-            try {
-              this.keyCount = value.split(',')[0].split('=')[1]
-            } catch (e) {
-            }
-          }
-        }
-      })
+async function refresh() {
+  console.log('redis info refresh')
+  loading.value = true
+  raw.value = apiInfo(global.conn?.id)
+  await sleep(500)
+  loading.value = false
+}
 
-      this.tag = tagObj
-      this.dic = dicObj
-
-      this.tagSelected = Object.keys(tagObj)[0]
-    }
-  },
-  computed: {
-    tableData(){
-      const list = this.tag[this.tagSelected]
-      const key = this.keyword.toLowerCase()
-      return list?.filter(d => !key || d.key.toLowerCase().indexOf(key) > -1 || d.value.toLowerCase().indexOf(key) > -1)
-    },
-    ...mapStores(useGlobalStore)
-  },
-  mounted() {
-    this.$bus.on(CONN_REFRESH, this.refresh)
-  },
-  methods: {
-    async refresh() {
-      this.loading = true
-      this.raw = apiInfo(this.global.conn?.id)
-      await sleep(500)
-      this.loading = false
-    },
-    clickTag(tag) {
-      this.tagSelected = tag
-      this.$refs.tableRef.scrollTo(0, 0) // 滚动条归零
-    }
-  }
+// 点击标签后滚动到最上方
+const tableRef = useTemplateRef(('table'))
+function clickTag(tag) {
+  tagSelected.value = tag
+  tableRef.value.scrollTo(0, 0) // 滚动条归零
 }
 </script>
+
 <template>
   <div class="redis-info" v-loading="loading" v-if="global.conn">
     <el-descriptions border>
@@ -191,7 +188,7 @@ export default {
             <span :style="{fontWeight: 600, color: tagSelected === tagName ? 'var(--el-color-primary)' : ''}">{{tagName}}</span>
           </el-button>
         </div>
-        <el-table ref="tableRef" :data="tableData" border height="100%">
+        <el-table ref="table" :data="tableData" border height="100%">
           <el-table-column prop="key" label="键" />
           <el-table-column prop="value" label="值" />
         </el-table>

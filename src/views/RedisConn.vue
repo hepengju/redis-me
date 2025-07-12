@@ -3,7 +3,6 @@ import {apiConnList} from '@/utils/api.js'
 import useGlobalStore from '@/utils/store.js'
 import {bus, CONN_REFRESH, PREDEFINE_COLORS} from '@/utils/util.js'
 import SaveConn from '@/views/conn/SaveConn.vue'
-import {ElMessage, ElMessageBox} from 'element-plus'
 import {nextTick, useTemplateRef} from 'vue'
 
 // 全局属性
@@ -39,22 +38,6 @@ function editConn(conn) {
   nextTick(() => connRef.value.open('edit', conn))
 }
 function doNothing(){}
-
-// 删除连接
-function deleteConn(conn) {
-  ElMessageBox.confirm(`确认删除连接【${conn.name}】吗`, {type: 'warning'})
-      .then(() => {
-        const index = global.connList.findIndex(c => c.id === conn.id)
-        if (index > -1) {
-          global.connList.splice(index, 1)
-        }
-        ElMessage.success('删除成功')
-      })
-      .catch(() => {
-      })
-}
-
-
 </script>
 
 <template>
@@ -86,22 +69,18 @@ function deleteConn(conn) {
             </div>
             <me-flex :style="colorStyle(conn)">
               <me-icon name="编辑" icon="el-icon-edit"   hint placement="top" @click="editConn(conn)"/>
-              <me-icon name="删除" icon="el-icon-delete" hint placement="top" style="margin-left: 10px" @click="deleteConn(conn)"/>
+              <me-icon name="删除" icon="el-icon-delete" hint placement="top" style="margin-left: 10px" @click="global.deleteConn(conn)"/>
             </me-flex>
           </me-flex>
-
-          <!--
-
-          -->
       </el-descriptions-item>
     </el-descriptions>
 
     <div class="add" @click="addConn">
       <el-button plain icon="el-icon-plus">新增连接</el-button>
     </div>
-  </div>
 
-  <SaveConn ref="conn" v-if="dialog.conn" @closed="dialog.conn = false"/>
+    <SaveConn ref="conn" v-if="dialog.conn" @closed="dialog.conn = false"/>
+  </div>
 </template>
 
 <style scoped lang="scss">

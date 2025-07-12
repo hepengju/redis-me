@@ -6,7 +6,7 @@ import {nanoid} from 'nanoid'
 import {ref, useTemplateRef} from 'vue'
 import {PREDEFINE_COLORS, randomString} from '@/utils/util.js'
 
-const emit = defineEmits(['closed'])
+const emit = defineEmits(['success', 'closed'])
 
 // 表单和校验规则
 const form = reactive({
@@ -59,11 +59,13 @@ function submit() {
       autoGenName()
       global.connList.push(form)
       ElMessage.success('新增成功')
+      emit('success', form, mode.value)
     } else if (mode.value === 'edit') {
       autoGenName()
       const conn = global.connList.filter(c => c.id === form.id)[0]
       Object.assign(conn, cloneDeep(form))
       ElMessage.success('保存成功')
+      emit('success', form, mode.value)
     }
     visible.value = false
   })

@@ -17,9 +17,9 @@ const global = useGlobalStore()
 
       <!-- 右侧值 -->
       <el-splitter-panel :min="250">
-        <!-- 默认显示连接列表，选中后显示连接详情Tab页面 -->
-        <RedisConn v-if="global.conn == null"/>
-        <RedisTag v-else/>
+        <!-- 默认显示连接列表，选中后显示连接详情Tab页面 (为了监听事件的正常运行，此处使用v-show） -->
+        <RedisConn v-show="global.conn === null"/>
+        <RedisTag v-show="global.conn !== null"/>
       </el-splitter-panel>
     </el-splitter>
   </div>

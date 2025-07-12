@@ -1,4 +1,5 @@
 import {bus, CONN_REFRESH} from '@/utils/util.js'
+import {ElMessage, ElMessageBox} from 'element-plus'
 import {defineStore, setMapStoreSuffix} from 'pinia'
 
 
@@ -20,6 +21,23 @@ export const useGlobalStore = defineStore('global', {
   }),
   getters: {},
   actions: {
+    deleteConn(conn, isGlobalConn = false){
+      ElMessageBox.confirm(`确认删除连接【${conn.name}】吗`, {type: 'warning'})
+        .then(() => {
+          const index = this.connList.findIndex(c => c.id === conn.id)
+          if (index > -1) {
+            this.connList.splice(index, 1)
+          }
+          ElMessage.success('删除成功')
+
+          // 下拉框中删除的时全局连接
+          if (isGlobalConn) {
+            this.conn = null
+          }
+        })
+        .catch(() => {
+        })
+    }
   },
 })
 

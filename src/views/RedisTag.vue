@@ -1,18 +1,13 @@
-<script>
+<script setup>
 import useGlobalStore from '@/utils/store.js'
-import {mapStores} from 'pinia'
 import RedisConsole from './tag/RedisConsole.vue'
 import RedisInfo from './tag/RedisInfo.vue'
 import RedisMemory from './tag/RedisMemory.vue'
 import RedisSlow from './tag/RedisSlow.vue'
 import RedisValue from './tag/RedisValue.vue'
 
-export default {
-  components: {RedisInfo, RedisValue, RedisConsole, RedisSlow, RedisMemory},
-  computed: {
-    ...mapStores(useGlobalStore)
-  }
-}
+
+const global = useGlobalStore()
 </script>
 
 <template>
