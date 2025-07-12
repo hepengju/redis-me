@@ -1,7 +1,8 @@
 <script setup>
+import MainFooter from '@/views/key/detail/MainFooter.vue'
 import {computed, reactive} from 'vue'
 import SearchKey from './detail/SearchKey.vue'
-import SimpleKey from './detail/SimpleKey.vue'
+import KeySimple from './detail/KeySimple.vue'
 
 // 查询
 const searchData = reactive({
@@ -30,8 +31,9 @@ const footerData = reactive({
   <div class="key-main">
     <SearchKey/>
     <div class="key-list" :v-loading="false" element-loading-text="扫描中...">
-      <SimpleKey/>
+      <KeySimple/>
     </div>
+    <MainFooter/>
   </div>
 </template>
 
