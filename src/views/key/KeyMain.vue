@@ -130,8 +130,8 @@ function handleCommand() {
       </el-input>
 
       <div class="key-list" v-loading="loading">
-        <ListKey :filter-keys="filterKeyList" v-if="simpleKey"/>
-        <TreeKey :filter-keys="filterKeyList" v-else/>
+        <ListKey :filter-key-list="filterKeyList" v-if="keyShowType === 'list'"/>
+        <TreeKey :filter-key-list="filterKeyList" v-else/>
       </div>
 
       <div class="key-footer">

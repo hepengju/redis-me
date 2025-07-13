@@ -3,8 +3,8 @@
 import useGlobalStore from '@/utils/store.js'
 const global = useGlobalStore()
 
-const {filterKeys} = defineProps({
-  filterKeys: {type: Array, default: []}
+const {filterKeyList} = defineProps({
+  filterKeyList: {type: Array, default: []}
 })
 
 function getKey(item) {
@@ -14,7 +14,7 @@ function getKey(item) {
 
 <template>
   <div :style="{color: global.conn?.color}">
-    <div v-for="item in filterKeys" @click="getKey(item)"
+    <div v-for="item in filterKeyList" @click="getKey(item)"
          class="key" :style="item.bytes === global.redisKey?.bytes ? {backgroundColor: 'var(--el-color-info-light-5)'} : {}">
       <span>{{ item.key }}</span>
     </div>
