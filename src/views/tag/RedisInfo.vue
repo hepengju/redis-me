@@ -69,7 +69,6 @@ const tableData = computed(() => {
 
 // 监听刷新事件
 bus.on(CONN_REFRESH, refresh)
-
 async function refresh() {
   console.log('redis info refresh')
   loading.value = true
@@ -77,6 +76,7 @@ async function refresh() {
   await sleep(500)
   loading.value = false
 }
+refresh()  // 首次加载也刷新下
 
 // 点击标签后滚动到最上方
 const tableRef = useTemplateRef(('table'))
