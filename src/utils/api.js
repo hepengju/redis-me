@@ -17,7 +17,7 @@ export function apiDbList(id) {
 }
 
 // 扫描键
-export function apiScan(id, match, count = 1000) {
+export function apiScan(id, match = '', count = 1000, type = '', db = '') {
     return mockScan.slice(0, random(1000))
 }
 

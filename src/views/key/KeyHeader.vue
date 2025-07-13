@@ -9,10 +9,11 @@ import {computed, nextTick, reactive, useTemplateRef} from 'vue'
 const global = useGlobalStore()
 
 // 按钮禁用
-const btnDisable = computed(() => global.conn == null)
+const btnDisable = computed(() => !!global.conn)
 
 // 切换连接
 function changeConn() {
+  console.log(global.conn)
   bus.emit(CONN_REFRESH)
 }
 // 保存连接后触发刷新
@@ -51,7 +52,7 @@ function handleCommand(command) {
 
 <template>
   <div class="key-header">
-    <el-select v-model="global.conn" placeholder="请选择连接" class="conn"
+    <el-select v-model="global.conn" placeholder="请选择连接" class="conn" clearable
                filterable :disabled="global.connList.length == 0" value-key="id" @change="changeConn">
       <el-option v-for="item in global.connList" :label="item.name" :value="item" :key="item.id">
         <div :style="{color: item?.color}">{{ item.name }}</div>

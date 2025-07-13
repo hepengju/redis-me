@@ -1,7 +1,13 @@
 <script setup>
 import MeIcon from '@/components/MeIcon.vue'
+import {apiDbList, apiScan} from '@/utils/api.js'
+import useGlobalStore from '@/utils/store.js'
+import {bus, CONN_REFRESH, sleep} from '@/utils/util.js'
 import {computed, reactive} from 'vue'
 import KeySimple from './detail/KeySimple.vue'
+
+// 全局对象
+const global = useGlobalStore()
 
 // 查询框: SCAN cursor [MATCH pattern] [COUNT count] [TYPE type]
 const keyTypeList = [
@@ -21,8 +27,29 @@ const keyList = ref([])    // 键列表
 const dbList  = ref([])    // db列表
 const db      = ref('')    // 选择的db
 const filterKeyList = computed(() => {
-  return keyList.value.filter(key => key.indexOf(keyword.value) > -1)
+  return keyList.value.filter(redisKey => redisKey.key.indexOf(keyword.value) > -1)
 })
+
+const loading = ref(false)
+
+// 监听刷新事件
+bus.on(CONN_REFRESH, refresh)
+async function refresh() {
+  loading.value = true
+  initReset()
+  initDbList()
+  scanKey()
+  await sleep(500)
+  loading.value = false
+}
+
+// 刷新时条件初始化
+function initReset(){
+  keyType.value = {value: 'ALL', type: 'info'}
+  exact.value = false
+  keyword.value = ''
+  keyList.value = []
+}
 
 // 选择Key类型
 function chooseKeyType(keyTypeSelected) {
@@ -30,7 +57,15 @@ function chooseKeyType(keyTypeSelected) {
 }
 
 // 扫描键
-function scanKey(){}
+function scanKey(){
+  keyList.value = apiScan(global.conn?.id)
+}
+
+// DB列表
+function initDbList(){
+  dbList.value = apiDbList(global.conn?.id)
+  db.value = dbList.value[0]
+}
 
 // 弹框
 const dialog = reactive({
@@ -39,51 +74,56 @@ const dialog = reactive({
   delete: false, // 删除健
 })
 
-
-const redisKeyList = []
-
-
+// 新增键
 function addKey(){}
 
-function handleCommand() {
-}
-
+// 扫描更多
 function scanMore() {
 }
 
+// 扫描所有
 function scanAll() {
+}
+
+function handleCommand() {
 }
 </script>
 
 <template>
-  <div class="key-main">
-      <el-input class="key-search" v-model="keyword" placeholder="Enter 键进行搜索" @keyup.enter="scanKey" clearable>
-        <template #prepend>
-          <el-dropdown placement="bottom-start" @command="chooseKeyType">
-            <el-tag :type="keyType.type" effect="plain" style="width: 32px; height: 32px">{{ keyType.value.slice(0, 1) }}</el-tag>
-            <template #dropdown>
-              <el-dropdown-menu>
-                <el-dropdown-item v-for="item in keyTypeList" :command="item">
-                  <el-tag :type="item.type" :effect="item.value === keyType.value ? 'dark' : 'plain'">{{ item.value.slice(0, 1) }}</el-tag>
-                  <el-text style="margin-left: 6px">{{ item.value }}</el-text>
-                </el-dropdown-item>
-              </el-dropdown-menu>
-            </template>
-          </el-dropdown>
-          <el-tooltip content="精确搜素">
-            <el-checkbox size="small" v-model="exact" style="margin-left: 10px"/>
-          </el-tooltip>
-        </template>
-        <template #append>
-          <el-button-group>
-            <me-button info="刷新键" @click="scanKey" icon="el-icon-search"></me-button>
-            <me-button info="新增键" @click="addKey" style="border-color: var(--el-button-border-color)" icon="el-icon-plus"></me-button>
-          </el-button-group>
-        </template>
-      </el-input>
+  <div class="key-main" v-if="global.conn">
+    <el-input class="key-search" v-model="keyword" placeholder="Enter 键进行搜索" @keyup.enter="scanKey" clearable>
+      <template #prepend>
+        <el-dropdown placement="bottom-start" @command="chooseKeyType">
+          <el-tag :type="keyType.type" effect="plain" style="width: 32px; height: 32px">{{
+              keyType.value.slice(0, 1)
+            }}
+          </el-tag>
+          <template #dropdown>
+            <el-dropdown-menu>
+              <el-dropdown-item v-for="item in keyTypeList" :command="item">
+                <el-tag :type="item.type" :effect="item.value === keyType.value ? 'dark' : 'plain'">
+                  {{ item.value.slice(0, 1) }}
+                </el-tag>
+                <el-text style="margin-left: 6px">{{ item.value }}</el-text>
+              </el-dropdown-item>
+            </el-dropdown-menu>
+          </template>
+        </el-dropdown>
+        <el-tooltip content="精确搜素">
+          <el-checkbox size="small" v-model="exact" style="margin-left: 10px"/>
+        </el-tooltip>
+      </template>
+      <template #append>
+        <el-button-group>
+          <me-button info="刷新键" @click="scanKey" icon="el-icon-search"></me-button>
+          <me-button info="新增键" @click="addKey" style="border-color: var(--el-button-border-color)"
+                     icon="el-icon-plus"></me-button>
+        </el-button-group>
+      </template>
+    </el-input>
 
-    <div class="key-list" :v-loading="false" element-loading-text="扫描中...">
-      <KeySimple/>
+    <div class="key-list" v-loading="loading">
+      <KeySimple :filter-keys="filterKeyList"/>
     </div>
 
     <div class="key-footer">
@@ -97,15 +137,21 @@ function scanAll() {
       <el-text class="tip" size="large" type="primary">{{ filterKeyList.length }} / {{ keyList.length }}</el-text>
 
       <div class="btns">
-        <me-icon name="加载更多"       icon="me-icon-load-more" hint placement="top" @click="scanMore"/>
-        <me-icon name="加载剩余所有键" icon="me-icon-load-all"  hint placement="top" @click="scanAll"/>
+        <me-icon name="加载更多" icon="me-icon-load-more" hint placement="top" @click="scanMore"/>
+        <me-icon name="加载剩余所有键" icon="me-icon-load-all" hint placement="top" @click="scanAll"/>
         <el-dropdown placement="top-end" @command="handleCommand">
           <me-icon icon="el-icon-more-filled"></me-icon>
           <template #dropdown>
             <el-dropdown-menu>
-              <el-dropdown-item command="import" ><me-icon name="导入数据" icon="el-icon-download"/></el-dropdown-item>
-              <el-dropdown-item command="batch" divided><me-icon name="批量删除" icon="el-icon-warning"/></el-dropdown-item>
-              <el-dropdown-item command="flush"><me-icon name="清空数据" icon="me-icon-flush"/></el-dropdown-item>
+              <el-dropdown-item command="import">
+                <me-icon name="导入数据" icon="el-icon-download"/>
+              </el-dropdown-item>
+              <el-dropdown-item command="batch" divided>
+                <me-icon name="批量删除" icon="el-icon-warning"/>
+              </el-dropdown-item>
+              <el-dropdown-item command="flush">
+                <me-icon name="清空数据" icon="me-icon-flush"/>
+              </el-dropdown-item>
             </el-dropdown-menu>
           </template>
         </el-dropdown>

@@ -70,7 +70,6 @@ const tableData = computed(() => {
 // 监听刷新事件
 bus.on(CONN_REFRESH, refresh)
 async function refresh() {
-  console.log('redis info refresh')
   loading.value = true
   raw.value = apiInfo(global.conn?.id)
   await sleep(500)
