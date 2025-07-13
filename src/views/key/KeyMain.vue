@@ -4,8 +4,17 @@ import {computed, reactive} from 'vue'
 import KeySimple from './detail/KeySimple.vue'
 
 // 查询框: SCAN cursor [MATCH pattern] [COUNT count] [TYPE type]
-const keyTypeList = ['STRING', 'HASH', 'LIST', 'SET', 'ZSET']
-const keyType = ref('')    // scan类型
+const keyTypeList = [
+    { value: 'ALL'   , type: 'info'},
+    { value: 'STRING', type: 'primary'},
+    { value: 'HASH'  , type: 'success'},
+    { value: 'LIST'  , type: 'info'},
+    { value: 'SET'   , type: 'danger'},
+    { value: 'ZSET'  , type: 'info'},
+    { value: 'STREAM', type: 'warning'},
+    { value: 'JSON'  , type: 'primary'},
+]
+const keyType = ref({value: 'ALL', type: 'info'})    // 键类型
 const exact   = ref(false) // 是否精确查询
 const keyword = ref('')    // 关键字
 const keyList = ref([])    // 键列表
@@ -14,6 +23,11 @@ const db      = ref('')    // 选择的db
 const filterKeyList = computed(() => {
   return keyList.value.filter(key => key.indexOf(keyword.value) > -1)
 })
+
+// 选择Key类型
+function chooseKeyType(keyTypeSelected) {
+  keyType.value = keyTypeSelected
+}
 
 // 扫描键
 function scanKey(){}
@@ -43,29 +57,30 @@ function scanAll() {
 
 <template>
   <div class="key-main">
-    <el-input class="key-search" v-model="keyword" placeholder="Enter 键进行搜索" @keyup.enter="scanKey" clearable>
-      <template #prepend>
-        <el-select v-model="keyType" style="width: 60px" placeholder="">
-          <el-option v-for="item in keyTypeList"
-                     :label="item"
-                     :value="item"
-                     :key="item"/>
-
-          <template #label="{ label, value }">
-            <span style="font-weight: bold">{{ value.slice(0, 1) }}</span>
-          </template>
-        </el-select>
-<!--        <el-tooltip content="精确搜素">-->
-<!--          <el-checkbox size="small" v-model="exact"/>-->
-<!--        </el-tooltip>-->
-      </template>
-      <template #append>
-        <el-button-group>
-          <me-button info="刷新键" @click="scanKey" icon="el-icon-search"></me-button>
-          <me-button info="新增键" @click="addKey" style="border-color: var(--el-button-border-color)" icon="el-icon-plus"></me-button>
-        </el-button-group>
-      </template>
-    </el-input>
+      <el-input class="key-search" v-model="keyword" placeholder="Enter 键进行搜索" @keyup.enter="scanKey" clearable>
+        <template #prepend>
+          <el-dropdown placement="bottom-start" @command="chooseKeyType">
+            <el-tag :type="keyType.type" effect="plain" style="width: 32px; height: 32px">{{ keyType.value.slice(0, 1) }}</el-tag>
+            <template #dropdown>
+              <el-dropdown-menu>
+                <el-dropdown-item v-for="item in keyTypeList" :command="item">
+                  <el-tag :type="item.type" :effect="item.value === keyType.value ? 'dark' : 'plain'">{{ item.value.slice(0, 1) }}</el-tag>
+                  <el-text style="margin-left: 6px">{{ item.value }}</el-text>
+                </el-dropdown-item>
+              </el-dropdown-menu>
+            </template>
+          </el-dropdown>
+          <el-tooltip content="精确搜素">
+            <el-checkbox size="small" v-model="exact" style="margin-left: 10px"/>
+          </el-tooltip>
+        </template>
+        <template #append>
+          <el-button-group>
+            <me-button info="刷新键" @click="scanKey" icon="el-icon-search"></me-button>
+            <me-button info="新增键" @click="addKey" style="border-color: var(--el-button-border-color)" icon="el-icon-plus"></me-button>
+          </el-button-group>
+        </template>
+      </el-input>
 
     <div class="key-list" :v-loading="false" element-loading-text="扫描中...">
       <KeySimple/>
@@ -107,7 +122,7 @@ function scanAll() {
   .key-search {
     // 复选框显示尽量为方形
     :deep(.el-input-group__prepend) {
-      padding: 0 12px;
+      padding: 0 10px 0 0;
     }
 
     // 查询和新增key不收缩，避免调整侧边栏宽度时变为两行
