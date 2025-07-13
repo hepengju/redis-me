@@ -76,7 +76,7 @@ function doNothing(){}
     </el-descriptions>
 
     <div class="add" @click="addConn">
-      <el-button plain icon="el-icon-plus">新增连接</el-button>
+      <el-button size="large" plain icon="el-icon-plus">新增连接</el-button>
     </div>
 
     <SaveConn ref="conn" v-if="dialog.conn" @closed="dialog.conn = false"/>

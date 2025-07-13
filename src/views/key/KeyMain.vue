@@ -98,80 +98,86 @@ function handleCommand() {
 </script>
 
 <template>
-  <div class="key-main" v-if="global.conn">
-    <el-input class="key-search" v-model="keyword" placeholder="Enter 键进行搜索" @keyup.enter="scanKey" clearable>
-      <template #prepend>
-        <el-dropdown placement="bottom-start" @command="chooseKeyType">
-          <el-tag :type="keyType.type" effect="plain" style="width: 32px; height: 32px">{{keyType.value.slice(0, 1)}}
-          </el-tag>
-          <template #dropdown>
-            <el-dropdown-menu>
-              <el-dropdown-item v-for="item in keyTypeList" :command="item">
-                <el-tag :type="item.type" :effect="item.value === keyType.value ? 'dark' : 'plain'">
-                  {{ item.value.slice(0, 1) }}
-                </el-tag>
-                <el-text style="margin-left: 6px">{{ item.value }}</el-text>
-              </el-dropdown-item>
-            </el-dropdown-menu>
-          </template>
-        </el-dropdown>
-        <el-tooltip content="精确搜素">
-          <el-checkbox size="small" v-model="exact" style="margin-left: 10px"/>
-        </el-tooltip>
-      </template>
-      <template #append>
-        <el-button-group>
-          <me-button info="刷新键" @click="scanKey" icon="el-icon-search"></me-button>
-          <me-button info="新增键" @click="addKey" style="border-color: var(--el-button-border-color)"
-                     icon="el-icon-plus"></me-button>
-        </el-button-group>
-      </template>
-    </el-input>
+  <div class="key-main">
+    <template v-if="global.conn">
+      <el-input class="key-search" v-model="keyword" placeholder="Enter 键进行搜索" @keyup.enter="scanKey" clearable>
+        <template #prepend>
+          <el-dropdown placement="bottom-start" @command="chooseKeyType">
+            <el-tag :type="keyType.type" effect="plain" style="width: 32px; height: 32px">{{keyType.value.slice(0, 1)}}
+            </el-tag>
+            <template #dropdown>
+              <el-dropdown-menu>
+                <el-dropdown-item v-for="item in keyTypeList" :command="item">
+                  <el-tag :type="item.type" :effect="item.value === keyType.value ? 'dark' : 'plain'">
+                    {{ item.value.slice(0, 1) }}
+                  </el-tag>
+                  <el-text style="margin-left: 6px">{{ item.value }}</el-text>
+                </el-dropdown-item>
+              </el-dropdown-menu>
+            </template>
+          </el-dropdown>
+          <el-tooltip content="精确搜素">
+            <el-checkbox size="small" v-model="exact" style="margin-left: 10px"/>
+          </el-tooltip>
+        </template>
+        <template #append>
+          <el-button-group>
+            <me-button info="刷新键" @click="scanKey" icon="el-icon-search"></me-button>
+            <me-button info="新增键" @click="addKey" style="border-color: var(--el-button-border-color)"
+                       icon="el-icon-plus"></me-button>
+          </el-button-group>
+        </template>
+      </el-input>
 
-    <div class="key-list" v-loading="loading">
-      <ListKey :filter-keys="filterKeyList" v-if="simpleKey"/>
-      <TreeKey :filter-keys="filterKeyList" v-else/>
-    </div>
-
-    <div class="key-footer">
-      <div>
-        <el-segmented v-model="keyShowType" :options="keyShowTypeList">
-          <template #default="scope">
-            <me-icon name="键平铺展示" icon="me-icon-list" hint placement="top" v-if="scope.item === 'list'"/>
-            <me-icon name="键树形展示" icon="me-icon-tree" hint placement="top" v-else/>
-          </template>
-        </el-segmented>
-        <el-select v-model="db" filterable value-key="index" style="width: 66px"
-                   @change="scanKey" :disabled="global.conn.cluster" placeholder="--" suffix-icon="">
-          <el-option v-for="item in dbList"
-                     :label="item.label"
-                     :value="item"
-                     :key="item.index"/>
-        </el-select>
+      <div class="key-list" v-loading="loading">
+        <ListKey :filter-keys="filterKeyList" v-if="simpleKey"/>
+        <TreeKey :filter-keys="filterKeyList" v-else/>
       </div>
 
-      <el-text class="tip" size="large" type="primary">{{ filterKeyList.length }} / {{ keyList.length }}</el-text>
+      <div class="key-footer">
+        <div>
+          <el-segmented v-model="keyShowType" :options="keyShowTypeList">
+            <template #default="scope">
+              <me-icon name="键平铺展示" icon="me-icon-list" hint placement="top" v-if="scope.item === 'list'"/>
+              <me-icon name="键树形展示" icon="me-icon-tree" hint placement="top" v-else/>
+            </template>
+          </el-segmented>
+          <el-select v-model="db" filterable value-key="index" style="width: 66px"
+                     @change="scanKey" :disabled="global.conn.cluster" placeholder="--" suffix-icon="">
+            <el-option v-for="item in dbList"
+                       :label="item.label"
+                       :value="item"
+                       :key="item.index"/>
+          </el-select>
+        </div>
 
-      <div class="btns">
-        <me-icon name="加载更多" icon="me-icon-load-more" hint placement="top" @click="scanMore"/>
-        <me-icon name="加载剩余所有键" icon="me-icon-load-all" hint placement="top" @click="scanAll"/>
-        <el-dropdown placement="top-end" @command="handleCommand">
-          <me-icon icon="el-icon-more-filled"></me-icon>
-          <template #dropdown>
-            <el-dropdown-menu>
-              <el-dropdown-item command="import">
-                <me-icon name="导入数据" icon="el-icon-download"/>
-              </el-dropdown-item>
-              <el-dropdown-item command="batch" divided>
-                <me-icon name="批量删除" icon="el-icon-warning"/>
-              </el-dropdown-item>
-              <el-dropdown-item command="flush">
-                <me-icon name="清空数据" icon="me-icon-flush"/>
-              </el-dropdown-item>
-            </el-dropdown-menu>
-          </template>
-        </el-dropdown>
+        <el-text class="tip" size="large" type="primary">{{ filterKeyList.length }} / {{ keyList.length }}</el-text>
+
+        <div class="btns">
+          <me-icon name="加载更多" icon="me-icon-load-more" hint placement="top" @click="scanMore"/>
+          <me-icon name="加载剩余所有键" icon="me-icon-load-all" hint placement="top" @click="scanAll"/>
+          <el-dropdown placement="top-end" @command="handleCommand">
+            <me-icon icon="el-icon-more-filled"></me-icon>
+            <template #dropdown>
+              <el-dropdown-menu>
+                <el-dropdown-item command="import">
+                  <me-icon name="导入数据" icon="el-icon-download"/>
+                </el-dropdown-item>
+                <el-dropdown-item command="batch" divided>
+                  <me-icon name="批量删除" icon="el-icon-warning"/>
+                </el-dropdown-item>
+                <el-dropdown-item command="flush">
+                  <me-icon name="清空数据" icon="me-icon-flush"/>
+                </el-dropdown-item>
+              </el-dropdown-menu>
+            </template>
+          </el-dropdown>
+        </div>
       </div>
+    </template>
+
+    <div class="fallback" v-else>
+      <el-text size="large">键显示区</el-text>
     </div>
   </div>
 </template>
@@ -180,6 +186,14 @@ function handleCommand() {
 .key-main {
   //border: 2px solid red;
   flex-grow: 1;
+
+  .fallback {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    border: 1px solid var(--el-border-color);
+  }
 
   .key-search {
     // 复选框显示尽量为方形
