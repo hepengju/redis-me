@@ -4,12 +4,29 @@ import {apiDbList, apiScan} from '@/utils/api.js'
 import useGlobalStore from '@/utils/store.js'
 import {bus, CONN_REFRESH, sleep} from '@/utils/util.js'
 import {computed, reactive} from 'vue'
-import KeySimple from './detail/KeySimple.vue'
+import ListKey from './detail/ListKey.vue'
+import TreeKey from './detail/TreeKey.vue'
 
 // 全局对象
 const global = useGlobalStore()
 
-// 查询框: SCAN cursor [MATCH pattern] [COUNT count] [TYPE type]
+// 监听刷新事件
+bus.on(CONN_REFRESH, refresh)
+async function refresh() {
+  initReset()
+  initDbList()
+  await scanKey()
+}
+
+// 刷新时条件初始化
+function initReset(){
+  keyType.value = {value: 'ALL', type: 'info'}
+  exact.value = false
+  keyword.value = ''
+  keyList.value = []
+}
+
+// 键类型
 const keyTypeList = [
     { value: 'ALL'   , type: 'info'},
     { value: 'STRING', type: 'primary'},
@@ -21,47 +38,38 @@ const keyTypeList = [
     { value: 'JSON'  , type: 'primary'},
 ]
 const keyType = ref({value: 'ALL', type: 'info'})    // 键类型
-const exact   = ref(false) // 是否精确查询
-const keyword = ref('')    // 关键字
-const keyList = ref([])    // 键列表
-const dbList  = ref([])    // db列表
-const db      = ref('')    // 选择的db
-const filterKeyList = computed(() => {
-  return keyList.value.filter(redisKey => redisKey.key.indexOf(keyword.value) > -1)
-})
-
-const loading = ref(false)
-
-// 监听刷新事件
-bus.on(CONN_REFRESH, refresh)
-async function refresh() {
-  loading.value = true
-  initReset()
-  initDbList()
-  scanKey()
-  await sleep(500)
-  loading.value = false
-}
-
-// 刷新时条件初始化
-function initReset(){
-  keyType.value = {value: 'ALL', type: 'info'}
-  exact.value = false
-  keyword.value = ''
-  keyList.value = []
-}
-
-// 选择Key类型
 function chooseKeyType(keyTypeSelected) {
   keyType.value = keyTypeSelected
 }
 
+// 查询框: SCAN cursor [MATCH pattern] [COUNT count] [TYPE type]
+const exact   = ref(false) // 是否精确查询
+const keyword = ref('')    // 关键字
+const keyList = ref([])    // 键列表
+const loading = ref(false) // 扫描健过程中loading
+
 // 扫描键
-function scanKey(){
+async function scanKey(){
+  loading.value = true
   keyList.value = apiScan(global.conn?.id)
+  await sleep(500)
+  loading.value = false
 }
+const filterKeyList = computed(() => {
+  const lowerKeyword = keyword.value.toLowerCase()
+  return keyList.value.filter(redisKey => redisKey.key.toLowerCase().indexOf(lowerKeyword) > -1)
+})
+
+// 键显示类型
+const keyShowTypeList = ref(['list', 'tree'])
+const keyShowType = ref('list')
 
 // DB列表
+const dbList  = ref([])    // db列表
+const db      = ref({})    // 选择的db
+function chooseDb(dbSelected) {
+  db.value = dbSelected
+}
 function initDbList(){
   dbList.value = apiDbList(global.conn?.id)
   db.value = dbList.value[0]
@@ -94,9 +102,7 @@ function handleCommand() {
     <el-input class="key-search" v-model="keyword" placeholder="Enter 键进行搜索" @keyup.enter="scanKey" clearable>
       <template #prepend>
         <el-dropdown placement="bottom-start" @command="chooseKeyType">
-          <el-tag :type="keyType.type" effect="plain" style="width: 32px; height: 32px">{{
-              keyType.value.slice(0, 1)
-            }}
+          <el-tag :type="keyType.type" effect="plain" style="width: 32px; height: 32px">{{keyType.value.slice(0, 1)}}
           </el-tag>
           <template #dropdown>
             <el-dropdown-menu>
@@ -123,16 +129,26 @@ function handleCommand() {
     </el-input>
 
     <div class="key-list" v-loading="loading">
-      <KeySimple :filter-keys="filterKeyList"/>
+      <ListKey :filter-keys="filterKeyList" v-if="simpleKey"/>
+      <TreeKey :filter-keys="filterKeyList" v-else/>
     </div>
 
     <div class="key-footer">
-      <el-select v-model="db" filterable value-key="index" style="width: 100px" @change="scanKey">
-        <el-option v-for="item in dbList"
-                   :label="item.label"
-                   :value="item"
-                   :key="item.index"/>
-      </el-select>
+      <div>
+        <el-segmented v-model="keyShowType" :options="keyShowTypeList">
+          <template #default="scope">
+            <me-icon name="键平铺展示" icon="me-icon-list" hint placement="top" v-if="scope.item === 'list'"/>
+            <me-icon name="键树形展示" icon="me-icon-tree" hint placement="top" v-else/>
+          </template>
+        </el-segmented>
+        <el-select v-model="db" filterable value-key="index" style="width: 66px"
+                   @change="scanKey" :disabled="global.conn.cluster" placeholder="--" suffix-icon="">
+          <el-option v-for="item in dbList"
+                     :label="item.label"
+                     :value="item"
+                     :key="item.index"/>
+        </el-select>
+      </div>
 
       <el-text class="tip" size="large" type="primary">{{ filterKeyList.length }} / {{ keyList.length }}</el-text>
 

@@ -13,7 +13,6 @@ const btnDisable = computed(() => !!global.conn)
 
 // 切换连接
 function changeConn() {
-  console.log(global.conn)
   bus.emit(CONN_REFRESH)
 }
 // 保存连接后触发刷新

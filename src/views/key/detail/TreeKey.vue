@@ -1,0 +1,35 @@
+<script setup>
+// 全局对象
+import useGlobalStore from '@/utils/store.js'
+const global = useGlobalStore()
+
+const {filterKeys} = defineProps({
+  filterKeys: {type: Array, default: []}
+})
+
+function getKey(item) {
+  global.redisKey = item
+}
+</script>
+
+<template>
+  <div :style="{color: global.conn?.color}">
+    <div v-for="item in filterKeys" @click="getKey(item)"
+         class="key" :style="item.bytes === global.redisKey?.bytes ? {backgroundColor: 'var(--el-color-info-light-5)'} : {}">
+      <span>{{ item.key }}</span>
+    </div>
+  </div>
+</template>
+
+<style scoped lang="scss">
+.key {
+  cursor: pointer;
+  font-size: 12px;
+  line-height: 12px;
+  padding: 3px;
+
+  &:hover {
+    background-color: var(--el-color-info-light-7);
+  }
+}
+</style>

@@ -58,7 +58,7 @@ export const mockDbList = [
     },
     {
         index: 2,
-        label: 'DB2',
+        label: 'DB16',
         name: ''
     },
 ]
