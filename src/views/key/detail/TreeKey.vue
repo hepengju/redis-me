@@ -1,17 +1,30 @@
 <script setup>
 // 全局对象
 import useGlobalStore from '@/utils/store.js'
-
+import {useCssVar} from '@vueuse/core'
 const global = useGlobalStore()
 
 const {filterKeyList} = defineProps({
   filterKeyList: {type: Array, default: []},
 })
 
-const emptyText = ref('没有数据')
-const treeData = computed(() => buildTree(filterKeyList))
+// 设置树的颜色
+// const treeRef = useTemplateRef('tree')
+// const treeColor = useCssVar('--el-text-color-regular', treeRef)
+// watchEffect(() => {
+//   treeColor.value = global.conn?.color
+//   console.log('treeColor', treeColor.value)
+// })
 
-// 这个方法是由AI（豆包）生成的
+// 计算树的数据
+const emptyText = ref('没有数据')
+const treeData = computed(() => {
+  const root = buildTree(filterKeyList)
+  root.forEach(node => countLeaves(node))
+  return root
+})
+
+// 构建树：这个方法是由AI（豆包）生成的
 function buildTree(keyList) {
   const root = []
   keyList.forEach(rk => {
@@ -20,27 +33,40 @@ function buildTree(keyList) {
     parts.forEach((part, index) => {
       let node = currentLevel.find(item => item.label === part)
       if (!node) {
-        node = {
-          id: part,
-          label: part,
-          children: [],
-        }
+        node = {id: part, label: part, children: []}
         currentLevel.push(node)
       }
       if (index < parts.length - 1) {
         currentLevel = node.children
       } else {
-        // 最后的叶子节点显示全称且保存原始值
+        // 叶子节点显示全称且保存原始值
         node.label = rk.key
-        node.raw = rk
+        node.redisKey = rk
       }
     })
   })
   return root
 }
 
-function getKey(item) {
-  global.redisKey = item
+// 统计叶子节点个数
+function countLeaves(node) {
+  if (node.children.length === 0) {
+    // 如果是叶子节点，叶子数量为 1
+    node.keyCount = 1;
+    return 1;
+  }
+  let keyCount = 0;
+  // 递归统计子节点的叶子数量
+  node.children.forEach(child => {
+    keyCount += countLeaves(child);
+  });
+  // 当前节点的叶子数量等于所有子节点叶子数量之和
+  node.keyCount = keyCount;
+  return keyCount;
+}
+
+function getKey(redisKey) {
+  global.redisKey = redisKey
 }
 </script>
 
@@ -48,23 +74,18 @@ function getKey(item) {
   <div :style="{color: global.conn?.color, height: '100%'}">
     <el-auto-resizer>
       <template #default="{ height, width }">
-        <el-tree-v2 :data="treeData" :empty-text="emptyText" :height="height">
+        <el-tree-v2 ref="tree" :data="treeData"
+                    :style="{'--el-text-color-regular': global.conn?.color,
+                             '--el-tree-node-hover-bg-color': 'var(--el-color-info-light-7)'}"
+                    :empty-text="emptyText" :height="height" :item-size="20">
           <template #default="{ node }">
-            <div @click="getKey(node.raw)" v-if="node.isLeaf"
-                 class="key single-line-ellipsis">
+            <div @click="getKey(node.data.redisKey)" v-if="node.isLeaf">
               <span>{{ node.label }}</span>
             </div>
-            <me-flex v-else>
-              <me-icon :name="node.label"
-                       :icon="node.expanded ? 'el-icon-folderOpened' : 'el-icon-folder'"/>
-              <div>( {{node.children.length}} )</div>
+            <me-flex v-else style="width: 100%">
+              <me-icon :name="node.label" :icon="node.expanded ? 'el-icon-folderOpened' : 'el-icon-folder'"/>
+              <div style="color: var(--el-color-info)">[ {{node.data.keyCount}} ]</div>
             </me-flex>
-            <!--            <el-icon class="node-icon" :class="{ 'is-leaf': node.isLeaf }">
-              <el-icon-document v-if="node.isLeaf" />
-              <el-icon-folder v-else-if="!node.expanded" />
-              <el-icon-folderOpened v-else />
-            </el-icon>
-            <span style="margin-left: 5px">{{ node.label }}</span>-->
           </template>
         </el-tree-v2>
       </template>
@@ -74,13 +95,8 @@ function getKey(item) {
 
 <style scoped lang="scss">
 .key {
-  cursor: pointer;
-  font-size: 12px;
-  line-height: 12px;
-  padding: 3px;
-
-  &:hover {
-    background-color: var(--el-color-info-light-7);
-  }
+  //width: 100%;
+  //font-size: 12px;
+  //line-height: 12px;
 }
 </style>

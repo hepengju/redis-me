@@ -15,7 +15,8 @@ function getKey(item) {
 <template>
   <div :style="{color: global.conn?.color, height: '100%'}">
     <div v-for="item in filterKeyList" @click="getKey(item)"
-         class="key single-line-ellipsis" :style="item.bytes === global.redisKey?.bytes ? {backgroundColor: 'var(--el-color-info-light-5)'} : {}">
+         class="key single-line-ellipsis"
+         :style="item.bytes === global.redisKey?.bytes ? {backgroundColor: 'var(--el-color-info-light-7)'} : {}">
       <span>{{ item.key }}</span>
     </div>
   </div>
@@ -26,7 +27,7 @@ function getKey(item) {
   cursor: pointer;
   font-size: 12px;
   line-height: 12px;
-  padding: 3px;
+  padding: 4px;
 
   &:hover {
     background-color: var(--el-color-info-light-7);
