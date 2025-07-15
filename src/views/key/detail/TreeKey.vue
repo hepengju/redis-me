@@ -1,8 +1,9 @@
 <script setup>
 // 全局对象
 import useGlobalStore from '@/utils/store.js'
-
 const global = useGlobalStore()
+
+const emit = defineEmits(['chooseKey'])
 
 const {filterKeyList} = defineProps({
   filterKeyList: {type: Array, default: []},
@@ -56,21 +57,17 @@ function countLeaves(node) {
   node.keyCount = keyCount;
   return keyCount;
 }
-
-function getKey(redisKey) {
-  global.redisKey = redisKey
-}
 </script>
 
 <template>
   <el-auto-resizer>
     <template #default="{ height, width }">
       <el-tree-v2 ref="tree" :data="treeData"
-                  :style="{'--el-text-color-regular': global.conn?.color,
+                  :style="{'--el-text-color-regular': global.color,
                            '--el-tree-node-hover-bg-color': 'var(--el-color-info-light-7)'}"
                   :empty-text="emptyText" :height="height" :item-size="20">
         <template #default="{ node }">
-          <div @click="getKey(node.data.redisKey)" v-if="node.isLeaf">
+          <div @click="emit('chooseKey', node.data.redisKey)" v-if="node.isLeaf">
             <span>{{ node.label }}</span>
           </div>
           <me-flex v-else style="width: 100%">
@@ -82,11 +79,3 @@ function getKey(redisKey) {
     </template>
   </el-auto-resizer>
 </template>
-
-<style scoped lang="scss">
-.key {
-  //width: 100%;
-  //font-size: 12px;
-  //line-height: 12px;
-}
-</style>

@@ -58,7 +58,7 @@ function handleCommand(command) {
       </el-option>
 
       <template #label="{ value }">
-        <div :style="{color: global.conn?.color}">{{ value.name }}</div>
+        <div :style="{color: global.color}">{{ value.name }}</div>
       </template>
       <template #prefix>
         <me-icon icon="me-icon-redis"/>

@@ -20,7 +20,9 @@ export const useGlobalStore = defineStore('global', {
     scanCount: 1000,
     hscanCount: 100,
   }),
-  getters: {},
+  getters: {
+    color: state => state.conn?.color,
+  },
   actions: {
     deleteConn(conn, isGlobalConn = false){
       ElMessageBox.confirm(`确认删除连接【${conn.name}】吗`, {type: 'warning'})

@@ -75,6 +75,12 @@ function initDbList(){
   db.value = dbList.value[0]
 }
 
+// 选中键
+function chooseKey(redisKey) {
+  global.redisKey = redisKey
+  global.tabName = 'value'
+}
+
 // 弹框
 const dialog = reactive({
   add: false,    // 新增键
@@ -130,8 +136,8 @@ function handleCommand() {
       </el-input>
 
       <div class="key-list" v-loading="loading">
-        <ListKey :filter-key-list="filterKeyList" v-if="keyShowType === 'list'"/>
-        <TreeKey :filter-key-list="filterKeyList" v-else/>
+        <ListKey :filter-key-list="filterKeyList" v-if="keyShowType === 'list'" @chooseKey="chooseKey"/>
+        <TreeKey :filter-key-list="filterKeyList" v-else @chooseKey="chooseKey"/>
       </div>
 
       <div class="key-footer">

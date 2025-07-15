@@ -7,15 +7,14 @@ const {filterKeyList} = defineProps({
   filterKeyList: {type: Array, default: []}
 })
 
-function getKey(item) {
-  global.redisKey = item
-}
+const emit = defineEmits(['chooseKey'])
 </script>
 
+// TODO 后期考虑是否改为虚拟化列表
 <template>
-  <div :style="{color: global.conn?.color, height: '100%'}">
+  <div :style="{color: global.color, height: '100%'}">
     <div v-if="filterKeyList.length > 0">
-      <div v-for="item in filterKeyList" @click="getKey(item)"
+      <div v-for="item in filterKeyList" @click="emit('chooseKey', item)"
            class="key single-line-ellipsis"
            :style="item.bytes === global.redisKey?.bytes ? {backgroundColor: 'var(--el-color-info-light-7)'} : {}">
         <span>{{ item.key }}</span>
