@@ -77,6 +77,7 @@ function chooseKey(redisKey) {
   global.redisKey = redisKey
   global.tabName = 'value'
   global.redisValue = apiGet(global.conn?.id, redisKey)
+  console.log(redisKey)
 }
 
 // 弹框
