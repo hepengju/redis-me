@@ -9,7 +9,7 @@ import {computed, nextTick, reactive, useTemplateRef} from 'vue'
 const global = useGlobalStore()
 
 // 按钮禁用
-const btnDisable = computed(() => !!global.conn)
+const btnDisable = computed(() => !global.conn)
 
 // 切换连接
 function changeConn() {

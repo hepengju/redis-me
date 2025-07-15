@@ -46,7 +46,7 @@ function chooseKeyType(keyTypeSelected) {
 const exact   = ref(false) // 是否精确查询
 const keyword = ref('')    // 关键字
 const keyList = ref([])    // 键列表
-const loading = ref(false) // 扫描健过程中loading
+const loading = ref(false) // 扫描键过程中loading
 
 // 扫描键
 async function scanKey(){
@@ -61,15 +61,12 @@ const filterKeyList = computed(() => {
 })
 
 // 键显示类型
-const keyShowTypeList = ref(['list', 'tree'])
-const keyShowType = ref('list')
+const keyShowTypeList = ref(['tree', 'list'])
+const keyShowType = ref('tree')
 
 // DB列表
 const dbList  = ref([])    // db列表
 const db      = ref({})    // 选择的db
-function chooseDb(dbSelected) {
-  db.value = dbSelected
-}
 function initDbList(){
   dbList.value = apiDbList(global.conn?.id)
   db.value = dbList.value[0]
@@ -85,7 +82,7 @@ function chooseKey(redisKey) {
 const dialog = reactive({
   add: false,    // 新增键
   load: false,   // 导入键
-  delete: false, // 删除健
+  delete: false, // 删除键
 })
 
 // 新增键
@@ -141,7 +138,7 @@ function handleCommand() {
       </div>
 
       <div class="key-footer">
-        <div>
+        <me-flex>
           <el-segmented v-model="keyShowType" :options="keyShowTypeList">
             <template #default="scope">
               <me-icon name="键平铺展示" icon="me-icon-list" hint placement="top" v-if="scope.item === 'list'"/>
@@ -155,7 +152,7 @@ function handleCommand() {
                        :value="item"
                        :key="item.index"/>
           </el-select>
-        </div>
+        </me-flex>
 
         <el-text class="tip" size="large" type="primary">{{ filterKeyList.length }} / {{ keyList.length }}</el-text>
 
