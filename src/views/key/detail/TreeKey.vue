@@ -1,20 +1,12 @@
 <script setup>
 // 全局对象
 import useGlobalStore from '@/utils/store.js'
-import {useCssVar} from '@vueuse/core'
+
 const global = useGlobalStore()
 
 const {filterKeyList} = defineProps({
   filterKeyList: {type: Array, default: []},
 })
-
-// 设置树的颜色
-// const treeRef = useTemplateRef('tree')
-// const treeColor = useCssVar('--el-text-color-regular', treeRef)
-// watchEffect(() => {
-//   treeColor.value = global.conn?.color
-//   console.log('treeColor', treeColor.value)
-// })
 
 // 计算树的数据
 const emptyText = ref('没有数据')
@@ -71,26 +63,24 @@ function getKey(redisKey) {
 </script>
 
 <template>
-  <div :style="{color: global.conn?.color, height: '100%'}">
-    <el-auto-resizer>
-      <template #default="{ height, width }">
-        <el-tree-v2 ref="tree" :data="treeData"
-                    :style="{'--el-text-color-regular': global.conn?.color,
-                             '--el-tree-node-hover-bg-color': 'var(--el-color-info-light-7)'}"
-                    :empty-text="emptyText" :height="height" :item-size="20">
-          <template #default="{ node }">
-            <div @click="getKey(node.data.redisKey)" v-if="node.isLeaf">
-              <span>{{ node.label }}</span>
-            </div>
-            <me-flex v-else style="width: 100%">
-              <me-icon :name="node.label" :icon="node.expanded ? 'el-icon-folderOpened' : 'el-icon-folder'"/>
-              <div style="color: var(--el-color-info)">[ {{node.data.keyCount}} ]</div>
-            </me-flex>
-          </template>
-        </el-tree-v2>
-      </template>
-    </el-auto-resizer>
-  </div>
+  <el-auto-resizer>
+    <template #default="{ height, width }">
+      <el-tree-v2 ref="tree" :data="treeData"
+                  :style="{'--el-text-color-regular': global.conn?.color,
+                           '--el-tree-node-hover-bg-color': 'var(--el-color-info-light-7)'}"
+                  :empty-text="emptyText" :height="height" :item-size="20">
+        <template #default="{ node }">
+          <div @click="getKey(node.data.redisKey)" v-if="node.isLeaf">
+            <span>{{ node.label }}</span>
+          </div>
+          <me-flex v-else style="width: 100%">
+            <me-icon :name="node.label" :icon="node.expanded ? 'el-icon-folderOpened' : 'el-icon-folder'"/>
+            <div style="color: var(--el-color-info)">[ {{ node.data.keyCount }} ]</div>
+          </me-flex>
+        </template>
+      </el-tree-v2>
+    </template>
+  </el-auto-resizer>
 </template>
 
 <style scoped lang="scss">
