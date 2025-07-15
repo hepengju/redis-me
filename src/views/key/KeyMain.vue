@@ -1,6 +1,6 @@
 <script setup>
 import MeIcon from '@/components/MeIcon.vue'
-import {apiDbList, apiScan} from '@/utils/api.js'
+import {apiDbList, apiGet, apiScan} from '@/utils/api.js'
 import useGlobalStore from '@/utils/store.js'
 import {bus, CONN_REFRESH, sleep} from '@/utils/util.js'
 import {computed, reactive} from 'vue'
@@ -76,6 +76,7 @@ function initDbList(){
 function chooseKey(redisKey) {
   global.redisKey = redisKey
   global.tabName = 'value'
+  global.redisValue = apiGet(global.conn?.id, redisKey)
 }
 
 // 弹框
@@ -179,9 +180,7 @@ function handleCommand() {
       </div>
     </template>
 
-    <el-empty class="empty" v-else description="键显示区">
-
-    </el-empty>
+    <el-empty class="empty" v-else description="键显示区"/>
   </div>
 </template>
 

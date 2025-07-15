@@ -1,5 +1,5 @@
 import {mockConnList, mockDbList, mockGet, mockInfo, mockScan} from './api-mock.js'
-import {random} from 'lodash'
+import {random, sample} from 'lodash'
 
 // 获取连接配置信息
 export function apiConnList() {
@@ -23,7 +23,7 @@ export function apiScan(id, match = '', count = 1000, type = '', db = '') {
 
 // 获取值
 export function apiGet(id, key) {
-    return mockGet
+    return sample(mockGet)
 }
 
 // 设置值

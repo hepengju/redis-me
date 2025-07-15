@@ -14,6 +14,7 @@ export const useGlobalStore = defineStore('global', {
     connList: [],      // 连接列表
     conn: null,        // 当前连接
     redisKey: null,    // 当前选择的RedisKey
+    redisValue: null,  // 当前选择的RedisValue
     tabName: 'info',   // 当前tab标签
 
     // 系统配置调整的值
