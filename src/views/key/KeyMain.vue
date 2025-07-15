@@ -179,9 +179,9 @@ function handleCommand() {
       </div>
     </template>
 
-    <div class="fallback" v-else>
-      <el-text size="large">键显示区</el-text>
-    </div>
+    <el-empty class="empty" v-else description="键显示区">
+
+    </el-empty>
   </div>
 </template>
 
@@ -190,10 +190,7 @@ function handleCommand() {
   //border: 2px solid red;
   flex-grow: 1;
 
-  .fallback {
-    display: flex;
-    align-items: center;
-    justify-content: center;
+  .empty {
     height: 100%;
     border: 1px solid var(--el-border-color);
   }
