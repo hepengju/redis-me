@@ -79,16 +79,18 @@ function delKey(){}
     display: flex;
     position: relative;
 
+    :deep(.el-input-group__prepend) {
+      padding: 0 16px;
+    }
+    :deep(.el-input-group__append) {
+      padding: 0 18px;
+    }
+
     .ttl {
       width: 300px;
       margin-left: 20px;
 
-      :deep(.el-input-group__prepend) {
-        padding: 0 14px;
-      }
-      :deep(.el-input-group__append) {
-        padding: 0 16px;
-      }
+
     }
 
     .hashKey {
