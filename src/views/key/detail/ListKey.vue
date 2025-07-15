@@ -14,10 +14,16 @@ function getKey(item) {
 
 <template>
   <div :style="{color: global.conn?.color, height: '100%'}">
-    <div v-for="item in filterKeyList" @click="getKey(item)"
-         class="key single-line-ellipsis"
-         :style="item.bytes === global.redisKey?.bytes ? {backgroundColor: 'var(--el-color-info-light-7)'} : {}">
-      <span>{{ item.key }}</span>
+    <div v-if="filterKeyList.length > 0">
+      <div v-for="item in filterKeyList" @click="getKey(item)"
+           class="key single-line-ellipsis"
+           :style="item.bytes === global.redisKey?.bytes ? {backgroundColor: 'var(--el-color-info-light-7)'} : {}">
+        <span>{{ item.key }}</span>
+      </div>
+    </div>
+    <div v-else>
+      <!-- 和el-tree的empty-data保持一致 -->
+      <div class="el-tree__empty-block"><span class="el-tree__empty-text">没有数据</span></div>
     </div>
   </div>
 </template>
