@@ -1,7 +1,8 @@
 <script setup>
-// 全局对象
 import useGlobalStore from '@/utils/store.js'
+import {capitalize} from 'lodash'
 
+// 全局对象
 const global = useGlobalStore()
 
 const isEnvEdit = ref(true)
@@ -20,31 +21,38 @@ function delKey(){}
   <div class="redis-value">
     <template v-if="global.redisValue">
       <div class="key">
-        <el-input class="type" type="text" v-model="global.redisKey.key" readonly>
-          <template #prepend>{{global.redisValue.type.toUpperCase()}}</template>
+        <el-input type="text" v-model="global.redisKey.key" readonly style="flex: 1">
+          <template #prepend>{{capitalize(global.redisValue.type)}}</template>
           <template #append>
             <el-button icon="el-icon-document-copy" v-copy="global.redisKey.key"/>
           </template>
         </el-input>
-        <el-input class="hashKey" type="text" placeholder="可选输入HashKey" v-model="hashKey" v-if="global.redisValue.type == 'hash'" @keyup.enter="getValue('')">
+
+        <el-input type="text" placeholder="可选输入" style="width: 200px; margin-left: 10px"
+                  v-model="hashKey" v-if="global.redisValue.type == 'hash'"
+                  @keyup.enter="getValue('')">
           <template #prepend>Hash键</template>
         </el-input>
-        <el-input class="ttl" type="number" v-model="global.redisValue.ttl" :style="{marginRight: isEnvEdit ? '110px': '60px'}">
-          <template #prepend>TTL</template>
-          <template #append v-if="isEnvEdit">
-            <el-tooltip content="点击修改键的过期时间（单位为秒）" placement="top" :show-after="500">
-              <el-button icon="el-icon-select" @click="expire" :disabled="!global.redisKey.key"/>
-            </el-tooltip>
-          </template>
-        </el-input>
 
-        <el-button-group class="btn">
-          <el-button               icon="el-icon-refresh" @click="getValue('')" :disabled="!global.redisKey.key"></el-button>
-          <el-button type="danger" icon="el-icon-delete"  @click="delKey"       :disabled="!global.redisKey.key" ></el-button>
-        </el-button-group>
+        <me-flex>
+          <el-input type="number" v-model="global.redisValue.ttl" style="width: 150px; margin: 0 10px;" >
+            <template #prepend>TTL</template>
+            <template #append v-if="isEnvEdit">
+              <el-tooltip content="点击修改键的过期时间（单位为秒）" placement="top" :show-after="500">
+                <el-button icon="el-icon-select" @click="expire" :disabled="!global.redisKey.key"/>
+              </el-tooltip>
+            </template>
+          </el-input>
+
+          <el-button-group style="width: 90px">
+            <el-button icon="el-icon-refresh" @click="getValue('')" :disabled="!global.redisKey.key"></el-button>
+            <el-button type="danger" icon="el-icon-delete" @click="delKey" :disabled="!global.redisKey.key"></el-button>
+          </el-button-group>
+        </me-flex>
       </div>
+
       <div class="value">
-        <me-code :value="showValue" @update:value="(newValue) => global.redisValue.newValue=newValue" mode="application/json" remove-height :read-only="!showSave"></me-code>
+        <me-code :value="showValue" @update:value="(newValue) => global.redisValue.newValue=newValue" mode="application/json" :read-only="!showSave"></me-code>
         <el-button-group class="btn">
           <el-button>Size: {{showSize}}</el-button>
           <el-button icon="el-icon-document-copy" v-copy="showValue" ></el-button>
@@ -53,7 +61,7 @@ function delKey(){}
           </el-tooltip>
         </el-button-group>
         <el-button-group class="save" v-if="isEnvEdit">
-          <el-button type="danger" icon="sc-icon-save" v-if="showSave" @click="setKey"></el-button>
+          <me-button type="danger" icon="me-icon-save" v-if="showSave" @click="setKey" placement="top" info="保存"></me-button>
           <!-- TODO 编辑Hash
           <el-button type="danger" icon="el-icon-edit" v-if="showEdit" @click="editHash"></el-button>
           -->
@@ -66,19 +74,13 @@ function delKey(){}
 
 <style scoped lang="scss">
 .redis-value {
-  flex-grow: 1;
+  height: 100%;
   overflow: hidden;
-  margin-left: 20px;
-  margin-right: 10px;
-  margin-bottom: 20px;
 
   display: flex;
   flex-direction: column;
 
   .key {
-    display: flex;
-    position: relative;
-
     :deep(.el-input-group__prepend) {
       padding: 0 16px;
     }
@@ -86,23 +88,8 @@ function delKey(){}
       padding: 0 18px;
     }
 
-    .ttl {
-      width: 300px;
-      margin-left: 20px;
-
-
-    }
-
-    .hashKey {
-      width: 60%;
-      margin-left: 20px;
-    }
-
-    .btn {
-      position: absolute;
-      right: 0;
-      top: 0;
-    }
+    display: flex;
+    justify-content: space-between;
   }
 
   .value {
