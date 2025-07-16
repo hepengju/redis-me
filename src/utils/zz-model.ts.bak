@@ -52,6 +52,8 @@ interface RedisValue {
     value: object
     rawValue: object
     ttl: number
+    // 添加
+    rawSize: number
 }
 
 // ~~~~~~~~全局数据类型
