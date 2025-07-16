@@ -169,12 +169,12 @@ function clickTag(tag) {
             <el-text size="large">参数详情</el-text>
             <el-link type="success" target="_blank" style="margin-left: 10px"
                      href="https://redis.ac.cn/docs/latest/commands/info/">
-              <me-icon icon="me-icon-link"/>
+              <me-icon info="跳转官网参数详解" icon="me-icon-link"/>
             </el-link>
           </div>
 
           <div class="detail-header-right">
-            <me-icon icon="me-icon-raw" class="raw-info" @click="dialog.raw = true"/>
+            <me-icon info="原始信息" icon="me-icon-raw" class="raw-info" @click="dialog.raw = true"/>
             <el-input v-model="keyword" clearable style="width: 200px" prefix-icon="el-icon-search" placeholder="关键字过滤"/>
           </div>
         </me-flex>
@@ -184,7 +184,7 @@ function clickTag(tag) {
         <div class="tags">
           <el-button class="tag" plain v-for="(_, tagName) in tag"
                      @click="clickTag(tagName)">
-            <span :style="{fontWeight: 600, color: tagSelected === tagName ? 'var(--el-color-primary)' : ''}">{{tagName}}</span>
+            <span :style="{color: tagSelected === tagName ? 'var(--el-color-primary)' : ''}">{{tagName}}</span>
           </el-button>
         </div>
         <el-table ref="table" :data="tableData" border height="100%">
