@@ -11,7 +11,7 @@ const global = useGlobalStore()
 </script>
 
 <template>
-  <el-tabs v-model="global.tabName" type="border-card" class="redis-tag">
+  <el-tabs class="redis-tag" v-model="global.tabName" type="border-card" addable>
     <el-tab-pane name="info">
       <template #label>
         <me-icon name="信息" icon="el-icon-calendar"/>
@@ -46,6 +46,13 @@ const global = useGlobalStore()
       </template>
       <RedisSlow/>
     </el-tab-pane>
+
+    <!-- 此处利用tab的新增按钮位置放置一个redis值的编辑功能 -->
+    <template #add-icon>
+      <el-switch v-model="global.readonly" v-if="global.tabName === 'value'"
+                 inline-prompt active-text="只读" inactive-text="编辑"
+                 style="margin-right: 60px;--el-switch-on-color: #13ce66"/>
+    </template>
   </el-tabs>
 </template>
 
@@ -56,6 +63,10 @@ const global = useGlobalStore()
 
   :deep(.el-tab-pane) {
     height: 100%;
+  }
+
+  :deep(.el-tabs__new-tab) {
+    border: none;
   }
 }
 </style>

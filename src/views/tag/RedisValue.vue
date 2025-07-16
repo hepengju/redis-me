@@ -1,17 +1,19 @@
 <script setup>
 import useGlobalStore from '@/utils/store.js'
 import {capitalize} from 'lodash'
+import {copy} from '@/utils/util.js'
 
 // 全局对象
 const global = useGlobalStore()
 
-const isEnvEdit = ref(true)
-const expire = ref(-1)
 const showValue = ref('')
 const showSize = ref(0)
 const showSave = ref(true)
 const magicValue = ref(true)
 const hashKey = ref('')
+function expireKey(){
+  console.log('expireKey')
+}
 function getValue(){}
 function setKey(){}
 function delKey(){}
@@ -22,9 +24,11 @@ function delKey(){}
     <template v-if="global.redisValue">
       <div class="key">
         <el-input type="text" v-model="global.redisKey.key" readonly style="flex: 1">
-          <template #prepend>{{capitalize(global.redisValue.type)}}</template>
+          <template #prepend>
+            {{capitalize(global.redisValue.type)}}
+          </template>
           <template #append>
-            <el-button icon="el-icon-document-copy" v-copy="global.redisKey.key"/>
+            <me-button info="复制" icon="el-icon-document-copy" @click="copy(global.redisKey.key)" placement="top"/>
           </template>
         </el-input>
 
@@ -35,33 +39,37 @@ function delKey(){}
         </el-input>
 
         <me-flex>
-          <el-input type="number" v-model="global.redisValue.ttl" style="width: 150px; margin: 0 10px;" >
+          <!-- 宽度170可以完全显示1天：86400秒 -->
+          <el-input v-model.number="global.redisValue.ttl" style="width: 170px; margin: 0 10px;">
             <template #prepend>TTL</template>
-            <template #append v-if="isEnvEdit">
-              <el-tooltip content="点击修改键的过期时间（单位为秒）" placement="top" :show-after="500">
-                <el-button icon="el-icon-select" @click="expire" :disabled="!global.redisKey.key"/>
-              </el-tooltip>
+            <template #append v-if="!global.readonly">
+              <me-button info="点击修改键的过期时间（单位为秒，-1代表永久）" icon="el-icon-select" @click="expireKey"
+                         :disabled="!global.redisKey.key" placement="top-end"/>
             </template>
           </el-input>
 
-          <el-button-group style="width: 90px">
-            <el-button icon="el-icon-refresh" @click="getValue('')" :disabled="!global.redisKey.key"></el-button>
-            <el-button type="danger" icon="el-icon-delete" @click="delKey" :disabled="!global.redisKey.key"></el-button>
+          <el-button-group>
+            <me-button hint="刷新值" icon="el-icon-refresh" @click="getValue('')" :disabled="!global.redisKey.key"></me-button>
+            <me-button hint="删除键" v-if="!global.readonly" type="danger" icon="el-icon-delete" @click="delKey" :disabled="!global.redisKey.key"></me-button>
           </el-button-group>
         </me-flex>
       </div>
 
       <div class="value">
-        <me-code :value="showValue" @update:value="(newValue) => global.redisValue.newValue=newValue" mode="application/json" :read-only="!showSave"></me-code>
+        <me-code :value="showValue" @update:value="(newValue) => global.redisValue.newValue=newValue"
+                 mode="application/json" :read-only="!showSave"></me-code>
         <el-button-group class="btn">
-          <el-button>Size: {{showSize}}</el-button>
-          <el-button icon="el-icon-document-copy" v-copy="showValue" ></el-button>
-          <el-tooltip content="默认开启美化，开启后针对hash/list/set/zset及json字符串进行格式化，关闭后显示原始值toString">
-            <el-button icon="el-icon-magic-stick" text :style="magicValue ? {'backgroundColor': '#f4de29 !important', 'color': 'black' } : {}" @click="magicValue = !magicValue"></el-button>
-          </el-tooltip>
+          <el-button>Size: {{ showSize }}</el-button>
+          <me-button info="复制" icon="el-icon-document-copy" @click="copy(showValue)" placement="bottom"/>
+          <me-button info="默认开启美化，开启后针对hash/list/set/json等进行格式化，关闭后显示原始值toString"
+                     placement="bottom-end"
+                     icon="el-icon-magic-stick"
+                     :style="magicValue ? {'backgroundColor': '#f4de29 !important', 'color': 'black' } : {}"
+                     @click="magicValue = !magicValue"/>
         </el-button-group>
-        <el-button-group class="save" v-if="isEnvEdit">
-          <me-button type="danger" icon="me-icon-save" v-if="showSave" @click="setKey" placement="top" info="保存"></me-button>
+        <el-button-group class="save" v-if="!global.readonly">
+          <me-button type="danger" icon="me-icon-save" v-if="showSave" @click="setKey" placement="top"
+                     info="保存"></me-button>
           <!-- TODO 编辑Hash
           <el-button type="danger" icon="el-icon-edit" v-if="showEdit" @click="editHash"></el-button>
           -->

@@ -17,7 +17,7 @@ const treeData = computed(() => {
   return root
 })
 
-// 构建树：这个方法是由AI（豆包）生成的
+// 构建树：这个方法是由AI（豆包）生成的，间接明了，非常不赖！
 function buildTree(keyList) {
   const root = []
   keyList.forEach(rk => {
@@ -41,7 +41,7 @@ function buildTree(keyList) {
   return root
 }
 
-// 统计叶子节点个数
+// 统计叶子节点个数（这个也是豆包写的）
 function countLeaves(node) {
   if (node.children.length === 0) {
     // 如果是叶子节点，叶子数量为 1

@@ -10,7 +10,7 @@ export default {
 
 <template>
   <el-tooltip :content="info" :show-after="500" :placement="placement">
-    <el-button v-bind="$attrs" :icon="icon" v-if="icon.startsWith('el-icon')"></el-button>
+    <el-button v-bind="$attrs" :icon="icon" v-if="icon.startsWith('el-icon')"/>
     <el-button v-bind="$attrs" v-else>
       <template #icon>
         <SvgIcon :name="icon" class="icon"/>

@@ -16,6 +16,7 @@ export const useGlobalStore = defineStore('global', {
     redisKey: null,    // 当前选择的RedisKey
     redisValue: null,  // 当前选择的RedisValue
     tabName: 'info',   // 当前tab标签
+    readonly: false,   // 是否只读（保存、删除等按钮隐藏）
 
     // 系统配置调整的值
     scanCount: 1000,
