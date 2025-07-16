@@ -1,4 +1,5 @@
 <script setup>
+import MeIcon from '@/components/MeIcon.vue'
 import useGlobalStore from '@/utils/store.js'
 import {capitalize} from 'lodash'
 import {copy, humanSize} from '@/utils/util.js'
@@ -7,18 +8,17 @@ import {copy, humanSize} from '@/utils/util.js'
 const global = useGlobalStore()
 
 // 值的显示方式
+const viewTypeList = ['json', 'table']
+const viewType = ref('json')
 const hashKey = ref('')
 const isPretty = ref(true)
 const isHashValue = ref(false)
-const isTable = ref(false)
+const isTableView = ref(false)
 
 // 计算属性
 const stringTypeOrHashValue = computed(() => 'string' === global.redisValue?.type || isHashValue.value)
 const showValue = computed(() => {
   const rv = global.redisValue
-  console.log(rv)
-  console.log(JSON.stringify(rv?.value, null, 2))
-
   if (isPretty.value) {
     if (stringTypeOrHashValue.value) {
       const str = rv?.value?.toString()
@@ -36,8 +36,8 @@ const showValue = computed(() => {
 })
 
 
-function showEdit(){
-
+function toggleTableView(){
+  isTableView.value = !isTableView.value
 }
 function expireKey(){
   console.log('expireKey')
@@ -79,8 +79,8 @@ function delKey(){}
           </el-input>
 
           <el-button-group>
-            <me-button hint="刷新值" icon="el-icon-refresh" @click="getValue('')" :disabled="!global.redisKey.key"></me-button>
-            <me-button hint="删除键" v-if="!global.readonly" type="danger" icon="el-icon-delete" @click="delKey" :disabled="!global.redisKey.key"></me-button>
+            <me-button info="刷新值" icon="el-icon-refresh" @click="getValue('')" :disabled="!global.redisKey.key"></me-button>
+            <me-button info="删除键" v-if="!global.readonly" type="danger" icon="el-icon-delete" @click="delKey" :disabled="!global.redisKey.key"></me-button>
           </el-button-group>
         </me-flex>
       </div>
@@ -88,9 +88,10 @@ function delKey(){}
       <div class="value">
         <me-code :value="showValue" @update:value="(newValue) => global.redisValue.newValue=newValue"
                  mode="application/json" :read-only="global.readonly || !stringTypeOrHashValue"></me-code>
-        <el-button-group class="btn">
+
+        <el-button-group class="btn-rt">
           <el-button>Size: {{ humanSize(global.redisValue.rawValue.length) }}</el-button>
-          <me-button info="复制" icon="el-icon-document-copy" @click="copy(showValue)" placement="bottom"/>
+          <me-button info="复制" icon="el-icon-document-copy" @click="copy(showValue)"/>
           <me-button info="默认开启美化，开启后针对hash/list/set/json等进行格式化，关闭后显示原始值toString"
                      placement="bottom-end"
                      icon="el-icon-magic-stick"
@@ -98,13 +99,18 @@ function delKey(){}
                      @click="isPretty = !isPretty"/>
         </el-button-group>
 
-        <el-button-group class="save" v-if="!global.readonly">
-          <me-button info="保存" placement="top" type="danger" icon="me-icon-save" @click="setValue"
-                     v-if="stringTypeOrHashValue"/>
-          <me-button info="切换表格显示" placement="top" icon="el-icon-edit" @click="showEdit" v-else
-                     :style="isTable ? {'backgroundColor': '#f4de29 !important', 'color': 'black' } : {}"
-          />
-        </el-button-group>
+        <div class="btn-rb" v-if="stringTypeOrHashValue && !global.readonly">
+          <me-button class="save" info="保存" type="danger" icon="me-icon-save" @click="setValue"/>
+        </div>
+
+        <div class="btn-rb" v-if="!stringTypeOrHashValue">
+          <el-segmented v-model="viewType" :options="viewTypeList">
+            <template #default="scope">
+              <me-icon name="JSON展示" icon="me-icon-json"  hint placement="top" v-if="scope.item === 'json'"/>
+              <me-icon name="表格展示" icon="me-icon-table" hint placement="top" v-else @click="toggleTableView"/>
+            </template>
+          </el-segmented>
+        </div>
       </div>
     </template>
     <el-empty v-else description="键不存在 或 未选择任何键"></el-empty>
@@ -137,13 +143,13 @@ function delKey(){}
     flex-grow: 1;
     overflow: hidden;
 
-    .btn {
+    .btn-rt {
       position: absolute;
       right: 0;
       top: 0;
     }
 
-    .save {
+    .btn-rb {
       position: absolute;
       right: 0;
       bottom: 0;

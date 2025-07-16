@@ -29,7 +29,7 @@ export default {
         <el-icon v-if="icon.startsWith('el-icon-')">
           <Component :is="icon"/>
         </el-icon>
-        <SvgIcon v-else :name="icon" class="icon"/>
+        <SvgIcon v-else :name="icon"/>
       </el-tooltip>
     </template>
 
@@ -38,7 +38,7 @@ export default {
       <el-icon v-if="icon.startsWith('el-icon-')">
         <Component :is="icon"/>
       </el-icon>
-      <SvgIcon v-else :name="icon" class="icon"/>
+      <SvgIcon v-else :name="icon"/>
       <span class="name" v-if="name">{{ name }}</span>
     </template>
   </div>
