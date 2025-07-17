@@ -67,7 +67,7 @@ function countLeaves(node) {
                            '--el-tree-node-hover-bg-color': 'var(--el-color-info-light-7)'}"
                   :empty-text="emptyText" :height="height" :item-size="20">
         <template #default="{ node }">
-          <div @click="emit('chooseKey', node.data.redisKey)" v-if="node.isLeaf">
+          <div @click="emit('chooseKey', node.data.redisKey)" style="width: 100%" v-if="node.isLeaf">
             <span>{{ node.label }}</span>
           </div>
           <me-flex v-else style="width: 100%">
