@@ -2,7 +2,7 @@
 import MeIcon from '@/components/MeIcon.vue'
 import {apiDbList, apiGet, apiScan} from '@/utils/api.js'
 import useGlobalStore from '@/utils/store.js'
-import {bus, CONN_REFRESH, sleep} from '@/utils/util.js'
+import {bus, CONN_REFRESH, DELETE_KEY, sleep} from '@/utils/util.js'
 import {computed, reactive} from 'vue'
 import ListKey from './detail/ListKey.vue'
 import TreeKey from './detail/TreeKey.vue'
@@ -59,6 +59,10 @@ const filterKeyList = computed(() => {
   const key = keyword.value.toLowerCase()
   return keyList.value.filter(redisKey => redisKey.key.toLowerCase().indexOf(key) > -1)
 })
+bus.on(DELETE_KEY, deleteKey)
+function deleteKey(redisKey) {
+  keyList.value = keyList.value.filter(rk => rk.bytes !== redisKey.bytes)
+}
 
 // 键显示类型
 const keyShowTypeList = ref(['tree', 'list'])

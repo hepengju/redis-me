@@ -30,8 +30,8 @@ const emit = defineEmits(['chooseKey'])
 <style scoped lang="scss">
 .key {
   cursor: pointer;
-  font-size: 12px;
-  line-height: 12px;
+  font-size: 14px;
+  line-height: 14px;
   padding: 4px;
 
   &:hover {

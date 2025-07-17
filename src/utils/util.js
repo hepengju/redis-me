@@ -8,6 +8,7 @@ export const bus = mitt()
 
 // 常量
 export const CONN_REFRESH = 'CONN_REFRESH'
+export const DELETE_KEY = 'DELETE_KEY'
 
 // 预设颜色
 export const PREDEFINE_COLORS = [

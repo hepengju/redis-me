@@ -1,8 +1,10 @@
 <script setup>
 import MeIcon from '@/components/MeIcon.vue'
 import useGlobalStore from '@/utils/store.js'
-import {capitalize} from 'lodash'
-import {copy, humanSize} from '@/utils/util.js'
+import {capitalize, cloneDeep} from 'lodash'
+import {bus, copy, DELETE_KEY, humanSize} from '@/utils/util.js'
+import {ElMessage, ElMessageBox} from 'element-plus'
+import {apiGet} from '@/utils/api.js'
 
 // 全局对象
 const global = useGlobalStore()
@@ -19,7 +21,6 @@ const tableKeyword = ref('')
 const stringTypeOrWithHashKey = computed(() => 'string' === global.redisValue?.type || withHashKey.value)
 const showValue = computed(() => {
   const rv = global.redisValue
-  if (rv === null || rv === undefined) return ''
   if (rv.value === null || rv.value === undefined) return ''
 
   if (isPretty.value) {
@@ -34,14 +35,15 @@ const showValue = computed(() => {
       return JSON.stringify(rv.value, null, 2)
     }
   } else {
-    return 'hash' === rv.type && !withHashKey.value ? JSON.stringify(rv.value) : rv.value.toString()
+    return 'hash' === rv.type && !withHashKey.value
+        || 'zset' === rv.type
+        ? JSON.stringify(rv.value) : rv.value.toString()
   }
 })
 
 // 表格数据
 const dataList = computed(() => {
   const rv = global.redisValue
-  if (rv === null || rv === undefined) return []
   if (rv.value === null || rv.value === undefined) return []
 
   let data = []
@@ -73,16 +75,47 @@ watchEffect(() => {
   }
 })
 
-function expireKey(){
-  console.log('expireKey')
+// TTL设置
+function ttlKey(){
+  ElMessage({message: 'TTL设置成功', type: 'success'})
 }
-function getValue(){}
-function setValue(){}
-function delKey(){}
 
-function rowCopyValue(){}
-function rowEditValue(){}
-function rowDeleteValue(){}
+// 刷新键
+function refreshKey() {
+  global.redisValue = apiGet(global.conn?.id, global.redisKey)
+}
+
+// 删除键
+function delKey() {
+  ElMessageBox.confirm(
+      `确定删除键【${global.redisKey.key}】吗？`,
+      '提示',
+      {type: 'warning'},
+  ).then(() => {
+    bus.emit(DELETE_KEY, cloneDeep(global.redisKey))
+    global.redisKey = null
+    global.redisValue = null
+    ElMessage({message: '删除成功', type: 'success'})
+  }).catch(() => {})
+}
+
+// 保存值
+function setValue() {
+  ElMessage({message: '保存成功', type: 'success'})
+}
+
+// 编辑单行值
+function rowEditValue() {
+
+}
+
+// 删除单行值
+function rowDeleteValue() {
+  // TODO
+  tableKeyword.value = ''
+  refreshKey()
+  ElMessage({message: '删除成功', type: 'success'})
+}
 </script>
 
 <template>
@@ -98,9 +131,9 @@ function rowDeleteValue(){}
           </template>
         </el-input>
 
-        <el-input type="text" placeholder="可选输入" style="width: 200px; margin-left: 10px"
+        <el-input type="text" placeholder="可选输入" clearable style="width: 200px; margin-left: 10px"
                   v-model="hashKey" v-if="global.redisValue.type == 'hash'"
-                  @keyup.enter="getValue('')">
+                  @keyup.enter="refreshKey('')">
           <template #prepend>Hash键</template>
         </el-input>
 
@@ -110,15 +143,19 @@ function rowDeleteValue(){}
             <template #prepend>TTL</template>
             <template #append v-if="!global.readonly">
               <me-button info="点击修改键的过期时间（单位为秒，-1代表永久）"
-                         icon="el-icon-select" @click="expireKey"
-                         style="color: var(--el-color-danger)"
+                         icon="el-icon-select" @click="ttlKey"
                          :disabled="!global.redisKey.key" placement="top-end"/>
             </template>
           </el-input>
 
           <el-button-group>
-            <me-button info="刷新值" icon="el-icon-refresh" @click="getValue('')" :disabled="!global.redisKey.key" placement="top"/>
-            <me-button info="删除键" icon="el-icon-delete" v-if="!global.readonly" type="danger"  @click="delKey" :disabled="!global.redisKey.key" placement="top"/>
+            <me-button info="刷新" icon="el-icon-refresh"
+                       @click="refreshKey" :disabled="!global.redisKey.key"
+                       placement="top"/>
+            <me-button info="删除键" icon="el-icon-delete"
+                       v-if="!global.readonly" type="danger"
+                       @click="delKey"
+                       :disabled="!global.redisKey.key" placement="top"/>
           </el-button-group>
         </me-flex>
       </div>
@@ -144,7 +181,7 @@ function rowDeleteValue(){}
             <el-table-column label="操作" width="100" fixed="right" align="center">
               <template #default="scope">
                 <me-flex>
-                  <me-icon info="复制" icon="el-icon-document-copy" class="icon-btn"  @click="rowCopyValue(scope.row) "/>
+                  <me-icon info="复制" icon="el-icon-document-copy" class="icon-btn"  @click="copy(scope.row.value) "/>
                   <me-icon info="编辑" icon="el-icon-edit" class="icon-btn"  @click="rowEditValue(scope.row, scope.$index)"/>
                   <el-popconfirm :hide-after="0" title="确定删除吗？" @confirm="rowDeleteValue(scope.row, scope.$index)">
                     <template #reference>
@@ -157,7 +194,7 @@ function rowDeleteValue(){}
           </el-table>
         </me-flex>
 
-        <el-button-group class="btn-rt" v-if="stringTypeOrWithHashKey">
+        <el-button-group class="btn-rt" v-if="viewType === 'json'">
           <el-button>Size: {{ humanSize(global.redisValue.rawValue.length) }}</el-button>
           <me-button info="复制" icon="el-icon-document-copy" @click="copy(showValue)"/>
           <me-button info="默认开启美化，开启后针对hash/list/set/json等进行格式化，关闭后显示原始值toString"
@@ -168,7 +205,7 @@ function rowDeleteValue(){}
         </el-button-group>
 
         <div class="btn-rb" v-if="stringTypeOrWithHashKey && !global.readonly">
-          <me-button class="save" info="保存" type="danger" icon="me-icon-save" @click="setValue"/>
+          <me-button class="save" info="保存" type="danger" icon="me-icon-save" @click="setValue" placement="top"/>
         </div>
 
         <div class="btn-rb" v-if="!stringTypeOrWithHashKey">
@@ -181,7 +218,7 @@ function rowDeleteValue(){}
         </div>
       </div>
     </template>
-    <el-empty v-else description="键不存在 或 未选择任何键"></el-empty>
+    <el-empty v-else description="未选择任何键"></el-empty>
   </div>
 </template>
 
