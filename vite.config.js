@@ -5,7 +5,7 @@ import AutoImport from 'unplugin-auto-import/vite'
 import path from 'path'
 
 // https://vitejs.dev/config/
-export default defineConfig(async () => ({
+export default defineConfig({
     resolve: {
         alias: {
             // 配置绝对路径别名@
@@ -29,4 +29,4 @@ export default defineConfig(async () => ({
             prefix: 'me-icon'
         }),
     ],
-}))
+})

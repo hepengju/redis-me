@@ -140,14 +140,14 @@ function handleCommand() {
       </div>
 
       <div class="key-footer">
-        <me-flex>
+        <me-flex style="align-items: center">
           <el-segmented v-model="keyShowType" :options="keyShowTypeList">
             <template #default="scope">
               <me-icon name="键平铺展示" icon="me-icon-list" hint placement="top" v-if="scope.item === 'list'"/>
               <me-icon name="键树形展示" icon="me-icon-tree" hint placement="top" v-else/>
             </template>
           </el-segmented>
-          <el-select v-model="db" filterable value-key="index" style="width: 66px"
+          <el-select v-model="db" filterable value-key="index" style="width: 55px"
                      @change="scanKey" :disabled="global.conn.cluster" placeholder="--" suffix-icon="">
             <el-option v-for="item in dbList"
                        :label="item.label"
@@ -235,10 +235,20 @@ function handleCommand() {
   }
 
   .key-footer {
-    margin-top: 5px;
+    border: 1px solid var(--el-border-color);
+    border-top: none;
+
+    //margin-top: 5px;
+    //padding-bottom: 10px;
     display: flex;
     align-items: center;
     justify-content: space-between;
+
+    :deep(.el-select__wrapper) {
+      min-height: 0;
+      height: 28px;
+      padding: 4px 4px 4px 10px;
+    }
 
     .tip {
       white-space: nowrap;
@@ -251,6 +261,7 @@ function handleCommand() {
       justify-content: space-between;
       color: var(--el-color-info);
       cursor: pointer;
+      margin-right: 5px;
     }
 
     & .icon-main:hover {
