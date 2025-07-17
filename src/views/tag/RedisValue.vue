@@ -12,39 +12,68 @@ const viewTypeList = ['json', 'table']
 const viewType = ref('json')
 const hashKey = ref('')
 const isPretty = ref(true)
-const isHashValue = ref(false)
-const isTableView = ref(false)
+const withHashKey = ref(false)
+const tableKeyword = ref('')
 
 // 计算属性
-const stringTypeOrHashValue = computed(() => 'string' === global.redisValue?.type || isHashValue.value)
+const stringTypeOrWithHashKey = computed(() => 'string' === global.redisValue?.type || withHashKey.value)
 const showValue = computed(() => {
   const rv = global.redisValue
+  if (rv === null || rv === undefined) return ''
+  if (rv.value === null || rv.value === undefined) return ''
+
   if (isPretty.value) {
-    if (stringTypeOrHashValue.value) {
-      const str = rv?.value?.toString()
+    if (stringTypeOrWithHashKey.value) {
+      const str = rv.value.toString()
       try {
         return str.startsWith('{') || str.startsWith('[') ? JSON.stringify(JSON.parse(str), null, 2) : str
       } catch (e) {
         return str
       }
     } else {
-      return JSON.stringify(rv?.value, null, 2)
+      return JSON.stringify(rv.value, null, 2)
     }
   } else {
-    return 'hash' === rv?.type && !isHashValue.value ? JSON.stringify(rv.value) : rv.value?.toString()
+    return 'hash' === rv.type && !withHashKey.value ? JSON.stringify(rv.value) : rv.value.toString()
+  }
+})
+const dataList = computed(() => {
+  const rv = global.redisValue
+  if (rv === null || rv === undefined) return []
+  if (rv.value === null || rv.value === undefined) return []
+
+  let data = []
+
+  if (rv.type === 'hash') {
+    Object.entries( rv.value )
+        .forEach(([key, value]) => data.push({key, value}))
+  } else if (rv.type === 'list' || rv.type === 'set') {
+    data = rv.value.forEach(value => data.push({value}))
+  } else if (rv.type === 'zset') {
+    data = rv.value // 返回的直接是[{score: '', value: ''}]
+  }
+
+  console.log(data)
+  return data
+})
+
+// 监听属性
+watchEffect(() => {
+  if (stringTypeOrWithHashKey.value) {
+    viewType.value = 'json'
   }
 })
 
-
-function toggleTableView(){
-  isTableView.value = !isTableView.value
-}
 function expireKey(){
   console.log('expireKey')
 }
 function getValue(){}
 function setValue(){}
 function delKey(){}
+
+function rowCopyValue(){}
+function rowEditValue(){}
+function rowDeleteValue(){}
 </script>
 
 <template>
@@ -86,28 +115,58 @@ function delKey(){}
       </div>
 
       <div class="value">
-        <me-code :value="showValue" @update:value="(newValue) => global.redisValue.newValue=newValue"
-                 mode="application/json" :read-only="global.readonly || !stringTypeOrHashValue"></me-code>
+        <me-code :value="showValue"
+                 @update:value="(newValue) => global.redisValue.newValue=newValue"
+                 v-if="viewType === 'json'"
+                 mode="application/json"/>
 
-        <el-button-group class="btn-rt">
+        <me-flex style="flex-direction: column" v-else>
+          <me-flex class="table-header">
+            <el-input v-model="tableKeyword" placeholder="模糊筛选" style="width: 200px"/>
+            <el-button icon="el-icon-plus">插入行</el-button>
+          </me-flex>
+          <el-table :data="dataList" style="margin-top: 10px" border stripe>
+            <el-table-column label="#" type="index" width="50" align="center" show-overflow-tooltip/>
+
+            <el-table-column label="键"   prop="key"   show-overflow-tooltip v-if="global.redisValue.type === 'hash'"/>
+            <el-table-column label="值"   prop="value" show-overflow-tooltip/>
+            <el-table-column label="分数" prop="score" show-overflow-tooltip v-if="global.redisValue.type === 'zset'"/>
+
+            <el-table-column label="操作" width="100" fixed="right" align="center">
+              <template #default="scope">
+                <me-flex>
+                  <me-icon info="复制" icon="el-icon-document-copy" class="icon-btn"  @click="rowCopyValue(scope.row) "/>
+                  <me-icon info="编辑" icon="el-icon-edit" class="icon-btn"  @click="rowEditValue(scope.row, scope.$index)"/>
+                  <el-popconfirm :hide-after="0" title="确定删除吗？" @confirm="rowDeleteValue(scope.row, scope.$index)">
+                    <template #reference>
+                      <me-icon info="删除" icon="el-icon-delete" class="icon-btn"/>
+                    </template>
+                  </el-popconfirm>
+                </me-flex>
+              </template>
+            </el-table-column>
+          </el-table>
+        </me-flex>
+
+        <el-button-group class="btn-rt" v-if="stringTypeOrWithHashKey">
           <el-button>Size: {{ humanSize(global.redisValue.rawValue.length) }}</el-button>
           <me-button info="复制" icon="el-icon-document-copy" @click="copy(showValue)"/>
           <me-button info="默认开启美化，开启后针对hash/list/set/json等进行格式化，关闭后显示原始值toString"
                      placement="bottom-end"
                      icon="el-icon-magic-stick"
-                     :style="isPretty ? {'backgroundColor': '#f4de29 !important', 'color': 'black' } : {}"
+                     :type="isPretty ? 'info' : ''"
                      @click="isPretty = !isPretty"/>
         </el-button-group>
 
-        <div class="btn-rb" v-if="stringTypeOrHashValue && !global.readonly">
+        <div class="btn-rb" v-if="stringTypeOrWithHashKey && !global.readonly">
           <me-button class="save" info="保存" type="danger" icon="me-icon-save" @click="setValue"/>
         </div>
 
-        <div class="btn-rb" v-if="!stringTypeOrHashValue">
+        <div class="btn-rb" v-if="!stringTypeOrWithHashKey">
           <el-segmented v-model="viewType" :options="viewTypeList">
             <template #default="scope">
               <me-icon name="JSON展示" icon="me-icon-json"  hint placement="top" v-if="scope.item === 'json'"/>
-              <me-icon name="表格展示" icon="me-icon-table" hint placement="top" v-else @click="toggleTableView"/>
+              <me-icon name="表格展示" icon="me-icon-table" hint placement="top" v-else/>
             </template>
           </el-segmented>
         </div>

@@ -158,9 +158,9 @@ function handleCommand() {
 
         <el-text class="tip" size="large" type="primary">{{ filterKeyList.length }} / {{ keyList.length }}</el-text>
 
-        <div class="btns">
-          <me-icon name="加载更多" icon="me-icon-load-more" hint placement="top" @click="scanMore"/>
-          <me-icon name="加载剩余所有键" icon="me-icon-load-all" hint placement="top" @click="scanAll"/>
+        <div class="btn-rb">
+          <me-icon name="加载更多"       icon="me-icon-load-more" hint placement="top" class="icon-btn" @click="scanMore"/>
+          <me-icon name="加载剩余所有键" icon="me-icon-load-all"  hint placement="top" class="icon-btn" @click="scanAll"/>
           <el-dropdown placement="top-end" @command="handleCommand">
             <me-icon icon="el-icon-more-filled"></me-icon>
             <template #dropdown>
@@ -254,7 +254,7 @@ function handleCommand() {
       white-space: nowrap;
     }
 
-    .btns {
+    .btn-rb {
       width: 70px;
       font-size: 22px;
       display: flex;
@@ -262,10 +262,6 @@ function handleCommand() {
       color: var(--el-color-info);
       cursor: pointer;
       margin-right: 5px;
-    }
-
-    & .icon-main:hover {
-      color: var(--el-color-primary);
     }
   }
 }

@@ -36,3 +36,11 @@ svg {
   overflow: hidden;        /* 隐藏超出范围的内容 */
   text-overflow: ellipsis; /* 使用省略号 */
 }
+
+.icon-btn {
+  cursor: pointer;
+
+  & :hover {
+    color: var(--el-color-primary);
+  }
+}

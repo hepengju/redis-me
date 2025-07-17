@@ -96,7 +96,7 @@ function clickTag(tag) {
             <el-tag type="success" style="margin-left: 10px" v-if="dic['redis_mode']">{{ dic['redis_mode'] }}</el-tag>
             <el-tag type="success" style="margin-left: 10px" v-if="dic['role']">{{ dic['role'] }}</el-tag>
           </div>
-          <me-icon class="refresh" name="刷新" icon="el-icon-refresh-right" placement="left" hint @click="refresh"/>
+          <me-icon class="refresh icon-btn" name="刷新" icon="el-icon-refresh-right" placement="left" hint @click="refresh"/>
         </me-flex>
       </template>
 
@@ -174,7 +174,7 @@ function clickTag(tag) {
           </div>
 
           <div class="detail-header-right">
-            <me-icon info="原始信息" icon="me-icon-raw" class="raw-info" @click="dialog.raw = true"/>
+            <me-icon info="原始信息" icon="me-icon-raw" class="raw-info icon-btn" @click="dialog.raw = true"/>
             <el-input v-model="keyword" clearable style="width: 200px" prefix-icon="el-icon-search" placeholder="关键字过滤"/>
           </div>
         </me-flex>
@@ -223,11 +223,6 @@ function clickTag(tag) {
   .refresh {
     font-size: 20px;
     color: var(--el-color-success);
-    cursor: pointer;
-    & :hover {
-      color: var(--el-color-primary);
-    }
-
   }
   //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   .detail-card {
@@ -245,14 +240,9 @@ function clickTag(tag) {
         display: flex;
 
         .raw-info {
-          cursor: pointer;
           margin-right: 10px;
           font-size: 20px;
           color: var(--el-color-success);
-
-          & :hover {
-            color: var(--el-color-primary);
-          }
         }
       }
     }
