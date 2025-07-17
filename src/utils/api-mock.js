@@ -4376,7 +4376,8 @@ export const mockGet = [
     "type": "zset",
     "ttl": -1,
     "value": [
-      "Ark-New-Zset"
+      {score: 1, value: "Ark-New-Zset1"},
+      {score: 5, value: "Ark-New-Zset5"},
     ],
     "rawValue": [
       "QXJrLU5ldy1ac2V0"

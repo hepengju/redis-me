@@ -37,6 +37,8 @@ const showValue = computed(() => {
     return 'hash' === rv.type && !withHashKey.value ? JSON.stringify(rv.value) : rv.value.toString()
   }
 })
+
+// 表格数据
 const dataList = computed(() => {
   const rv = global.redisValue
   if (rv === null || rv === undefined) return []
@@ -45,16 +47,23 @@ const dataList = computed(() => {
   let data = []
 
   if (rv.type === 'hash') {
-    Object.entries( rv.value )
+    Object.entries(rv.value)
         .forEach(([key, value]) => data.push({key, value}))
   } else if (rv.type === 'list' || rv.type === 'set') {
-    data = rv.value.forEach(value => data.push({value}))
+    rv.value.forEach(value => data.push({value}))
   } else if (rv.type === 'zset') {
-    data = rv.value // 返回的直接是[{score: '', value: ''}]
+    rv.value.forEach(value => data.push(value)) // 返回的直接是[{score: '', value: ''}]
   }
-
-  console.log(data)
   return data
+})
+
+const filterDataList = computed(() => {
+  const key = tableKeyword.value.toLowerCase()
+  return dataList.value.filter(row => !key
+      || row.key?.toLowerCase().indexOf(key) > -1
+      || row.value?.toLowerCase().indexOf(key) > -1
+      || row.score?.toString().toLowerCase().indexOf(key) > -1,
+  )
 })
 
 // 监听属性
@@ -108,8 +117,8 @@ function rowDeleteValue(){}
           </el-input>
 
           <el-button-group>
-            <me-button info="刷新值" icon="el-icon-refresh" @click="getValue('')" :disabled="!global.redisKey.key"></me-button>
-            <me-button info="删除键" v-if="!global.readonly" type="danger" icon="el-icon-delete" @click="delKey" :disabled="!global.redisKey.key"></me-button>
+            <me-button info="刷新值" icon="el-icon-refresh" @click="getValue('')" :disabled="!global.redisKey.key" placement="top"/>
+            <me-button info="删除键" icon="el-icon-delete" v-if="!global.readonly" type="danger"  @click="delKey" :disabled="!global.redisKey.key" placement="top"/>
           </el-button-group>
         </me-flex>
       </div>
@@ -125,7 +134,7 @@ function rowDeleteValue(){}
             <el-input v-model="tableKeyword" placeholder="模糊筛选" style="width: 200px"/>
             <el-button icon="el-icon-plus">插入行</el-button>
           </me-flex>
-          <el-table :data="dataList" style="margin-top: 10px" border stripe>
+          <el-table :data="filterDataList" style="margin-top: 10px" border stripe>
             <el-table-column label="#" type="index" width="50" align="center" show-overflow-tooltip/>
 
             <el-table-column label="键"   prop="key"   show-overflow-tooltip v-if="global.redisValue.type === 'hash'"/>

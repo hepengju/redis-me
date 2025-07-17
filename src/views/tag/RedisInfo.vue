@@ -63,8 +63,9 @@ watchEffect(() => {
 const tableData = computed(() => {
   const list = tag.value[tagSelected.value]
   const key = keyword.value.toLowerCase()
-  return list?.filter(d => !key || d.key.toLowerCase().indexOf(key) > -1 || d.value.toLowerCase().indexOf(key) > -1)
-
+  return list?.filter(d => !key
+      || d.key.toLowerCase().indexOf(key) > -1
+      || d.value.toLowerCase().indexOf(key) > -1)
 })
 
 // 监听刷新事件

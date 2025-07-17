@@ -56,8 +56,8 @@ async function scanKey(){
   loading.value = false
 }
 const filterKeyList = computed(() => {
-  const lowerKeyword = keyword.value.toLowerCase()
-  return keyList.value.filter(redisKey => redisKey.key.toLowerCase().indexOf(lowerKeyword) > -1)
+  const key = keyword.value.toLowerCase()
+  return keyList.value.filter(redisKey => redisKey.key.toLowerCase().indexOf(key) > -1)
 })
 
 // 键显示类型

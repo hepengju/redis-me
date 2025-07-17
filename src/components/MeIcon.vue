@@ -14,7 +14,7 @@ export default {
   <div class="icon-main">
     <!-- 图标 + 文字 + 额外提示 -->
     <template v-if="info">
-      <el-tooltip :placement="placement" :content="info" :show-after="500">
+      <el-tooltip :placement="placement" :content="info" :show-after="1000">
         <el-icon v-if="icon.startsWith('el-icon-')">
           <Component :is="icon"/>
         </el-icon>
