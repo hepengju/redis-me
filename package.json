@@ -14,6 +14,8 @@
     "@tauri-apps/api": "^2.6.0",
     "@tauri-apps/plugin-opener": "^2.4.0",
     "@vueuse/core": "^12.8.2",
+    "@xterm/addon-fit": "^0.10.0",
+    "@xterm/xterm": "^5.5.0",
     "codemirror": "^5.65.19",
     "codemirror-editor-vue3": "^2.8.0",
     "dayjs": "^1.11.13",

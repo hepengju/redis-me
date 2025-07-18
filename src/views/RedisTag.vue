@@ -1,10 +1,11 @@
 <script setup>
 import useGlobalStore from '@/utils/store.js'
-import RedisConsole from './tag/RedisConsole.vue'
+import RedisTerminal from './tag/RedisTerminal.vue'
 import RedisInfo from './tag/RedisInfo.vue'
 import RedisMemory from './tag/RedisMemory.vue'
 import RedisSlow from './tag/RedisSlow.vue'
 import RedisValue from './tag/RedisValue.vue'
+import RedisChart from './tag/RedisChart.vue'
 
 
 const global = useGlobalStore()
@@ -21,16 +22,23 @@ const global = useGlobalStore()
 
     <el-tab-pane name="value" lazy>
       <template #label>
-        <me-icon name="键值" icon="el-icon-key"/>
+        <me-icon name="键值" icon="el-icon-memo"/>
       </template>
       <RedisValue/>
+    </el-tab-pane>
+
+    <el-tab-pane name="slow" lazy>
+      <template #label>
+        <me-icon name="慢日志" icon="me-icon-slow"/>
+      </template>
+      <RedisSlow/>
     </el-tab-pane>
 
     <el-tab-pane name="console" lazy>
       <template #label>
         <me-icon name="终端" icon="me-icon-console"/>
       </template>
-      <RedisConsole/>
+      <RedisTerminal/>
     </el-tab-pane>
 
     <el-tab-pane name="memory" lazy>
@@ -40,11 +48,11 @@ const global = useGlobalStore()
       <RedisMemory/>
     </el-tab-pane>
 
-    <el-tab-pane name="slow" lazy>
+    <el-tab-pane name="chart" lazy>
       <template #label>
-        <me-icon name="慢日志" icon="me-icon-slow"/>
+        <me-icon name="监控图表" icon="el-icon-data-line"/>
       </template>
-      <RedisSlow/>
+      <RedisChart/>
     </el-tab-pane>
 
     <!-- 此处利用tab的新增按钮位置放置一个redis值的编辑功能 -->

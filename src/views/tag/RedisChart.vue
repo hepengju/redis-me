@@ -3,7 +3,7 @@
 </script>
 
 <template>
-  <div>控制台</div>
+  Chart图表
 </template>
 
 <style scoped lang="scss">
