@@ -4384,3 +4384,30 @@ export const mockGet = [
     ]
   }
 ]
+
+export const mockSlowlog = [
+    {time: '2025-07-17 15:31:17', client: '10.106.100.99:57080', command: 'EXISTS bus_jgt_prd_bench_gr_list~lock', cost:  16}
+  , {time: '2025-07-17 15:31:17', client: '10.106.100.99:57080', command: 'EXISTS bus_jgt_prd_bench_gr_list~lock', cost:  1600}
+  , {time: '2025-07-17 15:31:17', client: '10.106.100.99:57080', command: 'EXISTS bus_jgt_prd_bench_gr_list~lock', cost:  1200}
+  , {time: '2025-07-17 15:31:17', client: '10.106.100.99:57080', command: 'EXISTS bus_jgt_prd_bench_gr_list~lock', cost:  160}
+  , {time: '2025-07-17 15:31:17', client: '10.106.100.99:57080', command: 'EXISTS bus_jgt_prd_bench_gr_list~lock', cost:  159}
+  , {time: '2025-07-17 15:31:17', client: '10.106.100.99:57080', command: 'EXISTS bus_jgt_prd_bench_gr_list~lock', cost:  16}
+  , {time: '2025-07-17 14:42:04', client: '10.106.100.99:57080', command: 'HGET pc_fund_mkt_latest 1021130001', cost:  19}
+  , {time: '2025-07-17 14:42:04', client: '10.106.100.99:57080', command: 'HGET pc_fund_mkt_latest 1021130001', cost:  19}
+  , {time: '2025-07-17 14:42:04', client: '10.106.100.99:57080', command: 'HGET pc_fund_mkt_latest 1021130001', cost:  19}
+  , {time: '2025-07-17 14:42:04', client: '10.106.100.99:57080', command: 'HGET pc_fund_mkt_latest 1021130001', cost:  19}
+  , {time: '2025-07-17 14:42:04', client: '10.106.100.99:57080', command: 'HGET pc_fund_mkt_latest 1021130001', cost:  19}
+  , {time: '2025-07-17 14:42:04', client: '10.106.100.99:57080', command: 'HGET pc_fund_mkt_latest 1021130001', cost:  19}
+  , {time: '2025-07-17 14:39:32', client: '10.106.100.94:33182', command: 'CLUSTER NODES', cost:  10}
+  , {time: '2025-07-17 14:39:32', client: '10.106.100.94:33182', command: 'CLUSTER NODES', cost:  10}
+  , {time: '2025-07-17 14:39:32', client: '10.106.100.94:33182', command: 'CLUSTER NODES', cost:  10}
+  , {time: '2025-07-17 14:39:32', client: '10.106.100.94:33182', command: 'CLUSTER NODES', cost:  10}
+  , {time: '2025-07-17 14:39:32', client: '10.106.100.94:33182', command: 'CLUSTER NODES', cost:  10}
+  , {time: '2025-07-17 14:39:32', client: '10.106.100.94:33182', command: 'CLUSTER NODES', cost:  10}
+  , {time: '2025-07-17 14:38:55', client: '10.106.100.99:57080', command: 'HSET pc_fund_mkt_latest 1012324001 ["com.fofund.ocean.domain.bo.PcFundMktLatestLiteBO",{"mktDate":"20250704","derivednMktDate":"20250704"}]', cost:  23000}
+  , {time: '2025-07-17 14:38:55', client: '10.106.100.99:57080', command: 'HSET pc_fund_mkt_latest 1012324001 ["com.fofund.ocean.domain.bo.PcFundMktLatestLiteBO",{"mktDate":"20250704","derivednMktDate":"20250704"}]', cost:  2199}
+  , {time: '2025-07-17 14:38:55', client: '10.106.100.99:57080', command: 'HSET pc_fund_mkt_latest 1012324001 ["com.fofund.ocean.domain.bo.PcFundMktLatestLiteBO",{"mktDate":"20250704","derivednMktDate":"20250704"}]', cost:  1788}
+  , {time: '2025-07-17 14:38:55', client: '10.106.100.99:57080', command: 'HSET pc_fund_mkt_latest 1012324001 ["com.fofund.ocean.domain.bo.PcFundMktLatestLiteBO",{"mktDate":"20250704","derivednMktDate":"20250704"}]', cost:  23}
+  , {time: '2025-07-17 14:38:55', client: '10.106.100.99:57080', command: 'HSET pc_fund_mkt_latest 1012324001 ["com.fofund.ocean.domain.bo.PcFundMktLatestLiteBO",{"mktDate":"20250704","derivednMktDate":"20250704"}]', cost:  23}
+  , {time: '2025-07-17 14:38:55', client: '10.106.100.99:57080', command: 'HSET pc_fund_mkt_latest 1012324001 ["com.fofund.ocean.domain.bo.PcFundMktLatestLiteBO",{"mktDate":"20250704","derivednMktDate":"20250704"}]', cost:  2300}
+]

@@ -1,4 +1,4 @@
-import {mockConnList, mockDbList, mockGet, mockInfo, mockScan} from './api-mock.js'
+import {mockConnList, mockDbList, mockGet, mockInfo, mockScan, mockSlowlog} from './api-mock.js'
 import {random, sample} from 'lodash'
 
 // 获取连接配置信息
@@ -34,4 +34,9 @@ export function apiSet(id, redisSet) {
 // 过期时间
 export function apiExpire(id, key) {
     return random(-1, 10000)
+}
+
+// 慢日志
+export function apiSlowlog(id, count) {
+    return mockSlowlog
 }

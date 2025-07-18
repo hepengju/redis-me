@@ -42,7 +42,7 @@ const global = useGlobalStore()
 
     <el-tab-pane name="slow" lazy>
       <template #label>
-        <me-icon name="慢查询" icon="me-icon-slow"/>
+        <me-icon name="慢日志" icon="me-icon-slow"/>
       </template>
       <RedisSlow/>
     </el-tab-pane>
