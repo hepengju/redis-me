@@ -1,7 +1,6 @@
 <script setup>
 // 官网参考: https://redis.ac.cn/docs/latest/commands/slowlog-get/
 // TODO 获取配置并设置为初始值: slowlog-log-slower-than slowlog-max-len
-import MeFlex from '@/components/MeFlex.vue'
 import {apiSlowlog} from '@/utils/api.js'
 
 const slowerThan   = ref(10000)
@@ -25,7 +24,7 @@ refresh()
 
 <template>
   <div class="redis-slow">
-    <me-flex class="header">
+    <div class="me-flex header">
       <div>
         <el-input :value="slowerThan + ' μs'" style="width: 140px;" disabled>
           <template #prepend>
@@ -54,7 +53,7 @@ refresh()
           </template>
         </el-input>
       </div>
-    </me-flex>
+    </div>
     <div class="table">
       <el-table :data="filterDataList" style="margin-top: 10px" border height="100%">
         <el-table-column label="#" type="index" width="50" align="center" show-overflow-tooltip/>

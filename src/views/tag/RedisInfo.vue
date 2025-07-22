@@ -90,7 +90,7 @@ function clickTag(tag) {
   <div class="redis-info" v-loading="loading" v-if="global.conn">
     <el-descriptions border>
       <template #title>
-        <me-flex>
+        <div class="me-flex">
           <div>
             <el-text size="large" style="margin-left: 5px">{{ global.conn.host + '@' + global.conn.port }}</el-text>
             <el-tag style="margin-left: 10px">v{{ dic['redis_version'] }}</el-tag>
@@ -98,7 +98,7 @@ function clickTag(tag) {
             <el-tag type="success" style="margin-left: 10px" v-if="dic['role']">{{ dic['role'] }}</el-tag>
           </div>
           <me-icon class="refresh icon-btn" name="刷新" icon="el-icon-refresh-right" placement="left" hint @click="refresh"/>
-        </me-flex>
+        </div>
       </template>
 
       <el-descriptions-item>
@@ -113,12 +113,12 @@ function clickTag(tag) {
 
       <el-descriptions-item>
         <template #label><me-icon name="连接数" icon="me-icon-conn"/></template>
-        <me-flex>
+        <div class="me-flex">
           {{dic['connected_clients']}}
           <el-text type="info" style="margin-left: 10px">
             [ 限制: {{dic['maxclients']}} ]
           </el-text>
-        </me-flex>
+        </div>
       </el-descriptions-item>
 
       <el-descriptions-item :span="1">
@@ -130,7 +130,7 @@ function clickTag(tag) {
 
       <el-descriptions-item :span="2">
         <template #label><me-icon name="内存" icon="me-icon-memory"/></template>
-        <me-flex>
+        <div class="me-flex">
           {{dic['used_memory_human']}}
           <el-text type="info" style="margin-left: 10px">
             [
@@ -139,33 +139,33 @@ function clickTag(tag) {
               <span style="margin-left: 20px">系统: {{dic['total_system_memory_human']}}</span>
             ]
           </el-text>
-        </me-flex>
+        </div>
       </el-descriptions-item>
 
       <el-descriptions-item :span="3">
         <template #label><me-icon name="执行程序" icon="el-icon-video-play"/></template>
-        <me-flex>
+        <div class="me-flex">
           {{dic['executable']}}
           <el-text type="info" style="margin-left: 10px">
             [ 配置: {{dic['config_file']}} ]
           </el-text>
-        </me-flex>
+        </div>
       </el-descriptions-item>
 
       <el-descriptions-item :span="3">
         <template #label><me-icon name="系统" icon="el-icon-monitor"/></template>
-        <me-flex>
+        <div class="me-flex">
           {{dic['os']}}
           <el-text type="info" style="margin-left: 10px">
             [ PID: {{dic['process_id']}} ]
           </el-text>
-        </me-flex>
+        </div>
       </el-descriptions-item>
     </el-descriptions>
 
     <el-card class="detail-card">
       <template #header>
-        <me-flex class="detail-header">
+        <div class="me-flex detail-header">
           <div>
             <el-text size="large">参数详情</el-text>
             <el-link type="success" target="_blank" style="margin-left: 10px"
@@ -178,7 +178,7 @@ function clickTag(tag) {
             <me-icon info="原始信息" icon="me-icon-raw" class="raw-info icon-btn" @click="dialog.raw = true"/>
             <el-input v-model="keyword" clearable style="width: 200px" prefix-icon="el-icon-search" placeholder="关键字过滤"/>
           </div>
-        </me-flex>
+        </div>
       </template>
 
       <div class="detail-main">

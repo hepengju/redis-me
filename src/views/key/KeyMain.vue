@@ -144,7 +144,7 @@ function handleCommand() {
       </div>
 
       <div class="key-footer">
-        <me-flex style="align-items: center">
+        <div class="me-flex" style="align-items: center">
           <el-segmented v-model="keyShowType" :options="keyShowTypeList">
             <template #default="scope">
               <me-icon name="键平铺展示" icon="me-icon-list" hint placement="top" v-if="scope.item === 'list'"/>
@@ -158,7 +158,7 @@ function handleCommand() {
                        :value="item"
                        :key="item.index"/>
           </el-select>
-        </me-flex>
+        </div>
 
         <el-text class="tip" size="large" type="primary">{{ filterKeyList.length }} / {{ keyList.length }}</el-text>
 

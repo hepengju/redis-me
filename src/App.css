@@ -31,10 +31,18 @@ svg {
   outline: none;
 }
 
+/* 单行文本省略号 */
 .single-line-ellipsis {
   white-space: nowrap;     /* 禁止文本换行 */
   overflow: hidden;        /* 隐藏超出范围的内容 */
   text-overflow: ellipsis; /* 使用省略号 */
+}
+
+/* me-flex */
+.me-flex {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
 }
 
 .icon-btn {

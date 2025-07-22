@@ -70,10 +70,10 @@ function countLeaves(node) {
           <div @click="emit('chooseKey', node.data.redisKey)" style="width: 100%" v-if="node.isLeaf">
             <span>{{ node.label }}</span>
           </div>
-          <me-flex v-else style="width: 100%">
+          <div class="me-flex" v-else style="width: 100%">
             <me-icon :name="node.label" :icon="node.expanded ? 'el-icon-folderOpened' : 'el-icon-folder'"/>
             <div style="color: var(--el-color-info)">[ {{ node.data.keyCount }} ]</div>
-          </me-flex>
+          </div>
         </template>
       </el-tree-v2>
     </template>

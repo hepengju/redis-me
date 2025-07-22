@@ -137,7 +137,7 @@ function rowDeleteValue() {
           <template #prepend>Hash键</template>
         </el-input>
 
-        <me-flex>
+        <div class="me-flex">
           <!-- 宽度170可以完全显示1天：86400秒 -->
           <el-input v-model.number="global.redisValue.ttl" style="width: 170px; margin: 0 10px;">
             <template #prepend>TTL</template>
@@ -157,7 +157,7 @@ function rowDeleteValue() {
                        @click="delKey"
                        :disabled="!global.redisKey.key" placement="top"/>
           </el-button-group>
-        </me-flex>
+        </div>
       </div>
 
       <div class="value">
@@ -166,11 +166,11 @@ function rowDeleteValue() {
                  v-if="viewType === 'json'"
                  mode="application/json"/>
 
-        <me-flex style="flex-direction: column" v-else>
-          <me-flex class="table-header">
+        <div class="me-flex" style="flex-direction: column" v-else>
+          <div class="me-flex table-header">
             <el-input v-model="tableKeyword" placeholder="模糊筛选" style="width: 200px"/>
             <el-button icon="el-icon-plus">插入行</el-button>
-          </me-flex>
+          </div>
           <el-table :data="filterDataList" style="margin-top: 10px" border stripe>
             <el-table-column label="#" type="index" width="50" align="center" show-overflow-tooltip/>
 
@@ -180,7 +180,7 @@ function rowDeleteValue() {
 
             <el-table-column label="操作" width="100" fixed="right" align="center">
               <template #default="scope">
-                <me-flex>
+                <div class="me-flex">
                   <me-icon info="复制" icon="el-icon-document-copy" class="icon-btn"  @click="copy(scope.row.value) "/>
                   <me-icon info="编辑" icon="el-icon-edit" class="icon-btn"  @click="rowEditValue(scope.row, scope.$index)"/>
                   <el-popconfirm :hide-after="0" title="确定删除吗？" @confirm="rowDeleteValue(scope.row, scope.$index)">
@@ -188,11 +188,11 @@ function rowDeleteValue() {
                       <me-icon info="删除" icon="el-icon-delete" class="icon-btn"/>
                     </template>
                   </el-popconfirm>
-                </me-flex>
+                </div>
               </template>
             </el-table-column>
           </el-table>
-        </me-flex>
+        </div>
 
         <el-button-group class="btn-rt" v-if="viewType === 'json'">
           <el-button>Size: {{ humanSize(global.redisValue.rawValue.length) }}</el-button>

@@ -59,7 +59,7 @@ function doNothing(){}
         <template #label>
           <me-icon name="其他" icon="el-icon-memo"/>
         </template>
-          <me-flex  @click.stop="doNothing">
+          <div class="me-flex"  @click.stop="doNothing">
             <div>
               <el-color-picker size="small" v-model="conn.color" :predefine="PREDEFINE_COLORS"/>
               <!--
@@ -67,11 +67,11 @@ function doNothing(){}
               <el-tag style="margin-left: 10px" type="info" v-if="conn.cluster">集群</el-tag>
               -->
             </div>
-            <me-flex :style="colorStyle(conn)">
+            <div class="me-flex" :style="colorStyle(conn)">
               <me-icon name="编辑" icon="el-icon-edit"   hint placement="top" @click="editConn(conn)"/>
               <me-icon name="删除" icon="el-icon-delete" hint placement="top" style="margin-left: 10px" @click="global.deleteConn(conn)"/>
-            </me-flex>
-          </me-flex>
+            </div>
+          </div>
       </el-descriptions-item>
     </el-descriptions>
 
