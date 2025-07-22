@@ -1,11 +1,9 @@
 <script setup>
-// 全局对象
-import useGlobalStore from '@/utils/store.js'
-const global = useGlobalStore()
-
 const emit = defineEmits(['chooseKey'])
 
 const {filterKeyList} = defineProps({
+  color: {type: String, default: ''},
+  redisKey: {type: Object, default: {}},
   filterKeyList: {type: Array, default: []},
 })
 
@@ -63,7 +61,7 @@ function countLeaves(node) {
   <el-auto-resizer>
     <template #default="{ height, width }">
       <el-tree-v2 ref="tree" :data="treeData"
-                  :style="{'--el-text-color-regular': global.color,
+                  :style="{'--el-text-color-regular': color,
                            '--el-tree-node-hover-bg-color': 'var(--el-color-info-light-7)'}"
                   :empty-text="emptyText" :height="height" :item-size="20">
         <template #default="{ node }">

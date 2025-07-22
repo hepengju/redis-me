@@ -38,7 +38,7 @@ svg {
   text-overflow: ellipsis; /* 使用省略号 */
 }
 
-/* me-flex */
+/* flex布局 */
 .me-flex {
   display: flex;
   flex-direction: row;

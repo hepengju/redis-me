@@ -139,8 +139,16 @@ function handleCommand() {
       </el-input>
 
       <div class="key-list" v-loading="loading">
-        <ListKey :filter-key-list="filterKeyList" v-if="keyShowType === 'list'" @chooseKey="chooseKey"/>
-        <TreeKey :filter-key-list="filterKeyList" v-else @chooseKey="chooseKey"/>
+        <ListKey v-if="keyShowType === 'list'"
+                 :filter-key-list="filterKeyList"
+                 :color="global.color"
+                 :redis-key="global.redisKey"
+                 @chooseKey="chooseKey"/>
+        <TreeKey v-else
+                 :filter-key-list="filterKeyList"
+                 :color="global.color"
+                 :redis-key="global.redisKey"
+                 @chooseKey="chooseKey"/>
       </div>
 
       <div class="key-footer">
