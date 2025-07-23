@@ -24,7 +24,7 @@ function buildTree(keyList) {
     parts.forEach((part, index) => {
       let node = currentLevel.find(item => item.label === part)
       if (!node) {
-        node = {id: part, label: part, children: []}
+        node = {id: parts.slice(0, index + 1).join(':'), label: part, children: []}
         currentLevel.push(node)
       }
       if (index < parts.length - 1) {
