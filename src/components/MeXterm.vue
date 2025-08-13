@@ -4,10 +4,14 @@ import {Terminal} from '@xterm/xterm'
 import {FitAddon} from '@xterm/addon-fit/src/FitAddon.js'
 import {onMounted} from 'vue'
 
-const {welcome, execCommand} = defineProps({
+const {welcome, promptInfo, execCommand} = defineProps({
   welcome: {
     type: String,
-    default: 'Hello from \x1B[1;3;31mRedisME\x1B[0m '
+    default: '欢迎使用 \x1B[1;3;31mRedisME\x1B[0m Terminal'
+  },
+  promptInfo: {
+    type: String,
+    default: '\r\n$ ',
   },
   execCommand: {
     type: Function,
@@ -82,7 +86,7 @@ term.onData(e => {
 
 // 命令行提示符
 function prompt() {
-  term.write('\r\n$ ')
+  term.write(promptInfo)
 }
 
 // 执行命令
@@ -109,3 +113,11 @@ onMounted(() => {
 <template>
   <div id="terminal"></div>
 </template>
+
+<style scoped lang="scss">
+#terminal {
+  :deep(.xterm-viewport) {
+    overflow-y: hidden;
+  }
+}
+</style>
