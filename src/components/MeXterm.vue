@@ -4,18 +4,22 @@ import {Terminal} from '@xterm/xterm'
 import {FitAddon} from '@xterm/addon-fit/src/FitAddon.js'
 import {onMounted} from 'vue'
 
-const {welcome, promptInfo, execCommand} = defineProps({
+// TODO 上下切换历史命令
+// TODO Ctrl A/E等快捷键
+// TODO 命令提示
+// TODO 集群节点选择
+const {welcome, prefix, execCommand} = defineProps({
   welcome: {
     type: String,
-    default: '欢迎使用 \x1B[1;3;31mRedisME\x1B[0m Terminal'
+    default: '欢迎使用 \x1B[1;3;31mRedisME\x1B[0m Terminal\r\n'
   },
-  promptInfo: {
+  prefix: {
     type: String,
-    default: '\r\n$ ',
+    default: '\x1B[1;3;31m$ \x1B[0m',
   },
   execCommand: {
     type: Function,
-    default: (command: string) => `\r\nTODO 后台运行命令: ${command}`,
+    default: (command: string) => `TODO 后台运行命令: ${command}`,
   }
 })
 
@@ -86,14 +90,15 @@ term.onData(e => {
 
 // 命令行提示符
 function prompt() {
-  term.write(promptInfo)
+  term.write(prefix)
 }
 
 // 执行命令
 function runCommand(command) {
   if (command.length > 0) {
     const result = execCommand(command)
-    term.write(result)
+    term.writeln('')
+    term.writeln(result)
   }
   prompt()
 }
