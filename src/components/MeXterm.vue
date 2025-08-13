@@ -1,4 +1,4 @@
-<script setup lang="ts">
+<script setup>
 import '@xterm/xterm/css/xterm.css'
 import {Terminal} from '@xterm/xterm'
 import {FitAddon} from '@xterm/addon-fit/src/FitAddon.js'
@@ -11,7 +11,7 @@ import {onMounted} from 'vue'
 const {welcome, prefix, execCommand} = defineProps({
   welcome: {
     type: String,
-    default: '欢迎使用 \x1B[1;3;31mRedisME\x1B[0m Terminal\r\n'
+    default: '欢迎使用 \x1B[1;3;31mRedisME\x1B[0m Terminal\r\n',
   },
   prefix: {
     type: String,
@@ -19,8 +19,8 @@ const {welcome, prefix, execCommand} = defineProps({
   },
   execCommand: {
     type: Function,
-    default: (command: string) => `TODO 后台运行命令: ${command}`,
-  }
+    default: async (command) => `TODO 后台运行命令: ${command}`,
+  },
 })
 
 // 参考官网示例: https://xtermjs.org/js/demo.js
@@ -94,9 +94,9 @@ function prompt() {
 }
 
 // 执行命令
-function runCommand(command) {
+async function runCommand(command) {
   if (command.length > 0) {
-    const result = execCommand(command)
+    const result = await execCommand(command)
     term.writeln('')
     term.writeln(result)
   }
