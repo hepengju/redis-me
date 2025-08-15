@@ -2,7 +2,7 @@
 import '@xterm/xterm/css/xterm.css'
 import {Terminal} from '@xterm/xterm'
 import {FitAddon} from '@xterm/addon-fit/src/FitAddon.js'
-import {onMounted} from 'vue'
+import {onMounted, onUnmounted} from 'vue'
 import { get, set } from 'lodash'
 
 // TODO 命令提示
@@ -46,67 +46,51 @@ const baseTheme = {
   brightWhite: '#FFFFFF',
 }
 
-const newTerm = () => {
   // 设置终端尺寸
-  const term = new Terminal({
-    theme: baseTheme,
-    fontFamily: '"Cascadia Code", 黑体, Menlo, monospace',
-    cursorBlink: true,  // 光标闪烁
-    cursorStyle: 'bar', // 竖线
-  })
+const term = new Terminal({
+  theme: baseTheme,
+  fontFamily: '"Cascadia Code", 黑体, Menlo, monospace',
+  cursorBlink: true,  // 光标闪烁
+  cursorStyle: 'bar', // 竖线
+})
 
 // 附属插件
-  const fitAddon = new FitAddon()
-  term.loadAddon(fitAddon)
-
-  term.onData(onTermData)
-  term.attachCustomKeyEventHandler(onTermKey)
-  return {term, fitAddon}
-}
+const fitAddon = new FitAddon()
+term.loadAddon(fitAddon)
+term.onData(data => onTermData(data))
+term.attachCustomKeyEventHandler(e => onTermKey(e))
 
 // 页面加载后挂载到元素
-let termInst = null
-let fitAddonInst = null
 const resizeTerm = () => {
-  if (fitAddonInst != null) {
-    fitAddonInst.fit()
+  if (fitAddon != null) {
+    fitAddon.fit()
   }
 }
 onMounted(() => {
-  const { term, fitAddon } = newTerm()
-  termInst = term
-  fitAddonInst = fitAddon
-
   // 在指定元素中打开，并适配元素大小，写入欢迎信息
-  termInst.open(document.getElementById('terminal'))
-  termInst.write(welcome)
-  termInst.write(prefixContent.value)
-  fitAddonInst.fit() // 适配元素大小
-  termInst.focus()
+  term.open(document.getElementById('terminal'))
+  fitAddon.fit() // 适配元素大小
+  term.write(welcome)
+  term.write(prefix)
+  term.focus()
   window.addEventListener('resize', resizeTerm)
 })
 
 onUnmounted(() => {
-  termInst.dispose()
-  termInst = null
+  term.dispose()
   window.removeEventListener('resize', resizeTerm)
 })
 
 
 //// 参考Tiny-RDM中的终端优化
-const promptPrefix = computed(() => prefix)
-
 let inputCursor = 0
 let historyIndex = 0
 let waitForOutput = false
 const inputHistory = []
-const prefixContent = computed(() => {
-  return `\x1B[1;3;31m${promptPrefix.value}\x1B[0m`
-})
 
 const prefixLen = computed(() => {
   let len = 0
-  for (let i = 0; i < promptPrefix.value.length; i++) {
+  for (let i = 0; i < prefix.length; i++) {
     const char = prefix.charCodeAt(i)
     if (char >= 0x0000 && char <= 0x00ff) {
       // single byte ASCII char
@@ -120,10 +104,6 @@ const prefixLen = computed(() => {
 })
 
 const onTermData = (data) => {
-  if (termInst == null) {
-    return
-  }
-
   if (data) {
     const cc = data.charCodeAt(0)
     switch (cc) {
@@ -136,7 +116,7 @@ const onTermData = (data) => {
         switch (getCurrentInput()) {
           case 'clear':
           case 'clr':
-            termInst.clear()
+            term.clear()
             replaceTermInput()
             newInputLine()
             return
@@ -178,9 +158,16 @@ const onTermData = (data) => {
  * @return {boolean}
  */
 const onTermKey = (e) => {
+  e.preventDefault() // 阻止默认的事件，比如：Ctrl+D收藏，Ctrl+E进入地址栏等
+
   if (e.type === 'keydown') {
     if (e.ctrlKey) {
       switch (e.key) {
+        case 'c': // 新增 Ctrl + C
+          term.writeln('^C')
+          term.write(prefix)
+          return false
+
         case 'a': // move to head of line
           moveInputCursorTo(0)
           return false
@@ -226,7 +213,7 @@ const onTermKey = (e) => {
           return false
 
         case 'l': // clear screen
-          termInst.clear()
+          term.clear()
           replaceTermInput()
           newInputLine()
           return false
@@ -256,10 +243,6 @@ const onTermKey = (e) => {
  * @param {number} step above 0 indicate move right; 0 indicate move to last
  */
 const moveInputCursor = (step) => {
-  if (termInst == null) {
-    return
-  }
-
   let updateCursor = false
   if (step > 0) {
     // move right
@@ -295,7 +278,7 @@ const moveInputCursorToEnd = () => {
 const moveInputCursorTo = (pos) => {
   const currentLine = getCurrentInput()
   inputCursor = Math.min(Math.max(0, pos), currentLine.length)
-  termInst.write(`\x1B[${prefixLen.value + inputCursor + 1}G`)
+  term.write(`\x1B[${prefixLen.value + inputCursor + 1}G`)
 }
 
 /**
@@ -309,10 +292,6 @@ const updateInput = (data) => {
   // replace &nbsp;(Non-Breaking Space) with normal blank space
   data = data.replace(/\u00A0/g, ' ')
 
-  if (termInst == null) {
-    return
-  }
-
   let currentLine = getCurrentInput()
   if (inputCursor < currentLine.length) {
     // insert
@@ -322,7 +301,7 @@ const updateInput = (data) => {
   } else {
     // append
     currentLine += data
-    termInst.write(data)
+    term.write(data)
     inputCursor += data.length
   }
   updateCurrentInput(currentLine)
@@ -333,10 +312,6 @@ const updateInput = (data) => {
  * @param {boolean} back backspace or not
  */
 const deleteInput = (back = false) => {
-  if (termInst == null) {
-    return
-  }
-
   let currentLine = getCurrentInput()
   if (inputCursor < currentLine.length) {
     // delete middle part
@@ -364,10 +339,6 @@ const deleteInput = (back = false) => {
  * @param back
  */
 const deleteInput2 = (back = false) => {
-  if (termInst == null) {
-    return
-  }
-
   let currentLine = getCurrentInput()
   if (back) {
     // delete until tail
@@ -389,10 +360,6 @@ const deleteInput2 = (back = false) => {
  * @param back
  */
 const deleteWord = (back = false) => {
-  if (termInst == null) {
-    return
-  }
-
   let currentLine = getCurrentInput()
   if (back) {
     const prefix = currentLine.substring(0, inputCursor)
@@ -478,10 +445,6 @@ const changeHistory = (prev) => {
   }
 
   if (currentLine != null) {
-    if (termInst == null) {
-      return
-    }
-
     replaceTermInput(currentLine)
     moveInputCursorToEnd()
   }
@@ -501,10 +464,11 @@ const flushTermInput = async (flushCmd = false) => {
 
   // 执行命令并写结果
   const result = await execCommand(currentLine)
-  termInst.writeln('')
-  termInst.writeln(result)
-  termInst.write(prefixContent.value)
+  term.writeln('')
+  term.writeln(result)
+  term.write(prefix)
   newInputLine()
+  waitForOutput = false
 }
 
 /**
@@ -512,12 +476,8 @@ const flushTermInput = async (flushCmd = false) => {
  * @param {string|null} [content]
  */
 const replaceTermInput = (content = '') => {
-  if (termInst == null) {
-    return
-  }
-
   // erase current line and write new content
-  termInst.write('\r\x1B[K' + prefixContent.value + (content || ''))
+  term.write('\r\x1B[K' + prefix + (content || ''))
 }
 
 /**
@@ -537,8 +497,8 @@ const replaceTermInput = (content = '') => {
 //     }
 //   }
 //   if (!isEmpty(prompt)) {
-//     promptPrefix.value = prompt
-//     termInst.write('\r\n' + prefixContent.value)
+//     prefix = prompt
+//     termInst.write('\r\n' + prefix)
 //     waitForOutput = false
 //     inputCursor = 0
 //     newInputLine()
