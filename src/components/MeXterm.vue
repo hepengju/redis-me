@@ -81,11 +81,9 @@ onUnmounted(() => {
 })
 
 function cursorLen(str) {
-  // 移除ANSI转义序列
-  const clean = str.replace(/\x1B\[[0-9;]*m/g, '')
   let length = 0;
-  for (let i = 0; i < clean.length; i++) {
-    const char = clean.charCodeAt(i)
+  for (let i = 0; i < str.length; i++) {
+    const char = str.charCodeAt(i)
     if (char >= 0x0000 && char <= 0x00ff) {
       length += 1
     } else {
@@ -95,10 +93,8 @@ function cursorLen(str) {
   return length;
 }
 
-let command = ''
-const prefixLen = computed(() => cursorLen(prefix))
-const commandLen = computed(() => cursorLen(command))
-const totalLen  = computed(() => prefixLen.value + commandLen.value)
+const prefixClean = computed(() => prefix.replace(/\x1B\[[0-9;]*m/g, '')) // 移除ANSI转义序列
+const prefixLen  = computed(() => cursorLen(prefixClean.value))
 
 // 输入数据的处理
 const onTermData = (data) => {
@@ -141,26 +137,33 @@ const onTermData = (data) => {
 
 // 获取光标位置：参考xterm.js官网的demo.js
 function getCursorX() {
-  return term._core.buffer.x
+  return term.buffer.active.cursorX
+}
+
+function getLine(){
+  return term.buffer.active.getLine(term.buffer.active.cursorY).translateToString(true)
+}
+function getCommand() {
+  return getLine().substring(prefixClean.value.length)
 }
 
 // 命令行提示符
 function prompt() {
-  command = ''
+  term.writeln('')
   term.write(prefix)
 }
 
 function keyCtrlC() {
-  term.writeln('^C')
+  term.write('^C')
   prompt()
 }
 
 async function keyEnter() {
+  const command = getCommand()
   if (command.length > 0) {
     const result = await execCommand(command)
     term.writeln('')
-    term.writeln(result)
-    command = ''
+    term.write(result)
   }
   prompt()
 }
@@ -171,7 +174,7 @@ function moveCursorLeft() {
   term.write('\x1B[D')
 }
 function moveCursorRight() {
-  if (getCursorX() >= totalLen.value) return
+  if (getCursorX() >= getLine().length) return
   term.write('\x1B[C')
 }
 
@@ -182,16 +185,18 @@ function moveCursorToStart() {
 
 // 移动光标到最右边：先移动到行首，再向后移动前缀 + 命令
 function moveCursorToEnd() {
-  term.write('\x1B[0G' + '\x1B[' + totalLen.value + 'C')
+  term.write('\x1B[0G' + '\x1B[' + getLine().length + 'C')
 }
 
-function backspace() {}
+// 退格删除
+function backspace() {
+  if (getCursorX() <= prefixLen.value) return
+  term.write('\b \b')
+}
+
 function autoComplete() {}
 function inputData(data) {
-  if (data.length === 1 || (data.length > 1 && !data.startsWith('\u001B'))) {
-    command += data
-    term.write(data)
-  }
+  term.write(data)
 }
 
 </script>
