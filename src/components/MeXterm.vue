@@ -106,10 +106,10 @@ const onTermData = (data) => {
       keyEnter();
       break;
     case '\u001B[A': // 上箭头
-      navigateHistory(-1);
+      navigateHistory('up');
       break;
     case '\u001B[B': // 下箭头
-      navigateHistory(1);
+      navigateHistory('down');
       break;
     case '\u001B[D': // 左箭头
       moveCursorLeft();
@@ -161,6 +161,16 @@ function keyCtrlC() {
 async function keyEnter() {
   const command = getCommand()
   if (command.length > 0) {
+
+    // 添加到历史记录（避免重复添加）
+    if (commandHistory.length === 0 ||
+        commandHistory[commandHistory.length - 1] !== command) {
+      commandHistory.push(command)
+    }
+
+    // 重置历史索引
+    historyIndex = -1
+
     const result = await execCommand(command)
     term.writeln('')
     term.write(result)
@@ -168,7 +178,41 @@ async function keyEnter() {
   prompt()
 }
 
-function navigateHistory(){}
+// 历史命令处理
+let commandHistory = []
+let historyIndex   = -1
+
+function navigateHistory(direction) {
+  if (commandHistory.length === 0) return
+
+  if (historyIndex === -1) {
+    historyIndex = commandHistory.length
+  }
+
+  if (direction === 'up') {
+    historyIndex--
+    if (historyIndex < 0) {
+      historyIndex = 0
+    }
+  } else if (direction === 'down') {
+    historyIndex++
+    if (historyIndex > commandHistory.length) {
+      historyIndex = commandHistory.length
+    }
+  }
+
+  let command = ''
+  if (historyIndex >= 0 && historyIndex < commandHistory.length) {
+    command = commandHistory[historyIndex]
+  }
+  redrawCommand(command)
+}
+
+function redrawCommand(command) {
+  // 清除当前行, 重新写入前缀和命令
+  term.write('\x1B[2K\r' + prefix + command)
+}
+
 function moveCursorLeft() {
   if (getCursorX() <= prefixLen.value) return
   term.write('\x1B[D')
