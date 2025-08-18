@@ -2,7 +2,7 @@
 import '@xterm/xterm/css/xterm.css'
 import {Terminal} from '@xterm/xterm'
 import {FitAddon} from '@xterm/addon-fit/src/FitAddon.js'
-import {onMounted, onUnmounted} from 'vue'
+import {onMounted, onUnmounted, computed} from 'vue'
 
 // TODO 命令提示
 // TODO 集群节点选择
