@@ -129,6 +129,9 @@ const onTermData = (data) => {
     case '\t': // Tab键（自动补全）
       autoComplete();
       break;
+    case '\u000c': // Ctrl+L
+      clearScreen();
+      break;
     default:
       inputData(data)
       break;
@@ -238,7 +241,17 @@ function backspace() {
   term.write('\b \b')
 }
 
+// TODO 自动完成
 function autoComplete() {}
+
+// 清除屏幕
+function clearScreen() {
+  term.write('\x1B[2J\x1B[3J\x1B[H') // 清除整个屏幕并移动光标到左上角
+  term.writeln(welcome) // 重新显示欢迎信息
+  prompt() // 显示提示符
+}
+
+// 输入数据
 function inputData(data) {
   term.write(data)
 }
