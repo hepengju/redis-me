@@ -26,6 +26,8 @@ watchEffect(() => {
   let tagObj = {}
   let tagKey = ''
   let tagList = []
+
+  tagObj['Total'] = []
   lines.forEach(line => {
     if (line.startsWith('#')) {
       if (tagKey !== '') {
@@ -54,6 +56,7 @@ watchEffect(() => {
     }
   })
 
+  Object.entries(dicObj).forEach(([key, value]) => tagObj['Total'].push({key, value}))
   tag.value = tagObj
   dic.value = dicObj
   tagSelected.value = Object.keys(tagObj)[0]
@@ -185,7 +188,7 @@ function clickTag(tag) {
         <div class="tags">
           <el-button class="tag" plain v-for="(_, tagName) in tag"
                      @click="clickTag(tagName)">
-            <span :style="{color: tagSelected === tagName ? 'var(--el-color-primary)' : ''}">{{tagName}}</span>
+            <span :style="{color: tagSelected === tagName ? 'var(--el-color-primary)' : '', fontWeight: tagName === 'Total' ? 'bold': ''}">{{tagName}}</span>
           </el-button>
         </div>
         <el-table ref="table" :data="tableData" border height="100%">
