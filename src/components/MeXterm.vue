@@ -1,7 +1,7 @@
 <script setup>
 import '@xterm/xterm/css/xterm.css'
 import {Terminal} from '@xterm/xterm'
-import {FitAddon} from '@xterm/addon-fit/src/FitAddon.js'
+import {FitAddon} from '@xterm/addon-fit'
 import {onMounted, onUnmounted, computed} from 'vue'
 
 // TODO 退格时中文字符的支持
@@ -48,7 +48,7 @@ const baseTheme = {
   brightWhite: '#FFFFFF',
 }
 
-  // 设置终端尺寸
+// 设置终端尺寸
 const term = new Terminal({
   theme: baseTheme,
   fontFamily: '"Cascadia Code", 黑体, Menlo, monospace',
@@ -84,7 +84,7 @@ onUnmounted(() => {
 })
 
 function cursorLen(str) {
-  let length = 0;
+  let length = 0
   for (let i = 0; i < str.length; i++) {
     const char = str.charCodeAt(i)
     if (char >= 0x0000 && char <= 0x00ff) {
@@ -93,51 +93,51 @@ function cursorLen(str) {
       length += 2
     }
   }
-  return length;
+  return length
 }
 
 const prefixClean = computed(() => prefix.replace(/\x1B\[[0-9;]*m/g, '')) // 移除ANSI转义序列
-const prefixLen  = computed(() => cursorLen(prefixClean.value))
+const prefixLen = computed(() => cursorLen(prefixClean.value))
 
 // 输入数据的处理
 const onTermData = (data) => {
   switch (data) {
     case '\u0003': // Ctrl+C
-      keyCtrlC();
-      break;
+      keyCtrlC()
+      break
     case '\r':     // Enter键
-      keyEnter();
-      break;
+      keyEnter()
+      break
     case '\u001B[A': // 上箭头
-      navigateHistory('up');
-      break;
+      navigateHistory('up')
+      break
     case '\u001B[B': // 下箭头
-      navigateHistory('down');
-      break;
+      navigateHistory('down')
+      break
     case '\u001B[D': // 左箭头
-      moveCursorLeft();
-      break;
+      moveCursorLeft()
+      break
     case '\u001B[C': // 右箭头
-      moveCursorRight();
-      break;
+      moveCursorRight()
+      break
     case '\u0001': // Ctrl+A
-      moveCursorToStart();
-      break;
+      moveCursorToStart()
+      break
     case '\u0005': // Ctrl+E
-      moveCursorToEnd();
-      break;
+      moveCursorToEnd()
+      break
     case '\u007F': // Backspace
-      backspace();
-      break;
+      backspace()
+      break
     case '\t': // Tab键（自动补全）
-      autoComplete();
-      break;
+      autoComplete()
+      break
     case '\u000c': // Ctrl+L
-      clearScreen();
-      break;
+      clearScreen()
+      break
     default:
       inputData(data)
-      break;
+      break
   }
 }
 
@@ -146,9 +146,10 @@ function getCursorX() {
   return term.buffer.active.cursorX
 }
 
-function getLine(){
+function getLine() {
   return term.buffer.active.getLine(term.buffer.active.cursorY).translateToString(true)
 }
+
 function getCommand() {
   return getLine().substring(prefixClean.value.length)
 }
@@ -186,7 +187,7 @@ async function keyEnter() {
 
 // 历史命令处理
 let commandHistory = []
-let historyIndex   = -1
+let historyIndex = -1
 
 function navigateHistory(direction) {
   if (commandHistory.length === 0) return
@@ -223,6 +224,7 @@ function moveCursorLeft() {
   if (getCursorX() <= prefixLen.value) return
   term.write('\x1B[D')
 }
+
 function moveCursorRight() {
   if (getCursorX() >= getLine().length) return
   term.write('\x1B[C')
@@ -245,7 +247,8 @@ function backspace() {
 }
 
 // TODO 自动完成
-function autoComplete() {}
+function autoComplete() {
+}
 
 // 清除屏幕
 function clearScreen() {
