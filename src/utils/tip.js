@@ -1,5 +1,5 @@
 // https://redis.ac.cn/docs/latest/commands/info/
-const INFO_HELP_STRING = `
+const INFO_TIP_STRING = `
 # 特定的信息部分
 server：关于 Redis 服务器的一般信息
 clients：客户端连接部分
@@ -298,17 +298,16 @@ allocator_resident_lua: 分配器专门为 Lua 驻留 (RSS) 的总字节数。�
 allocator_frag_bytes_lua: allocator_active_lua 和 allocator_allocated_lua 之间的差值。
 `
 
-const INFO_HELP = {}
-
-const arr = INFO_HELP_STRING.split('\n')
-arr.forEach(line => {
+const INFO_TIP = {}
+const lines = INFO_TIP_STRING.split('\n')
+lines.forEach(line => {
   if (line.startsWith('#')) return
   const index = line.indexOf('：')
   if (index > 0) {
     const key = line.substring(0, index)
     const value = line.substring(index + 1, line.length)
-    INFO_HELP[key] = value
+    INFO_TIP[key] = value
   }
 })
 
-export default INFO_HELP
+export const infoTip = INFO_TIP
