@@ -4,7 +4,10 @@ import {Terminal} from '@xterm/xterm'
 import {FitAddon} from '@xterm/addon-fit/src/FitAddon.js'
 import {onMounted, onUnmounted, computed} from 'vue'
 
-// TODO 命令提示
+// TODO 退格时中文字符的支持
+// TODO 移动光标后的插入新字符支持
+// TODO 命令超过一行的处理
+// TODO Tab键命令提示
 // TODO 集群节点选择
 const {welcome, prefix, execCommand} = defineProps({
   welcome: {
