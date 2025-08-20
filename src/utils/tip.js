@@ -1,7 +1,7 @@
 // https://redis.ac.cn/docs/latest/commands/info/
 const INFO_TIP_STRING = `
 # 特定的信息部分
-server：关于 Redis 服务器的一般信息
+server：Redis 服务器的一般信息
 clients：客户端连接部分
 memory：内存消耗相关信息（理想情况下，used_memory_rss 的值应该只比 used_memory 略高。当 rss >> used 时，较大的差异可能意味着存在（外部）内存碎片，这可以通过检查 allocator_frag_ratio、allocator_frag_bytes 来评估。当 used >> rss 时，意味着部分 Redis 内存已被操作系统交换到磁盘：预期会出现显著的延迟。）
 persistence：RDB 和 AOF 相关信息
@@ -194,114 +194,115 @@ keyspace_hits：在主字典中成功查找键的数量
 keyspace_misses：在主字典中查找键失败的数量
 pubsub_channels：具有客户端订阅的发布/订阅通道总数
 pubsub_patterns：具有客户端订阅的发布/订阅模式总数
-pubsubshard_channels: 全局 pub/sub 分片通道数，包含客户端订阅。在 Redis 7.0.3 中添加。
-latest_fork_usec: 最近一次 fork 操作的持续时间，单位为微秒。
-total_forks: 服务器启动以来总共执行的 fork 操作次数。
-migrate_cached_sockets: 为 MIGRATE 操作而打开的套接字数量。
-slave_expires_tracked_keys: 为过期目的而跟踪的键的数量（仅适用于可写副本）。
-active_defrag_hits: 活动碎片整理过程执行的值重新分配次数。
-active_defrag_misses: 活动碎片整理过程启动但中止的值重新分配次数。
-active_defrag_key_hits: 已被活动碎片整理的键的数量。
-active_defrag_key_misses: 被活动碎片整理过程跳过的键的数量。
-total_active_defrag_time: 内存碎片超出限制的总时间，单位为毫秒。
-current_active_defrag_time: 自上次内存碎片超出限制以来经过的时间，单位为毫秒。
-tracking_total_keys: 服务器正在跟踪的键的数量。
-tracking_total_items: 正在跟踪的项的数量，即每个键的客户端数量之和。
-tracking_total_prefixes: 服务器前缀表中跟踪的前缀数量（仅适用于广播模式）。
-unexpected_error_replies: 意外错误回复的数量，这些错误类型来自 AOF 加载或复制。
-total_error_replies: 发出的错误回复总数，即被拒绝的命令数（命令执行前的错误）和失败的命令数（命令执行中的错误）之和。
-dump_payload_sanitizations: 转储载荷深度完整性验证的总次数（参见 sanitize-dump-payload 配置）。
-total_reads_processed: 处理的读取事件总数。
-total_writes_processed: 处理的写入事件总数。
-io_threaded_reads_processed: 由 I/O 线程处理的读取事件数量。
-io_threaded_writes_processed: 由 I/O 线程处理的写入事件数量。
-client_query_buffer_limit_disconnections: 由于客户端达到查询缓冲区限制而断开的总连接数。
-client_output_buffer_limit_disconnections: 由于客户端达到输出缓冲区限制而断开的总连接数。
-reply_buffer_shrinks: 输出缓冲区缩小的总次数。
-reply_buffer_expands: 输出缓冲区扩展的总次数。
-eventloop_cycles: 事件循环的总周期数。
-eventloop_duration_sum: 在事件循环中花费的总时间，单位为微秒（包括 I/O 和命令处理）。
-eventloop_duration_cmd_sum: 执行命令花费的总时间，单位为微秒。
-instantaneous_eventloop_cycles_per_sec: 每秒事件循环周期数。
-instantaneous_eventloop_duration_usec: 单个事件循环周期平均花费的时间，单位为微秒。
-acl_access_denied_auth: 认证失败次数。
-acl_access_denied_cmd: 由于拒绝访问命令而被拒绝的命令数量。
-acl_access_denied_key: 由于拒绝访问键而被拒绝的命令数量。
-acl_access_denied_channel: 由于拒绝访问通道而被拒绝的命令数量。
+pubsubshard_channels：全局 pub/sub 分片通道数，包含客户端订阅。在 Redis 7.0.3 中添加。
+latest_fork_usec：最近一次 fork 操作的持续时间，单位为微秒。
+total_forks：服务器启动以来总共执行的 fork 操作次数。
+migrate_cached_sockets：为 MIGRATE 操作而打开的套接字数量。
+slave_expires_tracked_keys：为过期目的而跟踪的键的数量（仅适用于可写副本）。
+active_defrag_hits：活动碎片整理过程执行的值重新分配次数。
+active_defrag_misses：活动碎片整理过程启动但中止的值重新分配次数。
+active_defrag_key_hits：已被活动碎片整理的键的数量。
+active_defrag_key_misses：被活动碎片整理过程跳过的键的数量。
+total_active_defrag_time：内存碎片超出限制的总时间，单位为毫秒。
+current_active_defrag_time：自上次内存碎片超出限制以来经过的时间，单位为毫秒。
+tracking_total_keys：服务器正在跟踪的键的数量。
+tracking_total_items：正在跟踪的项的数量，即每个键的客户端数量之和。
+tracking_total_prefixes：服务器前缀表中跟踪的前缀数量（仅适用于广播模式）。
+unexpected_error_replies：意外错误回复的数量，这些错误类型来自 AOF 加载或复制。
+total_error_replies：发出的错误回复总数，即被拒绝的命令数（命令执行前的错误）和失败的命令数（命令执行中的错误）之和。
+dump_payload_sanitizations：转储载荷深度完整性验证的总次数（参见 sanitize-dump-payload 配置）。
+total_reads_processed：处理的读取事件总数。
+total_writes_processed：处理的写入事件总数。
+io_threaded_reads_processed：由 I/O 线程处理的读取事件数量。
+io_threaded_writes_processed：由 I/O 线程处理的写入事件数量。
+client_query_buffer_limit_disconnections：由于客户端达到查询缓冲区限制而断开的总连接数。
+client_output_buffer_limit_disconnections：由于客户端达到输出缓冲区限制而断开的总连接数。
+reply_buffer_shrinks：输出缓冲区缩小的总次数。
+reply_buffer_expands：输出缓冲区扩展的总次数。
+eventloop_cycles：事件循环的总周期数。
+eventloop_duration_sum：在事件循环中花费的总时间，单位为微秒（包括 I/O 和命令处理）。
+eventloop_duration_cmd_sum：执行命令花费的总时间，单位为微秒。
+instantaneous_eventloop_cycles_per_sec：每秒事件循环周期数。
+instantaneous_eventloop_duration_usec：单个事件循环周期平均花费的时间，单位为微秒。
+acl_access_denied_auth：认证失败次数。
+acl_access_denied_cmd：由于拒绝访问命令而被拒绝的命令数量。
+acl_access_denied_key：由于拒绝访问键而被拒绝的命令数量。
+acl_access_denied_channel：由于拒绝访问通道而被拒绝的命令数量。
 
 # replication 
-role: 如果实例不是任何其他实例的副本，则值为 "master"；如果实例是某个主实例的副本，则值为 "slave"。请注意，副本可以是另一个副本的主实例（链式复制）。
-master_failover_state: 正在进行中的故障转移的状态（如果有）。
-master_replid: Redis 服务器的复制 ID。
-master_replid2: 第二复制 ID，用于故障转移后的 PSYNC。
-master_repl_offset: 服务器当前的复制偏移量。
-second_repl_offset: 接受复制 ID 的最大偏移量。
-repl_backlog_active: 指示复制积压缓冲区是否活动的标志。
-repl_backlog_size: 复制积压缓冲区总大小，单位为字节。
-repl_backlog_first_byte_offset: 复制积压缓冲区的起始主偏移量。
-repl_backlog_histlen: 复制积压缓冲区中数据的字节大小。
+role：如果实例不是任何其他实例的副本，则值为 "master"；如果实例是某个主实例的副本，则值为 "slave"。请注意，副本可以是另一个副本的主实例（链式复制）。
+master_failover_state：正在进行中的故障转移的状态（如果有）。
+master_replid：Redis 服务器的复制 ID。
+master_replid2：第二复制 ID，用于故障转移后的 PSYNC。
+master_repl_offset：服务器当前的复制偏移量。
+second_repl_offset：接受复制 ID 的最大偏移量。
+repl_backlog_active：指示复制积压缓冲区是否活动的标志。
+repl_backlog_size：复制积压缓冲区总大小，单位为字节。
+repl_backlog_first_byte_offset：复制积压缓冲区的起始主偏移量。
+repl_backlog_histlen：复制积压缓冲区中数据的字节大小。
 
 ## 如果实例是副本，则提供以下附加字段：
-master_host: 主实例的主机名或 IP 地址。
-master_port: 主实例监听的 TCP 端口。
-master_link_status: 链接状态 (up/down)。
-master_last_io_seconds_ago: 自上次与主实例交互以来经过的秒数。
-master_sync_in_progress: 指示主实例正在同步到副本。
-slave_read_repl_offset: 副本实例的读取复制偏移量。
-slave_repl_offset: 副本实例的复制偏移量。
-slave_priority: 作为故障转移候选实例的优先级。
-slave_read_only: 指示副本是否为只读的标志。
-replica_announced: 指示副本是否由 Sentinel 宣布的标志。
+master_host：主实例的主机名或 IP 地址。
+master_port：主实例监听的 TCP 端口。
+master_link_status：链接状态 (up/down)。
+master_last_io_seconds_ago：自上次与主实例交互以来经过的秒数。
+master_sync_in_progress：指示主实例正在同步到副本。
+slave_read_repl_offset：副本实例的读取复制偏移量。
+slave_repl_offset：副本实例的复制偏移量。
+slave_priority：作为故障转移候选实例的优先级。
+slave_read_only：指示副本是否为只读的标志。
+replica_announced：指示副本是否由 Sentinel 宣布的标志。
 
 ## 如果正在进行 SYNC 操作，则提供以下附加字段：
-master_sync_total_bytes: 需要传输的总字节数。当大小未知时（例如，使用 repl-diskless-sync 配置指令时），此值可能为 0。
-master_sync_read_bytes: 已传输的字节数。
-master_sync_left_bytes: 同步完成前剩余的字节数（当 master_sync_total_bytes 为 0 时可能为负）。
-master_sync_perc: master_sync_read_bytes 占 master_sync_total_bytes 的百分比，当 master_sync_total_bytes 为 0 时，使用 loading_rdb_used_mem 进行近似计算。
-master_sync_last_io_seconds_ago: 在 SYNC 操作期间，自上次传输 I/O 以来经过的秒数。
+master_sync_total_bytes：需要传输的总字节数。当大小未知时（例如，使用 repl-diskless-sync 配置指令时），此值可能为 0。
+master_sync_read_bytes：已传输的字节数。
+master_sync_left_bytes：同步完成前剩余的字节数（当 master_sync_total_bytes 为 0 时可能为负）。
+master_sync_perc：master_sync_read_bytes 占 master_sync_total_bytes 的百分比，当 master_sync_total_bytes 为 0 时，使用 loading_rdb_used_mem 进行近似计算。
+master_sync_last_io_seconds_ago：在 SYNC 操作期间，自上次传输 I/O 以来经过的秒数。
 
-master_link_down_since_seconds: 链接断开以来经过的秒数。
-connected_slaves: 连接的副本数量。
-min_slaves_good_slaves: 当前被认为“良好”的副本数量。
-slaveXXX: id, IP 地址, 端口, 状态, 偏移量, 延迟
+master_link_down_since_seconds：链接断开以来经过的秒数。
+connected_slaves：连接的副本数量。
+min_slaves_good_slaves：当前被认为“良好”的副本数量。
+slaveXXX：id, IP 地址, 端口, 状态, 偏移量, 延迟
 
 # cpu 
-used_cpu_sys: Redis 服务器消耗的系统 CPU，是服务器进程所有线程（主线程和后台线程）消耗的系统 CPU 之和。
-used_cpu_user: Redis 服务器消耗的用户 CPU，是服务器进程所有线程（主线程和后台线程）消耗的用户 CPU 之和。
-used_cpu_sys_children: 后台进程消耗的系统 CPU。
-used_cpu_user_children: 后台进程消耗的用户 CPU。
-used_cpu_sys_main_thread: Redis 服务器主线程消耗的系统 CPU。
-used_cpu_user_main_thread: Redis 服务器主线程消耗的用户 CPU。
+used_cpu_sys：Redis 服务器消耗的系统 CPU，是服务器进程所有线程（主线程和后台线程）消耗的系统 CPU 之和。
+used_cpu_user：Redis 服务器消耗的用户 CPU，是服务器进程所有线程（主线程和后台线程）消耗的用户 CPU 之和。
+used_cpu_sys_children：后台进程消耗的系统 CPU。
+used_cpu_user_children：后台进程消耗的用户 CPU。
+used_cpu_sys_main_thread：Redis 服务器主线程消耗的系统 CPU。
+used_cpu_user_main_thread：Redis 服务器主线程消耗的用户 CPU。
 
 # sentinel 部分仅在 Redis Sentinel 实例中可用
-sentinel_masters: 此 Sentinel 实例监控的 Redis 主实例数量。
-sentinel_tilt: 值为 1 表示此 Sentinel 处于 TILT 模式。
-sentinel_tilt_since_seconds: 当前 TILT 的持续时间，单位为秒；如果未处于 TILT 模式，则为 -1。在 Redis 7.0.0 中添加。
-sentinel_running_scripts: 此 Sentinel 当前正在执行的脚本数量。
-sentinel_scripts_queue_length: 等待执行的用户脚本队列长度。
-sentinel_simulate_failure_flags: SENTINEL SIMULATE-FAILURE 命令的标志。
+sentinel_masters：此 Sentinel 实例监控的 Redis 主实例数量。
+sentinel_tilt：值为 1 表示此 Sentinel 处于 TILT 模式。
+sentinel_tilt_since_seconds：当前 TILT 的持续时间，单位为秒；如果未处于 TILT 模式，则为 -1。在 Redis 7.0.0 中添加。
+sentinel_running_scripts：此 Sentinel 当前正在执行的脚本数量。
+sentinel_scripts_queue_length：等待执行的用户脚本队列长度。
+sentinel_simulate_failure_flags：SENTINEL SIMULATE-FAILURE 命令的标志。
 
 # cluster 部分目前只包含一个唯一的字段
-cluster_enabled: 指示 Redis 集群是否已启用。
+cluster_enabled：指示 Redis 集群是否已启用。
 
 # keyspace 部分提供了每个数据库主字典的统计信息。统计信息包括键的数量和带有过期时间的键的数量。
-dbXXX: keys=XXX,expires=XXX,avg_ttl=XXX,subexpiry=XXX
+dbXXX：keys=XXX,expires=XXX,avg_ttl=XXX,subexpiry=XXX
 
 # debug 部分包含实验性指标，这些指标在未来版本中可能会更改或移除。调用 INFO 或 INFO ALL 时不会包含此部分，仅在使用 INFO DEBUG 时返回。
-eventloop_duration_aof_sum: 在事件循环中刷新 AOF 花费的总时间，单位为微秒。
-eventloop_duration_cron_sum: cron 函数（包括 serverCron 和 beforeSleep，但不包括 IO 和 AOF 刷新）消耗的总时间，单位为微秒。
-eventloop_duration_max: 单个事件循环周期花费的最大时间，单位为微秒。
-eventloop_cmd_per_cycle_max: 单个事件循环周期处理的最大命令数。
-allocator_allocated_lua: 分配器专门为 Lua 分配的总字节数，包括内部碎片。
-allocator_active_lua: 分配器专门为 Lua 活动页面分配的总字节数，包括外部碎片。
-allocator_resident_lua: 分配器专门为 Lua 驻留 (RSS) 的总字节数。这包括可以释放给 OS 的页面（通过 MEMORY PURGE 或仅等待释放的页面）。
-allocator_frag_bytes_lua: allocator_active_lua 和 allocator_allocated_lua 之间的差值。
+eventloop_duration_aof_sum：在事件循环中刷新 AOF 花费的总时间，单位为微秒。
+eventloop_duration_cron_sum：cron 函数（包括 serverCron 和 beforeSleep，但不包括 IO 和 AOF 刷新）消耗的总时间，单位为微秒。
+eventloop_duration_max：单个事件循环周期花费的最大时间，单位为微秒。
+eventloop_cmd_per_cycle_max：单个事件循环周期处理的最大命令数。
+allocator_allocated_lua：分配器专门为 Lua 分配的总字节数，包括内部碎片。
+allocator_active_lua：分配器专门为 Lua 活动页面分配的总字节数，包括外部碎片。
+allocator_resident_lua：分配器专门为 Lua 驻留 (RSS) 的总字节数。这包括可以释放给 OS 的页面（通过 MEMORY PURGE 或仅等待释放的页面）。
+allocator_frag_bytes_lua：allocator_active_lua 和 allocator_allocated_lua 之间的差值。
 `
 
 const INFO_TIP = {}
 const lines = INFO_TIP_STRING.split('\n')
 lines.forEach(line => {
   if (line.startsWith('#')) return
+  // 使用第一个中文：进行分隔
   const index = line.indexOf('：')
   if (index > 0) {
     const key = line.substring(0, index)
