@@ -65,8 +65,8 @@ mod tests {
 
     // 获取连接
     fn get_conn() -> RedisResult<redis::Connection> {
-        // let client = redis::Client::open("redis://:hepengju@ali.hepengju.com:6379")?;
-        let client = redis::Client::open("redis://127.0.0.1:6379")?;
+        let client = redis::Client::open("redis://:hepengju@ali.hepengju.com:6379")?;
+        // let client = redis::Client::open("redis://127.0.0.1:6379")?;
         client.get_connection()
     }
 

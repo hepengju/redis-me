@@ -2,5 +2,5 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 fn main() {
-    redis_app_lib::run()
+    redis_me_lib::run()
 }
