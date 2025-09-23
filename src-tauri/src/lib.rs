@@ -1,5 +1,5 @@
 mod model;
-use crate::model::{Connection, RedisKey, RedisValue};
+use crate::model::{RedisKey, RedisValue};
 
 // Learn more about Tauri commands at https://tauri.app/develop/calling-rust/
 #[tauri::command]
@@ -17,38 +17,38 @@ pub fn run() {
 }
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 // Redis服务器信息
-fn info(name: &str) -> String {
-    todo!()
-}
-
-// 扫描键
-fn scan(name: &str, scan_match: &str, scan_count: i32) ->  Vec<RedisKey> {
-    todo!()
-}
-
-// 获取值
-fn get(name: &str, key: RedisKey) -> RedisValue {
-    todo!()
-}
-
-// 设置值
-fn set(name: &str, value: RedisValue) {
-    todo!()
-}
-
-// 过期时间
-fn expire(name: &str, key: RedisKey) -> i32 {
-    todo!()
-}
-
-// 新增
-fn add() {}
-
-// 删除键
-fn del() {}
-
-// 清空键
-fn flush(){}
+// fn info(name: &str) -> String {
+//     todo!()
+// }
+//
+// // 扫描键
+// fn scan(name: &str, scan_match: &str, scan_count: i32) ->  Vec<RedisKey> {
+//     todo!()
+// }
+//
+// // 获取值
+// fn get(name: &str, key: RedisKey) -> RedisValue {
+//     todo!()
+// }
+//
+// // 设置值
+// fn set(name: &str, value: RedisValue) {
+//     todo!()
+// }
+//
+// // 过期时间
+// fn expire(name: &str, key: RedisKey) -> i32 {
+//     todo!()
+// }
+//
+// // 新增
+// fn add() {}
+//
+// // 删除键
+// fn del() {}
+//
+// // 清空键
+// fn flush(){}
 
 // 其他特定操作
 // fn hdel() {}
@@ -65,7 +65,7 @@ mod tests {
 
     // 获取连接
     fn get_conn() -> RedisResult<redis::Connection> {
-        let client = redis::Client::open("redis://:hepengju@ali.hepengju.com:6379")?;
+        let client = redis::Client::open("redis://:hepengju2025@ali.hepengju.cn:6379")?;
         // let client = redis::Client::open("redis://127.0.0.1:6379")?;
         client.get_connection()
     }
@@ -104,13 +104,14 @@ mod tests {
         let opts = ScanOptions::default().with_count(500).with_pattern("*rust*");
         let keys: Vec<String> = conn.scan_options(opts)?.collect();
         println!("Keys: {:?}", keys);
+
         Ok(())
     }
 
     // 获取集群连接
     fn get_cluster_conn() -> RedisResult<cluster::ClusterConnection> {
         // 集群连接默认只传入1个节点即可
-        let nodes = vec!["redis://:hepengju@ali.hepengju.com:7001"];
+        let nodes = vec!["redis://:hepengju@ali.hepengju.cn:7001"];
         let client = ClusterClient::new(nodes)?;
         client.get_connection()
     }
