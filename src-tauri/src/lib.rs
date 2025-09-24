@@ -1,5 +1,5 @@
 mod model;
-use crate::model::{RedisKey, RedisValue};
+mod cert;
 
 // Learn more about Tauri commands at https://tauri.app/develop/calling-rust/
 #[tauri::command]
@@ -56,10 +56,15 @@ pub fn run() {
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 #[cfg(test)]
 mod tests {
+    use std::fs::File;
+    use std::io::Read;
+    use crate::cert::{ALI_CRT, ALI_KEY};
     use redis::cluster::ClusterClient;
     use redis::cluster_routing::RoutingInfo::MultiNode;
     use redis::cluster_routing::{MultipleNodeRoutingInfo, ResponsePolicy};
-    use redis::{cluster, Commands, RedisResult, ScanOptions};
+    use redis::ConnectionAddr::TcpTls;
+    use redis::{cluster, ClientTlsConfig, Commands, ConnectionInfo, RedisConnectionInfo, RedisResult, ScanOptions, TlsCertificates, TlsMode};
+    use std::time::Duration;
     use MultipleNodeRoutingInfo::AllMasters;
     use ResponsePolicy::AllSucceeded;
 
@@ -108,20 +113,57 @@ mod tests {
         Ok(())
     }
 
+    //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    fn read_file(path: &str) -> std::io::Result<String> {
+        let mut file = File::open(path)?;
+        let mut contents = String::new();
+        file.read_to_string(&mut contents)?;
+        Ok(contents)
+    }
+
     // 获取集群连接
     fn get_cluster_conn() -> RedisResult<cluster::ClusterConnection> {
         // 集群连接默认只传入1个节点即可
-        let nodes = vec!["redis://:hepengju@ali.hepengju.cn:7001"];
-        let client = ClusterClient::new(nodes)?;
+        // let nodes = vec!["rediss://:hepengju@ali.hepengju.cn:7001"];
+
+        // before creating a connection, ensure that you install a crypto provider
+        rustls::crypto::aws_lc_rs::default_provider()
+            .install_default()
+            .expect("Failed to install rustls crypto provider");
+
+        let nodes = vec![ConnectionInfo {
+            addr: TcpTls {
+                host: "ali.hepengju.cn".into(),
+                port: 7001,
+                insecure: true,
+                tls_params: None,
+            },
+            redis: RedisConnectionInfo {
+                db: 0,
+                username: None,
+                password: Some("hepengju".into()),
+                protocol: Default::default(),
+            }
+        }];
+
+        let cert = TlsCertificates {
+            client_tls: Some(
+                ClientTlsConfig {
+                    client_cert: ALI_CRT.into(),
+                    client_key: ALI_KEY.into(),
+                }
+            ),
+            root_cert:None
+        };
+
+        let client = ClusterClient::builder(nodes)
+            .connection_timeout(Duration::from_secs(5))
+            .certs(cert)
+            .tls(TlsMode::Insecure)
+            .danger_accept_invalid_hostnames(true)
+            .build()?;
         client.get_connection()
     }
-
-    // 获取集群异步连接 scan
-    // fn get_cluster_conn_async() -> RedisResult<cluster_async::ClusterConnection> {
-    //     let nodes = vec!["redis://:hepengju@ali.hepengju.com:7001"];
-    //     let client = ClusterClient::new(nodes)?;
-    //     client.get_async_connection()
-    // }
 
     #[test]
     fn get_set_cluster() -> RedisResult<()> {
