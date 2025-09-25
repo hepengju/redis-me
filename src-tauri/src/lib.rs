@@ -1,5 +1,4 @@
 mod model;
-mod cert;
 
 // Learn more about Tauri commands at https://tauri.app/develop/calling-rust/
 #[tauri::command]
@@ -56,14 +55,14 @@ pub fn run() {
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 #[cfg(test)]
 mod tests {
-    use std::fs::File;
-    use std::io::Read;
-    use crate::cert::{ALI_CRT, ALI_KEY};
     use redis::cluster::ClusterClient;
     use redis::cluster_routing::RoutingInfo::MultiNode;
     use redis::cluster_routing::{MultipleNodeRoutingInfo, ResponsePolicy};
     use redis::ConnectionAddr::TcpTls;
     use redis::{cluster, ClientTlsConfig, Commands, ConnectionInfo, RedisConnectionInfo, RedisResult, ScanOptions, TlsCertificates, TlsMode};
+    use std::fs;
+    use std::io::Read;
+    use std::path::{Path, PathBuf};
     use std::time::Duration;
     use MultipleNodeRoutingInfo::AllMasters;
     use ResponsePolicy::AllSucceeded;
@@ -114,11 +113,9 @@ mod tests {
     }
 
     //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    fn read_file(path: &str) -> std::io::Result<String> {
-        let mut file = File::open(path)?;
-        let mut contents = String::new();
-        file.read_to_string(&mut contents)?;
-        Ok(contents)
+    // 读取秘钥文件
+    fn read_file(path: PathBuf) -> std::io::Result<Vec<u8>> {
+        fs::read(path)
     }
 
     // 获取集群连接
@@ -127,9 +124,15 @@ mod tests {
         // let nodes = vec!["rediss://:hepengju@ali.hepengju.cn:7001"];
 
         // before creating a connection, ensure that you install a crypto provider
-        rustls::crypto::aws_lc_rs::default_provider()
-            .install_default()
-            .expect("Failed to install rustls crypto provider");
+        // rustls::crypto::aws_lc_rs::default_provider()
+        //     .install_default()
+        //     .expect("Failed to install rustls crypto provider");
+
+        let path = r"C:\Users\he_pe\jiyu\redis-ssl\aliyun\";
+        let cert_file = "redis-server.crt";
+        let key_file = "redis-server.key";
+        let cert_vec8 = read_file(Path::new(path).join(cert_file)).expect("cert读取失败");
+        let key_vec8= read_file(Path::new(path).join(key_file)).expect("key读取失败");
 
         let nodes = vec![ConnectionInfo {
             addr: TcpTls {
@@ -146,11 +149,13 @@ mod tests {
             }
         }];
 
+
+
         let cert = TlsCertificates {
             client_tls: Some(
                 ClientTlsConfig {
-                    client_cert: ALI_CRT.into(),
-                    client_key: ALI_KEY.into(),
+                    client_cert: cert_vec8,
+                    client_key: key_vec8,
                 }
             ),
             root_cert:None
@@ -177,9 +182,9 @@ mod tests {
 
     #[test]
     fn scan_cluster() -> RedisResult<()> {
-        //let mut conn = get_cluster_conn_async()?;
-        //let keys: Vec<String> = conn.scan()?.collect();
-        //println!("Keys: {:?}", keys);
+        let mut conn = get_cluster_conn()?;
+        let keys: Vec<String> = conn.scan()?.collect();
+        println!("Keys: {:?}", keys);
 
         //let opts = ScanOptions::default().with_count(500).with_pattern("*rust*");
 
