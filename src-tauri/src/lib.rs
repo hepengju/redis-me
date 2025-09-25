@@ -1,4 +1,6 @@
 mod model;
+mod api;
+mod service;
 
 // Learn more about Tauri commands at https://tauri.app/develop/calling-rust/
 #[tauri::command]
@@ -14,44 +16,7 @@ pub fn run() {
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }
-//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-// Redis服务器信息
-// fn info(name: &str) -> String {
-//     todo!()
-// }
-//
-// // 扫描键
-// fn scan(name: &str, scan_match: &str, scan_count: i32) ->  Vec<RedisKey> {
-//     todo!()
-// }
-//
-// // 获取值
-// fn get(name: &str, key: RedisKey) -> RedisValue {
-//     todo!()
-// }
-//
-// // 设置值
-// fn set(name: &str, value: RedisValue) {
-//     todo!()
-// }
-//
-// // 过期时间
-// fn expire(name: &str, key: RedisKey) -> i32 {
-//     todo!()
-// }
-//
-// // 新增
-// fn add() {}
-//
-// // 删除键
-// fn del() {}
-//
-// // 清空键
-// fn flush(){}
 
-// 其他特定操作
-// fn hdel() {}
-// fn hset() {}
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 #[cfg(test)]
 mod tests {
@@ -113,30 +78,26 @@ mod tests {
     }
 
     //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    // 读取秘钥文件
-    fn read_file(path: PathBuf) -> std::io::Result<Vec<u8>> {
-        fs::read(path)
-    }
-
     // 获取集群连接
     fn get_cluster_conn() -> RedisResult<cluster::ClusterConnection> {
         // 集群连接默认只传入1个节点即可
         // let nodes = vec!["rediss://:hepengju@ali.hepengju.cn:7001"];
 
+        // 实测此处注释掉也没影响
         // before creating a connection, ensure that you install a crypto provider
         // rustls::crypto::aws_lc_rs::default_provider()
         //     .install_default()
         //     .expect("Failed to install rustls crypto provider");
 
-        let path = r"C:\Users\he_pe\jiyu\redis-ssl\aliyun\";
+        let path = r"C:\Users\he_pe\jiyu\redis-ssl";
         let cert_file = "redis-server.crt";
         let key_file = "redis-server.key";
-        let cert_vec8 = read_file(Path::new(path).join(cert_file)).expect("cert读取失败");
-        let key_vec8= read_file(Path::new(path).join(key_file)).expect("key读取失败");
+        let cert_vec8 = fs::read(Path::new(path).join(cert_file)).expect("cert读取失败");
+        let key_vec8= fs::read(Path::new(path).join(key_file)).expect("key读取失败");
 
         let nodes = vec![ConnectionInfo {
             addr: TcpTls {
-                host: "ali.hepengju.cn".into(),
+                host: "10.106.100.140".into(),
                 port: 7001,
                 insecure: true,
                 tls_params: None,
@@ -144,12 +105,10 @@ mod tests {
             redis: RedisConnectionInfo {
                 db: 0,
                 username: None,
-                password: Some("hepengju".into()),
+                password: Some("Jiyu1212".into()),
                 protocol: Default::default(),
             }
         }];
-
-
 
         let cert = TlsCertificates {
             client_tls: Some(

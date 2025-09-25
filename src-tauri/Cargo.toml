@@ -28,3 +28,5 @@ serde_json = "1"
 redis = { version = "0.32.5", features = ["r2d2", "connection-manager", "cluster", "sentinel", "json", "tls-rustls", "tls-rustls-insecure", "tokio-comp", "tokio-rustls-comp"] }
 rustls = { version = "0.23" }
 bon = "3.6.4"
+anyhow = "1"
+log = "0.4.28"
