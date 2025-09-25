@@ -89,7 +89,7 @@ mod tests {
         //     .install_default()
         //     .expect("Failed to install rustls crypto provider");
 
-        let path = r"C:\Users\he_pe\jiyu\redis-ssl";
+        let path = r"C:\Users\he_pe\jiyu\redis-ssl\aliyun";
         let cert_file = "redis-server.crt";
         let key_file = "redis-server.key";
         let cert_vec8 = fs::read(Path::new(path).join(cert_file)).expect("cert读取失败");
@@ -97,7 +97,7 @@ mod tests {
 
         let nodes = vec![ConnectionInfo {
             addr: TcpTls {
-                host: "10.106.100.140".into(),
+                host: "ali.hepengju.cn".into(),
                 port: 7001,
                 insecure: true,
                 tls_params: None,
@@ -105,7 +105,7 @@ mod tests {
             redis: RedisConnectionInfo {
                 db: 0,
                 username: None,
-                password: Some("Jiyu1212".into()),
+                password: Some("hepengju".into()),
                 protocol: Default::default(),
             }
         }];

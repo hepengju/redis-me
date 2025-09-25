@@ -54,19 +54,19 @@ pub fn get_conn(id: &str) -> MeResult<ClusterConnection> {
         }
     }];
 
-    let cert = TlsCertificates {
-        client_tls: Some(
-            ClientTlsConfig {
-                client_cert: cert_vec8,
-                client_key: key_vec8,
-            }
-        ),
-        root_cert:None
-    };
+    // let cert = TlsCertificates {
+    //     client_tls: Some(
+    //         ClientTlsConfig {
+    //             client_cert: cert_vec8,
+    //             client_key: key_vec8,
+    //         }
+    //     ),
+    //     root_cert:None
+    // };
 
     let client = ClusterClient::builder(nodes)
         .connection_timeout(Duration::from_secs(5))
-        .certs(cert)
+        //.certs(cert)
         .tls(TlsMode::Insecure)
         .danger_accept_invalid_hostnames(true)
         .build()?;
