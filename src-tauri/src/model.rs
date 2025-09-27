@@ -1,4 +1,5 @@
-use std::any::Any;
+#![cfg_attr(test, allow(warnings))] // 整个文件在测试时禁用该警告
+
 use serde::{Deserialize, Serialize};
 
 // 创建公共宏: 简化模型定义（DeepSeek生成）
@@ -37,9 +38,9 @@ api_model!( RedisKey {
 );
 
 // Redis值
-api_model!( RedisValue {
-    key_type: String,
-    ttl: u64,
-    value: dyn Any,
-    rawValue: Vec<u8>,
-});
+// api_model!( RedisValue {
+//     key_type: String,
+//     ttl: u64,
+//     value: dyn Any,
+//     rawValue: Vec<u8>,
+// });

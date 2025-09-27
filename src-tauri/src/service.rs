@@ -1,3 +1,5 @@
+#![cfg_attr(test, allow(warnings))] // 整个文件在测试时禁用该警告
+
 use crate::api::MeResult;
 use crate::model::RedisNode;
 use log::info;
@@ -17,7 +19,7 @@ pub fn info(id: &str, node: Option<&str>) -> MeResult<String> {
 pub fn node_list(id: &str) -> MeResult<Vec<RedisNode>> {
     let mut conn = get_conn(id)?;
     let cluster_nodes: String = redis::cmd("cluster").arg("nodes").query(&mut conn)?;
-    info!("cluster_nodes: {cluster_nodes}");
+    info!("{cluster_nodes}");
     let node_list = parse_node_list(cluster_nodes)?;
     Ok(node_list)
 }
@@ -73,12 +75,14 @@ fn parse_node_list(cluster_nodes: String) -> MeResult<Vec<RedisNode>> {
     Ok(nodes)
 }
 
+#[allow(warnings)]
 #[warn(unused_variables, unused_imports)]
 #[cfg(test)]
 mod tests {
     use crate::service::{info, node_list};
     use log::LevelFilter;
 
+    #[ctor::ctor]
     fn init() {
         let _ = env_logger::builder().filter_level(LevelFilter::Info).is_test(true).try_init();
     }
@@ -91,7 +95,6 @@ mod tests {
 
     #[test]
     fn test_node_list() {
-        init();
         let vec = node_list("1").unwrap();
         info!("vec: {vec:#?}")
     }
@@ -99,13 +102,30 @@ mod tests {
 
 // 获取连接
 fn get_conn(id: &str) -> MeResult<ClusterConnection> {
+    get_conn_home(id)
+}
+
+// 家环境
+fn get_conn_home(id: &str) -> MeResult<ClusterConnection> {
+    let nodes = vec!["rediss://192.168.1.11:7001"];
+    let client = ClusterClient::builder(nodes)
+        .connection_timeout(Duration::from_secs(5))
+        .tls(TlsMode::Insecure)
+        .password("hepengju".into())
+        .build()?;
+    let conn = client.get_connection()?;
+    info!("{id} 创建连接成功");
+    Ok(conn)
+}
+
+// 公司环境
+fn get_conn_company(id: &str) -> MeResult<ClusterConnection> {
     let nodes = vec!["rediss://10.106.0.167:7001"];
     let client = ClusterClient::builder(nodes)
         .connection_timeout(Duration::from_secs(5))
         .tls(TlsMode::Insecure)
         .password("Jiyu1212".into())
         .build()?;
-
     let conn = client.get_connection()?;
     info!("{id} 创建连接成功");
     Ok(conn)

@@ -1,18 +1,20 @@
-use crate::model::ScanParam;
-use crate::service::info;
+#![cfg_attr(test, allow(warnings))] // 整个文件在测试时禁用该警告
+
+use crate::model::{RedisNode, ScanParam};
+use crate::service;
 
 pub type MeResult<T> = Result<T, anyhow::Error>;
 
 /// 信息
 #[tauri::command]
-pub fn api_info(id: &str, node: Option<&str>) -> MeResult<String> {
-    info(id, node)
+pub fn info(id: &str, node: Option<&str>) -> MeResult<String> {
+    service::info(id, node)
 }
 
 /// 节点列表
 #[tauri::command]
-pub fn api_node_list(id: &str, node: Option<&str>) -> MeResult<Vec<String>> {
-    todo!()
+pub fn node_list(id: &str) -> MeResult<Vec<RedisNode>> {
+    service::node_list(id)
 }
 
 /// 扫描
