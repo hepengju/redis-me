@@ -6,6 +6,7 @@ import RedisMemory from './tag/RedisMemory.vue'
 import RedisSlow from './tag/RedisSlow.vue'
 import RedisValue from './tag/RedisValue.vue'
 import RedisChart from './tag/RedisChart.vue'
+import RedisTauri from "@/views/tag/RedisTauri.vue";
 
 
 const global = useGlobalStore()
@@ -13,6 +14,14 @@ const global = useGlobalStore()
 
 <template>
   <el-tabs class="redis-tag" v-model="global.tabName" type="border-card" addable>
+
+    <el-tab-pane name="tauri" lazy>
+      <template #label>
+        <me-icon name="Tauri" icon="el-icon-data-line"/>
+      </template>
+      <RedisTauri/>
+    </el-tab-pane>
+
     <el-tab-pane name="info">
       <template #label>
         <me-icon name="信息" icon="el-icon-calendar"/>
@@ -54,6 +63,8 @@ const global = useGlobalStore()
       </template>
       <RedisChart/>
     </el-tab-pane>
+
+
 
     <!-- 此处利用tab的新增按钮位置放置一个redis值的编辑功能 -->
     <template #add-icon>

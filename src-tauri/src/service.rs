@@ -120,6 +120,7 @@ mod tests {
     use redis::TlsMode;
     use crate::common::MeResult;
 
+    // 初始化日志, 避免所有测试方法都需要额外调用init方法
     #[ctor::ctor]
     fn init() {
         let _ = env_logger::builder()
