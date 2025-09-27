@@ -1,18 +1,7 @@
 #![cfg_attr(test, allow(warnings))] // 整个文件在测试时禁用该警告
 
 use serde::{Deserialize, Serialize};
-
-// 创建公共宏: 简化模型定义（DeepSeek生成）
-#[macro_export]
-macro_rules! api_model {
-    ($struct:ident { $($field:ident : $type:ty),+ $(,)? }) => {
-        #[derive(Serialize, Deserialize, Debug, Clone)]
-        #[serde(rename_all = "camelCase")]
-        pub struct $struct {
-            $(pub $field: $type),+
-        }
-    };
-}
+use crate::api_model;
 
 // 集群节点
 api_model!( RedisNode {

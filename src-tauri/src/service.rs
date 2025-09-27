@@ -1,27 +1,32 @@
 #![cfg_attr(test, allow(warnings))] // 整个文件在测试时禁用该警告
 
-use crate::api::MeResult;
 use crate::model::RedisNode;
-use anyhow::bail;
 use log::info;
 use redis::{FromRedisValue, TlsMode};
 use redis::cluster::{ClusterClient, ClusterConnection};
 use redis::cluster_routing::{RoutingInfo, SingleNodeRoutingInfo};
 use std::time::Duration;
+use RoutingInfo::SingleNode;
+use SingleNodeRoutingInfo::{ByAddress, Random};
+use crate::common::MeResult;
 
 // 信息
 pub fn info(id: &str, node: Option<&str>) -> MeResult<String> {
     let mut conn = get_conn(id)?;
     let routing_info = get_node_routing_info(node)?;
-    let value = conn.route_command(&redis::cmd("info"), routing_info)?;
-    let info: String = FromRedisValue::from_redis_value(&value)?;
+    let value = conn.route_command(&redis::cmd("info"), routing_info)
+        .map_err(|e| format!("命令执行异常: {e}"))?;
+    let info: String = FromRedisValue::from_redis_value(&value)
+        .map_err(|e| format!("值转换异常: {e}"))?;
     Ok(info)
 }
 
 // 节点列表
 pub fn node_list(id: &str) -> MeResult<Vec<RedisNode>> {
     let mut conn = get_conn(id)?;
-    let cluster_nodes: String = redis::cmd("cluster").arg("nodes").query(&mut conn)?;
+    let cluster_nodes: String = redis::cmd("cluster").arg("nodes")
+        .query(&mut conn)
+        .map_err(|e| format!("获取集群节点列表异常: {e}"))?;
     info!("cluster_nodes: \n{cluster_nodes}");
     let node_list = parse_node_list(cluster_nodes)?;
     Ok(node_list)
@@ -89,30 +94,31 @@ fn parse_node_list(cluster_nodes: String) -> MeResult<Vec<RedisNode>> {
 
 fn get_node_routing_info(node: Option<&str>) -> MeResult<RoutingInfo> {
     match node {
-        None => Ok(RoutingInfo::SingleNode(SingleNodeRoutingInfo::Random)),
+        None => Ok(SingleNode(Random)),
         Some(node) => {
             let arr: Vec<&str> = node.split(":").collect();
             if arr.len() != 2 {
-                bail!("node格式错误: {}", node);
+                return Err(format!("node格式错误: {}", node));
             }
 
-            Ok(RoutingInfo::SingleNode(SingleNodeRoutingInfo::ByAddress {
+            Ok(SingleNode(ByAddress {
                 host: arr[0].into(),
                 port: match arr[1].parse::<u16>() {
                     Ok(port) => port,
-                    Err(_) => bail!("node端口解析错误: {}", node),
+                    Err(_) => return Err(format!("node端口解析错误: {}", node))
                 },
             }))
         }
     }
 }
 
-#[allow(warnings)]
-#[warn(unused_variables, unused_imports)]
 #[cfg(test)]
 mod tests {
     use crate::service::{info, node_list};
     use log::LevelFilter;
+    use redis::cluster::{ClusterClient, ClusterConnection};
+    use redis::TlsMode;
+    use crate::common::MeResult;
 
     #[ctor::ctor]
     fn init() {
@@ -125,6 +131,12 @@ mod tests {
     #[test]
     fn test_info() {
         let info = info("test", None).unwrap();
+        println!("{:#?}", info);
+    }
+
+    #[test]
+    fn test_info_node() {
+        let info = info("test", Some("192.168.1.11:7001")).unwrap();
         println!("{:#?}", info);
     }
 
@@ -147,8 +159,10 @@ fn get_conn_home(id: &str) -> MeResult<ClusterConnection> {
         .connection_timeout(Duration::from_secs(5))
         .tls(TlsMode::Insecure)
         .password("hepengju".into())
-        .build()?;
-    let conn = client.get_connection()?;
+        .build()
+        .map_err(|e| format!("{id} 集群配置失败: {e}"))?;
+    let conn = client.get_connection()
+        .map_err(|e| format!("{id} 获取连接失败: {e}"))?;
     info!("{id} 创建连接成功");
     Ok(conn)
 }
@@ -160,8 +174,10 @@ fn get_conn_company(id: &str) -> MeResult<ClusterConnection> {
         .connection_timeout(Duration::from_secs(5))
         .tls(TlsMode::Insecure)
         .password("Jiyu1212".into())
-        .build()?;
-    let conn = client.get_connection()?;
+        .build()
+        .map_err(|e| format!("{id} 集群配置失败: {e}"))?;
+    let conn = client.get_connection()
+        .map_err(|e| format!("{id} 获取连接失败: {e}"))?;
     info!("{id} 创建连接成功");
     Ok(conn)
 }
