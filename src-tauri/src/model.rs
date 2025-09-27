@@ -17,9 +17,10 @@ use serde::{Deserialize, Serialize};
 // }
 #[derive(Debug, Deserialize, Serialize, Default)]
 pub struct RedisNode {
+    pub id: String,
     pub node: String,
-    pub isMaster: bool,
-    pub slaveOfNode: String
+    pub is_master: bool,
+    pub slave_of_node: Option<String>
 }
 
 #[derive(Debug, Deserialize, Serialize, Default)]

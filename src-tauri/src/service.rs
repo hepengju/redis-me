@@ -1,74 +1,112 @@
 use crate::api::MeResult;
+use crate::model::RedisNode;
+use log::info;
 use redis::cluster::{ClusterClient, ClusterConnection};
-use redis::ConnectionAddr::TcpTls;
-use redis::{ClientTlsConfig, ConnectionInfo, ConnectionLike, RedisConnectionInfo, TlsCertificates, TlsMode};
-use std::fs;
-use std::path::Path;
+use redis::{Commands, TlsMode};
 use std::time::Duration;
 
 // 信息
 pub fn info(id: &str, node: Option<&str>) -> MeResult<String> {
     let mut conn = get_conn(id)?;
+    let value: String = conn.get("ark-mock:string:03WDejrO4N")?;
+    println!("{}", value);
     Ok("info".into())
 }
 
 // 节点列表
-pub fn nodeList(id: &str, node: Option<&str>) -> MeResult<Vec<String>> {
-    todo!()
+pub fn node_list(id: &str) -> MeResult<Vec<RedisNode>> {
+    let mut conn = get_conn(id)?;
+    let cluster_nodes: String = redis::cmd("cluster").arg("nodes").query(&mut conn)?;
+    info!("cluster_nodes: {cluster_nodes}");
+    let node_list = parse_node_list(cluster_nodes)?;
+    Ok(node_list)
 }
 
+// 解析
+fn parse_node_list(cluster_nodes: String) -> MeResult<Vec<RedisNode>> {
+    // <id> <ip:port@cport[,hostname]> <flags> <master> <ping-sent> <pong-recv> <config-epoch> <link-state> <slot> <slot> ... <slot>
+    let cluster_nodes = cluster_nodes.split("\n");
+    let mut nodes = vec![];
+
+    // 解析master节点
+    for line in cluster_nodes.clone() {
+        let parts: Vec<_> = line.split_whitespace().collect();
+        if parts.len() < 3 {
+            continue;
+        }
+
+        if parts[2] == "master" || parts[2] == "myself,master" {
+            let id = parts[0];
+            let node = parts[1].split("@").next().unwrap();
+            nodes.push(RedisNode {
+                id: id.into(),
+                node: node.into(),
+                is_master: true,
+                slave_of_node: None,
+            })
+        }
+    }
+
+
+    // 解析slave节点
+    for line in cluster_nodes {
+        let parts: Vec<_> = line.split_whitespace().collect();
+        if parts.len() < 4 {
+            continue;
+        }
+
+        if parts[2] == "slave" || parts[2] == "myself,slave" {
+            let id = parts[0];
+            let node = parts[1].split("@").next().unwrap();
+            let master_id = parts[3];
+
+            let master_node = nodes.iter().find(|node| node.id == master_id);
+
+            nodes.push(RedisNode {
+                id: id.into(),
+                node: node.into(),
+                is_master: false,
+                slave_of_node: master_node.map(|node| node.id.clone()),
+            })
+        }
+    }
+    Ok(nodes)
+}
+
+#[warn(unused_variables, unused_imports)]
 #[cfg(test)]
 mod tests {
-    use crate::service::info;
+    use crate::service::{info, node_list};
+    use log::LevelFilter;
+
+    fn init() {
+        let _ = env_logger::builder().filter_level(LevelFilter::Info).is_test(true).try_init();
+    }
 
     #[test]
     fn test_info() {
         let info = info("test", None).unwrap();
         println!("{}", info);
     }
+
+    #[test]
+    fn test_node_list() {
+        init();
+        let vec = node_list("1").unwrap();
+        info!("vec: {vec:#?}")
+    }
 }
 
 // 获取连接
-pub fn get_conn(id: &str) -> MeResult<ClusterConnection> {
-    println!("{id}");
-
-    // 先写死，后期考虑优化
-    let path = r"C:\Users\he_pe\jiyu\redis-ssl";
-    let cert_file = "redis-server.crt";
-    let key_file = "redis-server.key";
-    let cert_vec8 = fs::read(Path::new(path).join(cert_file))?;
-    let key_vec8= fs::read(Path::new(path).join(key_file))?;
-
-    let nodes = vec![ConnectionInfo {
-        addr: TcpTls {
-            host: "10.106.0.167".into(),
-            port: 7001,
-            insecure: true,
-            tls_params: None,
-        },
-        redis: RedisConnectionInfo {
-            db: 0,
-            username: None,
-            password: Some("Jiyu1212".into()),
-            protocol: Default::default(),
-        }
-    }];
-
-    // let cert = TlsCertificates {
-    //     client_tls: Some(
-    //         ClientTlsConfig {
-    //             client_cert: cert_vec8,
-    //             client_key: key_vec8,
-    //         }
-    //     ),
-    //     root_cert:None
-    // };
-
+fn get_conn(id: &str) -> MeResult<ClusterConnection> {
+    let nodes = vec!["rediss://10.106.0.167:7001"];
     let client = ClusterClient::builder(nodes)
         .connection_timeout(Duration::from_secs(5))
-        //.certs(cert)
         .tls(TlsMode::Insecure)
-        .danger_accept_invalid_hostnames(true)
+        .password("Jiyu1212".into())
         .build()?;
-    Ok(client.get_connection()?)
+
+    let conn = client.get_connection()?;
+    info!("{id} 创建连接成功");
+    Ok(conn)
 }

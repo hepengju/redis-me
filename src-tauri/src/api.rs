@@ -1,16 +1,17 @@
 use crate::model::ScanParam;
+use crate::service::info;
 
 pub type MeResult<T> = Result<T, anyhow::Error>;
 
 /// 信息
 #[tauri::command]
-pub fn info(id: &str, node: Option<&str>) -> MeResult<String> {
-    todo!()
+pub fn api_info(id: &str, node: Option<&str>) -> MeResult<String> {
+    info(id, node)
 }
 
 /// 节点列表
 #[tauri::command]
-pub fn node_list(id: &str, node: Option<&str>) -> MeResult<Vec<String>> {
+pub fn api_node_list(id: &str, node: Option<&str>) -> MeResult<Vec<String>> {
     todo!()
 }
 

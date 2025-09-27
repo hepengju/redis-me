@@ -26,8 +26,7 @@ mod tests {
     use redis::ConnectionAddr::TcpTls;
     use redis::{cluster, ClientTlsConfig, Commands, ConnectionInfo, RedisConnectionInfo, RedisResult, ScanOptions, TlsCertificates, TlsMode};
     use std::fs;
-    use std::io::Read;
-    use std::path::{Path, PathBuf};
+    use std::path::Path;
     use std::time::Duration;
     use MultipleNodeRoutingInfo::AllMasters;
     use ResponsePolicy::AllSucceeded;
