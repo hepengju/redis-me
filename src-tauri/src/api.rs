@@ -1,5 +1,6 @@
 #![cfg_attr(test, allow(warnings))] // 整个文件在测试时禁用该警告
 
+use std::collections::HashMap;
 use crate::model::{RedisNode, ScanParam};
 use crate::service;
 
