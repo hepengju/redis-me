@@ -96,17 +96,11 @@ fn get_node_routing_info(node: Option<&str>) -> MeResult<RoutingInfo> {
     match node {
         None => Ok(SingleNode(Random)),
         Some(node) => {
-            let arr: Vec<&str> = node.split(":").collect();
-            if arr.len() != 2 {
-                return Err(format!("node格式错误: {}", node));
-            }
-
+            let (host, port) = node.split_once(":")
+                .ok_or(format!("node格式错误: {}", node))?;
             Ok(SingleNode(ByAddress {
-                host: arr[0].into(),
-                port: match arr[1].parse::<u16>() {
-                    Ok(port) => port,
-                    Err(_) => return Err(format!("node端口解析错误: {}", node))
-                },
+                host: host.into(),
+                port: port.parse::<u16>().map_err(|_| format!("node端口解析错误: {}", node))?
             }))
         }
     }
