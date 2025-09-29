@@ -1,14 +1,14 @@
 #![cfg_attr(test, allow(warnings))] // 整个文件在测试时禁用该警告
 
+use crate::common::MeResult;
 use crate::model::RedisNode;
 use log::info;
-use redis::{FromRedisValue, TlsMode};
 use redis::cluster::{ClusterClient, ClusterConnection};
 use redis::cluster_routing::{RoutingInfo, SingleNodeRoutingInfo};
-use std::time::Duration;
+use redis::{FromRedisValue, TlsMode};
 use RoutingInfo::SingleNode;
 use SingleNodeRoutingInfo::{ByAddress, Random};
-use crate::common::MeResult;
+use crate::conn::get_conn;
 
 // 信息
 pub fn info(id: &str, node: Option<&str>) -> MeResult<String> {
@@ -108,11 +108,11 @@ fn get_node_routing_info(node: Option<&str>) -> MeResult<RoutingInfo> {
 
 #[cfg(test)]
 mod tests {
+    use crate::common::MeResult;
     use crate::service::{info, node_list};
     use log::LevelFilter;
     use redis::cluster::{ClusterClient, ClusterConnection};
     use redis::TlsMode;
-    use crate::common::MeResult;
 
     // 初始化日志, 避免所有测试方法都需要额外调用init方法
     #[ctor::ctor]
@@ -142,37 +142,4 @@ mod tests {
     }
 }
 
-// 获取连接
-fn get_conn(id: &str) -> MeResult<ClusterConnection> {
-    get_conn_home(id)
-}
 
-// 家环境
-fn get_conn_home(id: &str) -> MeResult<ClusterConnection> {
-    let nodes = vec!["rediss://192.168.1.11:7001"];
-    let client = ClusterClient::builder(nodes)
-        .connection_timeout(Duration::from_secs(5))
-        .tls(TlsMode::Insecure)
-        .password("hepengju".into())
-        .build()
-        .map_err(|e| format!("{id} 集群配置失败: {e}"))?;
-    let conn = client.get_connection()
-        .map_err(|e| format!("{id} 获取连接失败: {e}"))?;
-    info!("{id} 创建连接成功");
-    Ok(conn)
-}
-
-// 公司环境
-fn get_conn_company(id: &str) -> MeResult<ClusterConnection> {
-    let nodes = vec!["rediss://10.106.0.167:7001"];
-    let client = ClusterClient::builder(nodes)
-        .connection_timeout(Duration::from_secs(5))
-        .tls(TlsMode::Insecure)
-        .password("Jiyu1212".into())
-        .build()
-        .map_err(|e| format!("{id} 集群配置失败: {e}"))?;
-    let conn = client.get_connection()
-        .map_err(|e| format!("{id} 获取连接失败: {e}"))?;
-    info!("{id} 创建连接成功");
-    Ok(conn)
-}
