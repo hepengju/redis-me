@@ -3,7 +3,7 @@
 use std::collections::{HashMap, HashSet};
 use anyhow::bail;
 use crate::conn::{get_conn, get_node_list};
-use crate::model::{RedisKey, RedisNode, RedisValue, ScanParam, ScanResult};
+use crate::model::{RedisKey, RedisNode, RedisValue, RedisZetItem, ScanParam, ScanResult};
 use crate::util::{AnyResult, vec8_to_string};
 use RoutingInfo::SingleNode;
 use SingleNodeRoutingInfo::ByAddress;
@@ -44,23 +44,24 @@ pub fn scan(id: &str, param: ScanParam) -> AnyResult<ScanResult> {
 
     let mut keys: Vec<Vec<u8>> = vec![];
 
-    // 遍历集群节点
-    'outer: for node in get_node_list(id)?
-        .iter()
-        .filter(|node| node.is_master) // 仅扫描主节点
+    // 遍历集群节点: 仅扫描主节点
+    let nodes: Vec<String> = get_node_list(id)?.into_iter()
+        .filter(|node| node.is_master)
         .map(|node| node.node.clone())
-    {
+        .collect();
+
+    'outer: for node in &nodes {
         // 扫描过的予以跳过
-        if cc.ready_nodes.contains(&node) {
+        if cc.ready_nodes.contains(node) {
             continue;
         }
         cc.now_node = node.clone();
 
-        let (route, _) = get_node_route(id, Some(&node))?;
+        let (route, _) = get_node_route(id, Some(node))?;
 
         'inner: loop {
             // 正在扫描的节点则重置上次游标
-            let cursor = if cc.now_node == node {
+            let cursor = if cc.now_node == *node {
                 cc.now_cursor
             } else {
                 0
@@ -101,6 +102,13 @@ pub fn scan(id: &str, param: ScanParam) -> AnyResult<ScanResult> {
         })
         .collect();
 
+    // 判断是否扫描完毕
+    if cc.ready_nodes.len() == nodes.len() {
+        cc.finished = true;
+        cc.now_node = "".to_string();
+        cc.now_cursor = 0;
+    }
+
     Ok(ScanResult {
         cursor: cc,
         key_list,
@@ -110,8 +118,8 @@ pub fn scan(id: &str, param: ScanParam) -> AnyResult<ScanResult> {
 /// 获取值
 pub fn get(id: &str, key: Vec<u8>, hash_key: Option<String>) -> AnyResult<RedisValue> {
     let mut conn = get_conn(id)?;
-    let ttl: i64 = conn.ttl(key.clone())?;
-    let key_type: ValueType = conn.key_type(key.clone())?;
+    let ttl: i64 = conn.ttl(&key)?;
+    let key_type: ValueType = conn.key_type(&key)?;
 
     let value: serde_json::Value = match key_type {
         ValueType::Unknown(other) => {
@@ -121,15 +129,30 @@ pub fn get(id: &str, key: Vec<u8>, hash_key: Option<String>) -> AnyResult<RedisV
                 bail!("未知类型: {other}")
             }
         }
-        ValueType::String => conn.get::<String>(key).unwrap(),
-        ValueType::List => conn.lrange::<Vec<String>>(key, 0, -1)?,
-        ValueType::Set => conn.smembers::<HashSet<String>>(key)?,
-        ValueType::ZSet => conn.zrange_withscores(key, 0, -1)?,
+        ValueType::String => {
+            let value: String = conn.get(&key)?;
+            serde_json::to_value(value)
+        },
+        ValueType::List => {
+            let value: Vec<String> =conn.lrange(&key, 0, -1)?;
+            serde_json::to_value(value)
+        },
+        ValueType::Set => {
+            let value: HashSet<String> = conn.smembers(&key)?;
+            serde_json::to_value(value)
+        },
+        ValueType::ZSet => {
+            let value: Vec<(String, f64)> = conn.zrange_withscores(&key, 0, -1)?;
+            let list: Vec<RedisZetItem> = value.into_iter().map(|(value, score)| RedisZetItem{value, score}).collect();
+            serde_json::to_value(list)
+        },
         ValueType::Hash => {
             if let Some(hash_key) = hash_key {
-                conn.hget::<String>(key, hash_key)?
+                let value: String = conn.hget(&key, hash_key)?;
+                serde_json::to_value(value)
             } else {
-                conn.hgetall::<HashMap<String, String>>(key)?
+                let value: HashMap<String, String> = conn.hgetall(&key)?;
+                serde_json::to_value(value)
             }
         }
         ValueType::Stream => bail!("暂不支持stream类型"),
@@ -243,7 +266,7 @@ fn exec_node_command<T: FromRedisValue>(
 #[cfg(test)]
 mod tests {
     use crate::model::{ScanCursor, ScanParam};
-    use crate::service::{info, node_list, scan};
+    use crate::service::*;
     use crate::util::ApiResult;
     use log::LevelFilter;
     use redis::TlsMode;
@@ -304,5 +327,15 @@ mod tests {
         };
         let result2 = scan("test", param2).unwrap();
         println!("{result2:#?}");
+    }
+
+    #[test]
+    fn test_get(){
+        let value = get("test", "hepengju:list".into(), None).unwrap();
+        println!("{value:#?}");
+        println!("{}", serde_json::to_string(&value).unwrap());
+
+        let value = get("test", "hepengju:string".into(), None).unwrap();
+        println!("{}", serde_json::to_string(&value).unwrap());
     }
 }

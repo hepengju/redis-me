@@ -43,7 +43,14 @@ api_model!( RedisKey {
 
 // Redis值
 api_model!( RedisValue {
+    #[serde(rename = "type")]
     key_type: String,
     ttl: i64,
     value: serde_json::Value,
 });
+
+api_model!( RedisZetItem {
+    value: String,
+    score: f64,
+});
+
