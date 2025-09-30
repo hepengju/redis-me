@@ -5,11 +5,20 @@ pub type MeResult<T> = Result<T, String>;
 // 模型定义宏（DeepSeek生成）
 #[macro_export]
 macro_rules! api_model {
-    ($struct:ident { $($field:ident : $type:ty),+ $(,)? }) => {
+    ($struct:ident {
+        $(
+            $(#[$meta:meta])*  // 匹配字段前的属性
+            $field:ident : $type:ty
+        ),+
+        $(,)?
+    }) => {
         #[derive(Serialize, Deserialize, Debug, Clone)]
         #[serde(rename_all = "camelCase")]
         pub struct $struct {
-            $(pub $field: $type),+
+            $(
+                $(#[$meta])*    // 展开字段前的属性
+                pub $field: $type
+            ),+
         }
     };
 }

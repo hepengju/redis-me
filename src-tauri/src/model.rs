@@ -12,19 +12,33 @@ api_model!( RedisNode {
 });
 
 // 扫描参数
+api_model!( ScanCursor {
+    ready_nodes: Vec<String>,
+    now_node: String,
+    now_cursor: u64,
+    finished: bool,
+});
+
 api_model!( ScanParam {
-    id: String,
     pattern: String,
     count: usize,
     scan_type: Option<String>,
+
+    cursor: ScanCursor,
+    load_all: bool,
+});
+
+// 扫描结果
+api_model!( ScanResult {
+    key_list: Vec<RedisKey>,
+    cursor: ScanCursor,
 });
 
 // Redis键: 由于键是字节存储的，考虑转换为utf-8字符串显示后可能会丢失信息，因此封装为对象
 api_model!( RedisKey {
     key: String,    // 显示
     bytes: Vec<u8>, // 修改、删除等依据
-}
-);
+});
 
 // Redis值
 // api_model!( RedisValue {

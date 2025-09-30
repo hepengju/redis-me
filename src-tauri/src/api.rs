@@ -1,7 +1,7 @@
 #![cfg_attr(test, allow(warnings))] // 整个文件在测试时禁用该警告
 
 use crate::common::MeResult;
-use crate::model::{RedisNode, ScanParam};
+use crate::model::{RedisNode, ScanParam, ScanResult};
 use crate::service;
 
 /// 信息
@@ -18,6 +18,6 @@ pub fn node_list(id: &str) -> MeResult<Vec<RedisNode>> {
 
 /// 扫描
 #[tauri::command]
-pub fn scan(id: &str, param: ScanParam) -> MeResult<Vec<String>> {
-    todo!()
+pub fn scan(id: &str, param: ScanParam) -> MeResult<ScanResult> {
+    service::scan(id, param)
 }
