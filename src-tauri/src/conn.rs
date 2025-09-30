@@ -1,5 +1,5 @@
 use std::collections::HashMap;
-use std::sync::{LazyLock, OnceLock, RwLock};
+use std::sync::{LazyLock, RwLock};
 use crate::common::MeResult;
 use log::info;
 use redis::cluster::{ClusterClient};
@@ -7,10 +7,16 @@ use redis::{TlsMode};
 use std::time::Duration;
 use r2d2::{Pool, PooledConnection};
 
-static CLIENT_MAP: LazyLock<RwLock<HashMap<String,Pool<ClusterClient>>>> = LazyLock::new(RwLock::new(HashMap::new));
+static CONN_POOL_MAP: LazyLock<RwLock<HashMap<String,Pool<ClusterClient>>>> = LazyLock::new(|| RwLock::new(HashMap::new()));
 
 // 获取连接
 pub fn get_conn(id: &str) -> MeResult<PooledConnection<ClusterClient>> {
+    // 从缓存中获取连接池
+    if let Some(pool) = CONN_POOL_MAP.read().unwrap().get(id) {
+        let conn = pool.get().map_err(|e| format!("{id} 获取连接失败: {e}"))?;
+        return Ok(conn)
+    }
+
     let is_company = true;
 
     let mut nodes = vec!["rediss://192.168.1.11:7001"];
@@ -34,8 +40,12 @@ pub fn get_conn(id: &str) -> MeResult<PooledConnection<ClusterClient>> {
         .build(client)
         .unwrap();
 
+    // 获取一个连接, 确认参数没有问题, 并放入缓存中
     let conn = pool.get()
         .map_err(|e| format!("{id} 获取连接失败: {e}"))?;
-    info!("{id} 创建连接成功");
+    info!("{id} 连接池初始化成功");
+
+    let mut client_map = CONN_POOL_MAP.write().unwrap();
+    client_map.insert(id.to_string(), pool.clone());
     Ok(conn)
 }

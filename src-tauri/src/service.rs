@@ -125,14 +125,14 @@ mod tests {
 
     #[test]
     fn test_info() {
-        let info = info("test", None).unwrap();
-        println!("{:#?}", info);
+        let result = info("test", None).unwrap();
+        println!("{result:#?}");
     }
 
     #[test]
     fn test_info_node() {
-        let info = info("test", Some("192.168.1.11:7001")).unwrap();
-        println!("{:#?}", info);
+        let result = info("test", Some("192.168.1.11:7001")).unwrap();
+        println!("{result:#?}");
     }
 
     #[test]
