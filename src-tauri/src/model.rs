@@ -1,7 +1,7 @@
 #![cfg_attr(test, allow(warnings))] // 整个文件在测试时禁用该警告
 
-use serde::{Deserialize, Serialize};
 use crate::api_model;
+use serde::{Deserialize, Serialize};
 
 // 集群节点
 api_model!( RedisNode {
@@ -12,13 +12,6 @@ api_model!( RedisNode {
 });
 
 // 扫描参数
-api_model!( ScanCursor {
-    ready_nodes: Vec<String>,
-    now_node: String,
-    now_cursor: u64,
-    finished: bool,
-});
-
 api_model!( ScanParam {
     pattern: String,
     count: usize,
@@ -26,6 +19,14 @@ api_model!( ScanParam {
 
     cursor: ScanCursor,
     load_all: bool,
+});
+
+// 扫描游标
+api_model!( ScanCursor {
+    ready_nodes: Vec<String>,
+    now_node: String,
+    now_cursor: u64,
+    finished: bool,
 });
 
 // 扫描结果
@@ -41,9 +42,8 @@ api_model!( RedisKey {
 });
 
 // Redis值
-// api_model!( RedisValue {
-//     key_type: String,
-//     ttl: u64,
-//     value: dyn Any,
-//     rawValue: Vec<u8>,
-// });
+api_model!( RedisValue {
+    key_type: String,
+    ttl: u64,
+    value: serde_json::Value,
+});

@@ -1,9 +1,10 @@
-use crate::common::MeResult;
+use crate::util::AnyResult;
 use crate::model::RedisNode;
+use anyhow::bail;
 use log::info;
 use r2d2::{Pool, PooledConnection};
-use redis::TlsMode;
 use redis::cluster::ClusterClient;
+use redis::TlsMode;
 use std::collections::HashMap;
 use std::sync::{LazyLock, RwLock};
 use std::time::Duration;
@@ -18,13 +19,10 @@ static CONN_POOL_MAP: LazyLock<RwLock<HashMap<String, ClusterCache>>> =
     LazyLock::new(|| RwLock::new(HashMap::new()));
 
 // 获取连接
-pub fn get_conn(id: &str) -> MeResult<PooledConnection<ClusterClient>> {
+pub fn get_conn(id: &str) -> AnyResult<PooledConnection<ClusterClient>> {
     // 从缓存中获取连接池
     if let Some(cc) = CONN_POOL_MAP.read().unwrap().get(id) {
-        let conn = cc
-            .pool
-            .get()
-            .map_err(|e| format!("{id} 获取连接失败: {e}"))?;
+        let conn = cc.pool.get()?;
         return Ok(conn);
     }
 
@@ -41,22 +39,20 @@ pub fn get_conn(id: &str) -> MeResult<PooledConnection<ClusterClient>> {
         .connection_timeout(Duration::from_secs(5))
         .tls(TlsMode::Insecure)
         .password(password.into())
-        .build()
-        .map_err(|e| format!("{id} 集群配置失败: {e}"))?;
+        .build()?;
 
     // 使用连接池管理
     let pool = Pool::builder()
         .min_idle(Some(0))
         .max_size(5)
-        .build(client)
-        .unwrap();
+        .build(client)?;
 
     // 获取一个连接
-    let conn = pool.get().map_err(|e| format!("{id} 获取连接失败: {e}"))?;
+    let conn = pool.get()?;
     let node_list = crate::service::node_list_by_conn(conn)?;
     info!("{id} 连接池初始化成功");
 
-    let new_conn = pool.get().unwrap();
+    let new_conn = pool.get()?;
 
     // 连接池放入缓存
     let mut client_map = CONN_POOL_MAP.write().unwrap();
@@ -65,9 +61,9 @@ pub fn get_conn(id: &str) -> MeResult<PooledConnection<ClusterClient>> {
     Ok(new_conn)
 }
 
-pub fn get_node_list(id: &str) -> MeResult<Vec<RedisNode>> {
+pub fn get_node_list(id: &str) -> AnyResult<Vec<RedisNode>> {
     if let Some(cc) = CONN_POOL_MAP.read().unwrap().get(id) {
         return Ok(cc.node_list.clone());
     }
-    Err(format!("{id} 未找到对应的连接池"))
+    bail!("{id} 未找到对应的连接池")
 }

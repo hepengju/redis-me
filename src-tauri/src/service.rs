@@ -1,38 +1,38 @@
 #![cfg_attr(test, allow(warnings))] // 整个文件在测试时禁用该警告
 
-use crate::common::MeResult;
 use crate::conn::{get_conn, get_node_list};
-use crate::model::{RedisKey, RedisNode, ScanParam, ScanResult};
+use crate::model::{RedisKey, RedisNode, RedisValue, ScanParam, ScanResult};
+use crate::util::{AnyResult, MeResult, vec8_to_string};
 use RoutingInfo::SingleNode;
 use SingleNodeRoutingInfo::ByAddress;
+use anyhow::bail;
 use log::info;
 use r2d2::PooledConnection;
 use rand::Rng;
 use redis::cluster::ClusterClient;
 use redis::cluster_routing::{RoutingInfo, SingleNodeRoutingInfo};
-use redis::{Cmd, FromRedisValue, RedisResult, cmd};
+use redis::{Cmd, Commands, FromRedisValue, RedisResult, TypedCommands, ValueType};
+use std::any::Any;
+use std::collections::HashMap;
 
 /// 信息
-pub fn info(id: &str, node: Option<&str>) -> MeResult<String> {
+pub fn info(id: &str, node: Option<&str>) -> AnyResult<String> {
     let mut conn = get_conn(id)?;
     let (routing_info, cmd_node) = get_node_route(id, node)?;
-    let value = conn
-        .route_command(&redis::cmd("info"), routing_info)
-        .map_err(|e| format!("命令执行异常: {e}"))?;
-    let info: String =
-        FromRedisValue::from_redis_value(&value).map_err(|e| format!("值转换异常: {e}"))?;
+    let value = conn.route_command(&redis::cmd("info"), routing_info)?;
+    let info: String = FromRedisValue::from_redis_value(&value)?;
     // 记录下info是从哪个节点获取的: 原始信息里面的分割符都是\r\n
     Ok(format!("# RedisME\ncmd_node:{}\r\n\r\n{}", cmd_node, info))
 }
 
 /// 节点列表
-pub fn node_list(id: &str) -> MeResult<Vec<RedisNode>> {
+pub fn node_list(id: &str) -> AnyResult<Vec<RedisNode>> {
     let conn = get_conn(id)?;
     node_list_by_conn(conn)
 }
 
 /// 扫描集群
-pub fn scan(id: &str, param: ScanParam) -> MeResult<ScanResult> {
+pub fn scan(id: &str, param: ScanParam) -> AnyResult<ScanResult> {
     let mut conn = get_conn(id)?;
     let mut cc = param.cursor;
 
@@ -77,11 +77,9 @@ pub fn scan(id: &str, param: ScanParam) -> MeResult<ScanResult> {
                 cmd.arg("type").arg(param.scan_type.clone());
             }
 
-            let value = conn
-                .route_command(&cmd, route.clone())
-                .map_err(|e| format!("命令执行异常: {e}"))?;
+            let value = conn.route_command(&cmd, route.clone())?;
             let (next_cursor, new_keys): (u64, Vec<Vec<u8>>) =
-                FromRedisValue::from_redis_value(&value).map_err(|e| format!("值转换异常: {e}"))?;
+                FromRedisValue::from_redis_value(&value)?;
 
             keys.extend(new_keys);
             cc.now_cursor = next_cursor;
@@ -99,7 +97,7 @@ pub fn scan(id: &str, param: ScanParam) -> MeResult<ScanResult> {
     let key_list = keys
         .into_iter()
         .map(|key| RedisKey {
-            key: unsafe { String::from_utf8_unchecked(key.clone()) },
+            key: vec8_to_string(key.clone()),
             bytes: key,
         })
         .collect();
@@ -110,19 +108,47 @@ pub fn scan(id: &str, param: ScanParam) -> MeResult<ScanResult> {
     })
 }
 
+/// 获取值
+pub fn get(id: &str, key: Vec<u8>, hash_key: Option<String>) -> AnyResult<RedisValue> {
+    // let mut conn = get_conn(id)?;
+
+    // let key_type: ValueType = conn.key_type(key.clone())?;
+
+    // let value: dyn Any = match key_type {
+    //     ValueType::Unknown(other) => {
+    //         if "none" == other {
+    //             bail!("键不存在: {}", vec8_to_string(key))
+    //         } else {
+    //             bail!("未知类型: {other}")
+    //         }
+    //     }
+    //     ValueType::String => conn.get::<String>(key)?,
+    //     ValueType::List => conn.lrange::<Vec<String>>(key, 0, -1)?,
+    //     ValueType::Set => conn.smembers::<Vec<String>>(key)?,
+    //     ValueType::ZSet => conn.zrange_withscores(key, 0, -1)?,
+    //     ValueType::Hash => {
+    //         if let Some(hash_key) = hash_key {
+    //             conn.hget::<String>(key, hash_key)?
+    //         } else {
+    //             conn.hgetall::<HashMap<String, String>>(key)?
+    //         }
+    //     }
+    //     ValueType::Stream => bail!("暂不支持stream类型"),
+    // }?;
+
+    todo!()
+}
+
 // 节点列表（初始化时也使用）
-pub fn node_list_by_conn(mut conn: PooledConnection<ClusterClient>) -> MeResult<Vec<RedisNode>> {
-    let cluster_nodes: String = redis::cmd("cluster")
-        .arg("nodes")
-        .query(&mut conn)
-        .map_err(|e| format!("获取集群节点列表异常: {e}"))?;
+pub fn node_list_by_conn(mut conn: PooledConnection<ClusterClient>) -> AnyResult<Vec<RedisNode>> {
+    let cluster_nodes: String = redis::cmd("cluster").arg("nodes").query(&mut conn)?;
     info!("cluster_nodes: \n{cluster_nodes}");
     let node_list = parse_node_list(cluster_nodes)?;
     Ok(node_list)
 }
 
 // 解析 cluster_nodes
-fn parse_node_list(cluster_nodes: String) -> MeResult<Vec<RedisNode>> {
+fn parse_node_list(cluster_nodes: String) -> AnyResult<Vec<RedisNode>> {
     // 结构
     // <id> <ip:port@cport[,hostname]> <flags> <master> <ping-sent> <pong-recv> <config-epoch> <link-state> <slot> <slot> ... <slot>
 
@@ -182,7 +208,7 @@ fn parse_node_list(cluster_nodes: String) -> MeResult<Vec<RedisNode>> {
 }
 
 // 获取节点路由信息
-fn get_node_route(id: &str, node: Option<&str>) -> MeResult<(RoutingInfo, String)> {
+fn get_node_route(id: &str, node: Option<&str>) -> AnyResult<(RoutingInfo, String)> {
     let node: String = if let Some(node) = node {
         node.to_string()
     } else {
@@ -191,14 +217,10 @@ fn get_node_route(id: &str, node: Option<&str>) -> MeResult<(RoutingInfo, String
         node_list[random_index].node.clone()
     };
 
-    let (host, port) = node
-        .split_once(":")
-        .ok_or(format!("node格式错误: {}", node))?;
+    let (host, port) = node.split_once(":").unwrap();
     let route = SingleNode(ByAddress {
         host: host.into(),
-        port: port
-            .parse::<u16>()
-            .map_err(|_| format!("node端口解析错误: {}", node))?,
+        port: port.parse::<u16>()?,
     });
     Ok((route, node.into()))
 }
@@ -208,24 +230,22 @@ fn exec_node_command<T: FromRedisValue>(
     id: &str,
     node: &str,
     cmd: &Cmd,
-) -> MeResult<RedisResult<T>> {
+) -> AnyResult<RedisResult<T>> {
     let mut conn = get_conn(id)?;
     let (route, _) = get_node_route(id, Some(node))?;
-    let value = conn
-        .route_command(&cmd, route)
-        .map_err(|e| format!("命令执行异常: {e}"))?;
+    let value = conn.route_command(&cmd, route)?;
     Ok(FromRedisValue::from_redis_value(&value))
 }
 
 #[cfg(test)]
 mod tests {
-    use crate::common::MeResult;
+    use crate::model::{ScanCursor, ScanParam};
     use crate::service::{info, node_list, scan};
+    use crate::util::MeResult;
     use log::LevelFilter;
     use redis::TlsMode;
     use redis::cluster::{ClusterClient, ClusterConnection};
     use serde::de::Unexpected::Option;
-    use crate::model::{ScanCursor, ScanParam};
 
     // 初始化日志, 避免所有测试方法都需要额外调用init方法
     #[ctor::ctor]
@@ -255,7 +275,7 @@ mod tests {
     }
 
     #[test]
-    fn test_scan(){
+    fn test_scan() {
         let param = ScanParam {
             pattern: "*".into(),
             count: 10,
