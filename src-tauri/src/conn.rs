@@ -1,20 +1,31 @@
+use crate::common::MeResult;
+use crate::model::RedisNode;
+use log::info;
+use r2d2::{Pool, PooledConnection};
+use redis::TlsMode;
+use redis::cluster::ClusterClient;
 use std::collections::HashMap;
 use std::sync::{LazyLock, RwLock};
-use crate::common::MeResult;
-use log::info;
-use redis::cluster::{ClusterClient};
-use redis::{TlsMode};
 use std::time::Duration;
-use r2d2::{Pool, PooledConnection};
 
-static CONN_POOL_MAP: LazyLock<RwLock<HashMap<String,Pool<ClusterClient>>>> = LazyLock::new(|| RwLock::new(HashMap::new()));
+// 集群缓存连接池和节点列表
+struct ClusterCache {
+    pool: Pool<ClusterClient>,
+    node_list: Vec<RedisNode>,
+}
+
+static CONN_POOL_MAP: LazyLock<RwLock<HashMap<String, ClusterCache>>> =
+    LazyLock::new(|| RwLock::new(HashMap::new()));
 
 // 获取连接
 pub fn get_conn(id: &str) -> MeResult<PooledConnection<ClusterClient>> {
     // 从缓存中获取连接池
-    if let Some(pool) = CONN_POOL_MAP.read().unwrap().get(id) {
-        let conn = pool.get().map_err(|e| format!("{id} 获取连接失败: {e}"))?;
-        return Ok(conn)
+    if let Some(cc) = CONN_POOL_MAP.read().unwrap().get(id) {
+        let conn = cc
+            .pool
+            .get()
+            .map_err(|e| format!("{id} 获取连接失败: {e}"))?;
+        return Ok(conn);
     }
 
     let is_company = true;
@@ -34,18 +45,29 @@ pub fn get_conn(id: &str) -> MeResult<PooledConnection<ClusterClient>> {
         .map_err(|e| format!("{id} 集群配置失败: {e}"))?;
 
     // 使用连接池管理
-    let pool = r2d2::Pool::builder()
+    let pool = Pool::builder()
         .min_idle(Some(0))
         .max_size(5)
         .build(client)
         .unwrap();
 
-    // 获取一个连接, 确认参数没有问题, 并放入缓存中
-    let conn = pool.get()
-        .map_err(|e| format!("{id} 获取连接失败: {e}"))?;
+    // 获取一个连接
+    let conn = pool.get().map_err(|e| format!("{id} 获取连接失败: {e}"))?;
+    let node_list = crate::service::node_list_by_conn(conn)?;
     info!("{id} 连接池初始化成功");
 
+    let new_conn = pool.get().unwrap();
+
+    // 连接池放入缓存
     let mut client_map = CONN_POOL_MAP.write().unwrap();
-    client_map.insert(id.to_string(), pool.clone());
-    Ok(conn)
+    client_map.insert(id.to_string(), ClusterCache { pool, node_list });
+
+    Ok(new_conn)
+}
+
+pub fn get_node_list(id: &str) -> MeResult<Vec<RedisNode>> {
+    if let Some(cc) = CONN_POOL_MAP.read().unwrap().get(id) {
+        return Ok(cc.node_list.clone());
+    }
+    Err(format!("{id} 未找到对应的连接池"))
 }

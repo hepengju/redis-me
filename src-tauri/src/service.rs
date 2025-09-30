@@ -1,29 +1,37 @@
 #![cfg_attr(test, allow(warnings))] // 整个文件在测试时禁用该警告
 
 use crate::common::MeResult;
+use crate::conn::{get_conn, get_node_list};
 use crate::model::RedisNode;
 use log::info;
-use redis::cluster::{ClusterClient, ClusterConnection};
+use r2d2::PooledConnection;
+use rand::{Rng};
+use redis::cluster::ClusterClient;
 use redis::cluster_routing::{RoutingInfo, SingleNodeRoutingInfo};
-use redis::{FromRedisValue, TlsMode};
+use redis::FromRedisValue;
 use RoutingInfo::SingleNode;
-use SingleNodeRoutingInfo::{ByAddress, Random};
-use crate::conn::get_conn;
+use SingleNodeRoutingInfo::{ByAddress};
 
 // 信息
 pub fn info(id: &str, node: Option<&str>) -> MeResult<String> {
     let mut conn = get_conn(id)?;
-    let routing_info = get_node_routing_info(node)?;
+    let (routing_info, cmd_node) = get_node_routing_info(id, node)?;
     let value = conn.route_command(&redis::cmd("info"), routing_info)
         .map_err(|e| format!("命令执行异常: {e}"))?;
     let info: String = FromRedisValue::from_redis_value(&value)
         .map_err(|e| format!("值转换异常: {e}"))?;
-    Ok(info)
+    // 记录下info是从哪个节点获取的: 原始信息里面的分割符都是\r\n
+    Ok(format!("# RedisME\ncmd_node:{}\r\n\r\n{}", cmd_node, info))
 }
 
 // 节点列表
 pub fn node_list(id: &str) -> MeResult<Vec<RedisNode>> {
-    let mut conn = get_conn(id)?;
+    let conn = get_conn(id)?;
+    node_list_by_conn(conn)
+}
+
+// 节点列表（初始化时也使用）
+pub fn node_list_by_conn(mut conn: PooledConnection<ClusterClient>) -> MeResult<Vec<RedisNode>> {
     let cluster_nodes: String = redis::cmd("cluster").arg("nodes")
         .query(&mut conn)
         .map_err(|e| format!("获取集群节点列表异常: {e}"))?;
@@ -92,18 +100,22 @@ fn parse_node_list(cluster_nodes: String) -> MeResult<Vec<RedisNode>> {
     Ok(nodes)
 }
 
-fn get_node_routing_info(node: Option<&str>) -> MeResult<RoutingInfo> {
-    match node {
-        None => Ok(SingleNode(Random)),
-        Some(node) => {
-            let (host, port) = node.split_once(":")
-                .ok_or(format!("node格式错误: {}", node))?;
-            Ok(SingleNode(ByAddress {
-                host: host.into(),
-                port: port.parse::<u16>().map_err(|_| format!("node端口解析错误: {}", node))?
-            }))
-        }
-    }
+fn get_node_routing_info(id: &str, node: Option<&str>) -> MeResult<(RoutingInfo, String)> {
+    let node: String =if let Some(node) = node {
+        node.to_string()
+    } else {
+        let node_list = get_node_list(id)?;
+        let random_index = rand::rng().random_range(0..node_list.len());
+        node_list[random_index].node.clone()
+    };
+
+    let (host, port) = node.split_once(":")
+        .ok_or(format!("node格式错误: {}", node))?;
+    let route = SingleNode(ByAddress {
+        host: host.into(),
+        port: port.parse::<u16>().map_err(|_| format!("node端口解析错误: {}", node))?
+    });
+    Ok((route, node.into()))
 }
 
 #[cfg(test)]
