@@ -1,19 +1,18 @@
 #![cfg_attr(test, allow(warnings))] // 整个文件在测试时禁用该警告
 
+use std::collections::{HashMap, HashSet};
+use anyhow::bail;
 use crate::conn::{get_conn, get_node_list};
 use crate::model::{RedisKey, RedisNode, RedisValue, ScanParam, ScanResult};
-use crate::util::{AnyResult, MeResult, vec8_to_string};
+use crate::util::{AnyResult, vec8_to_string};
 use RoutingInfo::SingleNode;
 use SingleNodeRoutingInfo::ByAddress;
-use anyhow::bail;
 use log::info;
 use r2d2::PooledConnection;
 use rand::Rng;
 use redis::cluster::ClusterClient;
 use redis::cluster_routing::{RoutingInfo, SingleNodeRoutingInfo};
-use redis::{Cmd, Commands, FromRedisValue, RedisResult, TypedCommands, ValueType};
-use std::any::Any;
-use std::collections::HashMap;
+use redis::{Cmd, Commands, FromRedisValue, RedisResult, ValueType};
 
 /// 信息
 pub fn info(id: &str, node: Option<&str>) -> AnyResult<String> {
@@ -110,33 +109,37 @@ pub fn scan(id: &str, param: ScanParam) -> AnyResult<ScanResult> {
 
 /// 获取值
 pub fn get(id: &str, key: Vec<u8>, hash_key: Option<String>) -> AnyResult<RedisValue> {
-    // let mut conn = get_conn(id)?;
+    let mut conn = get_conn(id)?;
+    let ttl: i64 = conn.ttl(key.clone())?;
+    let key_type: ValueType = conn.key_type(key.clone())?;
 
-    // let key_type: ValueType = conn.key_type(key.clone())?;
+    let value: serde_json::Value = match key_type {
+        ValueType::Unknown(other) => {
+            if "none" == other {
+                bail!("键不存在: {}", vec8_to_string(key))
+            } else {
+                bail!("未知类型: {other}")
+            }
+        }
+        ValueType::String => conn.get::<String>(key).unwrap(),
+        ValueType::List => conn.lrange::<Vec<String>>(key, 0, -1)?,
+        ValueType::Set => conn.smembers::<HashSet<String>>(key)?,
+        ValueType::ZSet => conn.zrange_withscores(key, 0, -1)?,
+        ValueType::Hash => {
+            if let Some(hash_key) = hash_key {
+                conn.hget::<String>(key, hash_key)?
+            } else {
+                conn.hgetall::<HashMap<String, String>>(key)?
+            }
+        }
+        ValueType::Stream => bail!("暂不支持stream类型"),
+    }?;
 
-    // let value: dyn Any = match key_type {
-    //     ValueType::Unknown(other) => {
-    //         if "none" == other {
-    //             bail!("键不存在: {}", vec8_to_string(key))
-    //         } else {
-    //             bail!("未知类型: {other}")
-    //         }
-    //     }
-    //     ValueType::String => conn.get::<String>(key)?,
-    //     ValueType::List => conn.lrange::<Vec<String>>(key, 0, -1)?,
-    //     ValueType::Set => conn.smembers::<Vec<String>>(key)?,
-    //     ValueType::ZSet => conn.zrange_withscores(key, 0, -1)?,
-    //     ValueType::Hash => {
-    //         if let Some(hash_key) = hash_key {
-    //             conn.hget::<String>(key, hash_key)?
-    //         } else {
-    //             conn.hgetall::<HashMap<String, String>>(key)?
-    //         }
-    //     }
-    //     ValueType::Stream => bail!("暂不支持stream类型"),
-    // }?;
-
-    todo!()
+    Ok(RedisValue {
+        key_type: key_type.into(),
+        ttl,
+        value
+    })
 }
 
 // 节点列表（初始化时也使用）
@@ -241,7 +244,7 @@ fn exec_node_command<T: FromRedisValue>(
 mod tests {
     use crate::model::{ScanCursor, ScanParam};
     use crate::service::{info, node_list, scan};
-    use crate::util::MeResult;
+    use crate::util::ApiResult;
     use log::LevelFilter;
     use redis::TlsMode;
     use redis::cluster::{ClusterClient, ClusterConnection};

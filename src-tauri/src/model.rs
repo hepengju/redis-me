@@ -44,6 +44,6 @@ api_model!( RedisKey {
 // Redis值
 api_model!( RedisValue {
     key_type: String,
-    ttl: u64,
+    ttl: i64,
     value: serde_json::Value,
 });
