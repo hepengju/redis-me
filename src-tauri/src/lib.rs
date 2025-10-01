@@ -20,7 +20,8 @@ pub fn run() {
         .plugin(tauri_plugin_opener::init())
         .invoke_handler(tauri::generate_handler![greet,
             info, node_list, scan, get, ttl, set, del,
-            field_add, field_set, field_del
+            field_add, field_set, field_del,
+            mock_data
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

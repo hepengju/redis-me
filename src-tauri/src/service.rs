@@ -5,17 +5,16 @@ use crate::model::{
     RedisFieldAdd, RedisFieldDel, RedisFieldSet, RedisKey, RedisNode, RedisValue, RedisZetItem,
     ScanParam, ScanResult,
 };
-use crate::util::{AnyResult, assert_is_true, vec8_to_string};
-use RoutingInfo::SingleNode;
-use SingleNodeRoutingInfo::ByAddress;
+use crate::util::{assert_is_true, random_item, random_range, random_string, vec8_to_string, AnyResult};
 use anyhow::bail;
 use log::info;
 use r2d2::PooledConnection;
-use rand::Rng;
-use redis::cluster::ClusterClient;
+use redis::cluster::{ClusterClient, ClusterPipeline};
 use redis::cluster_routing::{RoutingInfo, SingleNodeRoutingInfo};
 use redis::{Commands, FromRedisValue, SetExpiry, SetOptions, ValueType};
 use std::collections::{HashMap, HashSet};
+use RoutingInfo::SingleNode;
+use SingleNodeRoutingInfo::ByAddress;
 
 const REDIS_ME_FIELD_TO_DELETE_TMP_VALUE: &str = "__REDIS_ME_FIELD_TO_DELETE_TMP_VALUE__";
 
@@ -347,6 +346,46 @@ pub fn field_del(id: &str, param: RedisFieldDel) -> AnyResult<()> {
     Ok(())
 }
 
+/// 模拟数据
+pub fn mock_data(id: &str, count: usize) -> AnyResult<()> {
+    let mut conn = get_conn(id)?;
+
+    let mut pipe = ClusterPipeline::new();
+
+    for _ in 0..count {
+        // string
+        let key = format!("redis-me-mock:string:{}", random_string(10));
+        pipe.set(&key, random_string(10)).ignore();
+
+        // hash
+        let field_count = random_range(3, 20);
+        let key = format!("redis-me-mock:hash:{}", random_string(10));
+        for x in 0..field_count {
+            pipe.hset(&key, format!("key{x}"), random_string(10)).ignore();
+        }
+
+        // list
+        let key = format!("redis-me-mock:list:{}", random_string(10));
+        for _ in 0..field_count {
+            pipe.rpush(&key, random_string(10)).ignore();
+        }
+
+        // set
+        let key = format!("redis-me-mock:set:{}", random_string(10));
+        for _ in 0..field_count {
+            pipe.sadd(&key, random_string(10)).ignore();
+        }
+
+        // zset
+        let key = format!("redis-me-mock:zset:{}", random_string(10));
+        for _ in 0..field_count {
+            pipe.zadd(&key, random_string(10), random_range(1, 100)).ignore();
+        }
+    }
+
+    let _: () = pipe.query(&mut conn)?;
+    Ok(())
+}
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 // 节点列表（初始化时也使用）
 pub fn node_list_by_conn(mut conn: PooledConnection<ClusterClient>) -> AnyResult<Vec<RedisNode>> {
@@ -422,8 +461,7 @@ fn get_node_route(id: &str, node: Option<&str>) -> AnyResult<(RoutingInfo, Strin
         node.to_string()
     } else {
         let node_list = get_node_list(id)?;
-        let random_index = rand::rng().random_range(0..node_list.len());
-        node_list[random_index].node.clone()
+        random_item(node_list).node
     };
 
     let (host, port) = node.split_once(":").unwrap();

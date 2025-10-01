@@ -40,6 +40,9 @@ api_command!(field_set(id: &str, param: RedisFieldSet) -> ());
 // 删除字段
 api_command!(field_del(id: &str, param: RedisFieldDel) -> ());
 
+// 模拟数据
+api_command!(mock_data(id: &str, count: usize) -> ());
+
 #[cfg(test)]
 mod tests {
     use crate::api::*;
@@ -156,5 +159,10 @@ mod tests {
             },
         )
         .unwrap();
+    }
+
+    #[test]
+    fn test_mock_data() {
+        mock_data("test", 10).unwrap();
     }
 }

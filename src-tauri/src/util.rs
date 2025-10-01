@@ -1,4 +1,7 @@
 use anyhow::bail;
+use rand::distr::{Alphanumeric, SampleString};
+use rand::prelude::IteratorRandom;
+use rand::Rng;
 
 // 统一应用返回值
 pub type AnyResult<T> = anyhow::Result<T>;
@@ -21,6 +24,22 @@ pub fn vec8_to_string(v: Vec<u8>) -> String {
 pub fn assert_is_true(value: bool, message: String) -> AnyResult<()> {
     if value { Ok(()) } else { bail!(message) }
 }
+
+// vec中随机选择一个
+pub fn random_item<T>(vec: Vec<T>) -> T {
+    vec.into_iter().choose(&mut rand::rng()).unwrap()
+}
+
+// 随机N个字符
+pub fn random_string(len: usize) -> String {
+    Alphanumeric.sample_string(&mut rand::rng(), len)
+}
+
+// 随机范围
+pub fn random_range(min: i32, max: i32) -> i32 {
+    rand::rng().random_range(min..=max)
+}
+
 
 // Model定义宏（DeepSeek生成）
 #[macro_export]
