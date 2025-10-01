@@ -205,16 +205,18 @@ pub fn del(id: &str, key: Vec<u8>) -> AnyResult<i64> {
 }
 
 /// 新增字段
-pub fn field_add(id: &str, key: Vec<u8>, rfa: RedisFieldAdd) -> AnyResult<()> {
+pub fn field_add(id: &str, rfa: RedisFieldAdd) -> AnyResult<()> {
     let mut conn = get_conn(id)?;
 
     let mode = rfa.mode;
+    let mut key: Vec<u8> = rfa.key.into();
     let mut key_type = ValueType::from(rfa.key_type);
 
-    if "key" == mode {
+    if "key" == mode { // 新增键
         let exists: bool = conn.exists(&key)?;
-        assert_is_true(!exists, format!("键已存在: {}",vec8_to_string(key.clone())))?
-    } else if "field" == mode {
+        assert_is_true(!exists, format!("键已存在: {}", vec8_to_string(key.clone())))?
+    } else if "field" == mode { // 新增字段
+        key = rfa.bytes.into();
         key_type = conn.key_type(&key)?
     } else {
         bail!("模式: {} 暂不支持", mode)

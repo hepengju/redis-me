@@ -1,8 +1,8 @@
 #![cfg_attr(test, allow(warnings))] // 整个文件在测试时禁用该警告
 
-use crate::model::{RedisNode, RedisValue, ScanParam, ScanResult};
-use crate::util::{to_api_result, ApiResult};
+use crate::model::{RedisFieldAdd, RedisNode, RedisValue, ScanParam, ScanResult};
 use crate::service;
+use crate::util::{AnyResult, ApiResult, to_api_result};
 
 #[tauri::command]
 pub fn info(id: &str, node: Option<&str>) -> ApiResult<String> {
@@ -35,7 +35,7 @@ pub fn ttl(id: &str, key: Vec<u8>, ttl: i64) -> ApiResult<i64> {
 
 /// 设置值
 #[tauri::command]
-pub fn set(id: &str, key:Vec<u8>, value: String, ttl: i64) -> ApiResult<String> {
+pub fn set(id: &str, key: Vec<u8>, value: String, ttl: i64) -> ApiResult<String> {
     to_api_result(service::set(id, key, value, ttl))
 }
 
@@ -45,11 +45,15 @@ pub fn del(id: &str, key: Vec<u8>) -> ApiResult<i64> {
     to_api_result(service::del(id, key))
 }
 
+/// 新增字段
+pub fn field_add(id: &str, param: RedisFieldAdd) -> AnyResult<()> {
+    service::field_add(id, param)
+}
+
 #[cfg(test)]
 mod tests {
-    use crate::model::{ScanCursor, ScanParam};
     use crate::api::*;
-
+    use crate::model::{RedisFieldValue, ScanCursor, ScanParam};
     // 初始化日志, 避免所有测试方法都需要额外调用init方法
     // #[ctor::ctor]
     // fn init() {
@@ -107,12 +111,58 @@ mod tests {
     }
 
     #[test]
-    fn test_get(){
+    fn test_get() {
         let value = get("test", "hepengju:list".into(), None).unwrap();
         println!("{value:#?}");
         println!("{}", serde_json::to_string(&value).unwrap());
 
         let value = get("test", "hepengju:string".into(), None).unwrap();
         println!("{}", serde_json::to_string(&value).unwrap());
+    }
+
+    #[test]
+    fn test_field_add() {
+        del("test", "redis_me:string".into()).unwrap();
+        
+        field_add(
+            "test",
+            RedisFieldAdd {
+                key: "redis_me:string".into(),
+                bytes: vec![],
+                mode: "key".into(),
+                key_type: "string".into(),
+                ttl: -1,
+                value: "字符串值".into(),
+                list_push_method: "".into(),
+                field_value_list: vec![],
+            },
+        )
+        .unwrap();
+
+        field_add(
+            "test",
+            RedisFieldAdd {
+                key: "".into(),
+                bytes: "redis_me:hash".into(),
+                mode: "field".into(),
+                key_type: "hash".into(),
+                ttl: -1,
+                value: "".into(),
+                list_push_method: "".into(),
+                field_value_list: vec![
+                    RedisFieldValue {
+                        field_key: "hash_key1".into(),
+                        field_value: "value1".into(),
+                        field_score: 0.0,
+                    },
+                    RedisFieldValue {
+                        field_key: "hash_key2".into(),
+                        field_value: "value2".into(),
+                        field_score: 0.0,
+                    },
+                ],
+            },
+        )
+        .unwrap();
     }
 }

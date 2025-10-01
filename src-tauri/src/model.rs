@@ -57,8 +57,9 @@ api_model!(RedisZetItem {
 
 // 字段新增
 api_model!(RedisFieldAdd {
-    key: String,
-    mode: String, //  key-新增键, field-新增字段
+    key: String,     // 新增键时输入key
+    bytes: Vec<u8>,  // 键已经存在时，新增字段时输入旧键的bytes
+    mode: String,    // key-新增键, field-新增字段
 
     #[serde(rename = "type")]
     key_type: String,
