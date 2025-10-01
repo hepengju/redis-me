@@ -1,8 +1,8 @@
 #![cfg_attr(test, allow(warnings))] // 整个文件在测试时禁用该警告
 
 use crate::conn::{get_conn, get_node_list};
-use crate::model::{RedisKey, RedisNode, RedisValue, RedisZetItem, ScanParam, ScanResult};
-use crate::util::{vec8_to_string, AnyResult, ApiResult};
+use crate::model::{RedisFieldAdd, RedisFieldValue, RedisKey, RedisNode, RedisValue, RedisZetItem, ScanParam, ScanResult};
+use crate::util::{assert_is_true, vec8_to_string, AnyResult, ApiResult};
 use anyhow::bail;
 use log::info;
 use r2d2::PooledConnection;
@@ -11,6 +11,7 @@ use redis::cluster::ClusterClient;
 use redis::cluster_routing::{RoutingInfo, SingleNodeRoutingInfo};
 use redis::{Cmd, Commands, FromRedisValue, RedisResult, SetExpiry, SetOptions, ValueType};
 use std::collections::{HashMap, HashSet};
+use std::fs::exists;
 use RoutingInfo::SingleNode;
 use SingleNodeRoutingInfo::ByAddress;
 
@@ -202,6 +203,56 @@ pub fn del(id: &str, key: Vec<u8>) -> AnyResult<i64> {
     let value: i64 = conn.del(&key)?;
     Ok(value)
 }
+
+/// 新增字段
+pub fn field_add(id: &str, key: Vec<u8>, rfa: RedisFieldAdd) -> AnyResult<()> {
+    let mut conn = get_conn(id)?;
+
+    let mode = rfa.mode;
+    let mut key_type = ValueType::from(rfa.key_type);
+
+    if "key" == mode {
+        let exists: bool = conn.exists(&key)?;
+        assert_is_true(!exists, format!("键已存在: {}",vec8_to_string(key.clone())))?
+    } else if "field" == mode {
+        key_type = conn.key_type(&key)?
+    } else {
+        bail!("模式: {} 暂不支持", mode)
+    }
+
+    let fv_list = rfa.field_value_list;
+
+    match key_type {
+        ValueType::Unknown(other) => {
+            if "none" == other {
+                bail!("键不存在: {}", vec8_to_string(key))
+            } else {
+                bail!("未知类型: {other}")
+            }
+        },
+        ValueType::String => conn.set(&key, &rfa.value)?,
+        ValueType::Hash => fv_list.into_iter().for_each(|f| conn.hset(&key, f.field_key, f.field_value).unwrap()),
+        ValueType::List => {
+            if "lpush" == rfa.list_push_method {
+                // 插入头部时保持原有顺序
+                fv_list.into_iter().rev().for_each(|fv| conn.lpush(&key, fv.field_value).unwrap());
+            } else {
+                fv_list.into_iter().for_each(|f| conn.rpush(&key, f.field_value).unwrap());
+            }
+        },
+        ValueType::Set => fv_list.into_iter().for_each(|f| conn.sadd(&key, f.field_value).unwrap()),
+        ValueType::ZSet => fv_list.into_iter().for_each(|f| conn.zadd(&key, f.field_value, f.field_score).unwrap()),
+        ValueType::Stream => bail!("暂不支持stream类型"),
+    };
+
+    if "key" == mode {
+        if rfa.ttl > 0 {
+            let _: () = conn.expire(&key, rfa.ttl)?;
+        }
+    }
+    Ok(())
+}
+
 
 // 节点列表（初始化时也使用）
 pub fn node_list_by_conn(mut conn: PooledConnection<ClusterClient>) -> AnyResult<Vec<RedisNode>> {

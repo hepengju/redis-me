@@ -1,3 +1,5 @@
+use anyhow::{anyhow, bail};
+
 // 统一应用返回值
 pub type AnyResult<T> = anyhow::Result<T>;
 pub type ApiResult<T> = Result<T, String>;
@@ -16,6 +18,16 @@ pub fn vec8_to_string(v: Vec<u8>) -> String {
         String::from_utf8_unchecked(v)
     }
 }
+
+// 断言
+pub fn assert_is_true(value: bool, message: String) -> AnyResult<()> {
+    if value {
+        Ok(())
+    } else {
+        bail!(message)
+    }
+}
+
 
 // 模型定义宏（DeepSeek生成）
 #[macro_export]

@@ -28,6 +28,7 @@ pub fn get(id: &str, key: Vec<u8>, hash_key: Option<String>) -> ApiResult<RedisV
 }
 
 /// 设置TTL
+#[tauri::command]
 pub fn ttl(id: &str, key: Vec<u8>, ttl: i64) -> ApiResult<i64> {
     to_api_result(service::ttl(id, key, ttl))
 }

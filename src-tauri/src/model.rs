@@ -42,15 +42,35 @@ api_model!( RedisKey {
 });
 
 // Redis值
-api_model!( RedisValue {
+api_model!(RedisValue {
     #[serde(rename = "type")]
     key_type: String,
     ttl: i64,
     value: serde_json::Value,
 });
 
-api_model!( RedisZetItem {
+// Zset条目
+api_model!(RedisZetItem {
     value: String,
     score: f64,
 });
 
+// 字段新增
+api_model!(RedisFieldAdd {
+    key: String,
+    mode: String, //  key-新增键, field-新增字段
+
+    #[serde(rename = "type")]
+    key_type: String,
+    ttl: i64,
+    value: String, // 字段类型为String时的值
+
+    list_push_method: String, // lpush, rpush
+    field_value_list: Vec<RedisFieldValue>,
+});
+
+api_model!( RedisFieldValue {
+    field_key: String,
+    field_value: String,
+    field_score: f64,
+});
