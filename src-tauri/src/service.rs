@@ -1,19 +1,21 @@
 #![cfg_attr(test, allow(warnings))] // 整个文件在测试时禁用该警告
 
 use crate::conn::{get_conn, get_node_list};
-use crate::model::{RedisFieldAdd, RedisFieldValue, RedisKey, RedisNode, RedisValue, RedisZetItem, ScanParam, ScanResult};
-use crate::util::{assert_is_true, vec8_to_string, AnyResult, ApiResult};
+use crate::model::{
+    RedisFieldAdd, RedisFieldSet, RedisKey, RedisNode, RedisValue, RedisZetItem, ScanParam,
+    ScanResult,
+};
+use crate::util::{AnyResult, assert_is_true, vec8_to_string};
+use RoutingInfo::SingleNode;
+use SingleNodeRoutingInfo::ByAddress;
 use anyhow::bail;
 use log::info;
 use r2d2::PooledConnection;
 use rand::Rng;
 use redis::cluster::ClusterClient;
 use redis::cluster_routing::{RoutingInfo, SingleNodeRoutingInfo};
-use redis::{Cmd, Commands, FromRedisValue, RedisResult, SetExpiry, SetOptions, ValueType};
+use redis::{Commands, FromRedisValue, SetExpiry, SetOptions, ValueType};
 use std::collections::{HashMap, HashSet};
-use std::fs::exists;
-use RoutingInfo::SingleNode;
-use SingleNodeRoutingInfo::ByAddress;
 
 /// 信息
 pub fn info(id: &str, node: Option<&str>) -> AnyResult<String> {
@@ -46,7 +48,8 @@ pub fn scan(id: &str, param: ScanParam) -> AnyResult<ScanResult> {
     let mut keys: Vec<Vec<u8>> = vec![];
 
     // 遍历集群节点: 仅扫描主节点
-    let nodes: Vec<String> = get_node_list(id)?.into_iter()
+    let nodes: Vec<String> = get_node_list(id)?
+        .into_iter()
         .filter(|node| node.is_master)
         .map(|node| node.node.clone())
         .collect();
@@ -133,20 +136,23 @@ pub fn get(id: &str, key: Vec<u8>, hash_key: Option<String>) -> AnyResult<RedisV
         ValueType::String => {
             let value: String = conn.get(&key)?;
             serde_json::to_value(value)
-        },
+        }
         ValueType::List => {
-            let value: Vec<String> =conn.lrange(&key, 0, -1)?;
+            let value: Vec<String> = conn.lrange(&key, 0, -1)?;
             serde_json::to_value(value)
-        },
+        }
         ValueType::Set => {
             let value: HashSet<String> = conn.smembers(&key)?;
             serde_json::to_value(value)
-        },
+        }
         ValueType::ZSet => {
             let value: Vec<(String, f64)> = conn.zrange_withscores(&key, 0, -1)?;
-            let list: Vec<RedisZetItem> = value.into_iter().map(|(value, score)| RedisZetItem{value, score}).collect();
+            let list: Vec<RedisZetItem> = value
+                .into_iter()
+                .map(|(value, score)| RedisZetItem { value, score })
+                .collect();
             serde_json::to_value(list)
-        },
+        }
         ValueType::Hash => {
             if let Some(hash_key) = hash_key {
                 let value: String = conn.hget(&key, hash_key)?;
@@ -162,14 +168,14 @@ pub fn get(id: &str, key: Vec<u8>, hash_key: Option<String>) -> AnyResult<RedisV
     Ok(RedisValue {
         key_type: key_type.into(),
         ttl,
-        value
+        value,
     })
 }
 
 /// 设置TTL
 pub fn ttl(id: &str, key: Vec<u8>, ttl: i64) -> AnyResult<i64> {
     let mut conn = get_conn(id)?;
-    let value: i64 =  if ttl < 0 {
+    let value: i64 = if ttl < 0 {
         // 移除 key 上已有的过期时间，将键从易失（设置了过期时间的键）变为变为持久
         // 整型回复: 如果 key 不存在或没有关联的过期时间，则返回 0。
         // 整型回复: 如果已移除过期时间，则返回 1。
@@ -186,43 +192,48 @@ pub fn ttl(id: &str, key: Vec<u8>, ttl: i64) -> AnyResult<i64> {
 }
 
 /// 设置值
-pub fn set(id: &str, key: Vec<u8>, value: String, ttl: i64) -> AnyResult<String> {
+pub fn set(id: &str, key: Vec<u8>, value: String, ttl: i64) -> AnyResult<()> {
     let mut conn = get_conn(id)?;
-    let value = if ttl < 0 {
-        conn.set(&key, value)?
+    if ttl < 0 {
+        let _: () = conn.set(&key, value)?;
     } else {
         let options = SetOptions::default().with_expiration(SetExpiry::EX(ttl as u64));
-        conn.set_options(&key, value, options)?
+        let _: () = conn.set_options(&key, value, options)?;
     };
-    Ok(value)
+    Ok(())
 }
 
 /// 删除键
-pub fn del(id: &str, key: Vec<u8>) -> AnyResult<i64> {
+pub fn del(id: &str, key: Vec<u8>) -> AnyResult<usize> {
     let mut conn = get_conn(id)?;
-    let value: i64 = conn.del(&key)?;
+    let value: usize = conn.del(&key)?;
     Ok(value)
 }
 
 /// 新增字段
-pub fn field_add(id: &str, rfa: RedisFieldAdd) -> AnyResult<()> {
+pub fn field_add(id: &str, param: RedisFieldAdd) -> AnyResult<()> {
     let mut conn = get_conn(id)?;
 
-    let mode = rfa.mode;
-    let mut key: Vec<u8> = rfa.key.into();
-    let mut key_type = ValueType::from(rfa.key_type);
+    let mode = param.mode;
+    let mut key: Vec<u8> = param.key.into();
+    let mut key_type = ValueType::from(param.key_type);
 
-    if "key" == mode { // 新增键
+    if "key" == mode {
+        // 新增键
         let exists: bool = conn.exists(&key)?;
-        assert_is_true(!exists, format!("键已存在: {}", vec8_to_string(key.clone())))?
-    } else if "field" == mode { // 新增字段
-        key = rfa.bytes.into();
+        assert_is_true(
+            !exists,
+            format!("键已存在: {}", vec8_to_string(key.clone())),
+        )?
+    } else if "field" == mode {
+        // 新增字段
+        key = param.bytes.into();
         key_type = conn.key_type(&key)?
     } else {
         bail!("模式: {} 暂不支持", mode)
     }
 
-    let fv_list = rfa.field_value_list;
+    let fv_list = param.field_value_list;
 
     match key_type {
         ValueType::Unknown(other) => {
@@ -231,30 +242,75 @@ pub fn field_add(id: &str, rfa: RedisFieldAdd) -> AnyResult<()> {
             } else {
                 bail!("未知类型: {other}")
             }
-        },
-        ValueType::String => conn.set(&key, &rfa.value)?,
-        ValueType::Hash => fv_list.into_iter().for_each(|f| conn.hset(&key, f.field_key, f.field_value).unwrap()),
+        }
+        ValueType::String => conn.set(&key, &param.value)?,
+        ValueType::Hash => fv_list
+            .into_iter()
+            .for_each(|f| conn.hset(&key, f.field_key, f.field_value).unwrap()),
         ValueType::List => {
-            if "lpush" == rfa.list_push_method {
+            if "lpush" == param.list_push_method {
                 // 插入头部时保持原有顺序
-                fv_list.into_iter().rev().for_each(|fv| conn.lpush(&key, fv.field_value).unwrap());
+                fv_list
+                    .into_iter()
+                    .rev()
+                    .for_each(|fv| conn.lpush(&key, fv.field_value).unwrap());
             } else {
-                fv_list.into_iter().for_each(|f| conn.rpush(&key, f.field_value).unwrap());
+                fv_list
+                    .into_iter()
+                    .for_each(|f| conn.rpush(&key, f.field_value).unwrap());
             }
-        },
-        ValueType::Set => fv_list.into_iter().for_each(|f| conn.sadd(&key, f.field_value).unwrap()),
-        ValueType::ZSet => fv_list.into_iter().for_each(|f| conn.zadd(&key, f.field_value, f.field_score).unwrap()),
+        }
+        ValueType::Set => fv_list
+            .into_iter()
+            .for_each(|f| conn.sadd(&key, f.field_value).unwrap()),
+        ValueType::ZSet => fv_list
+            .into_iter()
+            .for_each(|f| conn.zadd(&key, f.field_value, f.field_score).unwrap()),
         ValueType::Stream => bail!("暂不支持stream类型"),
     };
 
     if "key" == mode {
-        if rfa.ttl > 0 {
-            let _: () = conn.expire(&key, rfa.ttl)?;
+        if param.ttl > 0 {
+            let _: () = conn.expire(&key, param.ttl)?;
         }
     }
     Ok(())
 }
 
+/// 编辑字段
+pub fn field_set(id: &str, param: RedisFieldSet) -> AnyResult<()> {
+    let mut conn = get_conn(id)?;
+
+    let key: Vec<u8> = param.bytes;
+    let key_type: ValueType = conn.key_type(&key)?;
+
+    match key_type {
+        ValueType::Unknown(other) => {
+            if "none" == other {
+                bail!("键不存在: {}", vec8_to_string(key))
+            } else {
+                bail!("未知类型: {other}")
+            }
+        }
+        ValueType::String => bail!("string类型不支持设置字段值"),
+        ValueType::Hash => {
+            let _: () = conn.hset(&key, param.field_key, param.field_value)?;
+        }
+        ValueType::List => {
+            let _: () = conn.lset(&key, param.field_index, param.field_value)?;
+        }
+        ValueType::Set => {
+            let _: () = conn.srem(&key, param.src_field_value)?;
+            let _: () = conn.sadd(&key, param.field_value)?;
+        }
+        ValueType::ZSet => {
+            let _: () = conn.zrem(&key, param.src_field_value)?;
+            let _: () = conn.zadd(&key, param.field_value, param.field_score)?;
+        }
+        ValueType::Stream => bail!("暂不支持stream类型"),
+    };
+    Ok(())
+}
 
 // 节点列表（初始化时也使用）
 pub fn node_list_by_conn(mut conn: PooledConnection<ClusterClient>) -> AnyResult<Vec<RedisNode>> {

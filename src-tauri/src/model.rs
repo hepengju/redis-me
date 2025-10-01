@@ -42,7 +42,7 @@ api_model!( RedisKey {
 });
 
 // Redis值
-api_model!(RedisValue {
+api_model!( RedisValue {
     #[serde(rename = "type")]
     key_type: String,
     ttl: i64,
@@ -50,13 +50,13 @@ api_model!(RedisValue {
 });
 
 // Zset条目
-api_model!(RedisZetItem {
+api_model!( RedisZetItem {
     value: String,
     score: f64,
 });
 
 // 字段新增
-api_model!(RedisFieldAdd {
+api_model!( RedisFieldAdd {
     key: String,     // 新增键时输入key
     bytes: Vec<u8>,  // 键已经存在时，新增字段时输入旧键的bytes
     mode: String,    // key-新增键, field-新增字段
@@ -70,7 +70,18 @@ api_model!(RedisFieldAdd {
     field_value_list: Vec<RedisFieldValue>,
 });
 
-api_model!( RedisFieldValue {
+api_model!( RedisFieldSet {
+    bytes: Vec<u8>,
+    src_field_key: String,
+    src_field_value: String,
+    field_index: isize,
+    field_key: String,
+    field_value: String,
+    field_score: f64,
+});
+
+// 字段值
+api_model!(RedisFieldValue {
     field_key: String,
     field_value: String,
     field_score: f64,

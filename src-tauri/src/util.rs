@@ -1,4 +1,4 @@
-use anyhow::{anyhow, bail};
+use anyhow::bail;
 
 // 统一应用返回值
 pub type AnyResult<T> = anyhow::Result<T>;
@@ -14,22 +14,15 @@ pub fn to_api_result<T>(result: anyhow::Result<T>) -> ApiResult<T> {
 
 // 字节数组转字符串
 pub fn vec8_to_string(v: Vec<u8>) -> String {
-    unsafe {
-        String::from_utf8_unchecked(v)
-    }
+    unsafe { String::from_utf8_unchecked(v) }
 }
 
 // 断言
 pub fn assert_is_true(value: bool, message: String) -> AnyResult<()> {
-    if value {
-        Ok(())
-    } else {
-        bail!(message)
-    }
+    if value { Ok(()) } else { bail!(message) }
 }
 
-
-// 模型定义宏（DeepSeek生成）
+// Model定义宏（DeepSeek生成）
 #[macro_export]
 macro_rules! api_model {
     ($struct:ident {
@@ -51,13 +44,13 @@ macro_rules! api_model {
 }
 
 // Api定义宏
-// #[macro_export]
-// macro_rules! tauri_api {
-//     ($(#[$attr:meta])* $fn_name:ident($($param:ident: $param_type:ty),*)) => {
-//         $(#[$attr])*
-//         #[tauri::command]
-//         pub fn $fn_name($($param: $param_type),*) -> ApiResult<impl Sized> {
-//             to_me_result(service::$fn_name($($param),*))
-//         }
-//     };
-// }
+#[macro_export]
+macro_rules! api_command {
+    ($(#[$attr:meta])* $fn_name:ident($($param:ident: $param_type:ty),*) -> $ret:ty) => {
+        $(#[$attr])*
+        #[tauri::command]
+        pub fn $fn_name($($param: $param_type),*) -> ApiResult<$ret> {
+            to_api_result(service::$fn_name($($param),*))
+        }
+    };
+}

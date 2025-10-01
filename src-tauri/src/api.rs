@@ -1,59 +1,52 @@
 #![cfg_attr(test, allow(warnings))] // 整个文件在测试时禁用该警告
 
-use crate::model::{RedisFieldAdd, RedisNode, RedisValue, ScanParam, ScanResult};
-use crate::service;
-use crate::util::{AnyResult, ApiResult, to_api_result};
+use crate::model::{RedisFieldAdd, RedisFieldSet, RedisNode, RedisValue, ScanParam, ScanResult};
+use crate::util::{to_api_result, ApiResult};
+use crate::{api_command, service};
 
-#[tauri::command]
-pub fn info(id: &str, node: Option<&str>) -> ApiResult<String> {
-    to_api_result(service::info(id, node))
-}
+// 信息: 原始写法，下面用宏简化一下
+// #[tauri::command]
+// pub fn info(id: &str, node: Option<&str>) -> ApiResult<String> {
+//     to_api_result(service::info(id, node))
+// }
 
-/// 节点列表
-#[tauri::command]
-pub fn node_list(id: &str) -> ApiResult<Vec<RedisNode>> {
-    to_api_result(service::node_list(id))
-}
+// 信息
+api_command!(info(id: &str, node: Option<&str>) -> String);
 
-/// 扫描
-#[tauri::command]
-pub fn scan(id: &str, param: ScanParam) -> ApiResult<ScanResult> {
-    to_api_result(service::scan(id, param))
-}
+// 节点列表
+api_command!(node_list(id: &str) -> Vec<RedisNode>);
 
-/// 获取值
-#[tauri::command]
-pub fn get(id: &str, key: Vec<u8>, hash_key: Option<String>) -> ApiResult<RedisValue> {
-    to_api_result(service::get(id, key, hash_key))
-}
+// 扫描
+api_command!(scan(id: &str, param: ScanParam) -> ScanResult);
 
-/// 设置TTL
-#[tauri::command]
-pub fn ttl(id: &str, key: Vec<u8>, ttl: i64) -> ApiResult<i64> {
-    to_api_result(service::ttl(id, key, ttl))
-}
 
-/// 设置值
-#[tauri::command]
-pub fn set(id: &str, key: Vec<u8>, value: String, ttl: i64) -> ApiResult<String> {
-    to_api_result(service::set(id, key, value, ttl))
-}
+// 获取值
+api_command!(get(id: &str, key: Vec<u8>, hash_key: Option<String>) -> RedisValue);
 
-/// 删除键
-#[tauri::command]
-pub fn del(id: &str, key: Vec<u8>) -> ApiResult<i64> {
-    to_api_result(service::del(id, key))
-}
+// 设置TTL
+api_command!(ttl(id: &str, key: Vec<u8>, ttl: i64) -> i64);
 
-/// 新增字段
-pub fn field_add(id: &str, param: RedisFieldAdd) -> AnyResult<()> {
-    service::field_add(id, param)
-}
+// 设置值
+api_command!(set(id: &str, key: Vec<u8>, value: String, ttl: i64) -> ());
+
+// 删除键
+api_command!(del(id: &str, key: Vec<u8>) -> usize);
+
+// 新增字段
+api_command!(field_add(id: &str, param: RedisFieldAdd) -> ());
+
+// 编辑字段
+api_command!(field_set(id: &str, param: RedisFieldSet) -> ());
+
+// 删除字段
+// api_command!(field_del(id: &str, key: Vec<u8>, field_key: String));
 
 #[cfg(test)]
 mod tests {
     use crate::api::*;
     use crate::model::{RedisFieldValue, ScanCursor, ScanParam};
+    use crate::service::{del, field_add, get, node_list, scan};
+
     // 初始化日志, 避免所有测试方法都需要额外调用init方法
     // #[ctor::ctor]
     // fn init() {
@@ -123,7 +116,7 @@ mod tests {
     #[test]
     fn test_field_add() {
         del("test", "redis_me:string".into()).unwrap();
-        
+
         field_add(
             "test",
             RedisFieldAdd {
