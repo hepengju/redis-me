@@ -70,6 +70,7 @@ api_model!( RedisFieldAdd {
     field_value_list: Vec<RedisFieldValue>,
 });
 
+// 字段修改
 api_model!( RedisFieldSet {
     bytes: Vec<u8>,
     src_field_key: String,
@@ -81,8 +82,16 @@ api_model!( RedisFieldSet {
 });
 
 // 字段值
-api_model!(RedisFieldValue {
+api_model!( RedisFieldValue {
     field_key: String,
     field_value: String,
     field_score: f64,
+});
+
+// 字段删除
+api_model!( RedisFieldDel {
+    bytes: Vec<u8>,
+    field_index: isize,
+    field_key: String,
+    field_value: String,
 });

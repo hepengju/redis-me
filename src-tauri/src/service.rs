@@ -2,8 +2,8 @@
 
 use crate::conn::{get_conn, get_node_list};
 use crate::model::{
-    RedisFieldAdd, RedisFieldSet, RedisKey, RedisNode, RedisValue, RedisZetItem, ScanParam,
-    ScanResult,
+    RedisFieldAdd, RedisFieldDel, RedisFieldSet, RedisKey, RedisNode, RedisValue, RedisZetItem,
+    ScanParam, ScanResult,
 };
 use crate::util::{AnyResult, assert_is_true, vec8_to_string};
 use RoutingInfo::SingleNode;
@@ -16,6 +16,8 @@ use redis::cluster::ClusterClient;
 use redis::cluster_routing::{RoutingInfo, SingleNodeRoutingInfo};
 use redis::{Commands, FromRedisValue, SetExpiry, SetOptions, ValueType};
 use std::collections::{HashMap, HashSet};
+
+const REDIS_ME_FIELD_TO_DELETE_TMP_VALUE: &str = "__REDIS_ME_FIELD_TO_DELETE_TMP_VALUE__";
 
 /// 信息
 pub fn info(id: &str, node: Option<&str>) -> AnyResult<String> {
@@ -236,6 +238,30 @@ pub fn field_add(id: &str, param: RedisFieldAdd) -> AnyResult<()> {
     let fv_list = param.field_value_list;
 
     match key_type {
+        ValueType::String => conn.set(&key, &param.value)?,
+        ValueType::Hash => fv_list
+            .into_iter()
+            .try_for_each(|f| conn.hset(&key, f.field_key, f.field_value))?,
+        ValueType::List => {
+            if "lpush" == param.list_push_method {
+                // 插入头部时保持原有顺序
+                fv_list
+                    .into_iter()
+                    .rev()
+                    .try_for_each(|fv| conn.lpush(&key, fv.field_value))?;
+            } else {
+                fv_list
+                    .into_iter()
+                    .try_for_each(|f| conn.rpush(&key, f.field_value))?;
+            }
+        }
+        ValueType::Set => fv_list
+            .into_iter()
+            .try_for_each(|f| conn.sadd(&key, f.field_value))?,
+        ValueType::ZSet => fv_list
+            .into_iter()
+            .try_for_each(|f| conn.zadd(&key, f.field_value, f.field_score))?,
+        ValueType::Stream => bail!("stream类型暂不支持新增字段值"),
         ValueType::Unknown(other) => {
             if "none" == other {
                 bail!("键不存在: {}", vec8_to_string(key))
@@ -243,30 +269,6 @@ pub fn field_add(id: &str, param: RedisFieldAdd) -> AnyResult<()> {
                 bail!("未知类型: {other}")
             }
         }
-        ValueType::String => conn.set(&key, &param.value)?,
-        ValueType::Hash => fv_list
-            .into_iter()
-            .for_each(|f| conn.hset(&key, f.field_key, f.field_value).unwrap()),
-        ValueType::List => {
-            if "lpush" == param.list_push_method {
-                // 插入头部时保持原有顺序
-                fv_list
-                    .into_iter()
-                    .rev()
-                    .for_each(|fv| conn.lpush(&key, fv.field_value).unwrap());
-            } else {
-                fv_list
-                    .into_iter()
-                    .for_each(|f| conn.rpush(&key, f.field_value).unwrap());
-            }
-        }
-        ValueType::Set => fv_list
-            .into_iter()
-            .for_each(|f| conn.sadd(&key, f.field_value).unwrap()),
-        ValueType::ZSet => fv_list
-            .into_iter()
-            .for_each(|f| conn.zadd(&key, f.field_value, f.field_score).unwrap()),
-        ValueType::Stream => bail!("暂不支持stream类型"),
     };
 
     if "key" == mode {
@@ -285,14 +287,6 @@ pub fn field_set(id: &str, param: RedisFieldSet) -> AnyResult<()> {
     let key_type: ValueType = conn.key_type(&key)?;
 
     match key_type {
-        ValueType::Unknown(other) => {
-            if "none" == other {
-                bail!("键不存在: {}", vec8_to_string(key))
-            } else {
-                bail!("未知类型: {other}")
-            }
-        }
-        ValueType::String => bail!("string类型不支持设置字段值"),
         ValueType::Hash => {
             let _: () = conn.hset(&key, param.field_key, param.field_value)?;
         }
@@ -307,11 +301,53 @@ pub fn field_set(id: &str, param: RedisFieldSet) -> AnyResult<()> {
             let _: () = conn.zrem(&key, param.src_field_value)?;
             let _: () = conn.zadd(&key, param.field_value, param.field_score)?;
         }
-        ValueType::Stream => bail!("暂不支持stream类型"),
+        ValueType::String => bail!("string类型暂不支持设置字段值"),
+        ValueType::Stream => bail!("stream类型暂不支持设置字段值"),
+        ValueType::Unknown(other) => {
+            if "none" == other {
+                bail!("键不存在: {}", vec8_to_string(key))
+            } else {
+                bail!("未知类型: {other}")
+            }
+        }
     };
     Ok(())
 }
 
+/// 删除字段
+pub fn field_del(id: &str, param: RedisFieldDel) -> AnyResult<()> {
+    let mut conn = get_conn(id)?;
+    let key: Vec<u8> = param.bytes;
+    let key_type: ValueType = conn.key_type(&key)?;
+
+    match key_type {
+        ValueType::Hash => {
+            let _: () = conn.hdel(&key, param.field_key)?;
+        }
+        ValueType::List => {
+            let _: () = conn.lset(&key, param.field_index, REDIS_ME_FIELD_TO_DELETE_TMP_VALUE)?;
+            let _: () = conn.lrem(&key, 1, REDIS_ME_FIELD_TO_DELETE_TMP_VALUE)?;
+        }
+        ValueType::Set => {
+            let _: () = conn.srem(&key, param.field_value)?;
+        }
+        ValueType::ZSet => {
+            let _: () = conn.zrem(&key, param.field_value)?;
+        }
+        ValueType::String => bail!("string类型暂不支持删除字段值"),
+        ValueType::Stream => bail!("stream类型暂不支持删除字段值"),
+        ValueType::Unknown(other) => {
+            if "none" == other {
+                bail!("键不存在: {}", vec8_to_string(key))
+            } else {
+                bail!("未知类型: {other}")
+            }
+        }
+    };
+    Ok(())
+}
+
+//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 // 节点列表（初始化时也使用）
 pub fn node_list_by_conn(mut conn: PooledConnection<ClusterClient>) -> AnyResult<Vec<RedisNode>> {
     let cluster_nodes: String = redis::cmd("cluster").arg("nodes").query(&mut conn)?;

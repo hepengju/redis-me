@@ -1,7 +1,7 @@
 #![cfg_attr(test, allow(warnings))] // 整个文件在测试时禁用该警告
 
-use crate::model::{RedisFieldAdd, RedisFieldSet, RedisNode, RedisValue, ScanParam, ScanResult};
-use crate::util::{to_api_result, ApiResult};
+use crate::model::{RedisFieldAdd, RedisFieldDel, RedisFieldSet, RedisNode, RedisValue, ScanParam, ScanResult};
+use crate::util::{ApiResult, to_api_result};
 use crate::{api_command, service};
 
 // 信息: 原始写法，下面用宏简化一下
@@ -18,7 +18,6 @@ api_command!(node_list(id: &str) -> Vec<RedisNode>);
 
 // 扫描
 api_command!(scan(id: &str, param: ScanParam) -> ScanResult);
-
 
 // 获取值
 api_command!(get(id: &str, key: Vec<u8>, hash_key: Option<String>) -> RedisValue);
@@ -39,7 +38,7 @@ api_command!(field_add(id: &str, param: RedisFieldAdd) -> ());
 api_command!(field_set(id: &str, param: RedisFieldSet) -> ());
 
 // 删除字段
-// api_command!(field_del(id: &str, key: Vec<u8>, field_key: String));
+api_command!(field_del(id: &str, param: RedisFieldDel) -> ());
 
 #[cfg(test)]
 mod tests {
