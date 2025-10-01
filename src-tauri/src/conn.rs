@@ -1,5 +1,5 @@
-use crate::util::AnyResult;
 use crate::model::RedisNode;
+use crate::util::AnyResult;
 use anyhow::bail;
 use log::info;
 use r2d2::{Pool, PooledConnection};

@@ -23,13 +23,13 @@ api_command!(scan(id: &str, param: ScanParam) -> ScanResult);
 api_command!(get(id: &str, key: Vec<u8>, hash_key: Option<String>) -> RedisValue);
 
 // 设置TTL
-api_command!(ttl(id: &str, key: Vec<u8>, ttl: i64) -> i64);
+api_command!(ttl(id: &str, key: Vec<u8>, ttl: i64) -> ());
 
 // 设置值
 api_command!(set(id: &str, key: Vec<u8>, value: String, ttl: i64) -> ());
 
 // 删除键
-api_command!(del(id: &str, key: Vec<u8>) -> usize);
+api_command!(del(id: &str, key: Vec<u8>) -> ());
 
 // 新增字段
 api_command!(field_add(id: &str, param: RedisFieldAdd) -> ());

@@ -175,22 +175,22 @@ pub fn get(id: &str, key: Vec<u8>, hash_key: Option<String>) -> AnyResult<RedisV
 }
 
 /// 设置TTL
-pub fn ttl(id: &str, key: Vec<u8>, ttl: i64) -> AnyResult<i64> {
+pub fn ttl(id: &str, key: Vec<u8>, ttl: i64) -> AnyResult<()> {
     let mut conn = get_conn(id)?;
-    let value: i64 = if ttl < 0 {
+    if ttl < 0 {
         // 移除 key 上已有的过期时间，将键从易失（设置了过期时间的键）变为变为持久
         // 整型回复: 如果 key 不存在或没有关联的过期时间，则返回 0。
         // 整型回复: 如果已移除过期时间，则返回 1。
-        conn.persist(&key)?
+        let _: () = conn.persist(&key)?;
     } else {
         // 为 key 设置超时时间。超时时间到期后，该 key 将被自动删除。
         // 请注意，调用 EXPIRE/`PEXPIRE` 时使用非正数超时，或调用 `EXPIREAT`/`PEXPIREAT` 时使用过去的时间，
         // 将导致 key 被 删除 而非过期（相应地，发出的 key 事件 将是 del，而不是 expired）。
         // 整数回复：如果未设置超时时间则返回 0；例如，key 不存在，或者由于提供的参数而跳过了操作。
         // 整数回复：如果已设置超时时间则返回 1。
-        conn.expire(&key, ttl)?
+        let _: () = conn.expire(&key, ttl)?;
     };
-    Ok(value)
+    Ok(())
 }
 
 /// 设置值
@@ -206,10 +206,10 @@ pub fn set(id: &str, key: Vec<u8>, value: String, ttl: i64) -> AnyResult<()> {
 }
 
 /// 删除键
-pub fn del(id: &str, key: Vec<u8>) -> AnyResult<usize> {
+pub fn del(id: &str, key: Vec<u8>) -> AnyResult<()> {
     let mut conn = get_conn(id)?;
-    let value: usize = conn.del(&key)?;
-    Ok(value)
+    let _: () = conn.del(&key)?;
+    Ok(())
 }
 
 /// 新增字段
