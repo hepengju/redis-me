@@ -16,11 +16,9 @@ fn greet(name: &str) -> String {
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
-    
-
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
-        .invoke_handler(tauri::generate_handler![greet, info, node_list, scan])
+        .invoke_handler(tauri::generate_handler![greet, info, node_list, scan, get])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }
@@ -28,19 +26,19 @@ pub fn run() {
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 #[cfg(test)]
 mod tests {
-    use MultipleNodeRoutingInfo::AllMasters;
-    use ResponsePolicy::AllSucceeded;
-    use redis::ConnectionAddr::TcpTls;
     use redis::cluster::ClusterClient;
     use redis::cluster_routing::RoutingInfo::MultiNode;
     use redis::cluster_routing::{MultipleNodeRoutingInfo, ResponsePolicy};
+    use redis::ConnectionAddr::TcpTls;
     use redis::{
-        ClientTlsConfig, Commands, ConnectionInfo, RedisConnectionInfo, RedisResult, ScanOptions,
-        TlsCertificates, TlsMode, cluster,
+        cluster, ClientTlsConfig, Commands, ConnectionInfo, RedisConnectionInfo, RedisResult,
+        ScanOptions, TlsCertificates, TlsMode,
     };
     use std::fs;
     use std::path::Path;
     use std::time::Duration;
+    use MultipleNodeRoutingInfo::AllMasters;
+    use ResponsePolicy::AllSucceeded;
 
     // 获取连接
     fn get_conn() -> RedisResult<redis::Connection> {

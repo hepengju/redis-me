@@ -1,18 +1,18 @@
 #![cfg_attr(test, allow(warnings))] // 整个文件在测试时禁用该警告
 
-use std::collections::{HashMap, HashSet};
-use anyhow::bail;
 use crate::conn::{get_conn, get_node_list};
 use crate::model::{RedisKey, RedisNode, RedisValue, RedisZetItem, ScanParam, ScanResult};
-use crate::util::{AnyResult, vec8_to_string};
-use RoutingInfo::SingleNode;
-use SingleNodeRoutingInfo::ByAddress;
+use crate::util::{vec8_to_string, AnyResult, ApiResult};
+use anyhow::bail;
 use log::info;
 use r2d2::PooledConnection;
 use rand::Rng;
 use redis::cluster::ClusterClient;
 use redis::cluster_routing::{RoutingInfo, SingleNodeRoutingInfo};
-use redis::{Cmd, Commands, FromRedisValue, RedisResult, ValueType};
+use redis::{Cmd, Commands, FromRedisValue, RedisResult, SetExpiry, SetOptions, ValueType};
+use std::collections::{HashMap, HashSet};
+use RoutingInfo::SingleNode;
+use SingleNodeRoutingInfo::ByAddress;
 
 /// 信息
 pub fn info(id: &str, node: Option<&str>) -> AnyResult<String> {
@@ -165,6 +165,44 @@ pub fn get(id: &str, key: Vec<u8>, hash_key: Option<String>) -> AnyResult<RedisV
     })
 }
 
+/// 设置TTL
+pub fn ttl(id: &str, key: Vec<u8>, ttl: i64) -> AnyResult<i64> {
+    let mut conn = get_conn(id)?;
+    let value: i64 =  if ttl < 0 {
+        // 移除 key 上已有的过期时间，将键从易失（设置了过期时间的键）变为变为持久
+        // 整型回复: 如果 key 不存在或没有关联的过期时间，则返回 0。
+        // 整型回复: 如果已移除过期时间，则返回 1。
+        conn.persist(&key)?
+    } else {
+        // 为 key 设置超时时间。超时时间到期后，该 key 将被自动删除。
+        // 请注意，调用 EXPIRE/`PEXPIRE` 时使用非正数超时，或调用 `EXPIREAT`/`PEXPIREAT` 时使用过去的时间，
+        // 将导致 key 被 删除 而非过期（相应地，发出的 key 事件 将是 del，而不是 expired）。
+        // 整数回复：如果未设置超时时间则返回 0；例如，key 不存在，或者由于提供的参数而跳过了操作。
+        // 整数回复：如果已设置超时时间则返回 1。
+        conn.expire(&key, ttl)?
+    };
+    Ok(value)
+}
+
+/// 设置值
+pub fn set(id: &str, key: Vec<u8>, value: String, ttl: i64) -> AnyResult<String> {
+    let mut conn = get_conn(id)?;
+    let value = if ttl < 0 {
+        conn.set(&key, value)?
+    } else {
+        let options = SetOptions::default().with_expiration(SetExpiry::EX(ttl as u64));
+        conn.set_options(&key, value, options)?
+    };
+    Ok(value)
+}
+
+/// 删除键
+pub fn del(id: &str, key: Vec<u8>) -> AnyResult<i64> {
+    let mut conn = get_conn(id)?;
+    let value: i64 = conn.del(&key)?;
+    Ok(value)
+}
+
 // 节点列表（初始化时也使用）
 pub fn node_list_by_conn(mut conn: PooledConnection<ClusterClient>) -> AnyResult<Vec<RedisNode>> {
     let cluster_nodes: String = redis::cmd("cluster").arg("nodes").query(&mut conn)?;
@@ -267,20 +305,15 @@ fn exec_node_command<T: FromRedisValue>(
 mod tests {
     use crate::model::{ScanCursor, ScanParam};
     use crate::service::*;
-    use crate::util::ApiResult;
-    use log::LevelFilter;
-    use redis::TlsMode;
-    use redis::cluster::{ClusterClient, ClusterConnection};
-    use serde::de::Unexpected::Option;
 
     // 初始化日志, 避免所有测试方法都需要额外调用init方法
-    #[ctor::ctor]
-    fn init() {
-        let _ = env_logger::builder()
-            .filter_level(LevelFilter::Info)
-            .is_test(true)
-            .try_init();
-    }
+    // #[ctor::ctor]
+    // fn init() {
+    //     let _ = env_logger::builder()
+    //         .filter_level(LevelFilter::Info)
+    //         .is_test(true)
+    //         .try_init();
+    // }
 
     #[test]
     fn test_info() {
@@ -297,7 +330,7 @@ mod tests {
     #[test]
     fn test_node_list() {
         let vec = node_list("1").unwrap();
-        info!("vec: {vec:#?}")
+        println!("vec: {vec:#?}")
     }
 
     #[test]

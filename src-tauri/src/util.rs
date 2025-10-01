@@ -3,7 +3,7 @@ pub type AnyResult<T> = anyhow::Result<T>;
 pub type ApiResult<T> = Result<T, String>;
 
 // tauri的错误处理中需要返回的错误实现序列化, anyhow的错误并没有实现，因此简单返回字符串错误
-pub fn to_me_result<T>(result: anyhow::Result<T>) -> ApiResult<T> {
+pub fn to_api_result<T>(result: anyhow::Result<T>) -> ApiResult<T> {
     match result {
         Ok(value) => Ok(value),
         Err(err) => Err(err.to_string()),
