@@ -67,9 +67,12 @@ api_command!(memory_usage(id: &str, param: RedisMemoryParam) -> Vec<RedisKeySize
 
 #[cfg(test)]
 mod tests {
+    use redis::cluster::ClusterPipeline;
+    use crate::conn::get_conn;
     use super::*;
     use crate::model::{RedisFieldAdd, RedisFieldValue, ScanCursor, ScanParam};
     use crate::service::{del, field_add, get, node_list, scan};
+    use crate::util::AnyResult;
 
     #[test]
     fn test_info() {
@@ -244,5 +247,21 @@ mod tests {
             sleep_millis: 0
         }).unwrap();
         println!("{result:#?}");
+    }
+
+    #[test]
+    fn test_cluster_pipeline() -> AnyResult<()> {
+        let mut conn = get_conn("test")?;
+        let mut pipe = ClusterPipeline::with_capacity(5);
+
+        pipe.cmd("memory").arg("usage").arg("redis-me-mock:string:25gdlqZlLv");
+        pipe.cmd("memory").arg("usage").arg("redis-me-mock:string:7C9V7PrOAt");
+        pipe.cmd("memory").arg("usage").arg("redis-me-mock:string:7xpp7PJrxe");
+        pipe.cmd("memory").arg("usage").arg("redis-me-mock:string:x09Ylj6WrN");
+        pipe.cmd("memory").arg("usage").arg("redis-me-mock:string:not_exist");
+
+        let sizes: Vec<usize> = pipe.query(&mut conn)?;
+        println!("{sizes:#?}");
+        Ok(())
     }
 }
