@@ -19,9 +19,11 @@ pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
         .invoke_handler(tauri::generate_handler![greet,
-            info, node_list, scan, get, ttl, set, del,
+            info, info_list, node_list,
+            scan, get, ttl, set, del,
             field_add, field_set, field_del,
             execute_command,
+            config_get, config_set,
             mock_data
         ])
         .run(tauri::generate_context!())
@@ -173,9 +175,4 @@ mod tests {
         // println!("Keys: {:?}", keys);
         Ok(())
     }
-
-    // // 连接池
-    // fn get_pool_conn(){
-    //
-    // }
 }

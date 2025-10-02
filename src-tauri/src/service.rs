@@ -1,8 +1,16 @@
 #![cfg_attr(test, allow(warnings))] // 整个文件在测试时禁用该警告
 
 use crate::conn::{get_conn, get_node_list};
-use crate::model::{RedisCommand, RedisFieldAdd, RedisFieldDel, RedisFieldSet, RedisInfo, RedisKey, RedisNode, RedisValue, RedisZetItem, ScanParam, ScanResult};
-use crate::util::{assert_is_true, parse_command, random_item, random_range, random_string, value_to_string, vec8_to_string, AnyResult};
+use crate::model::{
+    RedisCommand, RedisFieldAdd, RedisFieldDel, RedisFieldSet, RedisInfo, RedisKey, RedisNode,
+    RedisValue, RedisZetItem, ScanParam, ScanResult,
+};
+use crate::util::{
+    AnyResult, assert_is_true, parse_command, random_item, random_range, random_string,
+    value_to_string, vec8_to_string,
+};
+use RoutingInfo::SingleNode;
+use SingleNodeRoutingInfo::ByAddress;
 use anyhow::bail;
 use log::info;
 use r2d2::PooledConnection;
@@ -10,16 +18,14 @@ use redis::cluster::{ClusterClient, ClusterPipeline};
 use redis::cluster_routing::{RoutingInfo, SingleNodeRoutingInfo};
 use redis::{Commands, FromRedisValue, SetExpiry, SetOptions, ValueType};
 use std::collections::{HashMap, HashSet};
-use RoutingInfo::SingleNode;
-use SingleNodeRoutingInfo::ByAddress;
 
 const REDIS_ME_FIELD_TO_DELETE_TMP_VALUE: &str = "__REDIS_ME_FIELD_TO_DELETE_TMP_VALUE__";
 
 /// 信息
 pub fn info(id: &str, node: Option<String>) -> AnyResult<RedisInfo> {
     let mut conn = get_conn(id)?;
-    let (routing_info, exec_node) = get_node_route(id, node)?;
-    let value = conn.route_command(&redis::cmd("info"), routing_info)?;
+    let (route, exec_node) = get_node_route(id, node)?;
+    let value = conn.route_command(&redis::cmd("info"), route)?;
     let info: String = FromRedisValue::from_redis_value(&value)?;
     Ok(RedisInfo {
         node: exec_node,
@@ -33,13 +39,10 @@ pub fn info_list(id: &str) -> AnyResult<Vec<RedisInfo>> {
     let mut infos = vec![];
     for node in get_node_list(id)? {
         let node = node.node;
-        let (routing_info, _) = get_node_route(id, Some(node.clone()))?;
-        let value = conn.route_command(&redis::cmd("info"), routing_info)?;
+        let (route, _) = get_node_route(id, Some(node.clone()))?;
+        let value = conn.route_command(&redis::cmd("info"), route)?;
         let info: String = FromRedisValue::from_redis_value(&value)?;
-        infos.push(RedisInfo {
-            node,
-            info,
-        })
+        infos.push(RedisInfo { node, info })
     }
     Ok(infos)
 }
@@ -52,6 +55,11 @@ pub fn node_list(id: &str) -> AnyResult<Vec<RedisNode>> {
 
 /// 扫描集群
 pub fn scan(id: &str, param: ScanParam) -> AnyResult<ScanResult> {
+    // RedisCluster目前不能直接扫描SCAN, 参考Issue进行多个节点处理
+    // 参考: https://github.com/redis-rs/redis-rs/pull/1233/commits/997df1834d1bfccdbd56827d39fc4cf08874efec
+    // Error: This command cannot be safely routed in cluster mode- ClientError
+    // let keys: Vec<String> = conn.scan_options(opts)?.collect();
+    
     let mut conn = get_conn(id)?;
     let mut cc = param.cursor;
 
@@ -379,7 +387,8 @@ pub fn mock_data(id: &str, count: usize) -> AnyResult<()> {
         let field_count = random_range(3, 20);
         let key = format!("redis-me-mock:hash:{}", random_string(10));
         for x in 0..field_count {
-            pipe.hset(&key, format!("key{x}"), random_string(10)).ignore();
+            pipe.hset(&key, format!("key{x}"), random_string(10))
+                .ignore();
         }
 
         // list
@@ -397,7 +406,8 @@ pub fn mock_data(id: &str, count: usize) -> AnyResult<()> {
         // zset
         let key = format!("redis-me-mock:zset:{}", random_string(10));
         for _ in 0..field_count {
-            pipe.zadd(&key, random_string(10), random_range(1, 100)).ignore();
+            pipe.zadd(&key, random_string(10), random_range(1, 100))
+                .ignore();
         }
     }
 
@@ -409,17 +419,35 @@ pub fn mock_data(id: &str, count: usize) -> AnyResult<()> {
 pub fn execute_command(id: &str, param: RedisCommand) -> AnyResult<String> {
     let (cmd, args) = parse_command(param.command.as_str())?;
     if cmd == "" {
-        return Ok("".into())
+        return Ok("".into());
     };
 
     let mut conn = get_conn(id)?;
-    let (routing_info, _) = get_node_route(id, param.node)?;
-    let value = conn.route_command(redis::cmd(cmd.as_str()).arg(args), routing_info)?;
+    let (route, _) = get_node_route(id, param.node)?;
+    let value = conn.route_command(redis::cmd(cmd.as_str()).arg(args), route)?;
     Ok(value_to_string(value))
 }
 
-///
+/// 获取配置
+pub fn config_get(
+    id: &str,
+    pattern: &str,
+    node: Option<String>,
+) -> AnyResult<HashMap<String, String>> {
+    let mut conn = get_conn(id)?;
+    let (route, _) = get_node_route(id, node)?;
+    let value = conn.route_command(redis::cmd("config").arg("get").arg(pattern), route)?;
+    let result: HashMap<String, String> = FromRedisValue::from_redis_value(&value)?;
+    Ok(result)
+}
 
+/// 设置配置
+pub fn config_set(id: &str, key: &str, value: &str, node: Option<String>) -> AnyResult<()> {
+    let mut conn = get_conn(id)?;
+    let (route, _) = get_node_route(id, node)?;
+    let _ = conn.route_command(redis::cmd("config").arg("set").arg(key).arg(value), route)?;
+    Ok(())
+}
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 // 节点列表（初始化时也使用）
 pub fn node_list_by_conn(mut conn: PooledConnection<ClusterClient>) -> AnyResult<Vec<RedisNode>> {
@@ -505,15 +533,3 @@ fn get_node_route(id: &str, node: Option<String>) -> AnyResult<(RoutingInfo, Str
     });
     Ok((route, node.into()))
 }
-
-// // 在指定节点上执行命令
-// fn exec_node_command<T: FromRedisValue>(
-//     id: &str,
-//     node: &str,
-//     cmd: &Cmd,
-// ) -> AnyResult<RedisResult<T>> {
-//     let mut conn = get_conn(id)?;
-//     let (route, _) = get_node_route(id, Some(node))?;
-//     let value = conn.route_command(&cmd, route)?;
-//     Ok(FromRedisValue::from_redis_value(&value))
-// }

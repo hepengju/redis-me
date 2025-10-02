@@ -1,8 +1,12 @@
 #![cfg_attr(test, allow(warnings))] // 整个文件在测试时禁用该警告
 
-use crate::model::{RedisCommand, RedisFieldAdd, RedisFieldDel, RedisFieldSet, RedisInfo, RedisNode, RedisValue, ScanParam, ScanResult};
+use crate::model::{
+    RedisCommand, RedisFieldAdd, RedisFieldDel, RedisFieldSet, RedisInfo, RedisNode, RedisValue,
+    ScanParam, ScanResult,
+};
 use crate::util::{ApiResult, to_api_result};
 use crate::{api_command, service};
+use std::collections::HashMap;
 
 // 信息: 原始写法，下面用宏简化一下
 // #[tauri::command]
@@ -48,6 +52,12 @@ api_command!(mock_data(id: &str, count: usize) -> ());
 
 // 执行命令
 api_command!(execute_command(id: &str, param: RedisCommand) -> String);
+
+// 获取配置
+api_command!(config_get(id: &str, pattern: &str, node: Option<String>) -> HashMap<String, String>);
+
+// 设置配置
+api_command!(config_set(id: &str, key: &str, value: &str, node: Option<String>) -> ());
 
 #[cfg(test)]
 mod tests {
@@ -169,8 +179,6 @@ mod tests {
         mock_data("test", 10).unwrap();
     }
 
-
-
     #[test]
     fn test_execute_command() {
         mock_command("ping");
@@ -178,14 +186,30 @@ mod tests {
         mock_command("cluster slots");
         mock_command("config get save");
         mock_command("config get *");
+        mock_command(r#"config set save "3600 1 300 100 60 10000" "#);
     }
 
     fn mock_command(command: &str) {
-        let result = execute_command("test", RedisCommand {
-            command: command.into(),
-            node: None,
-            auto_broadcast: true,
-        });
+        let result = execute_command(
+            "test",
+            RedisCommand {
+                command: command.into(),
+                node: None,
+                auto_broadcast: true,
+            },
+        );
+        println!("{result:#?}");
+    }
+    
+    #[test]
+    fn test_config_get() {
+        let result = config_get("test", "*", None).unwrap();
+        println!("{result:#?}");
+    }
+    
+    #[test]
+    fn test_config_set() {
+        let result = config_set("test", "save", "3600 2 300 100 60 10000", None).unwrap();
         println!("{result:#?}");
     }
 }
