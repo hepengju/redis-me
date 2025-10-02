@@ -1,14 +1,8 @@
 #![cfg_attr(test, allow(warnings))] // 整个文件在测试时禁用该警告
 
 use crate::conn::{get_conn, get_node_list};
-use crate::model::{
-    RedisCommand, RedisFieldAdd, RedisFieldDel, RedisFieldSet, RedisInfo, RedisKey, RedisNode,
-    RedisValue, RedisZetItem, ScanParam, ScanResult,
-};
-use crate::util::{
-    AnyResult, assert_is_true, parse_command, random_item, random_range, random_string,
-    value_to_string, vec8_to_string,
-};
+use crate::model::{RedisCommand, RedisFieldAdd, RedisFieldDel, RedisFieldSet, RedisInfo, RedisKey, RedisNode, RedisSlowLog, RedisValue, RedisZetItem, ScanParam, ScanResult};
+use crate::util::{AnyResult, assert_is_true, parse_command, random_item, random_range, random_string, redis_value_to_string, vec8_to_string, timestamp_to_string};
 use RoutingInfo::SingleNode;
 use SingleNodeRoutingInfo::ByAddress;
 use anyhow::bail;
@@ -16,8 +10,9 @@ use log::info;
 use r2d2::PooledConnection;
 use redis::cluster::{ClusterClient, ClusterPipeline};
 use redis::cluster_routing::{RoutingInfo, SingleNodeRoutingInfo};
-use redis::{Commands, FromRedisValue, SetExpiry, SetOptions, ValueType};
+use redis::{Commands, FromRedisValue, SetExpiry, SetOptions, Value, ValueType};
 use std::collections::{HashMap, HashSet};
+use serde_json::to_string;
 
 const REDIS_ME_FIELD_TO_DELETE_TMP_VALUE: &str = "__REDIS_ME_FIELD_TO_DELETE_TMP_VALUE__";
 
@@ -59,7 +54,7 @@ pub fn scan(id: &str, param: ScanParam) -> AnyResult<ScanResult> {
     // 参考: https://github.com/redis-rs/redis-rs/pull/1233/commits/997df1834d1bfccdbd56827d39fc4cf08874efec
     // Error: This command cannot be safely routed in cluster mode- ClientError
     // let keys: Vec<String> = conn.scan_options(opts)?.collect();
-    
+
     let mut conn = get_conn(id)?;
     let mut cc = param.cursor;
 
@@ -425,7 +420,7 @@ pub fn execute_command(id: &str, param: RedisCommand) -> AnyResult<String> {
     let mut conn = get_conn(id)?;
     let (route, _) = get_node_route(id, param.node)?;
     let value = conn.route_command(redis::cmd(cmd.as_str()).arg(args), route)?;
-    Ok(value_to_string(value))
+    Ok(redis_value_to_string(value, "\n"))
 }
 
 /// 获取配置
@@ -447,6 +442,53 @@ pub fn config_set(id: &str, key: &str, value: &str, node: Option<String>) -> Any
     let (route, _) = get_node_route(id, node)?;
     let _ = conn.route_command(redis::cmd("config").arg("set").arg(key).arg(value), route)?;
     Ok(())
+}
+
+/// 慢日志
+pub fn slow_log(id: &str, count: Option<usize>) -> AnyResult<Vec<RedisSlowLog>> {
+    let mut conn = get_conn(id)?;
+    let mut logs = vec![];
+    for node in get_node_list(id)? {
+        let node = node.node;
+        let (route, _) = get_node_route(id, Some(node.clone()))?;
+        let value_total = conn.route_command(&redis::cmd("slowlog").arg("get").arg(count.unwrap_or(128)), route)?;
+        let value_list: Vec<Value> = FromRedisValue::from_redis_value(&value_total)?;
+        for value in value_list {
+            let items = match value {
+                Value::Array(arr) if arr.len() >=4 => arr,
+                Value::Array(_) => bail!("慢查询条目至少4个元素"),
+                _ => bail!("应为慢查询条目的数组"),
+            };
+
+            let id: u64 = FromRedisValue::from_redis_value(&items[0])?;
+            let time = timestamp_to_string(FromRedisValue::from_redis_value(&items[1])?);
+            let cost: f64 = FromRedisValue::from_redis_value(&items[2])?;
+            let command: String = redis_value_to_string(items[3].clone(), " ");
+            let client: String = if items.len() > 5 {
+                FromRedisValue::from_redis_value(&items[4])?
+            } else {
+                "".into()
+            };
+
+            let client_name: String = if items.len() > 6 {
+                FromRedisValue::from_redis_value(&items[5])?
+            } else {
+                "".into()
+            };
+
+            let log = RedisSlowLog {
+                node: node.clone(),
+                id,
+                time,
+                cost: cost / 1000.0,
+                command,
+                client,
+                client_name,
+            };
+            logs.push(log);
+        }
+    }
+    Ok(logs)
 }
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 // 节点列表（初始化时也使用）

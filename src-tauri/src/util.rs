@@ -7,6 +7,7 @@ use serde::ser::{SerializeMap, SerializeSeq};
 use serde::{Serialize, Serializer};
 use std::ops::Deref;
 use std::str::from_utf8;
+use chrono::DateTime;
 
 // 统一应用返回值
 pub type AnyResult<T> = anyhow::Result<T>;
@@ -54,7 +55,7 @@ pub fn parse_command(command: &str) -> AnyResult<(String, Vec<String>)> {
 }
 
 // 命令返回值转换
-pub fn value_to_string(value: Value) -> String {
+pub fn redis_value_to_string(value: Value, sep: &str) -> String {
     match value {
         // 参考 FromRedisValue::from_redis_value
         Value::BulkString(bytes) => vec8_to_string(bytes),
@@ -71,23 +72,28 @@ pub fn value_to_string(value: Value) -> String {
         Value::Boolean( val) => val.to_string(),
         Value::BigNumber(bigint) => bigint.to_string(),
         Value::Array( vec) => {
-            vec.into_iter().map(|v| value_to_string(v)).collect::<Vec<String>>().join("\n")
+            vec.into_iter().map(|v| redis_value_to_string(v, sep)).collect::<Vec<String>>().join(sep)
         },
         Value::Set(set) => {
-            set.into_iter().map(|v| value_to_string(v)).collect::<Vec<String>>().join("\n")
+            set.into_iter().map(|v| redis_value_to_string(v, sep)).collect::<Vec<String>>().join(sep)
         },
         Value::Map(map) => {
             map.into_iter()
-                .map(|(k, v)| (value_to_string(k), value_to_string(v)))
+                .map(|(k, v)| (redis_value_to_string(k, sep), redis_value_to_string(v, sep)))
                 .map(|(k, v)| format!("{}: {}", k, v))
                 .collect::<Vec<String>>()
-                .join("\n")
+                .join(sep)
         },
-        // 其余暂不解析
-        _ => "Unknown value".to_string(),
+        // 其余暂不解析, 直接转换为字符串
+        _ => format!("{:?}", value)
     }
 }
 
+// 时间戳(秒)转字符串: TODO 时区调整
+pub fn timestamp_to_string(timestamp: i64) -> String {
+    let datetime = DateTime::from_timestamp(timestamp, 0).unwrap();
+    datetime.format("%Y-%m-%d %H:%M:%S").to_string()
+}
 
 // Model定义宏（DeepSeek生成）
 #[macro_export]
@@ -121,67 +127,6 @@ macro_rules! api_command {
         }
     };
 }
-
-// #[derive(Debug)]
-// struct RedisValueWrapper(pub Value);
-//
-// impl Serialize for RedisValueWrapper {
-//     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-//     where
-//         S: Serializer,
-//     {
-//         match &self.0 {
-//             Value::Nil => serializer.serialize_none(),
-//             Value::Int(i) => serializer.serialize_i64(*i),
-//             Value::BulkString(bytes) => serializer.serialize_str(vec8_to_string(bytes.clone()).as_str()),
-//             Value::Array(vec) => {
-//                 let mut seq = serializer.serialize_seq(Some(vec.len()))?;
-//                 for v in vec {
-//                     seq.serialize_element(&RedisValueWrapper(*v))?;
-//                 }
-//                 seq.end()
-//             }
-//             Value::SimpleString(s) => serializer.serialize_str(&s),
-//             Value::Okay => serializer.serialize_str("OK"),
-//             Value::Map(map) => {
-//                 let mut map_ser = serializer.serialize_map(Some(map.len()))?;
-//                 for (k, v) in map {
-//                     map_ser.serialize_entry(&RedisValueWrapper(*k), &RedisValueWrapper(*v))?;
-//                 }
-//                 map_ser.end()
-//             }
-//             Value::Attribute { data, attributes } => {
-//                 // TODO
-//                 serializer.serialize_str("Value::Attribute")
-//             }
-//             Value::Set(set) => {
-//                 let mut seq = serializer.serialize_seq(Some(set.len()))?;
-//                 for v in set {
-//                     seq.serialize_element(&RedisValueWrapper(*v))?;
-//                 }
-//                 seq.end()
-//             }
-//             Value::Double(f) => serializer.serialize_f64(*f),
-//             Value::Boolean(b) => serializer.serialize_bool(*b),
-//             Value::VerbatimString { format, text } => {
-//                 let mut map = serializer.serialize_map(Some(2))?;
-//                 map.serialize_entry("format", &format.to_string())?;
-//                 map.serialize_entry("text", &text)?;
-//                 map.end()
-//             }
-//             Value::BigNumber(bigint) => serializer.serialize_str(&bigint.to_string()),
-//             Value::Push { kind, data } => {
-//                 serializer.serialize_str("Value::Push")
-//             }
-//             Value::ServerError(err) => {
-//                 let mut map = serializer.serialize_map(Some(2))?;
-//                 map.serialize_entry("code", &err.code())?;
-//                 map.serialize_entry("details", &err.details())?;
-//                 map.end()
-//             }
-//         }
-//     }
-// }
 
 #[cfg(test)]
 mod tests {

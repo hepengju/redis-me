@@ -26,7 +26,7 @@ pub fn get_conn(id: &str) -> AnyResult<PooledConnection<ClusterClient>> {
         return Ok(conn);
     }
 
-    let is_company = false;
+    let is_company = true;
 
     let mut nodes = vec!["rediss://192.168.1.11:7001"];
     let mut password = "hepengju";

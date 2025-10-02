@@ -1,9 +1,6 @@
 #![cfg_attr(test, allow(warnings))] // 整个文件在测试时禁用该警告
 
-use crate::model::{
-    RedisCommand, RedisFieldAdd, RedisFieldDel, RedisFieldSet, RedisInfo, RedisNode, RedisValue,
-    ScanParam, ScanResult,
-};
+use crate::model::{RedisCommand, RedisFieldAdd, RedisFieldDel, RedisFieldSet, RedisInfo, RedisNode, RedisSlowLog, RedisValue, ScanParam, ScanResult};
 use crate::util::{ApiResult, to_api_result};
 use crate::{api_command, service};
 use std::collections::HashMap;
@@ -58,6 +55,9 @@ api_command!(config_get(id: &str, pattern: &str, node: Option<String>) -> HashMa
 
 // 设置配置
 api_command!(config_set(id: &str, key: &str, value: &str, node: Option<String>) -> ());
+
+// 慢日志
+api_command!(slow_log(id: &str, count: Option<usize>) -> Vec<RedisSlowLog>);
 
 #[cfg(test)]
 mod tests {
@@ -200,16 +200,22 @@ mod tests {
         );
         println!("{result:#?}");
     }
-    
+
     #[test]
     fn test_config_get() {
         let result = config_get("test", "*", None).unwrap();
         println!("{result:#?}");
     }
-    
+
     #[test]
     fn test_config_set() {
         let result = config_set("test", "save", "3600 2 300 100 60 10000", None).unwrap();
+        println!("{result:#?}");
+    }
+
+    #[test]
+    fn test_slow_log() {
+        let result = slow_log("test", Some(3)).unwrap();
         println!("{result:#?}");
     }
 }

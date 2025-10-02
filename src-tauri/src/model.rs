@@ -107,3 +107,14 @@ api_model!(RedisCommand {
     node: Option<String>,
     auto_broadcast: bool,
 });
+
+// 慢日志
+api_model!(RedisSlowLog {
+    node: String,
+    id: u64,
+    time: String,
+    client: String,
+    command: String,
+    cost: f64,
+    client_name: String
+});

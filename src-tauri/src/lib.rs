@@ -22,7 +22,7 @@ pub fn run() {
             info, info_list, node_list,
             scan, get, ttl, set, del,
             field_add, field_set, field_del,
-            execute_command,
+            execute_command, slow_log, 
             config_get, config_set,
             mock_data
         ])
