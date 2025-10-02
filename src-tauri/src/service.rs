@@ -1,8 +1,14 @@
 #![cfg_attr(test, allow(warnings))] // 整个文件在测试时禁用该警告
 
-use crate::conn::{get_conn, get_node_list};
-use crate::model::{RedisCommand, RedisFieldAdd, RedisFieldDel, RedisFieldSet, RedisInfo, RedisKey, RedisNode, RedisSlowLog, RedisValue, RedisZetItem, ScanParam, ScanResult};
-use crate::util::{AnyResult, assert_is_true, parse_command, random_item, random_range, random_string, redis_value_to_string, vec8_to_string, timestamp_to_string};
+use crate::conn::{get_conn, get_node_list, get_node_list_master};
+use crate::model::{
+    RedisCommand, RedisFieldAdd, RedisFieldDel, RedisFieldSet, RedisInfo, RedisKey, RedisKeySize,
+    RedisMemoryParam, RedisNode, RedisSlowLog, RedisValue, RedisZetItem, ScanParam, ScanResult,
+};
+use crate::util::{
+    AnyResult, assert_is_true, parse_command, random_item, random_range, random_string,
+    redis_value_to_string, timestamp_to_string, vec8_to_string,
+};
 use RoutingInfo::SingleNode;
 use SingleNodeRoutingInfo::ByAddress;
 use anyhow::bail;
@@ -12,6 +18,8 @@ use redis::cluster::{ClusterClient, ClusterPipeline};
 use redis::cluster_routing::{RoutingInfo, SingleNodeRoutingInfo};
 use redis::{Commands, FromRedisValue, SetExpiry, SetOptions, Value, ValueType};
 use std::collections::{HashMap, HashSet};
+use std::time::Duration;
+use std::{clone, thread};
 
 const REDIS_ME_FIELD_TO_DELETE_TMP_VALUE: &str = "__REDIS_ME_FIELD_TO_DELETE_TMP_VALUE__";
 
@@ -53,7 +61,6 @@ pub fn scan(id: &str, param: ScanParam) -> AnyResult<ScanResult> {
     // 参考: https://github.com/redis-rs/redis-rs/pull/1233/commits/997df1834d1bfccdbd56827d39fc4cf08874efec
     // Error: This command cannot be safely routed in cluster mode- ClientError
     // let keys: Vec<String> = conn.scan_options(opts)?.collect();
-
     let mut conn = get_conn(id)?;
     let mut cc = param.cursor;
 
@@ -67,18 +74,12 @@ pub fn scan(id: &str, param: ScanParam) -> AnyResult<ScanResult> {
     let mut keys: Vec<Vec<u8>> = vec![];
 
     // 遍历集群节点: 仅扫描主节点
-    let nodes: Vec<String> = get_node_list(id)?
-        .into_iter()
-        .filter(|node| node.is_master)
-        .map(|node| node.node.clone())
-        .collect();
-
+    let nodes: Vec<String> = get_node_list_master(id)?;
     let node_size = nodes.len();
 
     'outer: for node in nodes {
-        // 扫描过的予以跳过
         if cc.ready_nodes.contains(&node) {
-            continue;
+            continue; // 扫描过的予以跳过
         }
         cc.now_node = node.clone();
 
@@ -119,6 +120,7 @@ pub fn scan(id: &str, param: ScanParam) -> AnyResult<ScanResult> {
         cc.ready_nodes.push(node.clone());
     }
 
+    // 映射为返回值
     let key_list = keys
         .into_iter()
         .map(|key| RedisKey {
@@ -370,7 +372,7 @@ pub fn field_del(id: &str, param: RedisFieldDel) -> AnyResult<()> {
 pub fn mock_data(id: &str, count: usize) -> AnyResult<()> {
     let mut conn = get_conn(id)?;
 
-    let mut pipe = ClusterPipeline::new();
+    let mut pipe = ClusterPipeline::with_capacity(count);
 
     for _ in 0..count {
         // string
@@ -444,7 +446,11 @@ pub fn config_set(id: &str, key: &str, value: &str, node: Option<String>) -> Any
 }
 
 /// 慢日志
-pub fn slow_log(id: &str, count: Option<usize>, node: Option<String>) -> AnyResult<Vec<RedisSlowLog>> {
+pub fn slow_log(
+    id: &str,
+    count: Option<usize>,
+    node: Option<String>,
+) -> AnyResult<Vec<RedisSlowLog>> {
     let mut conn = get_conn(id)?;
     let mut logs = vec![];
     for redis_node in get_node_list(id)? {
@@ -457,11 +463,14 @@ pub fn slow_log(id: &str, count: Option<usize>, node: Option<String>) -> AnyResu
 
         let node = redis_node.node;
         let (route, _) = get_node_route(id, Some(node.clone()))?;
-        let value_total = conn.route_command(&redis::cmd("slowlog").arg("get").arg(count.unwrap_or(128)), route)?;
+        let value_total = conn.route_command(
+            &redis::cmd("slowlog").arg("get").arg(count.unwrap_or(128)),
+            route,
+        )?;
         let value_list: Vec<Value> = FromRedisValue::from_redis_value(&value_total)?;
         for value in value_list {
             let items = match value {
-                Value::Array(arr) if arr.len() >=4 => arr,
+                Value::Array(arr) if arr.len() >= 4 => arr,
                 Value::Array(_) => bail!("慢查询条目至少4个元素"),
                 _ => bail!("应为慢查询条目的数组"),
             };
@@ -496,6 +505,87 @@ pub fn slow_log(id: &str, count: Option<usize>, node: Option<String>) -> AnyResu
     }
     Ok(logs)
 }
+
+/// 内存分析
+pub fn memory_usage(id: &str, param: RedisMemoryParam) -> AnyResult<Vec<RedisKeySize>> {
+    let mut conn = get_conn(id)?;
+    let mut keys: Vec<(Vec<u8>, usize, String)> = vec![];
+
+    // 遍历集群节点: 仅扫描主节点
+    let nodes: Vec<String> = get_node_list_master(id)?;
+
+    let mut scan_times = 0;
+    'outer: for node in nodes {
+        let (route, _) = get_node_route(id, Some(node.clone()))?;
+        let mut cursor = 0;
+        'inner: loop {
+            let mut cmd = redis::cmd("scan");
+            cmd.arg(cursor)
+                .arg("match")
+                .arg(param.pattern.clone().unwrap_or("*".into()))
+                .arg("count")
+                .arg(param.scan_count);
+
+            let value = conn.route_command(&cmd, route.clone())?;
+            let (next_cursor, new_keys): (u64, Vec<Vec<u8>>) =
+                FromRedisValue::from_redis_value(&value)?;
+            cursor = next_cursor;
+
+            // 计算键大小
+            let mut pipe = ClusterPipeline::with_capacity(new_keys.len());
+            for key in new_keys.iter() {
+                pipe.cmd("memory").arg("usage").arg(key);
+            }
+            let sizes: Vec<usize> = pipe.query(&mut conn)?;
+            for (index, size) in sizes.into_iter().enumerate() {
+                if size >= param.size_limit {
+                    keys.push((new_keys[index].clone(), size, "unknown".into()));
+                }
+            }
+
+            scan_times += 1;
+
+            if keys.len() >= param.count_limit {
+                info!("扫描结果>={}个, 返回", param.count_limit);
+                break 'outer;
+            }
+
+            if param.scan_total > 0 && scan_times * param.scan_count >= param.scan_total {
+                info!("已扫描键>={}个, 返回", param.scan_total);
+                break 'outer;
+            }
+
+            thread::sleep(Duration::from_millis(param.sleep_millis));
+
+            if cursor == 0 {
+                break 'inner;
+            }
+        }
+    }
+
+    // 计算键类型
+    let mut pipe = ClusterPipeline::with_capacity(keys.len());
+    for key in keys.iter() {
+        pipe.cmd("type").arg(&key.0);
+    }
+    let types: Vec<String> = pipe.query(&mut conn)?;
+    for (index, key_type) in types.into_iter().enumerate() {
+        keys[index].2 = key_type;
+    }
+
+    // 映射为返回值
+    let key_list = keys
+        .into_iter()
+        .map(|(key,size, key_type)| RedisKeySize {
+            key: vec8_to_string(key.clone()),
+            bytes: key,
+            size,
+            key_type,
+        })
+        .collect();
+    Ok(key_list)
+}
+
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 // 节点列表（初始化时也使用）
 pub fn node_list_by_conn(mut conn: PooledConnection<ClusterClient>) -> AnyResult<Vec<RedisNode>> {

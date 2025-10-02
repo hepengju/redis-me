@@ -1,6 +1,9 @@
 #![cfg_attr(test, allow(warnings))] // 整个文件在测试时禁用该警告
 
-use crate::model::{RedisCommand, RedisFieldAdd, RedisFieldDel, RedisFieldSet, RedisInfo, RedisNode, RedisSlowLog, RedisValue, ScanParam, ScanResult};
+use crate::model::{
+    RedisCommand, RedisFieldAdd, RedisFieldDel, RedisFieldSet, RedisInfo, RedisKeySize,
+    RedisMemoryParam, RedisNode, RedisSlowLog, RedisValue, ScanParam, ScanResult,
+};
 use crate::util::{ApiResult, to_api_result};
 use crate::{api_command, service};
 use std::collections::HashMap;
@@ -58,6 +61,9 @@ api_command!(config_set(id: &str, key: &str, value: &str, node: Option<String>) 
 
 // 慢日志
 api_command!(slow_log(id: &str, count: Option<usize>, node: Option<String>) -> Vec<RedisSlowLog>);
+
+// 内存分析
+api_command!(memory_usage(id: &str, param: RedisMemoryParam) -> Vec<RedisKeySize>);
 
 #[cfg(test)]
 mod tests {
@@ -211,13 +217,32 @@ mod tests {
     fn test_config_set() {
         let result = config_set("test", "save", "3600 2 300 100 60 10000", None).unwrap();
         println!("{result:#?}");
-        let result = config_set("test", "save", "3600 2 300 100 60 10000", Some("10.106.0.167:7005".into())).unwrap();
+        let result = config_set(
+            "test",
+            "save",
+            "3600 2 300 100 60 10000",
+            Some("10.106.0.167:7005".into()),
+        )
+        .unwrap();
         println!("{result:#?}");
     }
 
     #[test]
     fn test_slow_log() {
         let result = slow_log("test", Some(3), Some("10.106.0.167:7005".into())).unwrap();
+        println!("{result:#?}");
+    }
+
+    #[test]
+    fn test_memory_usage() {
+        let result = memory_usage("test", RedisMemoryParam {
+            pattern: None,
+            size_limit: 1,
+            count_limit: 100,
+            scan_count: 1000,
+            scan_total: 10000,
+            sleep_millis: 0
+        }).unwrap();
         println!("{result:#?}");
     }
 }

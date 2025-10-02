@@ -26,7 +26,7 @@ pub fn get_conn(id: &str) -> AnyResult<PooledConnection<ClusterClient>> {
         return Ok(conn);
     }
 
-    let is_company = true;
+    let is_company = false;
 
     let mut nodes = vec!["rediss://192.168.1.11:7001"];
     let mut password = "hepengju";
@@ -66,4 +66,12 @@ pub fn get_node_list(id: &str) -> AnyResult<Vec<RedisNode>> {
         return Ok(cc.node_list.clone());
     }
     bail!("{id} 未找到对应的连接池")
+}
+
+pub fn get_node_list_master(id: &str) -> AnyResult<Vec<String>> {
+    Ok(get_node_list(id)?
+        .into_iter()
+        .filter(|node| node.is_master)
+        .map(|node| node.node.clone())
+        .collect::<Vec<String>>())
 }

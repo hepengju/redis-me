@@ -118,3 +118,24 @@ api_model!(RedisSlowLog {
     cost: f64,
     client_name: String
 });
+
+// 内存分析参数
+api_model!(RedisMemoryParam {
+    pattern: Option<String>, // 匹配模式
+
+    size_limit: usize,   // 大小限制, 推荐: 100kb 即102400
+    count_limit: usize,  // 数量限制, 推荐: 1000
+    scan_count: usize,   // 每次扫描, 推荐: 1000
+    scan_total: usize,   // 扫描数量限制, 推荐: 10000
+    sleep_millis: u64, // 扫描间隔, 推荐: 1000
+});
+
+// 内存分析结果
+api_model!(RedisKeySize {
+    key: String,    // 显示
+    bytes: Vec<u8>, // 修改、删除等依据
+
+    #[serde(rename = "type")]
+    key_type: String ,  // 类型
+    size: usize,        // 大小
+});
