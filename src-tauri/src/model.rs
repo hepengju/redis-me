@@ -3,8 +3,13 @@
 use crate::api_model;
 use serde::{Deserialize, Serialize};
 
+api_model!(RedisInfo {
+    node: String,
+    info: String,
+});
+
 // 集群节点
-api_model!( RedisNode {
+api_model!(RedisNode {
     id: String,
     node: String,
     is_master: bool,
@@ -12,7 +17,7 @@ api_model!( RedisNode {
 });
 
 // 扫描参数
-api_model!( ScanParam {
+api_model!(ScanParam {
     pattern: String,
     count: usize,
     scan_type: Option<String>,
@@ -22,7 +27,7 @@ api_model!( ScanParam {
 });
 
 // 扫描游标
-api_model!( ScanCursor {
+api_model!(ScanCursor {
     ready_nodes: Vec<String>,
     now_node: String,
     now_cursor: u64,
@@ -30,19 +35,19 @@ api_model!( ScanCursor {
 });
 
 // 扫描结果
-api_model!( ScanResult {
+api_model!(ScanResult {
     key_list: Vec<RedisKey>,
     cursor: ScanCursor,
 });
 
 // Redis键: 由于键是字节存储的，考虑转换为utf-8字符串显示后可能会丢失信息，因此封装为对象
-api_model!( RedisKey {
+api_model!(RedisKey {
     key: String,    // 显示
     bytes: Vec<u8>, // 修改、删除等依据
 });
 
 // Redis值
-api_model!( RedisValue {
+api_model!(RedisValue {
     #[serde(rename = "type")]
     key_type: String,
     ttl: i64,
@@ -50,13 +55,13 @@ api_model!( RedisValue {
 });
 
 // Zset条目
-api_model!( RedisZetItem {
+api_model!(RedisZetItem {
     value: String,
     score: f64,
 });
 
 // 字段新增
-api_model!( RedisFieldAdd {
+api_model!(RedisFieldAdd {
     key: String,     // 新增键时输入key
     bytes: Vec<u8>,  // 键已经存在时，新增字段时输入旧键的bytes
     mode: String,    // key-新增键, field-新增字段
@@ -71,7 +76,7 @@ api_model!( RedisFieldAdd {
 });
 
 // 字段修改
-api_model!( RedisFieldSet {
+api_model!(RedisFieldSet {
     bytes: Vec<u8>,
     src_field_key: String,
     src_field_value: String,
@@ -82,14 +87,14 @@ api_model!( RedisFieldSet {
 });
 
 // 字段值
-api_model!( RedisFieldValue {
+api_model!(RedisFieldValue {
     field_key: String,
     field_value: String,
     field_score: f64,
 });
 
 // 字段删除
-api_model!( RedisFieldDel {
+api_model!(RedisFieldDel {
     bytes: Vec<u8>,
     field_index: isize,
     field_key: String,
@@ -97,7 +102,7 @@ api_model!( RedisFieldDel {
 });
 
 // 执行命令
-api_model!( RedisCommand {
+api_model!(RedisCommand {
     command: String,
     node: Option<String>,
     auto_broadcast: bool,

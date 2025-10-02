@@ -1,6 +1,6 @@
 #![cfg_attr(test, allow(warnings))] // 整个文件在测试时禁用该警告
 
-use crate::model::{RedisCommand, RedisFieldAdd, RedisFieldDel, RedisFieldSet, RedisNode, RedisValue, ScanParam, ScanResult};
+use crate::model::{RedisCommand, RedisFieldAdd, RedisFieldDel, RedisFieldSet, RedisInfo, RedisNode, RedisValue, ScanParam, ScanResult};
 use crate::util::{ApiResult, to_api_result};
 use crate::{api_command, service};
 
@@ -11,7 +11,10 @@ use crate::{api_command, service};
 // }
 
 // 信息
-api_command!(info(id: &str, node: Option<String>) -> String);
+api_command!(info(id: &str, node: Option<String>) -> RedisInfo);
+
+// 信息列表
+api_command!(info_list(id: &str) -> Vec<RedisInfo>);
 
 // 节点列表
 api_command!(node_list(id: &str) -> Vec<RedisNode>);
@@ -60,13 +63,19 @@ mod tests {
 
     #[test]
     fn test_info_node() {
-        let result = info("test", Some("192.168.1.11:7001".into())).unwrap();
+        let result = info("test", Some("192.168.1.11:7006".into())).unwrap();
         println!("{result:#?}");
     }
 
     #[test]
+    fn test_info_list() {
+        let vec = info_list("test").unwrap();
+        println!("vec: {vec:#?}")
+    }
+
+    #[test]
     fn test_node_list() {
-        let vec = node_list("1").unwrap();
+        let vec = node_list("test").unwrap();
         println!("vec: {vec:#?}")
     }
 

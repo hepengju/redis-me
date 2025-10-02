@@ -1,7 +1,7 @@
 #![cfg_attr(test, allow(warnings))] // 整个文件在测试时禁用该警告
 
 use crate::conn::{get_conn, get_node_list};
-use crate::model::{RedisCommand, RedisFieldAdd, RedisFieldDel, RedisFieldSet, RedisKey, RedisNode, RedisValue, RedisZetItem, ScanParam, ScanResult};
+use crate::model::{RedisCommand, RedisFieldAdd, RedisFieldDel, RedisFieldSet, RedisInfo, RedisKey, RedisNode, RedisValue, RedisZetItem, ScanParam, ScanResult};
 use crate::util::{assert_is_true, parse_command, random_item, random_range, random_string, value_to_string, vec8_to_string, AnyResult};
 use anyhow::bail;
 use log::info;
@@ -16,13 +16,32 @@ use SingleNodeRoutingInfo::ByAddress;
 const REDIS_ME_FIELD_TO_DELETE_TMP_VALUE: &str = "__REDIS_ME_FIELD_TO_DELETE_TMP_VALUE__";
 
 /// 信息
-pub fn info(id: &str, node: Option<String>) -> AnyResult<String> {
+pub fn info(id: &str, node: Option<String>) -> AnyResult<RedisInfo> {
     let mut conn = get_conn(id)?;
-    let (routing_info, cmd_node) = get_node_route(id, node)?;
+    let (routing_info, exec_node) = get_node_route(id, node)?;
     let value = conn.route_command(&redis::cmd("info"), routing_info)?;
     let info: String = FromRedisValue::from_redis_value(&value)?;
-    // 记录下info是从哪个节点获取的: 原始信息里面的分割符都是\r\n
-    Ok(format!("# RedisME\ncmd_node:{}\r\n\r\n{}", cmd_node, info))
+    Ok(RedisInfo {
+        node: exec_node,
+        info,
+    })
+}
+
+/// 信息列表
+pub fn info_list(id: &str) -> AnyResult<Vec<RedisInfo>> {
+    let mut conn = get_conn(id)?;
+    let mut infos = vec![];
+    for node in get_node_list(id)? {
+        let node = node.node;
+        let (routing_info, _) = get_node_route(id, Some(node.clone()))?;
+        let value = conn.route_command(&redis::cmd("info"), routing_info)?;
+        let info: String = FromRedisValue::from_redis_value(&value)?;
+        infos.push(RedisInfo {
+            node,
+            info,
+        })
+    }
+    Ok(infos)
 }
 
 /// 节点列表
@@ -398,6 +417,8 @@ pub fn execute_command(id: &str, param: RedisCommand) -> AnyResult<String> {
     let value = conn.route_command(redis::cmd(cmd.as_str()).arg(args), routing_info)?;
     Ok(value_to_string(value))
 }
+
+///
 
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 // 节点列表（初始化时也使用）
