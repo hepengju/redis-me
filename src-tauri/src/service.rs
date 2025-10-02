@@ -1,11 +1,8 @@
 #![cfg_attr(test, allow(warnings))] // 整个文件在测试时禁用该警告
 
 use crate::conn::{get_conn, get_node_list};
-use crate::model::{
-    RedisFieldAdd, RedisFieldDel, RedisFieldSet, RedisKey, RedisNode, RedisValue, RedisZetItem,
-    ScanParam, ScanResult,
-};
-use crate::util::{assert_is_true, random_item, random_range, random_string, vec8_to_string, AnyResult};
+use crate::model::{RedisCommand, RedisFieldAdd, RedisFieldDel, RedisFieldSet, RedisKey, RedisNode, RedisValue, RedisZetItem, ScanParam, ScanResult};
+use crate::util::{assert_is_true, parse_command, random_item, random_range, random_string, value_to_string, vec8_to_string, AnyResult};
 use anyhow::bail;
 use log::info;
 use r2d2::PooledConnection;
@@ -19,7 +16,7 @@ use SingleNodeRoutingInfo::ByAddress;
 const REDIS_ME_FIELD_TO_DELETE_TMP_VALUE: &str = "__REDIS_ME_FIELD_TO_DELETE_TMP_VALUE__";
 
 /// 信息
-pub fn info(id: &str, node: Option<&str>) -> AnyResult<String> {
+pub fn info(id: &str, node: Option<String>) -> AnyResult<String> {
     let mut conn = get_conn(id)?;
     let (routing_info, cmd_node) = get_node_route(id, node)?;
     let value = conn.route_command(&redis::cmd("info"), routing_info)?;
@@ -55,18 +52,20 @@ pub fn scan(id: &str, param: ScanParam) -> AnyResult<ScanResult> {
         .map(|node| node.node.clone())
         .collect();
 
-    'outer: for node in &nodes {
+    let node_size = nodes.len();
+
+    'outer: for node in nodes {
         // 扫描过的予以跳过
-        if cc.ready_nodes.contains(node) {
+        if cc.ready_nodes.contains(&node) {
             continue;
         }
         cc.now_node = node.clone();
 
-        let (route, _) = get_node_route(id, Some(node))?;
+        let (route, _) = get_node_route(id, Some(node.clone()))?;
 
         'inner: loop {
             // 正在扫描的节点则重置上次游标
-            let cursor = if cc.now_node == *node {
+            let cursor = if cc.now_node == node {
                 cc.now_cursor
             } else {
                 0
@@ -108,7 +107,7 @@ pub fn scan(id: &str, param: ScanParam) -> AnyResult<ScanResult> {
         .collect();
 
     // 判断是否扫描完毕
-    if cc.ready_nodes.len() == nodes.len() {
+    if cc.ready_nodes.len() == node_size {
         cc.finished = true;
         cc.now_node = "".to_string();
         cc.now_cursor = 0;
@@ -163,7 +162,7 @@ pub fn get(id: &str, key: Vec<u8>, hash_key: Option<String>) -> AnyResult<RedisV
                 serde_json::to_value(value)
             }
         }
-        ValueType::Stream => bail!("暂不支持stream类型"),
+        ValueType::Stream => bail!("stream类型暂不支持获取值"),
     }?;
 
     Ok(RedisValue {
@@ -386,6 +385,20 @@ pub fn mock_data(id: &str, count: usize) -> AnyResult<()> {
     let _: () = pipe.query(&mut conn)?;
     Ok(())
 }
+
+/// 执行命令
+pub fn execute_command(id: &str, param: RedisCommand) -> AnyResult<String> {
+    let (cmd, args) = parse_command(param.command.as_str())?;
+    if cmd == "" {
+        return Ok("".into())
+    };
+
+    let mut conn = get_conn(id)?;
+    let (routing_info, _) = get_node_route(id, param.node)?;
+    let value = conn.route_command(redis::cmd(cmd.as_str()).arg(args), routing_info)?;
+    Ok(value_to_string(value))
+}
+
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 // 节点列表（初始化时也使用）
 pub fn node_list_by_conn(mut conn: PooledConnection<ClusterClient>) -> AnyResult<Vec<RedisNode>> {
@@ -456,7 +469,7 @@ fn parse_node_list(cluster_nodes: String) -> AnyResult<Vec<RedisNode>> {
 }
 
 // 获取节点路由信息
-fn get_node_route(id: &str, node: Option<&str>) -> AnyResult<(RoutingInfo, String)> {
+fn get_node_route(id: &str, node: Option<String>) -> AnyResult<(RoutingInfo, String)> {
     let node: String = if let Some(node) = node {
         node.to_string()
     } else {

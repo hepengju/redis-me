@@ -21,6 +21,7 @@ pub fn run() {
         .invoke_handler(tauri::generate_handler![greet,
             info, node_list, scan, get, ttl, set, del,
             field_add, field_set, field_del,
+            execute_command,
             mock_data
         ])
         .run(tauri::generate_context!())

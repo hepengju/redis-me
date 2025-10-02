@@ -95,3 +95,10 @@ api_model!( RedisFieldDel {
     field_key: String,
     field_value: String,
 });
+
+// 执行命令
+api_model!( RedisCommand {
+    command: String,
+    node: Option<String>,
+    auto_broadcast: bool,
+});

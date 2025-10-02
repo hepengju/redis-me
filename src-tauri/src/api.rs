@@ -1,6 +1,6 @@
 #![cfg_attr(test, allow(warnings))] // 整个文件在测试时禁用该警告
 
-use crate::model::{RedisFieldAdd, RedisFieldDel, RedisFieldSet, RedisNode, RedisValue, ScanParam, ScanResult};
+use crate::model::{RedisCommand, RedisFieldAdd, RedisFieldDel, RedisFieldSet, RedisNode, RedisValue, ScanParam, ScanResult};
 use crate::util::{ApiResult, to_api_result};
 use crate::{api_command, service};
 
@@ -11,7 +11,7 @@ use crate::{api_command, service};
 // }
 
 // 信息
-api_command!(info(id: &str, node: Option<&str>) -> String);
+api_command!(info(id: &str, node: Option<String>) -> String);
 
 // 节点列表
 api_command!(node_list(id: &str) -> Vec<RedisNode>);
@@ -43,20 +43,14 @@ api_command!(field_del(id: &str, param: RedisFieldDel) -> ());
 // 模拟数据
 api_command!(mock_data(id: &str, count: usize) -> ());
 
+// 执行命令
+api_command!(execute_command(id: &str, param: RedisCommand) -> String);
+
 #[cfg(test)]
 mod tests {
-    use crate::api::*;
-    use crate::model::{RedisFieldValue, ScanCursor, ScanParam};
+    use super::*;
+    use crate::model::{RedisFieldAdd, RedisFieldValue, ScanCursor, ScanParam};
     use crate::service::{del, field_add, get, node_list, scan};
-
-    // 初始化日志, 避免所有测试方法都需要额外调用init方法
-    // #[ctor::ctor]
-    // fn init() {
-    //     let _ = env_logger::builder()
-    //         .filter_level(LevelFilter::Info)
-    //         .is_test(true)
-    //         .try_init();
-    // }
 
     #[test]
     fn test_info() {
@@ -66,7 +60,7 @@ mod tests {
 
     #[test]
     fn test_info_node() {
-        let result = info("test", Some("192.168.1.11:7001")).unwrap();
+        let result = info("test", Some("192.168.1.11:7001".into())).unwrap();
         println!("{result:#?}");
     }
 
@@ -164,5 +158,25 @@ mod tests {
     #[test]
     fn test_mock_data() {
         mock_data("test", 10).unwrap();
+    }
+
+
+
+    #[test]
+    fn test_execute_command() {
+        mock_command("ping");
+        mock_command("cluster info");
+        mock_command("cluster slots");
+        mock_command("config get save");
+        mock_command("config get *");
+    }
+
+    fn mock_command(command: &str) {
+        let result = execute_command("test", RedisCommand {
+            command: command.into(),
+            node: None,
+            auto_broadcast: true,
+        });
+        println!("{result:#?}");
     }
 }
