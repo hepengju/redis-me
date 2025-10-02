@@ -12,7 +12,6 @@ use redis::cluster::{ClusterClient, ClusterPipeline};
 use redis::cluster_routing::{RoutingInfo, SingleNodeRoutingInfo};
 use redis::{Commands, FromRedisValue, SetExpiry, SetOptions, Value, ValueType};
 use std::collections::{HashMap, HashSet};
-use serde_json::to_string;
 
 const REDIS_ME_FIELD_TO_DELETE_TMP_VALUE: &str = "__REDIS_ME_FIELD_TO_DELETE_TMP_VALUE__";
 
