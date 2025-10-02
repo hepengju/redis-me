@@ -1,4 +1,5 @@
 use anyhow::bail;
+use chrono::DateTime;
 use rand::Rng;
 use rand::distr::{Alphanumeric, SampleString};
 use rand::prelude::IteratorRandom;
@@ -7,7 +8,7 @@ use serde::ser::{SerializeMap, SerializeSeq};
 use serde::{Serialize, Serializer};
 use std::ops::Deref;
 use std::str::from_utf8;
-use chrono::DateTime;
+use tauri::webview::cookie::time::macros::datetime;
 
 // 统一应用返回值
 pub type AnyResult<T> = anyhow::Result<T>;
@@ -69,29 +70,34 @@ pub fn redis_value_to_string(value: Value, sep: &str) -> String {
         Value::Int(val) => val.to_string(),
         // 以下为扩展补充的
         Value::Nil => "".to_string(),
-        Value::Boolean( val) => val.to_string(),
+        Value::Boolean(val) => val.to_string(),
         Value::BigNumber(bigint) => bigint.to_string(),
-        Value::Array( vec) => {
-            vec.into_iter().map(|v| redis_value_to_string(v, sep)).collect::<Vec<String>>().join(sep)
-        },
-        Value::Set(set) => {
-            set.into_iter().map(|v| redis_value_to_string(v, sep)).collect::<Vec<String>>().join(sep)
-        },
-        Value::Map(map) => {
-            map.into_iter()
-                .map(|(k, v)| (redis_value_to_string(k, sep), redis_value_to_string(v, sep)))
-                .map(|(k, v)| format!("{}: {}", k, v))
-                .collect::<Vec<String>>()
-                .join(sep)
-        },
+        Value::Array(vec) => vec
+            .into_iter()
+            .map(|v| redis_value_to_string(v, sep))
+            .collect::<Vec<String>>()
+            .join(sep),
+        Value::Set(set) => set
+            .into_iter()
+            .map(|v| redis_value_to_string(v, sep))
+            .collect::<Vec<String>>()
+            .join(sep),
+        Value::Map(map) => map
+            .into_iter()
+            .map(|(k, v)| (redis_value_to_string(k, sep), redis_value_to_string(v, sep)))
+            .map(|(k, v)| format!("{}: {}", k, v))
+            .collect::<Vec<String>>()
+            .join(sep),
         // 其余暂不解析, 直接转换为字符串
-        _ => format!("{:?}", value)
+        _ => format!("{:?}", value),
     }
 }
 
-// 时间戳(秒)转字符串: TODO 时区调整
+// 时间戳(秒)转字符串
 pub fn timestamp_to_string(timestamp: i64) -> String {
-    let datetime = DateTime::from_timestamp(timestamp, 0).unwrap();
+    let datetime = DateTime::from_timestamp(timestamp, 0)
+        .unwrap()
+        .with_timezone(&chrono_tz::Asia::Shanghai);
     datetime.format("%Y-%m-%d %H:%M:%S").to_string()
 }
 
@@ -149,5 +155,11 @@ mod tests {
         println!("cmd: {}, args: {:?}", cmd, args);
         let (cmd, args) = parse_command(r#"config set save '3600 1 300 100 60 10000' "#).unwrap();
         println!("cmd: {}, args: {:?}", cmd, args);
+    }
+
+    #[test]
+    fn test_timestamp_to_string() {
+        let timestamp = 1759409274;
+        println!("{}", timestamp_to_string(timestamp));
     }
 }
