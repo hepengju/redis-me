@@ -445,11 +445,18 @@ pub fn config_set(id: &str, key: &str, value: &str, node: Option<String>) -> Any
 }
 
 /// 慢日志
-pub fn slow_log(id: &str, count: Option<usize>) -> AnyResult<Vec<RedisSlowLog>> {
+pub fn slow_log(id: &str, count: Option<usize>, node: Option<String>) -> AnyResult<Vec<RedisSlowLog>> {
     let mut conn = get_conn(id)?;
     let mut logs = vec![];
-    for node in get_node_list(id)? {
-        let node = node.node;
+    for redis_node in get_node_list(id)? {
+        // 如果参数中包含节点参数，则只返回指定节点的慢日志
+        if let Some(ref n) = node {
+            if n != &redis_node.node {
+                continue;
+            }
+        }
+
+        let node = redis_node.node;
         let (route, _) = get_node_route(id, Some(node.clone()))?;
         let value_total = conn.route_command(&redis::cmd("slowlog").arg("get").arg(count.unwrap_or(128)), route)?;
         let value_list: Vec<Value> = FromRedisValue::from_redis_value(&value_total)?;

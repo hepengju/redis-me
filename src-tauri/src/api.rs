@@ -57,7 +57,7 @@ api_command!(config_get(id: &str, pattern: &str, node: Option<String>) -> HashMa
 api_command!(config_set(id: &str, key: &str, value: &str, node: Option<String>) -> ());
 
 // 慢日志
-api_command!(slow_log(id: &str, count: Option<usize>) -> Vec<RedisSlowLog>);
+api_command!(slow_log(id: &str, count: Option<usize>, node: Option<String>) -> Vec<RedisSlowLog>);
 
 #[cfg(test)]
 mod tests {
@@ -211,11 +211,13 @@ mod tests {
     fn test_config_set() {
         let result = config_set("test", "save", "3600 2 300 100 60 10000", None).unwrap();
         println!("{result:#?}");
+        let result = config_set("test", "save", "3600 2 300 100 60 10000", Some("10.106.0.167:7005".into())).unwrap();
+        println!("{result:#?}");
     }
 
     #[test]
     fn test_slow_log() {
-        let result = slow_log("test", Some(3)).unwrap();
+        let result = slow_log("test", Some(3), Some("10.106.0.167:7005".into())).unwrap();
         println!("{result:#?}");
     }
 }
