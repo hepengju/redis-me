@@ -262,25 +262,40 @@ mod tests {
         pipe.cmd("memory").arg("usage").arg("redis-me-mock:string:x09Ylj6WrN");
         pipe.cmd("memory").arg("usage").arg("redis-me-mock:string:not_exist");
 
-        let sizes: Vec<usize> = pipe.query(&mut conn)?;
+        let sizes: Vec<Option<usize>> = pipe.query(&mut conn)?;
         println!("{sizes:#?}");
         Ok(())
     }
 
-    // https://github.com/redis-rs/redis-rs/issues/1814#issuecomment-3362381351
+    // https://github.com/redis-rs/redis-rs/issues/1814
     #[test]
     fn test_cluster_pipeline_reproduce() -> anyhow::Result<()> {
+        // redis cluster: 7001 ~ 7006, with ssl and password
         let nodes = vec!["rediss://192.168.1.11:7001"];
         let client = ClusterClient::builder(nodes)
             .tls(TlsMode::Insecure)
             .password("hepengju".into())
             .build()?;
-
         let mut conn = client.get_connection()?;
+
+        // get
         let mut pipe = ClusterPipeline::new();
-        pipe.cmd("memory").arg("usage").arg("xxx");
-        let sizes: usize = pipe.query(&mut conn)?;
-        println!("{sizes:#?}");
+        pipe.cmd("get").arg("hepengju:string1");
+        pipe.cmd("get").arg("hepengju:string2");
+        pipe.cmd("get").arg("hepengju:string3");
+        let results: Vec<String> = pipe.query(&mut conn)?;
+        println!("{results:?}");
+        // ["string1value", "string2value", "string3value"]
+
+        // memory usage
+        pipe = ClusterPipeline::new();
+        pipe.cmd("memory").arg("usage").arg("hepengju:string1");
+        pipe.cmd("memory").arg("usage").arg("hepengju:string2");
+        pipe.cmd("memory").arg("usage").arg("hepengju:string3");
+        let sizes: Vec<Option<usize>> = pipe.query(&mut conn)?;
+        // Error: An error was signalled by the server - Moved: 14021 192.168.1.11:7005
+        println!("{sizes:?}");
+
         Ok(())
     }
 }

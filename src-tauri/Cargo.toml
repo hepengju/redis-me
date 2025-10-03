@@ -32,7 +32,7 @@ rustls = { version = "0.23.32", default-features = false, features = ["ring"] }
 ctor = "0.5.0"
 r2d2 = "0.8.10"
 rand = "0.9.2"
-anyhow = "1"
+anyhow = { version = "1", features = ["backtrace"] }
 shell-words = "1"
 base64 = "0.22.1"
 chrono = "0.4.23"
