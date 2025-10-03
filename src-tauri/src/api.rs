@@ -65,6 +65,15 @@ api_command!(memory_usage(id: &str, param: RedisMemoryParam) -> Vec<RedisKeySize
 // 客户端列表
 api_command!(client_list(id: &str, node: Option<String>, client_type: Option<String>) -> Vec<RedisClientInfo>);
 
+// 监控命令
+api_command!(monitor(id: &str, node: &str, seconds: Option<u64>) -> ());
+
+// 发布消息
+api_command!(publish(id: &str, channel: &str, message: &str) -> ());
+
+// 订阅消息
+api_command!(subscribe(id: &str, channel: &str, seconds: Option<u64>) -> ());
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -301,6 +310,12 @@ mod tests {
     #[test]
     fn test_client_list() {
         let result = client_list("test", None, None).unwrap();
+        println!("{result:?}");
+    }
+
+    #[test]
+    fn test_publish(){
+        let result = publish("test", "channel", "message").unwrap();
         println!("{result:?}");
     }
 }

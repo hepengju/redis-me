@@ -7,21 +7,20 @@ use crate::model::{
     ScanParam, ScanResult,
 };
 use crate::util::{
-    AnyResult, assert_is_true, parse_command, random_item, random_range, random_string,
-    redis_value_to_string, timestamp_to_string, vec8_to_string,
+    assert_is_true, parse_command, random_item, random_range, random_string, redis_value_to_string,
+    timestamp_to_string, vec8_to_string, AnyResult,
 };
-use RoutingInfo::SingleNode;
-use SingleNodeRoutingInfo::ByAddress;
-use anyhow::{anyhow, bail};
+use anyhow::{bail};
 use log::info;
 use r2d2::PooledConnection;
 use redis::cluster::{ClusterClient, ClusterPipeline};
 use redis::cluster_routing::{RoutingInfo, SingleNodeRoutingInfo};
 use redis::{Commands, FromRedisValue, SetExpiry, SetOptions, Value, ValueType};
 use std::collections::{HashMap, HashSet};
-use std::process::id;
 use std::time::Duration;
-use std::{clone, thread};
+use std::{thread};
+use RoutingInfo::SingleNode;
+use SingleNodeRoutingInfo::ByAddress;
 
 const REDIS_ME_FIELD_TO_DELETE_TMP_VALUE: &str = "__REDIS_ME_FIELD_TO_DELETE_TMP_VALUE__";
 
@@ -623,6 +622,23 @@ pub fn client_list(
     Ok(clients)
 }
 
+/// 监控命令
+pub fn monitor(id: &str, node: &str, long: Option<u64>) -> AnyResult<()> {
+    todo!()
+}
+/// 发送消息
+pub fn publish(id: &str, channel: &str, message: &str) -> AnyResult<()> {
+    let mut conn = get_conn(id)?;
+    let _: () = conn.publish(channel, message)?;
+    Ok(())
+}
+
+/// 订阅消息
+pub fn subscribe(id: &str, channel: &str, long: Option<u64>) -> AnyResult<()> {
+    let mut conn = get_conn(id)?;
+    todo!()
+}
+//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 fn parse_client_info(client_info: &str) -> AnyResult<RedisClientInfo> {
     let mut map = HashMap::with_capacity(32);
 
@@ -636,7 +652,6 @@ fn parse_client_info(client_info: &str) -> AnyResult<RedisClientInfo> {
     let client: RedisClientInfo = serde_json::from_str(&json)?;
     Ok(client)
 }
-//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 // 节点列表（初始化时也使用）
 pub fn node_list_by_conn(mut conn: PooledConnection<ClusterClient>) -> AnyResult<Vec<RedisNode>> {
     let cluster_nodes: String = redis::cmd("cluster").arg("nodes").query(&mut conn)?;

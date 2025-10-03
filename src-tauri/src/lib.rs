@@ -24,6 +24,7 @@ pub fn run() {
             field_add, field_set, field_del,
             execute_command, slow_log, memory_usage, 
             config_get, config_set,
+            client_list, monitor, publish, subscribe,
             mock_data
         ])
         .run(tauri::generate_context!())
