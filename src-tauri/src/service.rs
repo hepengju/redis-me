@@ -2,8 +2,9 @@
 
 use crate::conn::{get_conn, get_node_list, get_node_list_master};
 use crate::model::{
-    RedisCommand, RedisFieldAdd, RedisFieldDel, RedisFieldSet, RedisInfo, RedisKey, RedisKeySize,
-    RedisMemoryParam, RedisNode, RedisSlowLog, RedisValue, RedisZetItem, ScanParam, ScanResult,
+    RedisClientInfo, RedisCommand, RedisFieldAdd, RedisFieldDel, RedisFieldSet, RedisInfo,
+    RedisKey, RedisKeySize, RedisMemoryParam, RedisNode, RedisSlowLog, RedisValue, RedisZetItem,
+    ScanParam, ScanResult,
 };
 use crate::util::{
     AnyResult, assert_is_true, parse_command, random_item, random_range, random_string,
@@ -11,13 +12,14 @@ use crate::util::{
 };
 use RoutingInfo::SingleNode;
 use SingleNodeRoutingInfo::ByAddress;
-use anyhow::bail;
+use anyhow::{anyhow, bail};
 use log::info;
 use r2d2::PooledConnection;
 use redis::cluster::{ClusterClient, ClusterPipeline};
 use redis::cluster_routing::{RoutingInfo, SingleNodeRoutingInfo};
 use redis::{Commands, FromRedisValue, SetExpiry, SetOptions, Value, ValueType};
 use std::collections::{HashMap, HashSet};
+use std::process::id;
 use std::time::Duration;
 use std::{clone, thread};
 
@@ -99,8 +101,9 @@ pub fn scan(id: &str, param: ScanParam) -> AnyResult<ScanResult> {
                 .arg(param.pattern.clone())
                 .arg("count")
                 .arg(batch_count);
-            if param.scan_type.is_some() {
-                cmd.arg("type").arg(param.scan_type.clone());
+
+            if let Some(ref scan_type) = param.scan_type {
+                cmd.arg("type").arg(scan_type);
             }
 
             let value = conn.route_command(&cmd, route.clone())?;
@@ -575,7 +578,7 @@ pub fn memory_usage(id: &str, param: RedisMemoryParam) -> AnyResult<Vec<RedisKey
     // 映射为返回值
     let key_list = keys
         .into_iter()
-        .map(|(key,size, key_type)| RedisKeySize {
+        .map(|(key, size, key_type)| RedisKeySize {
             key: vec8_to_string(key.clone()),
             bytes: key,
             size,
@@ -585,6 +588,54 @@ pub fn memory_usage(id: &str, param: RedisMemoryParam) -> AnyResult<Vec<RedisKey
     Ok(key_list)
 }
 
+/// 客户端列表
+pub fn client_list(
+    id: &str,
+    node: Option<String>,
+    client_type: Option<String>,
+) -> AnyResult<Vec<RedisClientInfo>> {
+    let mut conn = get_conn(id)?;
+    let node_list = get_node_list(id)?;
+
+    let mut clients = vec![];
+    for redis_node in node_list {
+        // 如果参数中包含节点参数，则只返回指定节点的慢日志
+        if let Some(ref n) = node {
+            if n != &redis_node.node {
+                continue;
+            }
+        }
+        let node = redis_node.node;
+        let (route, _) = get_node_route(id, Some(node.clone()))?;
+
+        let mut cmd = redis::cmd("client");
+        cmd.arg("list");
+        if let Some(ref client_type_val) = client_type {
+            cmd.arg("type").arg(client_type_val);
+        }
+        let value = conn.route_command(&cmd, route)?;
+        let value_list: Vec<String> = FromRedisValue::from_redis_value(&value)?;
+        for client_info in value_list.into_iter() {
+            let client: RedisClientInfo = parse_client_info(&client_info)?;
+            clients.push(client);
+        }
+    }
+    Ok(clients)
+}
+
+fn parse_client_info(client_info: &str) -> AnyResult<RedisClientInfo> {
+    let mut map = HashMap::with_capacity(32);
+
+    for key_eq_val in client_info.split_whitespace().into_iter() {
+        if let Some((key, val)) = key_eq_val.split_once("=") {
+            map.insert(key, val);
+        }
+    }
+
+    let json = serde_json::to_string(&map)?;
+    let client: RedisClientInfo = serde_json::from_str(&json)?;
+    Ok(client)
+}
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 // 节点列表（初始化时也使用）
 pub fn node_list_by_conn(mut conn: PooledConnection<ClusterClient>) -> AnyResult<Vec<RedisNode>> {
@@ -663,10 +714,13 @@ fn get_node_route(id: &str, node: Option<String>) -> AnyResult<(RoutingInfo, Str
         random_item(node_list).node
     };
 
-    let (host, port) = node.split_once(":").unwrap();
-    let route = SingleNode(ByAddress {
-        host: host.into(),
-        port: port.parse::<u16>()?,
-    });
-    Ok((route, node.into()))
+    if let Some((host, port)) = node.split_once(":") {
+        let route = SingleNode(ByAddress {
+            host: host.into(),
+            port: port.parse::<u16>()?,
+        });
+        Ok((route, node.into()))
+    } else {
+        bail!("Invalid node format: {}", node)
+    }
 }

@@ -1,9 +1,6 @@
 #![cfg_attr(test, allow(warnings))] // 整个文件在测试时禁用该警告
 
-use crate::model::{
-    RedisCommand, RedisFieldAdd, RedisFieldDel, RedisFieldSet, RedisInfo, RedisKeySize,
-    RedisMemoryParam, RedisNode, RedisSlowLog, RedisValue, ScanParam, ScanResult,
-};
+use crate::model::{RedisClientInfo, RedisCommand, RedisFieldAdd, RedisFieldDel, RedisFieldSet, RedisInfo, RedisKeySize, RedisMemoryParam, RedisNode, RedisSlowLog, RedisValue, ScanParam, ScanResult};
 use crate::util::{to_api_result, ApiResult};
 use crate::{api_command, service};
 use std::collections::HashMap;
@@ -64,6 +61,9 @@ api_command!(slow_log(id: &str, count: Option<u64>, node: Option<String>) -> Vec
 
 // 内存分析
 api_command!(memory_usage(id: &str, param: RedisMemoryParam) -> Vec<RedisKeySize>);
+
+// 客户端列表
+api_command!(client_list(id: &str, node: Option<String>, client_type: Option<String>) -> Vec<RedisClientInfo>);
 
 #[cfg(test)]
 mod tests {
@@ -296,5 +296,11 @@ mod tests {
         println!("{sizes:?}");
 
         Ok(())
+    }
+
+    #[test]
+    fn test_client_list() {
+        let result = client_list("test", None, None).unwrap();
+        println!("{result:?}");
     }
 }
