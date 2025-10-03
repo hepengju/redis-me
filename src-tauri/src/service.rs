@@ -19,6 +19,7 @@ use redis::{Commands, ConnectionLike, FromRedisValue, SetExpiry, SetOptions, Val
 use std::collections::{HashMap, HashSet};
 use std::time::Duration;
 use std::{thread};
+use std::ops::Index;
 use RoutingInfo::SingleNode;
 use SingleNodeRoutingInfo::ByAddress;
 
@@ -507,7 +508,7 @@ pub fn slow_log(
     Ok(logs)
 }
 
-/// 内存分析: TODO
+/// 内存分析
 pub fn memory_usage(id: &str, param: RedisMemoryParam) -> AnyResult<Vec<RedisKeySize>> {
     let mut conn = get_conn(id)?;
     let mut keys: Vec<(Vec<u8>, u64, String)> = vec![];
@@ -537,10 +538,13 @@ pub fn memory_usage(id: &str, param: RedisMemoryParam) -> AnyResult<Vec<RedisKey
             for key in new_keys.iter() {
                 pipe.cmd("memory").arg("usage").arg(key);
             }
-            let sizes: Vec<u64> = pipe.query(&mut conn)?;
+            // 此处用Option接收,避免键被删除或过期
+            let sizes: Vec<Option<u64>> = pipe.query(&mut conn)?;
             for (index, size) in sizes.into_iter().enumerate() {
-                if size >= param.size_limit {
-                    keys.push((new_keys[index].clone(), size, "unknown".into()));
+                if let Some(size) = size {
+                    if size >= param.size_limit {
+                        keys.push((new_keys[index].clone(), size, "unknown".into()));
+                    }
                 }
             }
 
@@ -569,9 +573,9 @@ pub fn memory_usage(id: &str, param: RedisMemoryParam) -> AnyResult<Vec<RedisKey
     for key in keys.iter() {
         pipe.cmd("type").arg(&key.0);
     }
-    let types: Vec<String> = pipe.query(&mut conn)?;
+    let types: Vec<Option<String>> = pipe.query(&mut conn)?;
     for (index, key_type) in types.into_iter().enumerate() {
-        keys[index].2 = key_type;
+        keys[index].2 = key_type.unwrap_or("deleted".into());
     }
 
     // 映射为返回值
