@@ -623,7 +623,7 @@ pub fn client_list(
 }
 
 /// 监控命令
-pub fn monitor(id: &str, node: &str, long: Option<u64>) -> AnyResult<()> {
+pub fn monitor(id: &str, node: &str) -> AnyResult<()> {
     todo!()
 }
 /// 发送消息
@@ -634,7 +634,7 @@ pub fn publish(id: &str, channel: &str, message: &str) -> AnyResult<()> {
 }
 
 /// 订阅消息
-pub fn subscribe(id: &str, channel: &str, long: Option<u64>) -> AnyResult<()> {
+pub fn subscribe(id: &str, channel: &str) -> AnyResult<()> {
     let mut conn = get_conn(id)?;
     todo!()
 }

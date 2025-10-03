@@ -1,7 +1,10 @@
 #![cfg_attr(test, allow(warnings))] // 整个文件在测试时禁用该警告
 
-use crate::model::{RedisClientInfo, RedisCommand, RedisFieldAdd, RedisFieldDel, RedisFieldSet, RedisInfo, RedisKeySize, RedisMemoryParam, RedisNode, RedisSlowLog, RedisValue, ScanParam, ScanResult};
-use crate::util::{to_api_result, ApiResult};
+use crate::model::{
+    RedisClientInfo, RedisCommand, RedisFieldAdd, RedisFieldDel, RedisFieldSet, RedisInfo,
+    RedisKeySize, RedisMemoryParam, RedisNode, RedisSlowLog, RedisValue, ScanParam, ScanResult,
+};
+use crate::util::{ApiResult, to_api_result};
 use crate::{api_command, service};
 use std::collections::HashMap;
 
@@ -66,13 +69,13 @@ api_command!(memory_usage(id: &str, param: RedisMemoryParam) -> Vec<RedisKeySize
 api_command!(client_list(id: &str, node: Option<String>, client_type: Option<String>) -> Vec<RedisClientInfo>);
 
 // 监控命令
-api_command!(monitor(id: &str, node: &str, seconds: Option<u64>) -> ());
+api_command!(monitor(id: &str, node: &str) -> ());
 
 // 发布消息
 api_command!(publish(id: &str, channel: &str, message: &str) -> ());
 
 // 订阅消息
-api_command!(subscribe(id: &str, channel: &str, seconds: Option<u64>) -> ());
+api_command!(subscribe(id: &str, channel: &str) -> ());
 
 #[cfg(test)]
 mod tests {
@@ -81,8 +84,8 @@ mod tests {
     use crate::model::{RedisFieldAdd, RedisFieldValue, ScanCursor, ScanParam};
     use crate::service::{del, field_add, get, node_list, scan};
     use crate::util::AnyResult;
-    use redis::cluster::{ClusterClient, ClusterPipeline};
     use redis::TlsMode;
+    use redis::cluster::{ClusterClient, ClusterPipeline};
 
     #[test]
     fn test_info() {
@@ -248,14 +251,18 @@ mod tests {
 
     #[test]
     fn test_memory_usage() {
-        let result = memory_usage("test", RedisMemoryParam {
-            pattern: None,
-            size_limit: 1,
-            count_limit: 100,
-            scan_count: 1000,
-            scan_total: 10000,
-            sleep_millis: 0
-        }).unwrap();
+        let result = memory_usage(
+            "test",
+            RedisMemoryParam {
+                pattern: None,
+                size_limit: 1,
+                count_limit: 100,
+                scan_count: 1000,
+                scan_total: 10000,
+                sleep_millis: 0,
+            },
+        )
+        .unwrap();
         println!("{result:#?}");
     }
 
@@ -264,11 +271,21 @@ mod tests {
         let mut conn = get_conn("test")?;
         let mut pipe = ClusterPipeline::with_capacity(5);
 
-        pipe.cmd("memory").arg("usage").arg("redis-me-mock:string:25gdlqZlLv");
-        pipe.cmd("memory").arg("usage").arg("redis-me-mock:string:7C9V7PrOAt");
-        pipe.cmd("memory").arg("usage").arg("redis-me-mock:string:7xpp7PJrxe");
-        pipe.cmd("memory").arg("usage").arg("redis-me-mock:string:x09Ylj6WrN");
-        pipe.cmd("memory").arg("usage").arg("redis-me-mock:string:not_exist");
+        pipe.cmd("memory")
+            .arg("usage")
+            .arg("redis-me-mock:string:25gdlqZlLv");
+        pipe.cmd("memory")
+            .arg("usage")
+            .arg("redis-me-mock:string:7C9V7PrOAt");
+        pipe.cmd("memory")
+            .arg("usage")
+            .arg("redis-me-mock:string:7xpp7PJrxe");
+        pipe.cmd("memory")
+            .arg("usage")
+            .arg("redis-me-mock:string:x09Ylj6WrN");
+        pipe.cmd("memory")
+            .arg("usage")
+            .arg("redis-me-mock:string:not_exist");
 
         let sizes: Vec<Option<u64>> = pipe.query(&mut conn)?;
         println!("{sizes:#?}");
@@ -314,8 +331,20 @@ mod tests {
     }
 
     #[test]
-    fn test_publish(){
+    fn test_monitor() {
+        let result = monitor("test", "192.168.1.11:7001").unwrap();
+        println!("{result:?}");
+    }
+
+    #[test]
+    fn test_publish() {
         let result = publish("test", "channel", "message").unwrap();
+        println!("{result:?}");
+    }
+
+    #[test]
+    fn test_subscribe() {
+        let result = subscribe("test", "channel").unwrap();
         println!("{result:?}");
     }
 }
