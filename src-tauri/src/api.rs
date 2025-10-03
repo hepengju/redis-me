@@ -4,7 +4,7 @@ use crate::model::{
     RedisCommand, RedisFieldAdd, RedisFieldDel, RedisFieldSet, RedisInfo, RedisKeySize,
     RedisMemoryParam, RedisNode, RedisSlowLog, RedisValue, ScanParam, ScanResult,
 };
-use crate::util::{ApiResult, to_api_result};
+use crate::util::{to_api_result, ApiResult};
 use crate::{api_command, service};
 use std::collections::HashMap;
 
@@ -48,7 +48,7 @@ api_command!(field_set(id: &str, param: RedisFieldSet) -> ());
 api_command!(field_del(id: &str, param: RedisFieldDel) -> ());
 
 // 模拟数据
-api_command!(mock_data(id: &str, count: usize) -> ());
+api_command!(mock_data(id: &str, count: u64) -> ());
 
 // 执行命令
 api_command!(execute_command(id: &str, param: RedisCommand) -> String);
@@ -60,21 +60,20 @@ api_command!(config_get(id: &str, pattern: &str, node: Option<String>) -> HashMa
 api_command!(config_set(id: &str, key: &str, value: &str, node: Option<String>) -> ());
 
 // 慢日志
-api_command!(slow_log(id: &str, count: Option<usize>, node: Option<String>) -> Vec<RedisSlowLog>);
+api_command!(slow_log(id: &str, count: Option<u64>, node: Option<String>) -> Vec<RedisSlowLog>);
 
 // 内存分析
 api_command!(memory_usage(id: &str, param: RedisMemoryParam) -> Vec<RedisKeySize>);
 
 #[cfg(test)]
 mod tests {
-    use std::time::Duration;
-    use redis::cluster::{ClusterClient, ClusterPipeline};
-    use redis::TlsMode;
-    use crate::conn::get_conn;
     use super::*;
+    use crate::conn::get_conn;
     use crate::model::{RedisFieldAdd, RedisFieldValue, ScanCursor, ScanParam};
     use crate::service::{del, field_add, get, node_list, scan};
     use crate::util::AnyResult;
+    use redis::cluster::{ClusterClient, ClusterPipeline};
+    use redis::TlsMode;
 
     #[test]
     fn test_info() {
@@ -262,7 +261,7 @@ mod tests {
         pipe.cmd("memory").arg("usage").arg("redis-me-mock:string:x09Ylj6WrN");
         pipe.cmd("memory").arg("usage").arg("redis-me-mock:string:not_exist");
 
-        let sizes: Vec<Option<usize>> = pipe.query(&mut conn)?;
+        let sizes: Vec<Option<u64>> = pipe.query(&mut conn)?;
         println!("{sizes:#?}");
         Ok(())
     }
@@ -292,7 +291,7 @@ mod tests {
         pipe.cmd("memory").arg("usage").arg("hepengju:string1");
         pipe.cmd("memory").arg("usage").arg("hepengju:string2");
         pipe.cmd("memory").arg("usage").arg("hepengju:string3");
-        let sizes: Vec<Option<usize>> = pipe.query(&mut conn)?;
+        let sizes: Vec<Option<u64>> = pipe.query(&mut conn)?;
         // Error: An error was signalled by the server - Moved: 14021 192.168.1.11:7005
         println!("{sizes:?}");
 

@@ -19,7 +19,7 @@ api_model!(RedisNode {
 // 扫描参数
 api_model!(ScanParam {
     pattern: String,
-    count: usize,
+    count: u64,
     scan_type: Option<String>,
 
     cursor: ScanCursor,
@@ -123,10 +123,10 @@ api_model!(RedisSlowLog {
 api_model!(RedisMemoryParam {
     pattern: Option<String>, // 匹配模式
 
-    size_limit: usize,   // 大小限制, 推荐: 100kb 即102400
-    count_limit: usize,  // 数量限制, 推荐: 1000
-    scan_count: usize,   // 每次扫描, 推荐: 1000
-    scan_total: usize,   // 扫描数量限制, 推荐: 10000
+    size_limit: u64,   // 大小限制, 推荐: 100kb 即102400
+    count_limit: u64,  // 数量限制, 推荐: 1000
+    scan_count: u64,   // 每次扫描, 推荐: 1000
+    scan_total: u64,   // 扫描数量限制, 推荐: 10000
     sleep_millis: u64, // 扫描间隔, 推荐: 1000
 });
 
@@ -137,5 +137,39 @@ api_model!(RedisKeySize {
 
     #[serde(rename = "type")]
     key_type: String ,  // 类型
-    size: usize,        // 大小
+    size: u64,        // 大小
+});
+
+// 客户端
+api_model!(RedisClientInfo {
+    id: i64,             // 唯一的 64 位客户端 ID
+    addr: String,        // 客户端的地址/端口
+    laddr: String,       // 客户端连接到的本地地址/端口（绑定地址）
+    fd: String,          // 对应于套接字的文件描述符
+    name: String,        // 客户端使用 CLIENT SETNAME 设置的名称
+    age: i64,            // 连接的总持续时间（秒）
+    idle: i64,           // 连接的空闲时间（秒）
+    flags: String,       // 客户端标志（见下文）
+    db: String,          // 当前数据库 ID
+    sub: i64,            // 频道订阅数
+    psub: i64,           // 模式匹配订阅数
+    ssub: i64,           // 分片频道订阅数。在 Redis 7.0.3 中添加
+    multi: i64,          // MULTI/EXEC 上下文中的命令数
+    watch: i64,          // 此客户端当前正在监视的键数。在 Redis 7.4 中添加
+    qbuf: i64,           // 查询缓冲区长度（0 表示没有待处理的查询）
+    qbufFree: i64,       // 查询缓冲区的可用空间（0 表示缓冲区已满）
+    argvMem: i64,        // 下一个命令的不完整参数（已从查询缓冲区中提取）
+    multiMem: i64,       // 缓冲的多命令使用的内存。在 Redis 7.0 中添加
+    obl: i64,            // 输出缓冲区长度
+    oll: i64,            // 输出列表长度（当缓冲区满时，回复在此列表中排队）
+    omem: i64,           // 输出缓冲区内存使用情况
+    totMem: i64,         // 此客户端在其各种缓冲区中消耗的总内存
+    events: String,      // 文件描述符事件（见下文）
+    cmd: String,         // 执行的最后一条命令
+    user: String,        // 客户端的已认证用户名
+    redir: String,       // 当前客户端跟踪重定向的客户端 id
+    resp: String,        // 客户端 RESP 协议版本。在 Redis 7.0 中添加
+    rbp: i64,            // 客户端连接以来其读取缓冲区的峰值大小。在 Redis 7.0 中添加
+    rbs: i64,            // 客户端读取缓冲区当前大小（字节）。在 Redis 7.0 中添加
+    ioThread: String,    // 分配给客户端的 I/O 线程 ID。在 Redis 8.0 中添加
 });

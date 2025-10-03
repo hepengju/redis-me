@@ -109,7 +109,7 @@ pub fn scan(id: &str, param: ScanParam) -> AnyResult<ScanResult> {
 
             keys.extend(new_keys);
             cc.now_cursor = next_cursor;
-            if !param.load_all && keys.len() >= param.count {
+            if !param.load_all && keys.len() >= param.count as usize {
                 break 'outer;
             }
 
@@ -369,10 +369,9 @@ pub fn field_del(id: &str, param: RedisFieldDel) -> AnyResult<()> {
 }
 
 /// 模拟数据
-pub fn mock_data(id: &str, count: usize) -> AnyResult<()> {
+pub fn mock_data(id: &str, count: u64) -> AnyResult<()> {
     let mut conn = get_conn(id)?;
-
-    let mut pipe = ClusterPipeline::with_capacity(count);
+    let mut pipe = ClusterPipeline::with_capacity(count as usize);
 
     for _ in 0..count {
         // string
@@ -448,7 +447,7 @@ pub fn config_set(id: &str, key: &str, value: &str, node: Option<String>) -> Any
 /// 慢日志
 pub fn slow_log(
     id: &str,
-    count: Option<usize>,
+    count: Option<u64>,
     node: Option<String>,
 ) -> AnyResult<Vec<RedisSlowLog>> {
     let mut conn = get_conn(id)?;
@@ -506,10 +505,10 @@ pub fn slow_log(
     Ok(logs)
 }
 
-/// 内存分析
+/// 内存分析: TODO
 pub fn memory_usage(id: &str, param: RedisMemoryParam) -> AnyResult<Vec<RedisKeySize>> {
     let mut conn = get_conn(id)?;
-    let mut keys: Vec<(Vec<u8>, usize, String)> = vec![];
+    let mut keys: Vec<(Vec<u8>, u64, String)> = vec![];
 
     // 遍历集群节点: 仅扫描主节点
     let nodes: Vec<String> = get_node_list_master(id)?;
@@ -536,7 +535,7 @@ pub fn memory_usage(id: &str, param: RedisMemoryParam) -> AnyResult<Vec<RedisKey
             for key in new_keys.iter() {
                 pipe.cmd("memory").arg("usage").arg(key);
             }
-            let sizes: Vec<usize> = pipe.query(&mut conn)?;
+            let sizes: Vec<u64> = pipe.query(&mut conn)?;
             for (index, size) in sizes.into_iter().enumerate() {
                 if size >= param.size_limit {
                     keys.push((new_keys[index].clone(), size, "unknown".into()));
@@ -545,7 +544,7 @@ pub fn memory_usage(id: &str, param: RedisMemoryParam) -> AnyResult<Vec<RedisKey
 
             scan_times += 1;
 
-            if keys.len() >= param.count_limit {
+            if keys.len() >= param.count_limit as usize {
                 info!("扫描结果>={}个, 返回", param.count_limit);
                 break 'outer;
             }
