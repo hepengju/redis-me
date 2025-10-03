@@ -15,7 +15,7 @@ use log::info;
 use r2d2::PooledConnection;
 use redis::cluster::{ClusterClient, ClusterPipeline};
 use redis::cluster_routing::{RoutingInfo, SingleNodeRoutingInfo};
-use redis::{Commands, FromRedisValue, SetExpiry, SetOptions, Value, ValueType};
+use redis::{Commands, ConnectionLike, FromRedisValue, SetExpiry, SetOptions, Value, ValueType};
 use std::collections::{HashMap, HashSet};
 use std::time::Duration;
 use std::{thread};
@@ -623,7 +623,11 @@ pub fn client_list(
 }
 
 /// 监控命令
-pub fn monitor(id: &str, node: &str) -> AnyResult<()> {
+pub fn monitor(id: &str, node: &str, seconds: Option<u32>) -> AnyResult<()> {
+    let mut conn = get_conn(id)?;
+    let (route, _) = get_node_route(id, Some(node.into()))?;
+    let mut cmd = redis::cmd("monitor");
+    conn.route_command(&mut cmd, route);
     todo!()
 }
 /// 发送消息
@@ -634,7 +638,7 @@ pub fn publish(id: &str, channel: &str, message: &str) -> AnyResult<()> {
 }
 
 /// 订阅消息
-pub fn subscribe(id: &str, channel: &str) -> AnyResult<()> {
+pub fn subscribe(id: &str, channel: &str, seconds: Option<u32>) -> AnyResult<()> {
     let mut conn = get_conn(id)?;
     todo!()
 }

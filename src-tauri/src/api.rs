@@ -1,9 +1,6 @@
 #![cfg_attr(test, allow(warnings))] // 整个文件在测试时禁用该警告
 
-use crate::model::{
-    RedisClientInfo, RedisCommand, RedisFieldAdd, RedisFieldDel, RedisFieldSet, RedisInfo,
-    RedisKeySize, RedisMemoryParam, RedisNode, RedisSlowLog, RedisValue, ScanParam, ScanResult,
-};
+use crate::model::*;
 use crate::util::{ApiResult, to_api_result};
 use crate::{api_command, service};
 use std::collections::HashMap;
@@ -69,20 +66,20 @@ api_command!(memory_usage(id: &str, param: RedisMemoryParam) -> Vec<RedisKeySize
 api_command!(client_list(id: &str, node: Option<String>, client_type: Option<String>) -> Vec<RedisClientInfo>);
 
 // 监控命令
-api_command!(monitor(id: &str, node: &str) -> ());
+api_command!(monitor(id: &str, node: &str, seconds: Option<u32>) -> ());
 
 // 发布消息
 api_command!(publish(id: &str, channel: &str, message: &str) -> ());
 
 // 订阅消息
-api_command!(subscribe(id: &str, channel: &str) -> ());
+api_command!(subscribe(id: &str, channel: &str, seconds: Option<u32>) -> ());
 
 #[cfg(test)]
 mod tests {
     use super::*;
     use crate::conn::get_conn;
     use crate::model::{RedisFieldAdd, RedisFieldValue, ScanCursor, ScanParam};
-    use crate::service::{del, field_add, get, node_list, scan};
+    use crate::service::{del, field_add, get, monitor, node_list, scan, subscribe};
     use crate::util::AnyResult;
     use redis::TlsMode;
     use redis::cluster::{ClusterClient, ClusterPipeline};
@@ -308,7 +305,7 @@ mod tests {
         pipe.cmd("get").arg("hepengju:string1");
         pipe.cmd("get").arg("hepengju:string2");
         pipe.cmd("get").arg("hepengju:string3");
-        let results: Vec<String> = pipe.query(&mut conn)?;
+        let results: Vec<Option<String>> = pipe.query(&mut conn)?;
         println!("{results:?}");
         // ["string1value", "string2value", "string3value"]
 
@@ -332,7 +329,7 @@ mod tests {
 
     #[test]
     fn test_monitor() {
-        let result = monitor("test", "192.168.1.11:7001").unwrap();
+        let result = monitor("test", "192.168.1.11:7001", None).unwrap();
         println!("{result:?}");
     }
 
@@ -344,7 +341,7 @@ mod tests {
 
     #[test]
     fn test_subscribe() {
-        let result = subscribe("test", "channel").unwrap();
+        let result = subscribe("test", "channel", None).unwrap();
         println!("{result:?}");
     }
 }
