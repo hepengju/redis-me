@@ -67,7 +67,9 @@ api_command!(memory_usage(id: &str, param: RedisMemoryParam) -> Vec<RedisKeySize
 
 #[cfg(test)]
 mod tests {
-    use redis::cluster::ClusterPipeline;
+    use std::time::Duration;
+    use redis::cluster::{ClusterClient, ClusterPipeline};
+    use redis::TlsMode;
     use crate::conn::get_conn;
     use super::*;
     use crate::model::{RedisFieldAdd, RedisFieldValue, ScanCursor, ScanParam};
@@ -261,6 +263,23 @@ mod tests {
         pipe.cmd("memory").arg("usage").arg("redis-me-mock:string:not_exist");
 
         let sizes: Vec<usize> = pipe.query(&mut conn)?;
+        println!("{sizes:#?}");
+        Ok(())
+    }
+
+    // https://github.com/redis-rs/redis-rs/issues/1814#issuecomment-3362381351
+    #[test]
+    fn test_cluster_pipeline_reproduce() -> anyhow::Result<()> {
+        let nodes = vec!["rediss://192.168.1.11:7001"];
+        let client = ClusterClient::builder(nodes)
+            .tls(TlsMode::Insecure)
+            .password("hepengju".into())
+            .build()?;
+
+        let mut conn = client.get_connection()?;
+        let mut pipe = ClusterPipeline::new();
+        pipe.cmd("memory").arg("usage").arg("xxx");
+        let sizes: usize = pipe.query(&mut conn)?;
         println!("{sizes:#?}");
         Ok(())
     }
