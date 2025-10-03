@@ -1,25 +1,20 @@
 #![cfg_attr(test, allow(warnings))] // 整个文件在测试时禁用该警告
 
 use crate::conn::{get_conn, get_node_list, get_node_list_master};
-use crate::model::{
-    RedisClientInfo, RedisCommand, RedisFieldAdd, RedisFieldDel, RedisFieldSet, RedisInfo,
-    RedisKey, RedisKeySize, RedisMemoryParam, RedisNode, RedisSlowLog, RedisValue, RedisZetItem,
-    ScanParam, ScanResult,
-};
+use crate::model::*;
 use crate::util::{
     assert_is_true, parse_command, random_item, random_range, random_string, redis_value_to_string,
     timestamp_to_string, vec8_to_string, AnyResult,
 };
-use anyhow::{bail};
+use anyhow::bail;
 use log::info;
 use r2d2::PooledConnection;
 use redis::cluster::{ClusterClient, ClusterPipeline};
 use redis::cluster_routing::{RoutingInfo, SingleNodeRoutingInfo};
-use redis::{Commands, ConnectionLike, FromRedisValue, SetExpiry, SetOptions, Value, ValueType};
+use redis::{Commands, FromRedisValue, SetExpiry, SetOptions, Value, ValueType};
 use std::collections::{HashMap, HashSet};
 use std::time::Duration;
-use std::{thread};
-use std::ops::Index;
+use std::thread;
 use RoutingInfo::SingleNode;
 use SingleNodeRoutingInfo::ByAddress;
 
@@ -628,10 +623,8 @@ pub fn client_list(
 
 /// 监控命令
 pub fn monitor(id: &str, node: &str, seconds: Option<u32>) -> AnyResult<()> {
+    // 思路: 创建一个节点的连接进行命令的监控
     let mut conn = get_conn(id)?;
-    let (route, _) = get_node_route(id, Some(node.into()))?;
-    let mut cmd = redis::cmd("monitor");
-    conn.route_command(&mut cmd, route);
     todo!()
 }
 /// 发送消息
@@ -643,7 +636,7 @@ pub fn publish(id: &str, channel: &str, message: &str) -> AnyResult<()> {
 
 /// 订阅消息
 pub fn subscribe(id: &str, channel: &str, seconds: Option<u32>) -> AnyResult<()> {
-    let mut conn = get_conn(id)?;
+    // 思路: 创建一个节点的连接进行消息的订阅
     todo!()
 }
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
