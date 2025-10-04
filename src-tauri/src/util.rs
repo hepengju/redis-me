@@ -1,13 +1,19 @@
+use std::collections::HashMap;
 use anyhow::bail;
 use chrono::DateTime;
 use rand::distr::{Alphanumeric, SampleString};
 use rand::prelude::IteratorRandom;
 use rand::Rng;
 use redis::Value;
+use crate::model::RedisClientInfo;
 
 // 统一应用返回值
 pub type AnyResult<T> = anyhow::Result<T>;
 pub type ApiResult<T> = Result<T, String>;
+
+// 常量定义
+pub const REDIS_ME_FIELD_TO_DELETE_TMP_VALUE: &str = "__REDIS_ME_FIELD_TO_DELETE_TMP_VALUE__";
+
 
 // tauri的错误处理中需要返回的错误实现序列化, anyhow的错误并没有实现，因此简单返回字符串错误
 pub fn to_api_result<T>(result: anyhow::Result<T>) -> ApiResult<T> {
@@ -28,8 +34,8 @@ pub fn assert_is_true(value: bool, message: String) -> AnyResult<()> {
 }
 
 // vec中随机选择一个
-pub fn random_item<T>(vec: Vec<T>) -> T {
-    vec.into_iter().choose(&mut rand::rng()).unwrap()
+pub fn random_item<T>(vec: &Vec<T>) -> &T {
+    vec.iter().choose(&mut rand::rng()).unwrap()
 }
 
 // 随机N个字符
@@ -96,6 +102,21 @@ pub fn timestamp_to_string(timestamp: i64) -> String {
     datetime.format("%Y-%m-%d %H:%M:%S").to_string()
 }
 
+// 解析客户端信息
+pub fn parse_client_info(client_info: &str) -> AnyResult<RedisClientInfo> {
+    let mut map = HashMap::with_capacity(32);
+
+    for key_eq_val in client_info.split_whitespace().into_iter() {
+        if let Some((key, val)) = key_eq_val.split_once("=") {
+            map.insert(key, val);
+        }
+    }
+
+    let json = serde_json::to_string(&map)?;
+    let client: RedisClientInfo = serde_json::from_str(&json)?;
+    Ok(client)
+}
+
 // Model定义宏（DeepSeek生成）
 #[macro_export]
 macro_rules! api_model {
@@ -118,17 +139,35 @@ macro_rules! api_model {
 }
 
 // Api定义宏
+// #[macro_export]
+// macro_rules! api_command {
+//     ($(#[$attr:meta])* $fn_name:ident($($param:ident: $param_type:ty),*) -> $ret:ty) => {
+//         $(#[$attr])*
+//         #[tauri::command]
+//         pub fn $fn_name($($param: $param_type),*) -> ApiResult<$ret> {
+//             to_api_result(service::$fn_name($($param),*))
+//         }
+//     };
+// }
 #[macro_export]
 macro_rules! api_command {
-    ($(#[$attr:meta])* $fn_name:ident($($param:ident: $param_type:ty),*) -> $ret:ty) => {
-        $(#[$attr])*
+    // 匹配模式：函数名(参数列表) -> 返回值类型
+    (
+        $func:ident(
+            $id_param:ident: $id_type:ty
+            $(,$arg:ident: $arg_type:ty)*
+        ) -> $return_type:ty
+    ) => {
+        // 展开为 Tauri 命令函数
         #[tauri::command]
-        pub fn $fn_name($($param: $param_type),*) -> ApiResult<$ret> {
-            to_api_result(service::$fn_name($($param),*))
+        pub fn $func(
+            $id_param: $id_type,
+            $($arg: $arg_type,)*
+        ) -> ApiResult<$return_type> {
+            to_api_result(get_cache_client($id_param).and_then(|client| client.$func($($arg),*)))
         }
     };
 }
-
 #[cfg(test)]
 mod tests {
     use super::*;

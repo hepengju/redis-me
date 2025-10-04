@@ -3,8 +3,8 @@
 mod api;
 mod util;
 mod model;
-mod service;
 mod conn;
+mod client;
 
 use api::*;
 
