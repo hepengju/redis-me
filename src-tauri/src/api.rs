@@ -1,9 +1,7 @@
-#![cfg_attr(test, allow(warnings))] // 整个文件在测试时禁用该警告
-
 use crate::api_command;
-use crate::model::*;
 use crate::client::get_cache_client;
-use crate::util::{to_api_result, ApiResult};
+use crate::helper::model::*;
+use crate::helper::util::*;
 use std::collections::HashMap;
 
 // 信息: 原始写法，下面用宏简化一下

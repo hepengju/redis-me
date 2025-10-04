@@ -1,11 +1,11 @@
-use std::collections::HashMap;
+use crate::helper::model::RedisClientInfo;
 use anyhow::bail;
 use chrono::DateTime;
 use rand::distr::{Alphanumeric, SampleString};
 use rand::prelude::IteratorRandom;
 use rand::Rng;
 use redis::Value;
-use crate::model::RedisClientInfo;
+use std::collections::HashMap;
 
 // 统一应用返回值
 pub type AnyResult<T> = anyhow::Result<T>;
@@ -117,57 +117,7 @@ pub fn parse_client_info(client_info: &str) -> AnyResult<RedisClientInfo> {
     Ok(client)
 }
 
-// Model定义宏（DeepSeek生成）
-#[macro_export]
-macro_rules! api_model {
-    ($struct:ident {
-        $(
-            $(#[$meta:meta])*  // 匹配字段前的属性
-            $field:ident : $type:ty
-        ),+
-        $(,)?
-    }) => {
-        #[derive(Serialize, Deserialize, Debug, Clone)]
-        #[serde(rename_all = "camelCase")]
-        pub struct $struct {
-            $(
-                $(#[$meta])*    // 展开字段前的属性
-                pub $field: $type
-            ),+
-        }
-    };
-}
 
-// Api定义宏
-// #[macro_export]
-// macro_rules! api_command {
-//     ($(#[$attr:meta])* $fn_name:ident($($param:ident: $param_type:ty),*) -> $ret:ty) => {
-//         $(#[$attr])*
-//         #[tauri::command]
-//         pub fn $fn_name($($param: $param_type),*) -> ApiResult<$ret> {
-//             to_api_result(service::$fn_name($($param),*))
-//         }
-//     };
-// }
-#[macro_export]
-macro_rules! api_command {
-    // 匹配模式：函数名(参数列表) -> 返回值类型
-    (
-        $func:ident(
-            $id_param:ident: $id_type:ty
-            $(,$arg:ident: $arg_type:ty)*
-        ) -> $return_type:ty
-    ) => {
-        // 展开为 Tauri 命令函数
-        #[tauri::command]
-        pub fn $func(
-            $id_param: $id_type,
-            $($arg: $arg_type,)*
-        ) -> ApiResult<$return_type> {
-            to_api_result(get_cache_client($id_param).and_then(|client| client.$func($($arg),*)))
-        }
-    };
-}
 #[cfg(test)]
 mod tests {
     use super::*;

@@ -1,9 +1,9 @@
-use std::collections::HashMap;
-use crate::client::interface::RedisMeClient;
+use crate::client::client::RedisMeClient;
+use crate::helper::model::{RedisClientInfo, RedisCommand, RedisFieldAdd, RedisFieldDel, RedisFieldSet, RedisInfo, RedisKeySize, RedisMemoryParam, RedisNode, RedisSlowLog, RedisValue, ScanParam, ScanResult};
+use crate::helper::util::AnyResult;
 use r2d2::Pool;
 use redis::Client;
-use crate::model::{RedisClientInfo, RedisCommand, RedisFieldAdd, RedisFieldDel, RedisFieldSet, RedisInfo, RedisKeySize, RedisMemoryParam, RedisNode, RedisSlowLog, RedisValue, ScanParam, ScanResult};
-use crate::util::AnyResult;
+use std::collections::HashMap;
 
 pub struct RedisMeSingle {
     id: String,

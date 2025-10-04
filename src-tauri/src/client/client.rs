@@ -1,9 +1,10 @@
+use crate::helper::model::{RedisClientInfo, RedisCommand, RedisFieldAdd, RedisFieldDel, RedisFieldSet, RedisInfo, RedisKeySize, RedisMemoryParam, RedisNode, RedisSlowLog, RedisValue, ScanParam, ScanResult};
+use crate::helper::util::AnyResult;
 use std::collections::HashMap;
-use crate::model::{RedisClientInfo, RedisCommand, RedisFieldAdd, RedisFieldDel, RedisFieldSet, RedisInfo, RedisKeySize, RedisMemoryParam, RedisNode, RedisSlowLog, RedisValue, ScanParam, ScanResult};
-use crate::util::AnyResult;
 
 /// RedisME服务接口
 pub trait RedisMeClient {
+
     fn info(&self, node: Option<String>) -> AnyResult<RedisInfo>;
     
     fn info_list(&self) -> AnyResult<Vec<RedisInfo>>;

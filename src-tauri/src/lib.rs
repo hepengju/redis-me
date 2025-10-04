@@ -1,10 +1,8 @@
 #![cfg_attr(test, allow(warnings))] // 整个文件在测试时禁用该警告
 
 mod api;
-mod util;
-mod model;
-mod conn;
 mod client;
+mod helper;
 
 use api::*;
 
