@@ -20,13 +20,16 @@ pub trait ClientAccess {
 impl ClientAccess for AppHandle {
     fn get_client(&self, id: &str) -> AnyResult<Arc<Box<dyn RedisMeClient>>> {
         let state: State<AppState> = self.state();
-        let clients = state
-            .clients
-            .read()
-            .map_err(|e| anyhow!("Lock error: {e}"))?;
+        {
+            // Read lock在此代码块内，自动释放锁
+            let clients = state
+                .clients
+                .read()
+                .map_err(|e| anyhow!("Lock error: {e}"))?;
 
-        if let Some(client) = clients.get(id) {
-            return Ok(Arc::clone(client));
+            if let Some(client) = clients.get(id) {
+                return Ok(Arc::clone(client));
+            }
         }
 
         self.connect(id)

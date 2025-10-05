@@ -157,13 +157,13 @@ api_model!( RedisClientInfo {
     multi: Option<String>,          // MULTI/EXEC 上下文中的命令数
     watch: Option<String>,          // 此客户端当前正在监视的键数。在 Redis 7.4 中添加
     qbuf: Option<String>,           // 查询缓冲区长度（0 表示没有待处理的查询）
-    qbufFree: Option<String>,       // 查询缓冲区的可用空间（0 表示缓冲区已满）
-    argvMem: Option<String>,        // 下一个命令的不完整参数（已从查询缓冲区中提取）
-    multiMem: Option<String>,       // 缓冲的多命令使用的内存。在 Redis 7.0 中添加
+    qbuf_free: Option<String>,       // 查询缓冲区的可用空间（0 表示缓冲区已满）
+    argv_mem: Option<String>,        // 下一个命令的不完整参数（已从查询缓冲区中提取）
+    multi_mem: Option<String>,       // 缓冲的多命令使用的内存。在 Redis 7.0 中添加
     obl: Option<String>,            // 输出缓冲区长度
     oll: Option<String>,            // 输出列表长度（当缓冲区满时，回复在此列表中排队）
     omem: Option<String>,           // 输出缓冲区内存使用情况
-    totMem: Option<String>,         // 此客户端在其各种缓冲区中消耗的总内存
+    tot_mem: Option<String>,         // 此客户端在其各种缓冲区中消耗的总内存
     events: Option<String>,         // 文件描述符事件（见下文）
     cmd: Option<String>,            // 执行的最后一条命令
     user: Option<String>,           // 客户端的已认证用户名
@@ -171,5 +171,5 @@ api_model!( RedisClientInfo {
     resp: Option<String>,           // 客户端 RESP 协议版本。在 Redis 7.0 中添加
     rbp: Option<String>,            // 客户端连接以来其读取缓冲区的峰值大小。在 Redis 7.0 中添加
     rbs: Option<String>,            // 客户端读取缓冲区当前大小（字节）。在 Redis 7.0 中添加
-    ioThread: Option<String>,       // 分配给客户端的 I/O 线程 ID。在 Redis 8.0 中添加
+    io_thread: Option<String>,       // 分配给客户端的 I/O 线程 ID。在 Redis 8.0 中添加
 });

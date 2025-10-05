@@ -19,6 +19,7 @@ pub fn run() {
         .manage(AppState::default())
         .plugin(tauri_plugin_opener::init())
         .invoke_handler(tauri::generate_handler![greet,
+            connect, disconnect,
             info, info_list, node_list,
             scan, get, ttl, set, del,
             field_add, field_set, field_del,

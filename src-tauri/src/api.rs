@@ -3,13 +3,22 @@ use crate::api_command;
 use crate::utils::model::*;
 use crate::utils::util::*;
 use std::collections::HashMap;
+use log::info;
 use tauri::AppHandle;
 
 // 信息: 原始写法，下面用宏简化一下
-// #[tauri::command]
-// pub fn demo(app_handle: AppHandle, id: &str, node: Option<String>) -> ApiResult<RedisInfo> {
-//     to_api_result(app_handle.get_client(id).and_then(|client| client.info(node)))
-// }
+#[tauri::command]
+pub fn connect(app_handle: AppHandle, id: &str) -> ApiResult<()> {
+    to_api_result(app_handle.connect(id)).and_then(|_| {
+        info!("{} connect success", id);
+        Ok(())
+    })
+}
+
+#[tauri::command]
+pub fn disconnect(app_handle: AppHandle, id: &str) -> ApiResult<()> {
+    to_api_result(app_handle.disconnect(id))
+}
 
 // 信息
 api_command!(info(app_handle: AppHandle, id: &str, node: Option<String>) -> RedisInfo);
