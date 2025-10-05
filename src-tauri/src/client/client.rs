@@ -7,6 +7,7 @@ use std::collections::HashMap;
 
 /// RedisME服务接口
 pub trait RedisMeClient: Send + Sync {
+
     fn info(&self, node: Option<String>) -> AnyResult<RedisInfo>;
 
     fn info_list(&self) -> AnyResult<Vec<RedisInfo>>;

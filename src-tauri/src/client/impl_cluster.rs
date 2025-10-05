@@ -20,6 +20,7 @@ pub struct RedisMeCluster {
     node_list: Vec<RedisNode>,
 }
 
+// 个性化方法
 impl RedisMeCluster {
     pub fn new(id: &str) -> AnyResult<Box<dyn RedisMeClient>> {
         let pool = get_pool_cluster(id)?;
