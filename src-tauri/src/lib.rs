@@ -2,7 +2,7 @@
 
 mod api;
 mod client;
-mod helper;
+mod utils;
 
 use api::*;
 

@@ -1,6 +1,6 @@
 use crate::client::client::RedisMeClient;
 use crate::client::impl_cluster::RedisMeCluster;
-use crate::helper::util::AnyResult;
+use crate::utils::util::AnyResult;
 
 pub mod client;
 pub mod impl_cluster;
@@ -16,7 +16,7 @@ pub fn get_cache_client(id: &str) -> AnyResult<Box<dyn RedisMeClient>> {
 mod tests {
     use super::*;
     use crate::client::client::RedisMeClient;
-    use crate::helper::model::{RedisCommand, RedisFieldAdd, RedisFieldValue, RedisMemoryParam, ScanCursor, ScanParam};
+    use crate::utils::model::{RedisCommand, RedisFieldAdd, RedisFieldValue, RedisMemoryParam, ScanCursor, ScanParam};
     use redis::cluster::{ClusterClient, ClusterPipeline};
     use redis::TlsMode;
 

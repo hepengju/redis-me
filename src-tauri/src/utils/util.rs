@@ -1,4 +1,4 @@
-use crate::helper::model::RedisClientInfo;
+use crate::utils::model::RedisClientInfo;
 use anyhow::bail;
 use chrono::DateTime;
 use rand::distr::{Alphanumeric, SampleString};

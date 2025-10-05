@@ -2,7 +2,7 @@ use r2d2::Pool;
 use redis::cluster::ClusterClient;
 use redis::TlsMode;
 use std::time::Duration;
-use crate::helper::util::AnyResult;
+use crate::utils::util::AnyResult;
 
 // 获取连接
 pub fn get_pool_cluster(id: &str) -> AnyResult<Pool<ClusterClient>> {
