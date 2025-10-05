@@ -21,7 +21,7 @@ pub struct RedisMeCluster {
 }
 
 impl RedisMeCluster {
-    pub(crate) fn new(id: &str) -> AnyResult<Box<dyn RedisMeClient>> {
+    pub fn new(id: &str) -> AnyResult<Box<dyn RedisMeClient>> {
         let pool = get_pool_cluster(id)?;
 
         // 获取一个连接, 初始化节点列表 (同时验证连接可用性)

@@ -5,7 +5,7 @@ mod client;
 mod utils;
 
 use api::*;
-use crate::client::state::AppState;
+use utils::state::AppState;
 
 // Learn more about Tauri commands at https://tauri.app/develop/calling-rust/
 #[tauri::command]
