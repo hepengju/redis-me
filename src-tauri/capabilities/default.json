@@ -8,6 +8,7 @@
   "permissions": [
     "core:default",
     "opener:default",
-    "core:resources:default"
+    "core:resources:default",
+    "log:default"
   ]
 }

@@ -28,7 +28,7 @@ impl RedisMeCluster {
         let mut conn = pool.get()?;
         let cluster_nodes: String = redis::cmd("cluster").arg("nodes").query(&mut conn)?;
         let node_list = Self::parse_node_list(cluster_nodes)?;
-        info!("{id} Redis集群连接初始化成功");
+        info!("Redis集群连接初始化成功: {id}");
 
         Ok(Box::new(RedisMeCluster {
             id: id.into(),

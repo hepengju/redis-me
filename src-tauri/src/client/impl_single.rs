@@ -1,5 +1,8 @@
 use crate::client::client::RedisMeClient;
-use crate::utils::model::{RedisClientInfo, RedisCommand, RedisFieldAdd, RedisFieldDel, RedisFieldSet, RedisInfo, RedisKeySize, RedisMemoryParam, RedisNode, RedisSlowLog, RedisValue, ScanParam, ScanResult};
+use crate::utils::model::{
+    RedisClientInfo, RedisCommand, RedisFieldAdd, RedisFieldDel, RedisFieldSet, RedisInfo,
+    RedisKeySize, RedisMemoryParam, RedisNode, RedisSlowLog, RedisValue, ScanParam, ScanResult,
+};
 use crate::utils::util::AnyResult;
 use r2d2::Pool;
 use redis::Client;
@@ -59,7 +62,11 @@ impl RedisMeClient for RedisMeSingle {
         todo!()
     }
 
-    fn config_get(&self, pattern: &str, node: Option<String>) -> AnyResult<HashMap<String, String>> {
+    fn config_get(
+        &self,
+        pattern: &str,
+        node: Option<String>,
+    ) -> AnyResult<HashMap<String, String>> {
         todo!()
     }
 
@@ -75,7 +82,11 @@ impl RedisMeClient for RedisMeSingle {
         todo!()
     }
 
-    fn client_list(&self, node: Option<String>, client_type: Option<String>) -> AnyResult<Vec<RedisClientInfo>> {
+    fn client_list(
+        &self,
+        node: Option<String>,
+        client_type: Option<String>,
+    ) -> AnyResult<Vec<RedisClientInfo>> {
         todo!()
     }
 

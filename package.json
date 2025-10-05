@@ -12,6 +12,7 @@
   "dependencies": {
     "@element-plus/icons-vue": "^2.3.1",
     "@tauri-apps/api": "^2.6.0",
+    "@tauri-apps/plugin-log": "~2.7.0",
     "@tauri-apps/plugin-opener": "^2.4.0",
     "@vueuse/core": "^12.8.2",
     "@xterm/addon-fit": "^0.10.0",

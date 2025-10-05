@@ -1,10 +1,24 @@
 <script setup>
 import { invoke } from '@tauri-apps/api/core';
+import {mockApiCommands} from "@/utils/api-mock.js";
 
-const command = ref('greet')
+
+const apiCommand = ref({
+  command: 'greet',
+  param: {
+    name: 'RedisME'
+  }
+})
 const param = ref('{"name": "RedisME"}')
+
+function selectChange(item) {
+  param.value = JSON.stringify(item.param, null, 2)
+  apiCommand.value =  item
+}
+
 const result = ref('')
 const hint = ref('')
+const loading = ref(false)
 
 function invokeCommand(){
   let paramJson = {}
@@ -18,12 +32,15 @@ function invokeCommand(){
     }
   }
 
-  invoke(command.value, paramJson)
+  loading.value = true
+  invoke(apiCommand.value.command, paramJson)
       .then(data => {
+        loading.value = false
         hint.value = "命令执行成功"
-        result.value = data
+        result.value = data ? JSON.stringify(data, null, 2) : ''
       })
       .catch(error => {
+        loading.value = false
         hint.value = "命令执行报错"
         result.value = error
       })
@@ -36,10 +53,17 @@ function invokeCommand(){
     <div class="header">
       <el-form>
         <el-form-item label="命令">
-          <el-input v-model="command" placeholder="请输入命令"></el-input>
+          <el-select v-model="apiCommand" value-key="command" @change="selectChange"
+                     filterable allow-create>
+            <el-option key="greet" label="greet" :value="{command: 'greet', param: {name: 'RedisME'}}"></el-option>
+            <el-option v-for="item in mockApiCommands"
+                       :key="item.command"
+                       :label="item.command"
+                       :value="item"/>
+          </el-select>
         </el-form-item>
         <el-form-item label="参数">
-          <el-input type="textarea" v-model="param" placeholder="请输入json格式参数"></el-input>
+          <el-input type="textarea" :rows="10" v-model="param" placeholder="json格式参数"/>
         </el-form-item>
 
         <el-form-item label="提示">
@@ -50,8 +74,8 @@ function invokeCommand(){
         </el-form-item>
       </el-form>
     </div>
-    <div class="body">
-      {{result}}
+    <div class="body" v-loading="loading">
+      <me-code v-model:value="result" read-only/>
     </div>
 
   </div>
@@ -69,8 +93,8 @@ function invokeCommand(){
     flex-grow: 1;
     height: 0;
     border: 2px solid skyblue;
-    padding: 10px;
-    margin-top: 10px;
+    //padding: 10px;
+    //margin-top: 10px;
   }
 }
 </style>

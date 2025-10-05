@@ -6,26 +6,38 @@ mod utils;
 
 use api::*;
 use utils::state::AppState;
-
-// Learn more about Tauri commands at https://tauri.app/develop/calling-rust/
-#[tauri::command]
-fn greet(name: &str) -> String {
-    format!("Hello, {}! You've been greeted from Rust!", name)
-}
+use crate::utils::init::init_logger;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
+        .plugin(init_logger().build())
         .manage(AppState::default())
         .plugin(tauri_plugin_opener::init())
-        .invoke_handler(tauri::generate_handler![greet,
-            connect, disconnect,
-            info, info_list, node_list,
-            scan, get, ttl, set, del,
-            field_add, field_set, field_del,
-            execute_command, slow_log, memory_usage, 
-            config_get, config_set,
-            client_list, monitor, publish, subscribe,
+        .invoke_handler(tauri::generate_handler![
+            greet,
+            connect,
+            disconnect,
+            info,
+            info_list,
+            node_list,
+            scan,
+            get,
+            ttl,
+            set,
+            del,
+            field_add,
+            field_set,
+            field_del,
+            execute_command,
+            slow_log,
+            memory_usage,
+            config_get,
+            config_set,
+            client_list,
+            monitor,
+            publish,
+            subscribe,
             mock_data
         ])
         .run(tauri::generate_context!())
@@ -35,19 +47,19 @@ pub fn run() {
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 #[cfg(test)]
 mod tests {
+    use MultipleNodeRoutingInfo::AllMasters;
+    use ResponsePolicy::AllSucceeded;
+    use redis::ConnectionAddr::TcpTls;
     use redis::cluster::ClusterClient;
     use redis::cluster_routing::RoutingInfo::MultiNode;
     use redis::cluster_routing::{MultipleNodeRoutingInfo, ResponsePolicy};
-    use redis::ConnectionAddr::TcpTls;
     use redis::{
-        cluster, ClientTlsConfig, Commands, ConnectionInfo, RedisConnectionInfo, RedisResult,
-        ScanOptions, TlsCertificates, TlsMode,
+        ClientTlsConfig, Commands, ConnectionInfo, RedisConnectionInfo, RedisResult, ScanOptions,
+        TlsCertificates, TlsMode, cluster,
     };
     use std::fs;
     use std::path::Path;
     use std::time::Duration;
-    use MultipleNodeRoutingInfo::AllMasters;
-    use ResponsePolicy::AllSucceeded;
 
     // 获取连接
     fn get_conn() -> RedisResult<redis::Connection> {

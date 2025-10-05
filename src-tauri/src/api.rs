@@ -1,10 +1,17 @@
-use crate::utils::state::ClientAccess;
 use crate::api_command;
 use crate::utils::model::*;
+use crate::utils::state::ClientAccess;
 use crate::utils::util::*;
-use std::collections::HashMap;
 use log::info;
-use tauri::{command, AppHandle};
+use std::collections::HashMap;
+use tauri::{AppHandle, command};
+
+// 默认演示李明亮
+// Learn more about Tauri commands at https://tauri.app/develop/calling-rust/
+#[command]
+pub fn greet(name: &str) -> String {
+    format!("Hello, {}! You've been greeted from Rust!", name)
+}
 
 // 信息: 原始写法，其余用宏简化一下
 #[command]

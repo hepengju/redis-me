@@ -1,9 +1,9 @@
 use crate::utils::model::RedisClientInfo;
 use anyhow::bail;
 use chrono::DateTime;
+use rand::Rng;
 use rand::distr::{Alphanumeric, SampleString};
 use rand::prelude::IteratorRandom;
-use rand::Rng;
 use redis::Value;
 use std::collections::HashMap;
 
@@ -13,7 +13,6 @@ pub type ApiResult<T> = Result<T, String>;
 
 // 常量定义
 pub const REDIS_ME_FIELD_TO_DELETE_TMP_VALUE: &str = "__REDIS_ME_FIELD_TO_DELETE_TMP_VALUE__";
-
 
 // tauri的错误处理中需要返回的错误实现序列化, anyhow的错误并没有实现，因此简单返回字符串错误
 pub fn to_api_result<T>(result: anyhow::Result<T>) -> ApiResult<T> {
@@ -116,7 +115,6 @@ pub fn parse_client_info(client_info: &str) -> AnyResult<RedisClientInfo> {
     let client: RedisClientInfo = serde_json::from_str(&json)?;
     Ok(client)
 }
-
 
 #[cfg(test)]
 mod tests {

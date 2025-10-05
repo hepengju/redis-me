@@ -1,4 +1,3 @@
-
 pub mod client;
 pub mod impl_cluster;
 pub mod impl_single;
@@ -7,10 +6,12 @@ pub mod impl_single;
 #[cfg(test)]
 mod tests {
     use crate::client::client::RedisMeClient;
-    use crate::utils::model::{RedisCommand, RedisFieldAdd, RedisFieldValue, RedisMemoryParam, ScanCursor, ScanParam};
-    use redis::cluster::{ClusterClient, ClusterPipeline};
-    use redis::TlsMode;
     use crate::client::impl_cluster::RedisMeCluster;
+    use crate::utils::model::{
+        RedisCommand, RedisFieldAdd, RedisFieldValue, RedisMemoryParam, ScanCursor, ScanParam,
+    };
+    use redis::TlsMode;
+    use redis::cluster::{ClusterClient, ClusterPipeline};
 
     fn client() -> Box<dyn RedisMeClient> {
         RedisMeCluster::new("test").unwrap()

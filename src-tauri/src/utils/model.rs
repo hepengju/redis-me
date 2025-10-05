@@ -3,7 +3,7 @@
 use crate::api_model;
 use serde::{Deserialize, Serialize};
 
-api_model!( RedisInfo {
+api_model!(RedisInfo {
     node: String,
     info: String,
 });
@@ -47,7 +47,7 @@ api_model!( RedisKey {
 });
 
 // Redis值
-api_model!( RedisValue {
+api_model!(RedisValue {
     #[serde(rename = "type")]
     key_type: String,
     ttl: i64,
@@ -55,7 +55,7 @@ api_model!( RedisValue {
 });
 
 // Zset条目
-api_model!( RedisZetItem {
+api_model!(RedisZetItem {
     value: String,
     score: f64,
 });
@@ -87,7 +87,7 @@ api_model!( RedisFieldSet {
 });
 
 // 字段值
-api_model!( RedisFieldValue {
+api_model!(RedisFieldValue {
     field_key: String,
     field_value: String,
     field_score: f64,
@@ -109,7 +109,7 @@ api_model!( RedisCommand {
 });
 
 // 慢日志
-api_model!( RedisSlowLog {
+api_model!(RedisSlowLog {
     node: String,
     id: u64,
     time: String,
