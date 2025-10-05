@@ -25,19 +25,15 @@ macro_rules! api_command {
     // 匹配模式：函数名(参数列表) -> 返回值类型
     (
         $func:ident(
-            $app_handle_param:ident: $app_handle_type:ty,
-            $id_param:ident: $id_type:ty
-            $(,$arg:ident: $arg_type:ty)*
+            $($param:ident: $param_type:ty),*
         ) -> $return_type:ty
     ) => {
         // 展开为 Tauri 命令函数
-        #[tauri::command]
+        #[command]
         pub fn $func(
-            $app_handle_param: $app_handle_type,
-            $id_param: $id_type,
-            $($arg: $arg_type,)*
+            app_handle: AppHandle, id: &str, $($param: $param_type),*
         ) -> ApiResult<$return_type> {
-            to_api_result($app_handle_param.get_client($id_param).and_then(|client| client.$func($($arg),*)))
+            to_api_result(app_handle.get_client(id).and_then(|client| client.$func($($param),*)))
         }
     };
 }
