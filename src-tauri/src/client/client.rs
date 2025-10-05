@@ -3,7 +3,7 @@ use crate::utils::util::AnyResult;
 use std::collections::HashMap;
 
 /// RedisME服务接口
-pub trait RedisMeClient {
+pub trait RedisMeClient: Send + Sync {
 
     fn info(&self, node: Option<String>) -> AnyResult<RedisInfo>;
     

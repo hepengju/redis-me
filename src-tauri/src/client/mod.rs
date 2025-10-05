@@ -1,15 +1,10 @@
 use crate::client::client::RedisMeClient;
 use crate::client::impl_cluster::RedisMeCluster;
-use crate::utils::util::AnyResult;
 
 pub mod client;
 pub mod impl_cluster;
 pub mod impl_single;
-
-// 获取缓存实例
-pub fn get_cache_client(id: &str) -> AnyResult<Box<dyn RedisMeClient>> {
-    RedisMeCluster::new(id)
-}
+pub mod state;
 
 // ~~~~~~~~~~~~~~~~~~~~~模块测试~~~~~~~~~~~~~~~~~~~~~
 #[cfg(test)]
@@ -21,7 +16,7 @@ mod tests {
     use redis::TlsMode;
 
     fn client() -> Box<dyn RedisMeClient> {
-        get_cache_client("test").unwrap()
+        RedisMeCluster::new("test").unwrap()
     }
 
     #[test]
