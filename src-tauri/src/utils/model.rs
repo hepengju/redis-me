@@ -1,7 +1,9 @@
 #![cfg_attr(test, allow(warnings))] // 整个文件在测试时禁用该警告
 
+use std::collections::HashMap;
 use crate::api_model;
 use serde::{Deserialize, Serialize};
+use crate::utils::util::vec8_to_string;
 
 api_model!(RedisInfo {
     node: String,
@@ -139,6 +141,17 @@ api_model!( RedisKeySize {
     key_type: String ,  // 类型
     size: u64,        // 大小
 });
+
+impl From<(Vec<u8>, u64, String)> for RedisKeySize {
+    fn from((key, size, key_type): (Vec<u8>, u64, String)) -> Self {
+        RedisKeySize {
+            key: vec8_to_string(key.clone()),
+            bytes: key,
+            size,
+            key_type,
+        }
+    }
+}
 
 // 客户端
 api_model!( RedisClientInfo {

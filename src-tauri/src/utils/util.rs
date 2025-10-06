@@ -1,10 +1,10 @@
-use crate::utils::model::RedisClientInfo;
+use crate::utils::model::{RedisClientInfo, RedisSlowLog};
 use anyhow::bail;
 use chrono::DateTime;
 use rand::Rng;
 use rand::distr::{Alphanumeric, SampleString};
 use rand::prelude::IteratorRandom;
-use redis::Value;
+use redis::{FromRedisValue, Value};
 use std::collections::HashMap;
 
 // 统一应用返回值
@@ -92,6 +92,42 @@ pub fn redis_value_to_string(value: Value, sep: &str) -> String {
         _ => format!("{:?}", value),
     }
 }
+
+// 慢查询结果转换
+pub fn redis_value_to_log(value: Value, node: &str) -> AnyResult<RedisSlowLog> {
+    let items = match value {
+        Value::Array(arr) if arr.len() >= 4 => arr,
+        Value::Array(_) => bail!("慢查询条目至少4个元素"),
+        _ => bail!("应为慢查询条目的数组"),
+    };
+
+    let id: u64 = FromRedisValue::from_redis_value(&items[0])?;
+    let time = timestamp_to_string(FromRedisValue::from_redis_value(&items[1])?);
+    let cost: f64 = FromRedisValue::from_redis_value(&items[2])?;
+    let command: String = redis_value_to_string(items[3].clone(), " ");
+    let client: String = if items.len() > 5 {
+        FromRedisValue::from_redis_value(&items[4])?
+    } else {
+        "".into()
+    };
+
+    let client_name: String = if items.len() > 6 {
+        FromRedisValue::from_redis_value(&items[5])?
+    } else {
+        "".into()
+    };
+
+    Ok (RedisSlowLog {
+        node: node.to_string(),
+        id,
+        time,
+        cost: cost / 1000.0,
+        command,
+        client,
+        client_name,
+    })
+}
+
 
 // 时间戳(秒)转字符串
 pub fn timestamp_to_string(timestamp: i64) -> String {

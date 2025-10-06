@@ -2,6 +2,12 @@
 import { invoke } from '@tauri-apps/api/core';
 import {mockApiCommands} from "@/utils/api-mock.js";
 
+// 测试集群或单机
+let testClient = "single"
+let apiCommands = mockApiCommands.map(c => {
+  c.param.id = testClient
+  return c
+})
 
 const apiCommand = ref({
   command: 'greet',
@@ -56,7 +62,7 @@ function invokeCommand(){
           <el-select v-model="apiCommand" value-key="command" @change="selectChange"
                      filterable allow-create>
             <el-option key="greet" label="greet" :value="{command: 'greet', param: {name: 'RedisME'}}"></el-option>
-            <el-option v-for="item in mockApiCommands"
+            <el-option v-for="item in apiCommands"
                        :key="item.command"
                        :label="item.command"
                        :value="item"/>

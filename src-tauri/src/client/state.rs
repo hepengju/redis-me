@@ -5,6 +5,7 @@ use anyhow::anyhow;
 use std::collections::HashMap;
 use std::sync::{Arc, RwLock};
 use tauri::{AppHandle, Manager, State};
+use crate::client::impl_single::RedisMeSingle;
 
 #[derive(Default)]
 pub struct AppState {
@@ -42,7 +43,11 @@ impl ClientAccess for AppHandle {
             .write()
             .map_err(|e| anyhow!("Lock error: {e}"))?;
 
-        let client = Arc::new(RedisMeCluster::new(id)?);
+        let client = Arc::new(if "cluster" == id {
+            RedisMeCluster::new(id)?
+        } else {
+            RedisMeSingle::new(id)?
+        });
         clients.insert(id.to_string(), Arc::clone(&client));
         Ok(client)
     }

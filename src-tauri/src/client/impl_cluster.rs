@@ -294,37 +294,7 @@ impl RedisMeClient for RedisMeCluster {
             )?;
             let value_list: Vec<Value> = FromRedisValue::from_redis_value(&value_total)?;
             for value in value_list {
-                let items = match value {
-                    Value::Array(arr) if arr.len() >= 4 => arr,
-                    Value::Array(_) => bail!("慢查询条目至少4个元素"),
-                    _ => bail!("应为慢查询条目的数组"),
-                };
-
-                let id: u64 = FromRedisValue::from_redis_value(&items[0])?;
-                let time = timestamp_to_string(FromRedisValue::from_redis_value(&items[1])?);
-                let cost: f64 = FromRedisValue::from_redis_value(&items[2])?;
-                let command: String = redis_value_to_string(items[3].clone(), " ");
-                let client: String = if items.len() > 5 {
-                    FromRedisValue::from_redis_value(&items[4])?
-                } else {
-                    "".into()
-                };
-
-                let client_name: String = if items.len() > 6 {
-                    FromRedisValue::from_redis_value(&items[5])?
-                } else {
-                    "".into()
-                };
-
-                let log = RedisSlowLog {
-                    node: node.clone(),
-                    id,
-                    time,
-                    cost: cost / 1000.0,
-                    command,
-                    client,
-                    client_name,
-                };
+                let log = redis_value_to_log(value, &node)?;
                 logs.push(log);
             }
         }
@@ -401,15 +371,7 @@ impl RedisMeClient for RedisMeCluster {
         }
 
         // 映射为返回值
-        let key_list = keys
-            .into_iter()
-            .map(|(key, size, key_type)| RedisKeySize {
-                key: vec8_to_string(key.clone()),
-                bytes: key,
-                size,
-                key_type,
-            })
-            .collect();
+        let key_list = keys.into_iter().map(RedisKeySize::from).collect();
         Ok(key_list)
     }
 
