@@ -1,6 +1,7 @@
 pub mod client;
 pub mod impl_cluster;
 pub mod impl_single;
+pub mod state;
 
 // ~~~~~~~~~~~~~~~~~~~~~模块测试~~~~~~~~~~~~~~~~~~~~~
 #[cfg(test)]
