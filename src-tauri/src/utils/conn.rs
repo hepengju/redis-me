@@ -59,3 +59,17 @@ pub fn get_pool_cluster(id: &str) -> AnyResult<Pool<ClusterClient>> {
         .build(client)?;
     Ok(pool)
 }
+
+#[cfg(test)]
+mod tests {
+    use redis::Commands;
+    use super::*;
+
+    #[test]
+    fn test_get_pool_single() {
+        let pool = get_pool_single("1").unwrap();
+        let mut conn = pool.get().unwrap();
+        let value: Vec<u8> = vec![100, 200, 255];
+        let _: ()= conn.set("hepengju:bytes", value).unwrap();
+    }
+}

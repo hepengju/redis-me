@@ -1,5 +1,7 @@
 use log::{LevelFilter, Record};
 use std::fmt::Arguments;
+use chrono::Local;
+use chrono::offset::Utc;
 use tauri_plugin_log::{Target, TargetKind};
 use tauri_plugin_log::fern::{
     colors::{Color, ColoredLevelConfig},
@@ -9,24 +11,15 @@ use tauri_plugin_log::fern::{
 // 参考其他Tauri项目的日志配置: https://github.com/invm/noir
 fn format(out: FormatCallback, message: &Arguments, record: &Record) {
     let colors = ColoredLevelConfig::default().info(Color::BrightGreen);
-    let mut target = record.target();
-    if target.starts_with("log@") {
-        target = "frontend"
-    } else {
-        target = target.split("::").last().unwrap_or(target)
-    }
-    let mut target = String::from(target);
+    let ts = Local::now().format("%Y-%m-%d %H:%M:%S%.3f").to_string();
+    let mut target = record.target().to_string();
+    target = target.split("::").last().unwrap_or(target.as_str()).to_string();
     target.truncate(10);
-    let target = format!("{:<10}", target);
-    let ts = chrono::offset::Utc::now()
-        .with_timezone(&chrono_tz::Asia::Shanghai)
-        .format("%Y-%m-%d %H:%M:%S%.3f")
-        .to_string();
     out.finish(format_args!(
-        "[{}] [{}] [{}] - {}",
+        "[{}] [{:5}] [{:10}] - {}",
         ts,
         colors.color(record.level()),
-        target.as_str(),
+        target,
         message
     ))
 }

@@ -6,6 +6,7 @@ use rand::distr::{Alphanumeric, SampleString};
 use rand::prelude::IteratorRandom;
 use redis::{FromRedisValue, Value};
 use std::collections::HashMap;
+use log::error;
 
 // 统一应用返回值
 pub type AnyResult<T> = anyhow::Result<T>;
@@ -18,7 +19,10 @@ pub const REDIS_ME_FIELD_TO_DELETE_TMP_VALUE: &str = "__REDIS_ME_FIELD_TO_DELETE
 pub fn to_api_result<T>(result: anyhow::Result<T>) -> ApiResult<T> {
     match result {
         Ok(value) => Ok(value),
-        Err(err) => Err(err.to_string()),
+        Err(err) => {
+            error!("错误: {}", err.to_string());
+            Err(err.to_string())
+        },
     }
 }
 
