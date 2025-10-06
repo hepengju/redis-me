@@ -1,11 +1,14 @@
 use crate::client::client::RedisMeClient;
+use crate::implement_common_commands;
 use crate::utils::conn::get_pool_single;
 use crate::utils::model::*;
-use crate::utils::util::{vec8_to_string, AnyResult};
+use crate::utils::util::*;
+use anyhow::bail;
 use log::info;
-use r2d2::{Pool};
-use redis::{Client, Commands, FromRedisValue};
+use r2d2::Pool;
+use redis::{Client, Commands, FromRedisValue, Pipeline, SetExpiry, SetOptions, Value, ValueType};
 use std::collections::HashMap;
+use std::collections::HashSet;
 
 pub struct RedisMeSingle {
     id: String,
@@ -99,34 +102,6 @@ impl RedisMeClient for RedisMeSingle {
         })
     }
 
-    fn get(&self, key: Vec<u8>, hash_key: Option<String>) -> AnyResult<RedisValue> {
-        todo!()
-    }
-
-    fn ttl(&self, key: Vec<u8>, ttl: i64) -> AnyResult<()> {
-        todo!()
-    }
-
-    fn set(&self, key: Vec<u8>, value: String, ttl: i64) -> AnyResult<()> {
-        todo!()
-    }
-
-    fn del(&self, key: Vec<u8>) -> AnyResult<()> {
-        todo!()
-    }
-
-    fn field_add(&self, param: RedisFieldAdd) -> AnyResult<()> {
-        todo!()
-    }
-
-    fn field_set(&self, param: RedisFieldSet) -> AnyResult<()> {
-        todo!()
-    }
-
-    fn field_del(&self, param: RedisFieldDel) -> AnyResult<()> {
-        todo!()
-    }
-
     fn execute_command(&self, param: RedisCommand) -> AnyResult<String> {
         todo!()
     }
@@ -163,15 +138,9 @@ impl RedisMeClient for RedisMeSingle {
         todo!()
     }
 
-    fn publish(&self, channel: &str, message: &str) -> AnyResult<()> {
-        todo!()
-    }
-
     fn subscribe(&self, channel: &str, seconds: Option<u32>) -> AnyResult<()> {
         todo!()
     }
 
-    fn mock_data(&self, count: u64) -> AnyResult<()> {
-        todo!()
-    }
+    implement_common_commands!(Pipeline);
 }
