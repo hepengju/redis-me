@@ -4466,7 +4466,10 @@ export const mockApiCommands = [
     command: 'get',
     param: {
       id: 'test',
-      key: 'hepengju:string',
+      key: {
+        key: 'hepengju:string',
+        bytes: []
+      },
       hash_key: null
     }
   },
@@ -4474,7 +4477,10 @@ export const mockApiCommands = [
     command: 'ttl',
     param: {
       id: 'test',
-      key: 'hepengju:string1',
+      key: {
+        key: 'hepengju:string',
+        bytes: []
+      },
       ttl: 10000
     }
   },
@@ -4482,7 +4488,10 @@ export const mockApiCommands = [
     command: 'set',
     param: {
       id: 'test',
-      key: 'hepengju:string1',
+      key: {
+        key: 'hepengju:string1',
+        bytes: []
+      },
       value: 'hepengju:string1value1',
       ttl: 10000
     }
@@ -4491,7 +4500,10 @@ export const mockApiCommands = [
     command: 'del',
     param: {
       id: 'test',
-      key: 'hepengju:string1',
+      key: {
+        key: 'hepengju:string1',
+        bytes: []
+      },
     }
   },
   {
@@ -4499,7 +4511,10 @@ export const mockApiCommands = [
     param: {
       id: 'test',
       param: {
-        key: 'hepengju:key',
+        key: {
+          key: 'hepengju:key',
+          bytes: []
+        },
         bytes: [],
         mode: 'key',
         type: 'hash',
@@ -4526,7 +4541,10 @@ export const mockApiCommands = [
     param: {
       id: 'test',
       param: {
-        bytes: 'hepengju:key',
+        key: {
+          key: 'hepengju:key',
+          bytes: []
+        },
         srcFieldKey: 'k01',
         srcFieldValue: 'v01',
 
@@ -4542,7 +4560,10 @@ export const mockApiCommands = [
     param: {
       id: 'test',
       param: {
-        bytes: 'hepengju:key',
+        key: {
+          key: 'hepengju:key',
+          bytes: []
+        },
         fieldIndex: 0,
         fieldKey: 'k011',
         fieldValue: 'v011',
@@ -4569,7 +4590,7 @@ export const mockApiCommands = [
     }
   },
   {
-    command: 'config_save',
+    command: 'config_set',
     param: {
       id: 'test',
       key: 'save',

@@ -12,13 +12,13 @@ pub trait RedisMeClient: Send + Sync {
 
     fn scan(&self, param: ScanParam) -> AnyResult<ScanResult>;
 
-    fn get(&self, key: Vec<u8>, hash_key: Option<String>) -> AnyResult<RedisValue>;
+    fn get(&self, key: RedisKey, hash_key: Option<String>) -> AnyResult<RedisValue>;
 
-    fn ttl(&self, key: Vec<u8>, ttl: i64) -> AnyResult<()>;
+    fn ttl(&self, key: RedisKey, ttl: i64) -> AnyResult<()>;
 
-    fn set(&self, key: Vec<u8>, value: String, ttl: i64) -> AnyResult<()>;
+    fn set(&self, key: RedisKey, value: String, ttl: i64) -> AnyResult<()>;
 
-    fn del(&self, key: Vec<u8>) -> AnyResult<()>;
+    fn del(&self, key: RedisKey) -> AnyResult<()>;
 
     fn field_add(&self, param: RedisFieldAdd) -> AnyResult<()>;
 
@@ -57,7 +57,7 @@ pub trait RedisMeClient: Send + Sync {
 macro_rules! implement_common_commands {
     ($struct_name:ident) => {
 
-fn get(&self, key: Vec<u8>, hash_key: Option<String>) -> AnyResult<RedisValue> {
+fn get(&self, key: RedisKey, hash_key: Option<String>) -> AnyResult<RedisValue> {
         let mut conn = self.pool.get()?;
         let ttl: i64 = conn.ttl(&key)?;
         let key_type: ValueType = conn.key_type(&key)?;
@@ -65,7 +65,7 @@ fn get(&self, key: Vec<u8>, hash_key: Option<String>) -> AnyResult<RedisValue> {
         let value: serde_json::Value = match key_type {
             ValueType::Unknown(other) => {
                 if "none" == other {
-                    bail!("键不存在: {}", vec8_to_display_string(&key))
+                    bail!("键不存在: {}", vec8_to_display_string(key.to_bytes()))
                 } else {
                     bail!("未知类型: {other}")
                 }
@@ -110,7 +110,7 @@ fn get(&self, key: Vec<u8>, hash_key: Option<String>) -> AnyResult<RedisValue> {
         })
     }
 
-fn ttl(&self, key: Vec<u8>, ttl: i64) -> AnyResult<()> {
+fn ttl(&self, key: RedisKey, ttl: i64) -> AnyResult<()> {
     let mut conn = self.pool.get()?;
     if ttl < 0 {
         // 移除 key 上已有的过期时间，将键从易失（设置了过期时间的键）变为变为持久
@@ -128,7 +128,7 @@ fn ttl(&self, key: Vec<u8>, ttl: i64) -> AnyResult<()> {
     Ok(())
 }
 
-fn set(&self, key: Vec<u8>, value: String, ttl: i64) -> AnyResult<()> {
+fn set(&self, key: RedisKey, value: String, ttl: i64) -> AnyResult<()> {
     let mut conn = self.pool.get()?;
     if ttl < 0 {
         let _: () = conn.set(&key, value)?;
@@ -139,7 +139,7 @@ fn set(&self, key: Vec<u8>, value: String, ttl: i64) -> AnyResult<()> {
     Ok(())
 }
 
-fn del(&self, key: Vec<u8>) -> AnyResult<()> {
+fn del(&self, key: RedisKey) -> AnyResult<()> {
     let mut conn = self.pool.get()?;
     let _: () = conn.del(&key)?;
     Ok(())
@@ -148,8 +148,8 @@ fn del(&self, key: Vec<u8>) -> AnyResult<()> {
 fn field_add(&self, param: RedisFieldAdd) -> AnyResult<()> {
     let mut conn = self.pool.get()?;
 
+    let key: RedisKey = param.key;
     let mode = param.mode;
-    let mut key: Vec<u8> = param.key.into();
     let mut key_type = ValueType::from(param.key_type);
 
     if "key" == mode {
@@ -157,11 +157,10 @@ fn field_add(&self, param: RedisFieldAdd) -> AnyResult<()> {
         let exists: bool = conn.exists(&key)?;
         assert_is_true(
             !exists,
-            format!("键已存在: {}", vec8_to_display_string(&key)),
+            format!("键已存在: {}", vec8_to_display_string(key.to_bytes())),
         )?
     } else if "field" == mode {
         // 新增字段
-        key = param.bytes.into();
         key_type = conn.key_type(&key)?
     } else {
         bail!("模式: {} 暂不支持", mode)
@@ -196,7 +195,7 @@ fn field_add(&self, param: RedisFieldAdd) -> AnyResult<()> {
         ValueType::Stream => bail!("stream类型暂不支持新增字段值"),
         ValueType::Unknown(other) => {
             if "none" == other {
-                bail!("键不存在: {}", vec8_to_display_string(&key))
+                bail!("键不存在: {}", vec8_to_display_string(key.to_bytes()))
             } else {
                 bail!("未知类型: {other}")
             }
@@ -214,7 +213,7 @@ fn field_add(&self, param: RedisFieldAdd) -> AnyResult<()> {
 fn field_set(&self, param: RedisFieldSet) -> AnyResult<()> {
     let mut conn = self.pool.get()?;
 
-    let key: Vec<u8> = param.bytes;
+    let key: RedisKey = param.key;
     let key_type: ValueType = conn.key_type(&key)?;
 
     match key_type {
@@ -236,7 +235,7 @@ fn field_set(&self, param: RedisFieldSet) -> AnyResult<()> {
         ValueType::Stream => bail!("stream类型暂不支持设置字段值"),
         ValueType::Unknown(other) => {
             if "none" == other {
-                bail!("键不存在: {}", vec8_to_display_string(&key))
+                bail!("键不存在: {}", vec8_to_display_string(key.to_bytes()))
             } else {
                 bail!("未知类型: {other}")
             }
@@ -247,7 +246,7 @@ fn field_set(&self, param: RedisFieldSet) -> AnyResult<()> {
 
 fn field_del(&self, param: RedisFieldDel) -> AnyResult<()> {
     let mut conn = self.pool.get()?;
-    let key: Vec<u8> = param.bytes;
+    let key: RedisKey = param.key;
     let key_type: ValueType = conn.key_type(&key)?;
 
     match key_type {
@@ -269,7 +268,7 @@ fn field_del(&self, param: RedisFieldDel) -> AnyResult<()> {
         ValueType::Stream => bail!("stream类型暂不支持删除字段值"),
         ValueType::Unknown(other) => {
             if "none" == other {
-                bail!("键不存在: {}", vec8_to_display_string(&key))
+                bail!("键不存在: {}", vec8_to_display_string(key.to_bytes()))
             } else {
                 bail!("未知类型: {other}")
             }

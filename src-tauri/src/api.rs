@@ -40,16 +40,16 @@ api_command!(node_list() -> Vec<RedisNode>);
 api_command!(scan(param: ScanParam) -> ScanResult);
 
 // 获取值
-api_command!(get(key: Vec<u8>, hash_key: Option<String>) -> RedisValue);
+api_command!(get(key: RedisKey, hash_key: Option<String>) -> RedisValue);
 
 // 设置TTL
-api_command!(ttl(key: Vec<u8>, ttl: i64) -> ());
+api_command!(ttl(key: RedisKey, ttl: i64) -> ());
 
 // 设置值
-api_command!(set(key: Vec<u8>, value: String, ttl: i64) -> ());
+api_command!(set(key: RedisKey, value: String, ttl: i64) -> ());
 
 // 删除键
-api_command!(del(key: Vec<u8>) -> ());
+api_command!(del(key: RedisKey) -> ());
 
 // 新增字段
 api_command!(field_add(param: RedisFieldAdd) -> ());

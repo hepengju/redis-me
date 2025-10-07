@@ -1,9 +1,11 @@
 #![cfg_attr(test, allow(warnings))] // 整个文件在测试时禁用该警告
 
-use std::collections::HashMap;
 use crate::api_model;
-use serde::{Deserialize, Serialize};
 use crate::utils::util::vec8_to_display_string;
+use redis::{RedisWrite, ToRedisArgs};
+use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
+use std::io::Read;
 
 api_model!(RedisInfo {
     node: String,
@@ -48,6 +50,35 @@ api_model!( RedisKey {
     bytes: Vec<u8>, // 修改、删除等依据
 });
 
+impl RedisKey {
+    pub fn to_bytes(&self) -> &[u8] {
+        // 扫描出来的键进行修改或删除时, 传入bytes. 完全新增的键，传入字符串, bytes为空
+        if self.bytes.is_empty() {
+            self.key.as_bytes()
+        } else {
+            &self.bytes
+        }
+    }
+}
+
+impl From<&str> for RedisKey {
+    fn from(s: &str) -> Self {
+        RedisKey {
+            key: s.to_string(),
+            bytes: Vec::new(),
+        }
+    }
+}
+
+impl ToRedisArgs for RedisKey {
+    fn write_redis_args<W>(&self, out: &mut W)
+    where
+        W: ?Sized + RedisWrite,
+    {
+        out.write_arg(self.to_bytes())
+    }
+}
+
 // Redis值
 api_model!(RedisValue {
     #[serde(rename = "type")]
@@ -64,8 +95,7 @@ api_model!(RedisZetItem {
 
 // 字段新增
 api_model!( RedisFieldAdd {
-    key: String,     // 新增键时输入key
-    bytes: Vec<u8>,  // 键已经存在时，新增字段时输入旧键的bytes
+    key: RedisKey,
     mode: String,    // key-新增键, field-新增字段
 
     #[serde(rename = "type")]
@@ -79,7 +109,7 @@ api_model!( RedisFieldAdd {
 
 // 字段修改
 api_model!( RedisFieldSet {
-    bytes: Vec<u8>,
+    key: RedisKey,
     src_field_key: String,
     src_field_value: String,
     field_index: isize,
@@ -97,7 +127,7 @@ api_model!(RedisFieldValue {
 
 // 字段删除
 api_model!( RedisFieldDel {
-    bytes: Vec<u8>,
+    key: RedisKey,
     field_index: isize,
     field_key: String,
     field_value: String,

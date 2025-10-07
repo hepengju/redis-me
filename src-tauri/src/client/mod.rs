@@ -8,9 +8,7 @@ pub mod state;
 mod tests {
     use crate::client::client::RedisMeClient;
     use crate::client::impl_cluster::RedisMeCluster;
-    use crate::utils::model::{
-        RedisCommand, RedisFieldAdd, RedisFieldValue, RedisMemoryParam, ScanCursor, ScanParam,
-    };
+    use crate::utils::model::{RedisCommand, RedisFieldAdd, RedisFieldValue, RedisKey, RedisMemoryParam, ScanCursor, ScanParam};
     use redis::TlsMode;
     use redis::cluster::{ClusterClient, ClusterPipeline};
 
@@ -88,7 +86,6 @@ mod tests {
         client()
             .field_add(RedisFieldAdd {
                 key: "redis_me:string".into(),
-                bytes: vec![],
                 mode: "key".into(),
                 key_type: "string".into(),
                 ttl: -1,
@@ -100,8 +97,7 @@ mod tests {
 
         client()
             .field_add(RedisFieldAdd {
-                key: "".into(),
-                bytes: "redis_me:hash".into(),
+                key: "redis_me:hash".into(),
                 mode: "field".into(),
                 key_type: "hash".into(),
                 ttl: -1,

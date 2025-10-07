@@ -11,7 +11,6 @@ use std::collections::HashMap;
 use std::collections::HashSet;
 use std::thread;
 use std::time::Duration;
-use redis::cluster::ClusterPipeline;
 
 pub struct RedisMeSingle {
     id: String,
