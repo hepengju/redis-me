@@ -8,7 +8,10 @@ pub mod state;
 mod tests {
     use crate::client::client::RedisMeClient;
     use crate::client::impl_cluster::RedisMeCluster;
-    use crate::utils::model::{RedisCommand, RedisFieldAdd, RedisFieldValue, RedisKey, RedisMemoryParam, ScanCursor, ScanParam};
+    use crate::utils::model::{
+        RedisCommand, RedisFieldAdd, RedisFieldValue, RedisKey, RedisMemoryParam, ScanCursor,
+        ScanParam,
+    };
     use redis::TlsMode;
     use redis::cluster::{ClusterClient, ClusterPipeline};
 

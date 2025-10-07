@@ -1,12 +1,12 @@
 use crate::utils::model::{RedisClientInfo, RedisSlowLog};
 use anyhow::bail;
 use chrono::DateTime;
-use rand::Rng;
+use log::error;
 use rand::distr::{Alphanumeric, SampleString};
 use rand::prelude::IteratorRandom;
+use rand::Rng;
 use redis::{FromRedisValue, Value};
 use std::collections::HashMap;
-use log::error;
 
 // 统一应用返回值
 pub type AnyResult<T> = anyhow::Result<T>;
@@ -22,7 +22,7 @@ pub fn to_api_result<T>(result: anyhow::Result<T>) -> ApiResult<T> {
         Err(err) => {
             error!("错误: {}", err.to_string());
             Err(err.to_string())
-        },
+        }
     }
 }
 
@@ -67,6 +67,11 @@ pub fn vec8_to_display_string(bytes: &[u8]) -> String {
     }
     result
 }
+
+// 字节数组转Base64字符串: RedisKey 的 bytes
+// pub fn vec8_to_base64_string(bytes: &[u8]) -> String {
+//     BASE64_STANDARD.encode(bytes)
+// }
 
 // 断言
 pub fn assert_is_true(value: bool, message: String) -> AnyResult<()> {
@@ -158,7 +163,7 @@ pub fn redis_value_to_log(value: Value, node: &str) -> AnyResult<RedisSlowLog> {
         "".into()
     };
 
-    Ok (RedisSlowLog {
+    Ok(RedisSlowLog {
         node: node.to_string(),
         id,
         time,
@@ -168,7 +173,6 @@ pub fn redis_value_to_log(value: Value, node: &str) -> AnyResult<RedisSlowLog> {
         client_name,
     })
 }
-
 
 // 时间戳(秒)转字符串
 pub fn timestamp_to_string(timestamp: i64) -> String {
@@ -196,6 +200,25 @@ pub fn parse_client_info(client_info: &str) -> AnyResult<RedisClientInfo> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::utils::model::RedisKey;
+    use base64::prelude::BASE64_STANDARD;
+    use base64::Engine;
+
+    #[test]
+    fn test_serde() -> AnyResult<()> {
+        let key = RedisKey {
+            key: "hepengju".to_string(),
+            bytes: "hepengju".into(),
+        };
+
+        let json = serde_json::to_string(&key)?;
+        println!("json: {}", json);
+        // json: {"key":"hepengju","bytes":[104,101,112,101,110,103,106,117]}
+        let base64 = BASE64_STANDARD.encode(b"hepengju");
+        println!("base64: {}", base64);
+        // base64: aGVwZW5nanU=
+        Ok(())
+    }
 
     #[test]
     fn test_parse_command() -> () {

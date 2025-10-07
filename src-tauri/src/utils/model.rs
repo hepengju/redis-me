@@ -4,8 +4,6 @@ use crate::api_model;
 use crate::utils::util::vec8_to_display_string;
 use redis::{RedisWrite, ToRedisArgs};
 use serde::{Deserialize, Serialize};
-use std::collections::HashMap;
-use std::io::Read;
 
 api_model!(RedisInfo {
     node: String,
@@ -45,9 +43,12 @@ api_model!( ScanResult {
 });
 
 // Redis键: 由于键是字节存储的，考虑转换为utf-8字符串显示后可能会丢失信息，因此封装为对象
+// 备注: fastjson针对bytes序列化示例: "bytes":[104,101,112,101,110,103,106,117],
+//      与serde序列化Vec<u8>是一致的. 为了方便处理, 不考虑base64编码了.
+//      jackson针对bytes序列化, 默认会进行base64编码, 返回是字符串
 api_model!( RedisKey {
     key: String,    // 显示
-    bytes: Vec<u8>, // 修改、删除等依据
+    bytes: Vec<u8>, // 修改、删除等依据 ==>
 });
 
 impl RedisKey {
@@ -108,7 +109,7 @@ api_model!( RedisFieldAdd {
 });
 
 // 字段修改
-api_model!( RedisFieldSet {
+api_model!(RedisFieldSet {
     key: RedisKey,
     src_field_key: String,
     src_field_value: String,
@@ -126,7 +127,7 @@ api_model!(RedisFieldValue {
 });
 
 // 字段删除
-api_model!( RedisFieldDel {
+api_model!(RedisFieldDel {
     key: RedisKey,
     field_index: isize,
     field_key: String,

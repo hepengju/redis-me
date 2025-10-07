@@ -412,7 +412,6 @@ impl RedisMeClient for RedisMeCluster {
         todo!()
     }
 
-
     fn subscribe(&self, channel: &str, seconds: Option<u32>) -> AnyResult<()> {
         todo!()
     }

@@ -121,20 +121,30 @@ impl RedisMeClient for RedisMeSingle {
         _node: Option<String>,
     ) -> AnyResult<HashMap<String, String>> {
         let mut conn = self.pool.get()?;
-        let result: HashMap<String, String> = redis::cmd("config").arg("get").arg(pattern).query(&mut conn)?;
+        let result: HashMap<String, String> = redis::cmd("config")
+            .arg("get")
+            .arg(pattern)
+            .query(&mut conn)?;
         Ok(result)
     }
 
     fn config_set(&self, key: &str, value: &str, _node: Option<String>) -> AnyResult<()> {
         let mut conn = self.pool.get()?;
-        let _: () = redis::cmd("config").arg("set").arg(key).arg(value).query(&mut conn)?;
+        let _: () = redis::cmd("config")
+            .arg("set")
+            .arg(key)
+            .arg(value)
+            .query(&mut conn)?;
         Ok(())
     }
 
     fn slow_log(&self, count: Option<u64>, _node: Option<String>) -> AnyResult<Vec<RedisSlowLog>> {
         let mut conn = self.pool.get()?;
         let mut logs = vec![];
-        let value_list: Vec<Value> = redis::cmd("slowlog").arg("get").arg(count.unwrap_or(128)).query(&mut conn)?;
+        let value_list: Vec<Value> = redis::cmd("slowlog")
+            .arg("get")
+            .arg(count.unwrap_or(128))
+            .query(&mut conn)?;
         for value in value_list {
             let log = redis_value_to_log(value, "")?;
             logs.push(log);

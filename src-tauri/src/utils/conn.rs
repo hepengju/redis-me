@@ -1,7 +1,7 @@
 use crate::utils::util::AnyResult;
 use r2d2::Pool;
-use redis::{ConnectionAddr, ConnectionInfo, RedisConnectionInfo, TlsMode};
 use redis::cluster::ClusterClient;
+use redis::{ConnectionAddr, ConnectionInfo, RedisConnectionInfo, TlsMode};
 use std::time::Duration;
 
 // 获取连接池(单机)
@@ -15,7 +15,7 @@ pub fn get_pool_single(id: &str) -> AnyResult<Pool<redis::Client>> {
         host = "192.168.1.11";
         password = "Jiyu1212";
     }
-    
+
     let conn_info = ConnectionInfo {
         addr: ConnectionAddr::Tcp(host.to_string(), 6379),
         redis: RedisConnectionInfo {
@@ -62,14 +62,14 @@ pub fn get_pool_cluster(id: &str) -> AnyResult<Pool<ClusterClient>> {
 
 #[cfg(test)]
 mod tests {
-    use redis::Commands;
     use super::*;
+    use redis::Commands;
 
     #[test]
     fn test_get_pool_single() {
         let pool = get_pool_single("1").unwrap();
         let mut conn = pool.get().unwrap();
         let value: Vec<u8> = vec![100, 200, 255];
-        let _: ()= conn.set("hepengju:bytes", value).unwrap();
+        let _: () = conn.set("hepengju:bytes", value).unwrap();
     }
 }

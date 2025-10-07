@@ -1,6 +1,6 @@
 use crate::api_command;
-use crate::utils::model::*;
 use crate::client::state::ClientAccess;
+use crate::utils::model::*;
 use crate::utils::util::*;
 use log::info;
 use std::collections::HashMap;

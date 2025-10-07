@@ -4,9 +4,9 @@ mod api;
 mod client;
 mod utils;
 
+use crate::utils::init::init_logger;
 use api::*;
 use client::state::AppState;
-use crate::utils::init::init_logger;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
