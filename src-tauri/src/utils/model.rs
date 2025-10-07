@@ -3,7 +3,7 @@
 use std::collections::HashMap;
 use crate::api_model;
 use serde::{Deserialize, Serialize};
-use crate::utils::util::vec8_to_string;
+use crate::utils::util::vec8_to_display_string;
 
 api_model!(RedisInfo {
     node: String,
@@ -145,7 +145,7 @@ api_model!( RedisKeySize {
 impl From<(Vec<u8>, u64, String)> for RedisKeySize {
     fn from((key, size, key_type): (Vec<u8>, u64, String)) -> Self {
         RedisKeySize {
-            key: vec8_to_string(key.clone()),
+            key: vec8_to_display_string(&key),
             bytes: key,
             size,
             key_type,

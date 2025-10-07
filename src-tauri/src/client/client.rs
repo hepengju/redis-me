@@ -65,13 +65,14 @@ fn get(&self, key: Vec<u8>, hash_key: Option<String>) -> AnyResult<RedisValue> {
         let value: serde_json::Value = match key_type {
             ValueType::Unknown(other) => {
                 if "none" == other {
-                    bail!("键不存在: {}", vec8_to_string(key))
+                    bail!("键不存在: {}", vec8_to_display_string(&key))
                 } else {
                     bail!("未知类型: {other}")
                 }
             }
             ValueType::String => {
-                let value: String = conn.get(&key)?;
+                let value: Vec<u8> = conn.get(&key)?;
+                let value: String = vec8_to_display_string(&value);
                 serde_json::to_value(value)
             }
             ValueType::List => {
@@ -156,7 +157,7 @@ fn field_add(&self, param: RedisFieldAdd) -> AnyResult<()> {
         let exists: bool = conn.exists(&key)?;
         assert_is_true(
             !exists,
-            format!("键已存在: {}", vec8_to_string(key.clone())),
+            format!("键已存在: {}", vec8_to_display_string(&key)),
         )?
     } else if "field" == mode {
         // 新增字段
@@ -195,7 +196,7 @@ fn field_add(&self, param: RedisFieldAdd) -> AnyResult<()> {
         ValueType::Stream => bail!("stream类型暂不支持新增字段值"),
         ValueType::Unknown(other) => {
             if "none" == other {
-                bail!("键不存在: {}", vec8_to_string(key))
+                bail!("键不存在: {}", vec8_to_display_string(&key))
             } else {
                 bail!("未知类型: {other}")
             }
@@ -235,7 +236,7 @@ fn field_set(&self, param: RedisFieldSet) -> AnyResult<()> {
         ValueType::Stream => bail!("stream类型暂不支持设置字段值"),
         ValueType::Unknown(other) => {
             if "none" == other {
-                bail!("键不存在: {}", vec8_to_string(key))
+                bail!("键不存在: {}", vec8_to_display_string(&key))
             } else {
                 bail!("未知类型: {other}")
             }
@@ -268,7 +269,7 @@ fn field_del(&self, param: RedisFieldDel) -> AnyResult<()> {
         ValueType::Stream => bail!("stream类型暂不支持删除字段值"),
         ValueType::Unknown(other) => {
             if "none" == other {
-                bail!("键不存在: {}", vec8_to_string(key))
+                bail!("键不存在: {}", vec8_to_display_string(&key))
             } else {
                 bail!("未知类型: {other}")
             }

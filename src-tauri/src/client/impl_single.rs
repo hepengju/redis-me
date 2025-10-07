@@ -94,7 +94,7 @@ impl RedisMeClient for RedisMeSingle {
         let key_list = keys
             .into_iter()
             .map(|key| RedisKey {
-                key: vec8_to_string(key.clone()),
+                key: vec8_to_display_string(&key),
                 bytes: key,
             })
             .collect();
