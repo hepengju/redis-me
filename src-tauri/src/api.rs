@@ -85,7 +85,7 @@ api_command!(monitor(node: &str, seconds: Option<u32>) -> ());
 api_command!(publish(channel: &str, message: &str) -> ());
 
 // 订阅消息
-api_command!(subscribe(channel: &str, seconds: Option<u32>) -> ());
+api_command!(subscribe(channel: Option<String>, seconds: Option<u32>) -> ());
 
 // 模拟数据
 api_command!(mock_data(count: u64) -> ());

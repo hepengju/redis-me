@@ -408,11 +408,11 @@ impl RedisMeClient for RedisMeCluster {
         Ok(clients)
     }
 
-    fn monitor(&self, node: &str, seconds: Option<u32>) -> AnyResult<()> {
+    fn monitor(&mut self, node: &str, seconds: Option<i64>) -> AnyResult<()> {
         todo!()
     }
 
-    fn subscribe(&self, channel: &str, seconds: Option<u32>) -> AnyResult<()> {
+    fn subscribe(&mut self, channel: Option<String>, seconds: Option<i64>) -> AnyResult<()> {
         todo!()
     }
 

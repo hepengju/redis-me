@@ -10,11 +10,16 @@ use redis::{Client, Commands, FromRedisValue, Pipeline, SetExpiry, SetOptions, V
 use std::collections::HashMap;
 use std::collections::HashSet;
 use std::thread;
-use std::time::Duration;
+use std::thread::{spawn, JoinHandle};
+use std::time::{Duration, Instant};
+use chrono::Local;
 
 pub struct RedisMeSingle {
     id: String,
     pool: Pool<Client>,
+
+    subscribe_thread: Option<ThreadRecord>,
+    monitor_thread: Option<ThreadRecord>,
 }
 
 // 个性化方法
@@ -27,6 +32,8 @@ impl RedisMeSingle {
         Ok(Box::new(RedisMeSingle {
             id: id.to_string(),
             pool,
+            subscribe_thread: None,
+            monitor_thread: None
         }))
     }
 }
@@ -74,9 +81,7 @@ impl RedisMeClient for RedisMeSingle {
                 cmd.arg("type").arg(scan_type);
             }
 
-            let value = cmd.query(&mut conn)?;
-            let (next_cursor, new_keys): (u64, Vec<Vec<u8>>) =
-                FromRedisValue::from_redis_value(&value)?;
+            let (next_cursor, new_keys): (u64, Vec<Vec<u8>>) = cmd.query(&mut conn)?;
             keys.extend(new_keys);
 
             cc.now_cursor = next_cursor;
@@ -238,12 +243,54 @@ impl RedisMeClient for RedisMeSingle {
         Ok(clients)
     }
 
-    fn monitor(&self, node: &str, seconds: Option<u32>) -> AnyResult<()> {
+    fn monitor(&mut self, node: &str, seconds: Option<i64>) -> AnyResult<()> {
+
         todo!()
     }
 
-    fn subscribe(&self, channel: &str, seconds: Option<u32>) -> AnyResult<()> {
-        todo!()
+    fn subscribe(&mut self, channel: Option<String>, seconds: Option<i64>) -> AnyResult<()> {
+        let conn = self.pool.get()?;
+        let mut pubsub = conn.as_pubsub();
+
+        let channel = channel.unwrap_or("*".into());
+        pubsub.psubscribe(&channel)?;
+
+        self.subscribe_thread = Some(ThreadRecord {
+            start: Local::now().timestamp(),
+            seconds,
+            running: true
+        });
+
+        let _: JoinHandle<AnyResult<()>> = spawn(move || {
+            info!("订阅频道开始: {}", &channel);
+
+            loop {
+                let msg = pubsub.get_message()?;
+                let payload: String = msg.get_payload()?;
+                info!("channel '{}': {}", msg.get_channel_name(), payload);
+
+                if let Some(t) = &mut self.subscribe_thread {
+
+
+                    if t.running == false {
+                        self.subscribe_thread = None;
+                        info!("订阅频道结束: {}", &channel);
+                        break;
+                    }
+
+                    if let Some(seconds) = t.seconds {
+                        let now = Local::now().timestamp();
+                        if (now - t.start) > seconds {
+                            self.subscribe_thread = None;
+                            info!("订阅频道超时: {}", &channel);
+                            break;
+                        }
+                    }
+                }
+            }
+            Ok(())
+        });
+        Ok(())
     }
 
     implement_common_commands!(Pipeline);

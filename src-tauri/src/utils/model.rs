@@ -1,5 +1,7 @@
 #![cfg_attr(test, allow(warnings))] // 整个文件在测试时禁用该警告
 
+use std::time::Instant;
+use chrono::{DateTime, Local, Utc};
 use crate::api_model;
 use crate::utils::util::vec8_to_display_string;
 use redis::{RedisWrite, ToRedisArgs};
@@ -216,4 +218,10 @@ api_model!( RedisClientInfo {
     rbp: Option<String>,            // 客户端连接以来其读取缓冲区的峰值大小。在 Redis 7.0 中添加
     rbs: Option<String>,            // 客户端读取缓冲区当前大小（字节）。在 Redis 7.0 中添加
     io_thread: Option<String>,       // 分配给客户端的 I/O 线程 ID。在 Redis 8.0 中添加
+});
+
+api_model!( ThreadRecord {
+    start: i64,    // 开始时间戳
+    seconds: Option<i64>,  // 最大运行秒数
+    running: bool, // 是否正常运行
 });
