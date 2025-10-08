@@ -9,6 +9,8 @@ use r2d2::Pool;
 use redis::{Client, Commands, FromRedisValue, Pipeline, SetExpiry, SetOptions, Value, ValueType};
 use std::collections::HashMap;
 use std::collections::HashSet;
+use std::sync::Arc;
+use std::sync::atomic::{AtomicBool, Ordering};
 use std::thread;
 use std::thread::{spawn, JoinHandle};
 use std::time::{Duration, Instant};
@@ -18,8 +20,8 @@ pub struct RedisMeSingle {
     id: String,
     pool: Pool<Client>,
 
-    subscribe_thread: Option<ThreadRecord>,
-    monitor_thread: Option<ThreadRecord>,
+    subscribe_running: Arc<AtomicBool>,
+    monitor_running: Arc<AtomicBool>,
 }
 
 // 个性化方法
@@ -32,8 +34,8 @@ impl RedisMeSingle {
         Ok(Box::new(RedisMeSingle {
             id: id.to_string(),
             pool,
-            subscribe_thread: None,
-            monitor_thread: None
+            subscribe_running: Arc::new(AtomicBool::new( false)),
+            monitor_running: Arc::new(AtomicBool::new( false))
         }))
     }
 }
@@ -243,51 +245,29 @@ impl RedisMeClient for RedisMeSingle {
         Ok(clients)
     }
 
-    fn monitor(&mut self, node: &str, seconds: Option<i64>) -> AnyResult<()> {
+    fn monitor(&self, node: &str, seconds: Option<i64>) -> AnyResult<()> {
 
         todo!()
     }
 
-    fn subscribe(&mut self, channel: Option<String>, seconds: Option<i64>) -> AnyResult<()> {
-        let conn = self.pool.get()?;
+    fn subscribe(&self, channel: Option<String>, seconds: Option<i64>) -> AnyResult<()> {
+        let mut conn = self.pool.get()?;
         let mut pubsub = conn.as_pubsub();
 
         let channel = channel.unwrap_or("*".into());
         pubsub.psubscribe(&channel)?;
 
-        self.subscribe_thread = Some(ThreadRecord {
-            start: Local::now().timestamp(),
-            seconds,
-            running: true
-        });
+        self.subscribe_running.store( true, Ordering::Relaxed);
+        let r = self.subscribe_running.clone();
 
         let _: JoinHandle<AnyResult<()>> = spawn(move || {
-            info!("订阅频道开始: {}", &channel);
-
-            loop {
+            info!("subscribe start: {}", &channel);
+            while r.load(Ordering::Relaxed) {
                 let msg = pubsub.get_message()?;
                 let payload: String = msg.get_payload()?;
-                info!("channel '{}': {}", msg.get_channel_name(), payload);
-
-                if let Some(t) = &mut self.subscribe_thread {
-
-
-                    if t.running == false {
-                        self.subscribe_thread = None;
-                        info!("订阅频道结束: {}", &channel);
-                        break;
-                    }
-
-                    if let Some(seconds) = t.seconds {
-                        let now = Local::now().timestamp();
-                        if (now - t.start) > seconds {
-                            self.subscribe_thread = None;
-                            info!("订阅频道超时: {}", &channel);
-                            break;
-                        }
-                    }
-                }
+                info!("subscribe channel '{}': {}", msg.get_channel_name(), payload);
             }
+            info!("subscribe end: {}", & channel);
             Ok(())
         });
         Ok(())
