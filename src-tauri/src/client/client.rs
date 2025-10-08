@@ -43,11 +43,13 @@ pub trait RedisMeClient: Send + Sync {
         client_type: Option<String>,
     ) -> AnyResult<Vec<RedisClientInfo>>;
 
-    fn monitor(&self, node: &str, seconds: Option<i64>) -> AnyResult<()>;
-
     fn publish(&self, channel: &str, message: &str) -> AnyResult<()>;
 
-    fn subscribe(&self, channel: Option<String>, seconds: Option<i64>) -> AnyResult<()>;
+    fn subscribe(&self, channel: Option<String>) -> AnyResult<()>;
+    fn subscribe_stop(&self) -> AnyResult<()>;
+
+    fn monitor(&self, node: &str) -> AnyResult<()>;
+    fn monitor_stop(&self, node: &str) -> AnyResult<()>;
 
     fn mock_data(&self, count: u64) -> AnyResult<()>;
 }

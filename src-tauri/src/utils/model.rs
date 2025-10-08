@@ -219,9 +219,3 @@ api_model!( RedisClientInfo {
     rbs: Option<String>,            // 客户端读取缓冲区当前大小（字节）。在 Redis 7.0 中添加
     io_thread: Option<String>,       // 分配给客户端的 I/O 线程 ID。在 Redis 8.0 中添加
 });
-
-api_model!( ThreadRecord {
-    start: i64,    // 开始时间戳
-    seconds: Option<i64>,  // 最大运行秒数
-    running: bool, // 是否正常运行
-});

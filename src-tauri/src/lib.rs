@@ -35,9 +35,11 @@ pub fn run() {
             config_get,
             config_set,
             client_list,
-            monitor,
             publish,
             subscribe,
+            subscribe_stop,
+            monitor,
+            monitor_stop,
             mock_data
         ])
         .run(tauri::generate_context!())

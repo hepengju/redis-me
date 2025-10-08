@@ -408,13 +408,22 @@ impl RedisMeClient for RedisMeCluster {
         Ok(clients)
     }
 
-    fn monitor(&self, node: &str, seconds: Option<i64>) -> AnyResult<()> {
-        todo!()
-    }
-
-    fn subscribe(&self, channel: Option<String>, seconds: Option<i64>) -> AnyResult<()> {
-        todo!()
-    }
 
     implement_common_commands!(ClusterPipeline);
+
+    fn subscribe(&self, channel: Option<String>) -> AnyResult<()> {
+        todo!()
+    }
+
+    fn subscribe_stop(&self) -> AnyResult<()> {
+        todo!()
+    }
+
+    fn monitor(&self, node: &str) -> AnyResult<()> {
+        todo!()
+    }
+
+    fn monitor_stop(&self, node: &str) -> AnyResult<()> {
+        todo!()
+    }
 }

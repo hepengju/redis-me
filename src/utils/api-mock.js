@@ -4628,14 +4628,7 @@ export const mockApiCommands = [
       clientType: null
     }
   },
-  {
-    command: 'monitor',
-    param: {
-      id: 'test',
-      node: null,
-      seconds: null
-    }
-  },
+
   {
     command: 'publish',
     param: {
@@ -4648,8 +4641,27 @@ export const mockApiCommands = [
     command: 'subscribe',
     param: {
       id: 'test',
-      channel: '*',
-      seconds: null
+      channel: '',
+    }
+  },
+  {
+    command: 'subscribe_stop',
+    param: {
+      id: 'test',
+    }
+  },
+  {
+    command: 'monitor',
+    param: {
+      id: 'test',
+      node: null,
+    }
+  },
+  {
+    command: 'monitor_stop',
+    param: {
+      id: 'test',
+      node: null,
     }
   },
   {

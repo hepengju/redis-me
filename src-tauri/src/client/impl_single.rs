@@ -6,15 +6,14 @@ use crate::utils::util::*;
 use anyhow::bail;
 use log::info;
 use r2d2::Pool;
-use redis::{Client, Commands, FromRedisValue, Pipeline, SetExpiry, SetOptions, Value, ValueType};
+use redis::{Client, Commands, Pipeline, SetExpiry, SetOptions, Value, ValueType};
 use std::collections::HashMap;
 use std::collections::HashSet;
-use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::Arc;
 use std::thread;
 use std::thread::{spawn, JoinHandle};
-use std::time::{Duration, Instant};
-use chrono::Local;
+use std::time::{Duration};
 
 pub struct RedisMeSingle {
     id: String,
@@ -245,27 +244,27 @@ impl RedisMeClient for RedisMeSingle {
         Ok(clients)
     }
 
-    fn monitor(&self, node: &str, seconds: Option<i64>) -> AnyResult<()> {
-
-        todo!()
-    }
-
-    fn subscribe(&self, channel: Option<String>, seconds: Option<i64>) -> AnyResult<()> {
+    fn subscribe(&self, channel: Option<String>) -> AnyResult<()> {
         let mut conn = self.pool.get()?;
-        let mut pubsub = conn.as_pubsub();
-
-        let channel = channel.unwrap_or("*".into());
-        pubsub.psubscribe(&channel)?;
-
         self.subscribe_running.store( true, Ordering::Relaxed);
         let r = self.subscribe_running.clone();
 
         let _: JoinHandle<AnyResult<()>> = spawn(move || {
+            let mut pubsub = conn.as_pubsub();
+
+            let mut channel = channel.unwrap_or("*".into());
+            if channel.is_empty() {
+                channel = "*".into();
+            }
+            pubsub.psubscribe(&channel)?;
+
             info!("subscribe start: {}", &channel);
             while r.load(Ordering::Relaxed) {
                 let msg = pubsub.get_message()?;
                 let payload: String = msg.get_payload()?;
                 info!("subscribe channel '{}': {}", msg.get_channel_name(), payload);
+
+                // TODO 发射消息
             }
             info!("subscribe end: {}", & channel);
             Ok(())
@@ -273,5 +272,20 @@ impl RedisMeClient for RedisMeSingle {
         Ok(())
     }
 
+    fn subscribe_stop(&self) -> AnyResult<()> {
+        self.subscribe_running.store( false, Ordering::Relaxed);
+        Ok(())
+    }
+
+    fn monitor(&self, node: &str) -> AnyResult<()> {
+        todo!()
+    }
+
+    fn monitor_stop(&self, node: &str) -> AnyResult<()> {
+        todo!()
+    }
+
     implement_common_commands!(Pipeline);
+
+
 }

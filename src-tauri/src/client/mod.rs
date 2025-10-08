@@ -231,7 +231,7 @@ mod tests {
 
     #[test]
     fn test_monitor() {
-        let result = client().monitor("192.168.1.11:7001", None).unwrap();
+        let result = client().monitor("192.168.1.11:7001").unwrap();
         println!("{result:?}");
     }
 
@@ -243,7 +243,7 @@ mod tests {
 
     #[test]
     fn test_subscribe() {
-        let result = client().subscribe("channel", None).unwrap();
+        let result = client().subscribe(None).unwrap();
         println!("{result:?}");
     }
 }

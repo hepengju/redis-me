@@ -78,14 +78,16 @@ api_command!(memory_usage(param: RedisMemoryParam) -> Vec<RedisKeySize>);
 // 客户端列表
 api_command!(client_list(node: Option<String>, client_type: Option<String>) -> Vec<RedisClientInfo>);
 
-// 监控命令
-api_command!(monitor(node: &str, seconds: Option<u32>) -> ());
-
 // 发布消息
 api_command!(publish(channel: &str, message: &str) -> ());
 
 // 订阅消息
-api_command!(subscribe(channel: Option<String>, seconds: Option<u32>) -> ());
+api_command!(subscribe(channel: Option<String>) -> ());
+api_command!(subscribe_stop() -> ());
+
+// 监控命令
+api_command!(monitor(node: &str) -> ());
+api_command!(monitor_stop(node: &str) -> ());
 
 // 模拟数据
 api_command!(mock_data(count: u64) -> ());
