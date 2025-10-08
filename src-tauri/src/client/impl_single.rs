@@ -263,8 +263,7 @@ impl RedisMeClient for RedisMeSingle {
                 let msg = pubsub.get_message()?;
                 let payload: String = msg.get_payload()?;
                 info!("subscribe channel '{}': {}", msg.get_channel_name(), payload);
-
-                // TODO 发射消息
+                // TODO 发射消息给前端展示
             }
             info!("subscribe end: {}", & channel);
             Ok(())
@@ -274,6 +273,9 @@ impl RedisMeClient for RedisMeSingle {
 
     fn subscribe_stop(&self) -> AnyResult<()> {
         self.subscribe_running.store( false, Ordering::Relaxed);
+        // 由于pubsub.get_message()是阻塞的, 所以此处需要再发送一个消息才能结束
+        // 如果订阅的频道不是*, 需要发送到指定频道才能结束
+        self.publish(REDIS_ME_SUBSCRIBE_STOP_CHANNEL, "")?;
         Ok(())
     }
 
