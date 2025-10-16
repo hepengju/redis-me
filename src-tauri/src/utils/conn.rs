@@ -62,8 +62,12 @@ pub fn get_pool_cluster(id: &str) -> AnyResult<Pool<ClusterClient>> {
 
 #[cfg(test)]
 mod tests {
+    use std::fs;
+    use std::path::Path;
+    use anyhow::Context;
     use super::*;
-    use redis::{Commands};
+    use redis::{Client, Commands};
+    use redis::ConnectionAddr::TcpTls;
 
     #[test]
     fn test_get_pool_single() {
@@ -78,6 +82,15 @@ mod tests {
         let pool = get_pool_cluster("1").unwrap();
         let mut conn = pool.get().unwrap();
         let _:() =conn.set("hepengju:name", "hepengju").unwrap();
+    }
+
+    fn get_key_cert() -> AnyResult<(Vec<u8>, Vec<u8>)> {
+        let path = r"C:\Users\he_pe\jiyu\redis-ssl";
+        let cert_file = "redis-server.crt";
+        let key_file = "redis-server.key";
+        let cert_vec8 = fs::read(Path::new(path).join(cert_file)).context("cert读取失败")?;
+        let key_vec8= fs::read(Path::new(path).join(key_file)).context("key读取失败")?;
+        Ok((cert_vec8, key_vec8))
     }
 
     /*#[test]
@@ -128,6 +141,7 @@ mod tests {
         let mut conn = client.get_connection()?;
 
         // rustls 不支持x.509证书的v1版本，且后续也不会支持
+        // https://github.com/rustls/rustls/issues/2364
         // Error: It failed to check startup nodes.
         // IoError: Failed to connect to each cluster node (10.106.100.140:7001:
         // Unable to build client with TLS parameters provided
@@ -140,7 +154,36 @@ mod tests {
     */
 
     #[test]
-    fn test_ssl_native_ls(){
+    fn test_ssl_native_ls() -> AnyResult<()>{
+        let nodes = vec![ConnectionInfo {
+            addr: TcpTls {
+                host: "10.106.100.140".into(),
+                port: 7001,
+                insecure: true,
+                tls_params: None,
+            },
+            redis: RedisConnectionInfo {
+                db: 0,
+                username: None,
+                password: Some("Jiyu1212".into()),
+                protocol: Default::default(),
+            }
+        }];
 
+        let client = ClusterClient::builder(nodes)
+            .connection_timeout(Duration::from_secs(5))
+            .build()?;
+        let mut conn = client.get_connection()?;
+
+        let value: String = conn.get("hepengju:name")?;
+        println!("value: {:?}", value);
+        Ok(())
+    }
+
+    #[test]
+    fn test_tmp_ssl() -> AnyResult<()> {
+        let client = Client::open("redis://:password@your-redis-server.com:6379")?;
+        let mut con = client.get_connection()?;
+        Ok(())
     }
 }

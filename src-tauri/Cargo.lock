@@ -3308,6 +3308,7 @@ dependencies = [
  "chrono-tz",
  "fern",
  "log",
+ "native-tls",
  "r2d2",
  "rand 0.9.2",
  "redis",
