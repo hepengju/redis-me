@@ -27,9 +27,8 @@ serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 
 # 项目添加依赖
-redis = { version = "0.32.7", features = ["r2d2", "connection-manager", "cluster", "sentinel", "json", "tls-rustls", "tls-rustls-insecure", "tokio-comp", "tokio-rustls-comp"] }
+redis = { version = "0.32.7", features = ["r2d2", "cluster", "sentinel", "json", "tls-native-tls"] }
 log = "0.4.28"
-rustls = { version = "0.23.32", default-features = false, features = ["ring"] }
 r2d2 = "0.8.10"
 rand = "0.9.2"
 anyhow = { version = "1"}

@@ -37,7 +37,7 @@ pub fn get_pool_single(id: &str) -> AnyResult<Pool<redis::Client>> {
 }
 // 获取连接池(集群)
 pub fn get_pool_cluster(id: &str) -> AnyResult<Pool<ClusterClient>> {
-    let is_company = false;
+    let is_company = true;
 
     let mut nodes = vec!["rediss://192.168.1.11:7001"];
     let mut password = "hepengju";
@@ -63,13 +63,84 @@ pub fn get_pool_cluster(id: &str) -> AnyResult<Pool<ClusterClient>> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use redis::Commands;
+    use redis::{Commands};
 
     #[test]
     fn test_get_pool_single() {
         let pool = get_pool_single("1").unwrap();
         let mut conn = pool.get().unwrap();
         let value: Vec<u8> = vec![100, 200, 255];
-        let _: () = conn.set("hepengju:bytes", value).unwrap();
+        let _:() = conn.set("hepengju:bytes", value).unwrap();
+    }
+
+    #[test]
+    fn test_get_pool_cluster() {
+        let pool = get_pool_cluster("1").unwrap();
+        let mut conn = pool.get().unwrap();
+        let _:() =conn.set("hepengju:name", "hepengju").unwrap();
+    }
+
+    /*#[test]
+    fn test_ssl_rust_ls() -> AnyResult<()> {
+        // 实测此处注释掉也没影响
+        // before creating a connection, ensure that you install a crypto provider
+        // rustls::crypto::aws_lc_rs::default_provider()
+        //     .install_default()
+        //     .expect("Failed to install rustls crypto provider");
+
+        let path = r"C:\Users\he_pe\jiyu\redis-ssl";
+        let cert_file = "redis-server.crt";
+        let key_file = "redis-server.key";
+        let cert_vec8 = fs::read(Path::new(path).join(cert_file)).context("cert读取失败")?;
+        let key_vec8= fs::read(Path::new(path).join(key_file)).context("key读取失败")?;
+
+        let nodes = vec![ConnectionInfo {
+            addr: TcpTls {
+                host: "10.106.100.140".into(),
+                port: 7001,
+                insecure: true,
+                tls_params: None,
+            },
+            redis: RedisConnectionInfo {
+                db: 0,
+                username: None,
+                password: Some("Jiyu1212".into()),
+                protocol: Default::default(),
+            }
+        }];
+
+        let cert = TlsCertificates {
+            client_tls: Some(
+                ClientTlsConfig {
+                    client_cert: cert_vec8,
+                    client_key: key_vec8,
+                }
+            ),
+            root_cert:None
+        };
+
+        let client = ClusterClient::builder(nodes)
+            .connection_timeout(Duration::from_secs(5))
+            .certs(cert)
+            .tls(TlsMode::Insecure)
+            .danger_accept_invalid_hostnames(true)
+            .build()?;
+        let mut conn = client.get_connection()?;
+
+        // rustls 不支持x.509证书的v1版本，且后续也不会支持
+        // Error: It failed to check startup nodes.
+        // IoError: Failed to connect to each cluster node (10.106.100.140:7001:
+        // Unable to build client with TLS parameters provided
+        // InvalidClientConfig: invalid peer certificate: Other(OtherError(UnsupportedCertVersion)))
+
+        let value: String = conn.get("hepengju:name")?;
+        println!("value: {:?}", value);
+        Ok(())
+    }
+    */
+
+    #[test]
+    fn test_ssl_native_ls(){
+
     }
 }
