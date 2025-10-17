@@ -1,33 +1,26 @@
 use crate::utils::util::AnyResult;
+use log::info;
 use r2d2::Pool;
 use redis::cluster::ClusterClient;
-use redis::{ConnectionAddr, ConnectionInfo, RedisConnectionInfo, TlsMode};
+use redis::TlsMode;
 use std::time::Duration;
 
 // 获取连接池(单机)
 // docker run -d --net host --name redis-6379 redis:7 --requirepass hepengju
 pub fn get_pool_single(id: &str) -> AnyResult<Pool<redis::Client>> {
-    let is_company = false;
+    let is_company = true;
 
     let mut host = "192.168.1.11";
     let mut password = "hepengju";
     if is_company {
-        host = "192.168.1.11";
+        host = "10.105.100.63";
         password = "Jiyu1212";
     }
 
-    let conn_info = ConnectionInfo {
-        addr: ConnectionAddr::Tcp(host.to_string(), 6379),
-        redis: RedisConnectionInfo {
-            db: 0,
-            username: None,
-            password: Some(password.to_string()),
-            protocol: Default::default(),
-        },
-    };
+    let redis_url = format!("redis://:{}@{}:6379", password, host);
+    info!("redis_url: {redis_url}");
 
-    let client = redis::Client::open(conn_info)?;
-
+    let client = redis::Client::open(redis_url)?;
     // 使用连接池管理
     let pool = Pool::builder()
         .min_idle(Some(0))
@@ -49,7 +42,7 @@ pub fn get_pool_cluster(id: &str) -> AnyResult<Pool<ClusterClient>> {
     let client = ClusterClient::builder(nodes)
         .connection_timeout(Duration::from_secs(5))
         .tls(TlsMode::Insecure)
-        .password(password.into())
+        .password(password)
         .build()?;
 
     // 使用连接池管理
@@ -62,19 +55,18 @@ pub fn get_pool_cluster(id: &str) -> AnyResult<Pool<ClusterClient>> {
 
 #[cfg(test)]
 mod tests {
+    use super::*;
+    use anyhow::Context;
+    use redis::Commands;
     use std::fs;
     use std::path::Path;
-    use anyhow::Context;
-    use super::*;
-    use redis::{Client, Commands};
-    use redis::ConnectionAddr::TcpTls;
 
     #[test]
     fn test_get_pool_single() {
         let pool = get_pool_single("1").unwrap();
         let mut conn = pool.get().unwrap();
         let value: Vec<u8> = vec![100, 200, 255];
-        let _:() = conn.set("hepengju:bytes", value).unwrap();
+        let _:() = conn.set("hepengju:bytes", &value[..]).unwrap();
     }
 
     #[test]
@@ -153,6 +145,7 @@ mod tests {
     }
     */
 
+    /*
     #[test]
     fn test_ssl_native_ls() -> AnyResult<()>{
         let nodes = vec![ConnectionInfo {
@@ -178,12 +171,13 @@ mod tests {
         let value: String = conn.get("hepengju:name")?;
         println!("value: {:?}", value);
         Ok(())
-    }
+    }*/
 
+    /*
     #[test]
     fn test_tmp_ssl() -> AnyResult<()> {
         let client = Client::open("redis://:password@your-redis-server.com:6379")?;
         let mut con = client.get_connection()?;
         Ok(())
-    }
+    }*/
 }

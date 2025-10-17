@@ -148,18 +148,18 @@ pub fn redis_value_to_log(value: Value, node: &str) -> AnyResult<RedisSlowLog> {
         _ => bail!("应为慢查询条目的数组"),
     };
 
-    let id: u64 = FromRedisValue::from_redis_value(&items[0])?;
-    let time = timestamp_to_string(FromRedisValue::from_redis_value(&items[1])?);
-    let cost: f64 = FromRedisValue::from_redis_value(&items[2])?;
+    let id: u64 = FromRedisValue::from_redis_value_ref(&items[0])?;
+    let time = timestamp_to_string(FromRedisValue::from_redis_value_ref(&items[1])?);
+    let cost: f64 = FromRedisValue::from_redis_value_ref(&items[2])?;
     let command: String = redis_value_to_string(items[3].clone(), " ");
     let client: String = if items.len() > 5 {
-        FromRedisValue::from_redis_value(&items[4])?
+        FromRedisValue::from_redis_value_ref(&items[4])?
     } else {
         "".into()
     };
 
     let client_name: String = if items.len() > 6 {
-        FromRedisValue::from_redis_value(&items[5])?
+        FromRedisValue::from_redis_value_ref(&items[5])?
     } else {
         "".into()
     };

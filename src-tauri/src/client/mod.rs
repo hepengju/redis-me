@@ -198,7 +198,7 @@ mod tests {
         let nodes = vec!["rediss://192.168.1.11:7001"];
         let client = ClusterClient::builder(nodes)
             .tls(TlsMode::Insecure)
-            .password("hepengju".into())
+            .password("hepengju")
             .build()?;
         let mut conn = client.get_connection()?;
 

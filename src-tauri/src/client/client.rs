@@ -102,6 +102,7 @@ macro_rules! implement_common_commands {
                     }
                 }
                 ValueType::Stream => bail!("stream类型暂不支持获取值"),
+                _ => todo!()
             }?;
 
             Ok(RedisValue {
@@ -200,7 +201,8 @@ macro_rules! implement_common_commands {
                     } else {
                         bail!("未知类型: {other}")
                     }
-                }
+                },
+                _ => todo!()
             };
 
             if "key" == mode {
@@ -240,7 +242,8 @@ macro_rules! implement_common_commands {
                     } else {
                         bail!("未知类型: {other}")
                     }
-                }
+                },
+                _ => todo!()
             };
             Ok(())
         }
@@ -273,7 +276,8 @@ macro_rules! implement_common_commands {
                     } else {
                         bail!("未知类型: {other}")
                     }
-                }
+                },
+                _ => todo!()
             };
             Ok(())
         }

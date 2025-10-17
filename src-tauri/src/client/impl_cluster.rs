@@ -133,7 +133,7 @@ impl RedisMeClient for RedisMeCluster {
         let mut conn = self.pool.get()?;
         let (route, exec_node) = self.get_node_route(node)?;
         let value = conn.route_command(&redis::cmd("info"), route)?;
-        let info: String = FromRedisValue::from_redis_value(&value)?;
+        let info: String = FromRedisValue::from_redis_value(value)?;
         Ok(RedisInfo {
             node: exec_node,
             info,
@@ -147,7 +147,7 @@ impl RedisMeClient for RedisMeCluster {
             let node = redis_node.node.clone();
             let (route, _) = self.get_node_route(Some(node.clone()))?;
             let value = conn.route_command(&redis::cmd("info"), route)?;
-            let info: String = FromRedisValue::from_redis_value(&value)?;
+            let info: String = FromRedisValue::from_redis_value(value)?;
             infos.push(RedisInfo { node, info })
         }
         Ok(infos)
@@ -207,7 +207,7 @@ impl RedisMeClient for RedisMeCluster {
 
                 let value = conn.route_command(&cmd, route.clone())?;
                 let (next_cursor, new_keys): (u64, Vec<Vec<u8>>) =
-                    FromRedisValue::from_redis_value(&value)?;
+                    FromRedisValue::from_redis_value(value)?;
 
                 keys.extend(new_keys);
                 cc.now_cursor = next_cursor;
@@ -264,7 +264,7 @@ impl RedisMeClient for RedisMeCluster {
         let mut conn = self.pool.get()?;
         let (route, _) = self.get_node_route(node)?;
         let value = conn.route_command(redis::cmd("config").arg("get").arg(pattern), route)?;
-        let result: HashMap<String, String> = FromRedisValue::from_redis_value(&value)?;
+        let result: HashMap<String, String> = FromRedisValue::from_redis_value(value)?;
         Ok(result)
     }
 
@@ -292,7 +292,7 @@ impl RedisMeClient for RedisMeCluster {
                 &redis::cmd("slowlog").arg("get").arg(count.unwrap_or(128)),
                 route,
             )?;
-            let value_list: Vec<Value> = FromRedisValue::from_redis_value(&value_total)?;
+            let value_list: Vec<Value> = FromRedisValue::from_redis_value(value_total)?;
             for value in value_list {
                 let log = redis_value_to_log(value, &node)?;
                 logs.push(log);
@@ -322,7 +322,7 @@ impl RedisMeClient for RedisMeCluster {
 
                 let value = conn.route_command(&cmd, route.clone())?;
                 let (next_cursor, new_keys): (u64, Vec<Vec<u8>>) =
-                    FromRedisValue::from_redis_value(&value)?;
+                    FromRedisValue::from_redis_value(value)?;
                 cursor = next_cursor;
 
                 // 计算键大小
@@ -399,7 +399,7 @@ impl RedisMeClient for RedisMeCluster {
                 cmd.arg("type").arg(client_type_val);
             }
             let value = conn.route_command(&cmd, route)?;
-            let value_list: Vec<String> = FromRedisValue::from_redis_value(&value)?;
+            let value_list: Vec<String> = FromRedisValue::from_redis_value(value)?;
             for client_info in value_list.into_iter() {
                 let client: RedisClientInfo = parse_client_info(&client_info)?;
                 clients.push(client);
@@ -407,7 +407,6 @@ impl RedisMeClient for RedisMeCluster {
         }
         Ok(clients)
     }
-
 
     implement_common_commands!(ClusterPipeline);
 

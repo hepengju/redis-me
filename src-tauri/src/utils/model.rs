@@ -4,7 +4,7 @@ use std::time::Instant;
 use chrono::{DateTime, Local, Utc};
 use crate::api_model;
 use crate::utils::util::vec8_to_display_string;
-use redis::{RedisWrite, ToRedisArgs};
+use redis::{RedisWrite, ToRedisArgs, ToSingleRedisArg};
 use serde::{Deserialize, Serialize};
 
 api_model!(RedisInfo {
@@ -81,6 +81,8 @@ impl ToRedisArgs for RedisKey {
         out.write_arg(self.to_bytes())
     }
 }
+impl ToSingleRedisArg for RedisKey {}
+
 
 // Redis值
 api_model!(RedisValue {
