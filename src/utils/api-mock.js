@@ -1,6 +1,6 @@
 export const mockConnList = [
   {
-    id: 'local',
+    id: 'single',
     name: '127.0.0.1-本机',
     host: '127.0.0.1',
     port: '6379',
@@ -15,8 +15,8 @@ export const mockConnList = [
     color: '#409EFF',
   },
   {
-    id: 'dev',
-    name: '10.106.100.140-开发111111',
+    id: 'cluster',
+    name: '10.106.100.140',
     host: '10.106.100.140',
     port: '7001',
     username: '',

@@ -1,13 +1,19 @@
 <script setup>
-import MeIcon from '@/components/MeIcon.vue'
-import useGlobalStore from '@/utils/store.js'
-import {capitalize, cloneDeep} from 'lodash'
-import {bus, copy, DELETE_KEY, humanSize} from '@/utils/util.js'
+import {capitalize} from 'lodash'
+import {bus, copy, DELETE_KEY, humanSize, REFRESH_KEY, commonDeleteKey} from '@/utils/util.js'
 import {ElMessage, ElMessageBox} from 'element-plus'
-import {apiGet} from '@/utils/api.js'
+import FieldAdd from '../ext/FieldAdd.vue'
+import FieldSet from '../ext/FieldSet.vue'
+import {invoke_then} from "@/utils/util.js";
 
-// 全局对象
-const global = useGlobalStore()
+// 刷新键
+onMounted(() => bus.on(REFRESH_KEY, refreshKey))
+onUnmounted(() => bus.off(REFRESH_KEY, refreshKey))
+
+// 共享数据
+const share = inject('share')
+const canEdit = computed(() => true)
+const canSave = computed(() => stringType && canEdit)
 
 // 值的显示方式
 const viewTypeList = ['json', 'table']
@@ -16,41 +22,50 @@ const hashKey = ref('')
 const isPretty = ref(true)
 const withHashKey = ref(false)
 const tableKeyword = ref('')
+const redisValue = ref(null)
+const loading = ref(false)
 
 // 计算属性
-const stringTypeOrWithHashKey = computed(() => 'string' === global.redisValue?.type || withHashKey.value)
+const hashType = computed(() => 'hash' === redisValue.value?.type)
+const stringType = computed(() => 'string' === redisValue.value?.type)
+const stringTypeOrWithHashKey = computed(() => 'string' === redisValue.value?.type || withHashKey.value)
 const showValue = computed(() => {
-  const rv = global.redisValue
-  if (rv.value === null || rv.value === undefined) return ''
+  const obj = redisValue.value?.value
+  if (obj === null || obj === undefined) return ''
 
   if (isPretty.value) {
     if (stringTypeOrWithHashKey.value) {
-      const str = rv.value.toString()
+      const str = obj.toString()
       try {
         return str.startsWith('{') || str.startsWith('[') ? JSON.stringify(JSON.parse(str), null, 2) : str
       } catch (e) {
         return str
       }
     } else {
-      return JSON.stringify(rv.value, null, 2)
+      return JSON.stringify(obj, null, 2)
     }
   } else {
-    return 'hash' === rv.type && !withHashKey.value
-        || 'zset' === rv.type
-        ? JSON.stringify(rv.value) : rv.value.toString()
+    return 'hash' === redisValue.value?.type && !withHashKey.value || 'zset' === redisValue.value?.type // zset包含分数
+      ? JSON.stringify(obj) : obj.toString()
   }
+})
+
+const showSize = computed(() => {
+  const textEncoder = new TextEncoder();
+  const length = textEncoder.encode(showValue.value).length
+  return humanSize(length)
 })
 
 // 表格数据
 const dataList = computed(() => {
-  const rv = global.redisValue
-  if (rv.value === null || rv.value === undefined) return []
+  const rv = redisValue.value
+  if (rv === null || rv === undefined || rv.value === null || rv.value === undefined) return []
 
   let data = []
 
   if (rv.type === 'hash') {
     Object.entries(rv.value)
-        .forEach(([key, value]) => data.push({key, value}))
+      .forEach(([key, value]) => data.push({key, value}))
   } else if (rv.type === 'list' || rv.type === 'set') {
     rv.value.forEach(value => data.push({value}))
   } else if (rv.type === 'zset') {
@@ -62,9 +77,9 @@ const dataList = computed(() => {
 const filterDataList = computed(() => {
   const key = tableKeyword.value.toLowerCase()
   return dataList.value.filter(row => !key
-      || row.key?.toLowerCase().indexOf(key) > -1
-      || row.value?.toLowerCase().indexOf(key) > -1
-      || row.score?.toString().toLowerCase().indexOf(key) > -1,
+    || row.key?.toLowerCase().indexOf(key) > -1
+    || row.value?.toLowerCase().indexOf(key) > -1
+    || row.score?.toString().toLowerCase().indexOf(key) > -1,
   )
 })
 
@@ -76,139 +91,256 @@ watchEffect(() => {
 })
 
 // TTL设置
-function ttlKey(){
-  ElMessage({message: 'TTL设置成功', type: 'success'})
+async function setTTL(){
+  const seconds = redisValue.value.ttl
+  if (seconds <=0 & seconds != -1) {
+    ElMessage.success("TTL必须为正整数（秒）或 -1（永久） ")
+    return
+  }
+
+  const res = await invoke_then('ttl', {id: share.conn.id, ttl: seconds, ...share.redisKey})
+  if (res.code == 200) {
+    ElMessage.success("设置TTL成功")
+  }
 }
 
-// 刷新键
-function refreshKey() {
-  global.redisValue = apiGet(global.conn?.id, global.redisKey)
+function resetParam(){
+  tableKeyword.value = ''
+  hashKey.value = ''
+  withHashKey.value = false
+}
+async function refreshKey(reset = true) {
+  fieldSetInit() // 关闭字段编辑
+
+  if (reset) {
+    resetParam()
+  }
+
+  loading.value = true
+  try {
+    const res = await invoke_then('get', {id: share.conn.id, redisKey: share.redisKey, hashKey: hashKey.value})
+    if (res.code == 200) {
+      redisValue.value = res.data
+      if (hashKey.value) {
+        withHashKey.value = true
+      } else {
+        withHashKey.value = false
+      }
+    }
+  } finally {
+    loading.value = false
+  }
 }
 
 // 删除键
+onMounted(() => bus.on(DELETE_KEY, deleteKey))
+onUnmounted(() => bus.off(DELETE_KEY, deleteKey))
+
+function deleteKey() {
+  redisValue.value = null
+}
+
 function delKey() {
-  ElMessageBox.confirm(
-      `确定删除键【${global.redisKey.key}】吗？`,
-      '提示',
-      {type: 'warning'},
-  ).then(() => {
-    bus.emit(DELETE_KEY, cloneDeep(global.redisKey))
-    global.redisKey = null
-    global.redisValue = null
-    ElMessage({message: '删除成功', type: 'success'})
-  }).catch(() => {})
+  commonDeleteKey(share.env, share.redisKey)
 }
 
 // 保存值
-function setValue() {
-  ElMessage({message: '保存成功', type: 'success'})
+async function setValue() {
+  const params = {value: redisValue.value.newValue || redisValue.value.value, seconds: redisValue.value.ttl, ...share.redisKey}
+  const res = await invoke_then({id: share.conn.id, params});
+  if (res.code == 200) {
+    ElMessage({message: '保存成功', type: 'success'})
+  } else {
+    ElMessageBox.alert(res.msg, '提示', { type: 'error'})
+  }
 }
 
-// 编辑单行值
-function rowEditValue() {
-
+//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+// 字段新增
+const fieldAddRef = useTemplateRef('fieldAddRef')
+function fieldAdd(){
+  fieldAddRef.value?.open({
+    mode: 'field',
+    type: redisValue.value.type,
+    ...share.redisKey,
+  })
 }
 
-// 删除单行值
-function rowDeleteValue() {
-  // TODO
-  tableKeyword.value = ''
-  refreshKey()
-  ElMessage({message: '删除成功', type: 'success'})
+// 字段编辑
+const fieldSetIndex = ref(-1)
+const fieldSetRef = useTemplateRef('fieldSetRef')
+function fieldSetInit() {
+  fieldSetIndex.value = -1
+  fieldSetRef.value?.close()
 }
+function fieldSet(row, index) {
+  fieldSetIndex.value = index
+  const params = {
+    fieldKey: row.key,
+    fieldValue: row.value,
+    fieldScore: row.score,
+    srcFieldValue: row.value,
+    type: redisValue.value.type,
+    ...share.redisKey,
+  }
+  if (redisValue.value.type === 'list') {
+    // 此处不要直接取索引，而是重新去计算下（因为表格可能被关键字过滤过）
+    params.fieldIndex = redisValue.value.value.indexOf(row.value)
+  }
+  fieldSetRef.value.open(params)
+}
+
+function rowClassName({row, rowIndex}){
+  return `table-row-index-${rowIndex}`; // 给每行加一个带有索引的class
+}
+
+function rowClick(row, column, event) {
+  // 编辑字段值没有开启时，忽略行点击事件
+  if (fieldSetIndex.value === -1) return
+
+  // 从点击事件的当前元素（即 <tr>）获取 class
+  const trElement = event.currentTarget;
+  const classList = trElement.classList;
+  for (let className of classList) {
+    if (className.startsWith('table-row-index-')) {
+      const rowIndex = parseInt(className.split('-')[3]); // 提取索引数字
+      fieldSet(row, rowIndex)
+      break;
+    }
+  }
+}
+
+// 字段删除
+async function fieldDel(row) {
+  const params = {fieldKey: row.key, fieldValue: row.value , ...share.redisKey}
+  if (redisValue.value.type === 'list') {
+    params.fieldIndex = redisValue.value.value.indexOf(row.value)
+  }
+
+  const res = await invoke_then('field_delete',{id: share.conn.id, params});
+  if (res.code == 200) {
+    ElMessage({message: '删除成功', type: 'success'})
+  } else {
+    ElMessageBox.alert(res.msg, '提示', { type: 'error'})
+  }
+
+  await refreshKey()
+}
+
+// 避免表格自动调整列宽时闪烁一下
+const tableRef = useTemplateRef(('table'))
+watch(() => share.tabName, newValue => {
+  if (newValue === 'value') {
+    nextTick(() => {
+      tableRef.value?.doLayout()
+    })
+  }
+})
 </script>
 
 <template>
-  <div class="redis-value">
-    <template v-if="global.redisValue">
+  <div class="redis-value" v-loading="loading">
+    <template v-if="share.redisKey && redisValue">
       <div class="key">
-        <el-input type="text" v-model="global.redisKey.key" readonly style="flex: 1">
+        <el-input type="text" v-model="share.redisKey.key" readonly style="flex: 1">
           <template #prepend>
-            {{capitalize(global.redisValue.type)}}
+            {{capitalize(redisValue.type)}}
           </template>
           <template #append>
-            <me-button info="复制" icon="el-icon-document-copy" @click="copy(global.redisKey.key)" placement="top"/>
+            <me-button info="复制" icon="el-icon-document-copy" @click="copy(share.redisKey.key)" placement="top"/>
           </template>
         </el-input>
 
         <el-input type="text" placeholder="可选输入" clearable style="width: 200px; margin-left: 10px"
-                  v-model="hashKey" v-if="global.redisValue.type == 'hash'"
-                  @keyup.enter="refreshKey('')">
+                  v-model="hashKey" v-if="redisValue.type == 'hash'"
+                  @keyup.enter="refreshKey(false)">
           <template #prepend>Hash键</template>
         </el-input>
 
         <div class="me-flex">
           <!-- 宽度170可以完全显示1天：86400秒 -->
-          <el-input v-model.number="global.redisValue.ttl" style="width: 170px; margin: 0 10px;">
+          <el-input v-model.number="redisValue.ttl" style="width: 170px; margin: 0 10px;">
             <template #prepend>TTL</template>
-            <template #append v-if="!global.readonly">
+            <template #append v-if="canEdit">
               <me-button info="点击修改键的过期时间（单位为秒，-1代表永久）"
-                         icon="el-icon-select" @click="ttlKey"
-                         :disabled="!global.redisKey.key" placement="top-end"/>
+                         icon="el-icon-select" @click="setTTL"
+                         :disabled="!share.redisKey.key" placement="top-end"/>
             </template>
           </el-input>
 
           <el-button-group>
             <me-button info="刷新" icon="el-icon-refresh"
-                       @click="refreshKey" :disabled="!global.redisKey.key"
+                       @click="refreshKey(false)" :disabled="!share.redisKey.key"
                        placement="top"/>
             <me-button info="删除键" icon="el-icon-delete"
-                       v-if="!global.readonly" type="danger"
+                       v-if="canEdit" type="danger"
                        @click="delKey"
-                       :disabled="!global.redisKey.key" placement="top"/>
+                       :disabled="!share.redisKey.key" placement="top"/>
           </el-button-group>
         </div>
       </div>
 
       <div class="value">
-        <me-code :value="showValue"
-                 @update:value="(newValue) => global.redisValue.newValue=newValue"
-                 v-if="viewType === 'json'"
-                 mode="application/json"/>
+        <!-- json显示 -->
+        <template v-if="viewType === 'json'">
+          <me-code :value="showValue" @update:value="(newValue) => redisValue.newValue=newValue" :read-only="!canSave"/>
 
-        <div class="me-flex" style="flex-direction: column" v-else>
-          <div class="me-flex table-header">
-            <el-input v-model="tableKeyword" placeholder="模糊筛选" style="width: 200px"/>
-            <el-button icon="el-icon-plus">插入行</el-button>
+          <div class="btn-rb" v-if="canSave">
+            <me-button class="save" info="保存" type="danger" icon="me-icon-save" @click="setValue" placement="top"/>
           </div>
-          <el-table :data="filterDataList" style="margin-top: 10px" border stripe>
-            <el-table-column label="#" type="index" width="50" align="center" show-overflow-tooltip/>
 
-            <el-table-column label="键"   prop="key"   show-overflow-tooltip v-if="global.redisValue.type === 'hash'"/>
-            <el-table-column label="值"   prop="value" show-overflow-tooltip/>
-            <el-table-column label="分数" prop="score" show-overflow-tooltip v-if="global.redisValue.type === 'zset'"/>
+          <el-button-group class="btn-rt" >
+            <el-button>Size: {{ showSize }}</el-button>
+            <me-button info="复制" icon="el-icon-document-copy" @click="copy(showValue)"/>
+            <me-button info="默认开启美化，开启后针对hash/list/set/json等进行格式化，关闭后显示原始值toString"
+                       placement="bottom-end"
+                       icon="el-icon-magic-stick"
+                       :type="isPretty ? 'info' : ''"
+                       @click="isPretty = !isPretty"/>
+          </el-button-group>
+        </template>
 
-            <el-table-column label="操作" width="100" fixed="right" align="center">
-              <template #default="scope">
-                <div class="me-flex">
-                  <me-icon info="复制" icon="el-icon-document-copy" class="icon-btn"  @click="copy(scope.row.value) "/>
-                  <me-icon info="编辑" icon="el-icon-edit" class="icon-btn"  @click="rowEditValue(scope.row, scope.$index)"/>
-                  <el-popconfirm :hide-after="0" title="确定删除吗？" @confirm="rowDeleteValue(scope.row, scope.$index)">
-                    <template #reference>
-                      <me-icon info="删除" icon="el-icon-delete" class="icon-btn"/>
-                    </template>
-                  </el-popconfirm>
-                </div>
-              </template>
-            </el-table-column>
-          </el-table>
+        <!-- 表格显示 -->
+        <div class="me-flex" style="flex-direction: column; height: 100%" v-else>
+          <div class="me-flex" style="width: 100%">
+            <el-input v-model="tableKeyword" placeholder="模糊筛选" clearable style="width: 300px"/>
+            <el-button icon="el-icon-plus" @click="fieldAdd">插入行</el-button>
+          </div>
+          <div class="table-view">
+            <el-table :data="filterDataList" border stripe ref="table" size="large" height="100%"
+                      :row-class-name="rowClassName" @row-click="rowClick">
+              <el-table-column label="#" type="index" width="50" align="center" show-overflow-tooltip>
+                <template #default="scope">
+                  <div v-if="fieldSetIndex != scope.$index">{{scope.$index + 1}}</div>
+                  <me-icon v-else icon="el-icon-edit" :style="{color: share.color}"></me-icon>
+                </template>
+              </el-table-column>
+
+              <el-table-column label="键"   prop="key"   show-overflow-tooltip v-if="redisValue.type === 'hash'"/>
+              <el-table-column label="值"   prop="value" show-overflow-tooltip/>
+              <el-table-column label="分数" prop="score" show-overflow-tooltip v-if="redisValue.type === 'zset'"/>
+
+              <el-table-column label="操作" :width="canEdit ? 100 : 60" fixed="right" align="center">
+                <template #default="scope">
+                  <div class="me-flex" :style="{justifyContent: canEdit ? 'space-between' : 'center'}">
+                    <me-icon info="复制" icon="el-icon-document-copy" class="icon-btn"  @click.stop="copy(scope.row.value) "/>
+                    <me-icon info="编辑" icon="el-icon-edit" class="icon-btn"  @click.stop="fieldSet(scope.row, scope.$index)" v-if="canEdit"/>
+                    <el-popconfirm :hide-after="0" title="确定删除吗？" @confirm.stop="fieldDel(scope.row)" v-if="canEdit">
+                      <template #reference>
+                        <me-icon info="删除" icon="el-icon-delete" class="icon-btn"/>
+                      </template>
+                    </el-popconfirm>
+                  </div>
+                </template>
+              </el-table-column>
+            </el-table>
+            <!-- 字段编辑 -->
+            <FieldSet ref="fieldSetRef" @success="refreshKey" @closed="fieldSetInit" class="field-set"/>
+          </div>
         </div>
 
-        <el-button-group class="btn-rt" v-if="viewType === 'json'">
-          <el-button>Size: {{ humanSize(global.redisValue.rawValue.length) }}</el-button>
-          <me-button info="复制" icon="el-icon-document-copy" @click="copy(showValue)"/>
-          <me-button info="默认开启美化，开启后针对hash/list/set/json等进行格式化，关闭后显示原始值toString"
-                     placement="bottom-end"
-                     icon="el-icon-magic-stick"
-                     :type="isPretty ? 'info' : ''"
-                     @click="isPretty = !isPretty"/>
-        </el-button-group>
-
-        <div class="btn-rb" v-if="stringTypeOrWithHashKey && !global.readonly">
-          <me-button class="save" info="保存" type="danger" icon="me-icon-save" @click="setValue" placement="top"/>
-        </div>
-
-        <div class="btn-rb" v-if="!stringTypeOrWithHashKey">
+        <!-- string类型不显示，带有hashKey不显示, 命中黑名单的hash类型不显示-->
+        <div class="btn-rb" v-if="!(stringTypeOrWithHashKey || hashType && showValue.startsWith('['))">
           <el-segmented v-model="viewType" :options="viewTypeList">
             <template #default="scope">
               <me-icon name="JSON展示" icon="me-icon-json"  hint placement="top" v-if="scope.item === 'json'"/>
@@ -219,6 +351,9 @@ function rowDeleteValue() {
       </div>
     </template>
     <el-empty v-else description="未选择任何键"></el-empty>
+
+    <!-- 字段新增 -->
+    <FieldAdd ref="fieldAddRef" @success="refreshKey"/>
   </div>
 </template>
 
@@ -249,6 +384,7 @@ function rowDeleteValue() {
     overflow: hidden;
 
     .btn-rt {
+      background-color: #272822;
       position: absolute;
       right: 0;
       top: 0;
@@ -258,6 +394,34 @@ function rowDeleteValue() {
       position: absolute;
       right: 0;
       bottom: 0;
+      z-index: 10;  // 当表格数据较多时，可以显示在上方
+    }
+
+    .table-view {
+      margin-top: 10px;
+      flex-grow: 1;
+      height: 0;
+      width: 100%;
+      position: relative;
+
+      :deep(.el-table) {
+        .field-set-row {
+          --el-table-tr-bg-color: var(--el-color-warning-light-9);
+        }
+
+        .field-setting {
+          cursor: pointer;
+        }
+      }
+
+      .field-set {
+        position: absolute;
+        top: 0;
+        right: 0;
+        z-index: 20;
+        width: 60%;
+        height: 100%;
+      }
     }
   }
 }

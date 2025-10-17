@@ -1,28 +1,41 @@
-<script setup>
+<script setup lang="ts">
 import '@xterm/xterm/css/xterm.css'
 import {Terminal} from '@xterm/xterm'
 import {FitAddon} from '@xterm/addon-fit'
-import {onMounted, onUnmounted, computed} from 'vue'
+import {onMounted, onUnmounted, computed, watch} from 'vue'
 
-// TODO 退格时中文字符的支持
-// TODO 移动光标后的插入新字符支持
-// TODO 命令超过一行的处理
-// TODO Tab键命令提示
-// TODO 集群节点选择
+/*
+ANSI 转义序列颜色规则
+  ANSI 转义序列以 \x1B[ 开头，以 m 结尾，中间的数字用于指定不同的显示属性，
+  其中与前景色（文本颜色）相关的代码范围是 30 - 37，代表不同的基本颜色，具体对应关系如下：
+
+  30m：黑色
+  31m：红色
+  32m：绿色
+  33m：黄色
+  34m：蓝色
+  35m：洋红色（紫红色）
+  36m：青色
+  37m：白色
+*/
+// TODO 命令提示
 const {welcome, prefix, execCommand} = defineProps({
   welcome: {
     type: String,
-    default: '欢迎使用 \x1B[1;3;31mRedisME\x1B[0m Terminal',
+    // \x1B[1;3;32m 表示: 粗体;斜体;颜色
+    default: '欢迎使用 \x1B[1;3;32mRedisME\x1B[0m Terminal',
   },
   prefix: {
     type: String,
-    default: '\x1B[1;3;31m$ \x1B[0m',
+    default: '\x1B[1;3;32m$ \x1B[0m',
   },
   execCommand: {
     type: Function,
-    default: async (command) => `TODO 后台运行命令: ${command}`,
+    default: async (command: string) => `TODO 后台运行命令: ${command}`,
   },
 })
+
+watch(() => prefix, () => prompt())
 
 // 参考官网示例: https://xtermjs.org/js/demo.js
 // 主题
@@ -73,8 +86,8 @@ onMounted(() => {
   term.open(document.getElementById('terminal'))
   fitAddon.fit() // 适配元素大小
   term.focus()
-  term.writeln(welcome)
-  term.write(prefix)
+  term.write(welcome)
+  prompt()
   window.addEventListener('resize', resizeTerm)
 })
 
@@ -84,7 +97,7 @@ onUnmounted(() => {
 })
 
 function cursorLen(str) {
-  let length = 0
+  let length = 0;
   for (let i = 0; i < str.length; i++) {
     const char = str.charCodeAt(i)
     if (char >= 0x0000 && char <= 0x00ff) {
@@ -93,51 +106,51 @@ function cursorLen(str) {
       length += 2
     }
   }
-  return length
+  return length;
 }
 
 const prefixClean = computed(() => prefix.replace(/\x1B\[[0-9;]*m/g, '')) // 移除ANSI转义序列
-const prefixLen = computed(() => cursorLen(prefixClean.value))
+const prefixLen  = computed(() => cursorLen(prefixClean.value))
 
 // 输入数据的处理
 const onTermData = (data) => {
   switch (data) {
     case '\u0003': // Ctrl+C
-      keyCtrlC()
-      break
+      keyCtrlC();
+      break;
     case '\r':     // Enter键
-      keyEnter()
-      break
+      keyEnter();
+      break;
     case '\u001B[A': // 上箭头
-      navigateHistory('up')
-      break
+      navigateHistory('up');
+      break;
     case '\u001B[B': // 下箭头
-      navigateHistory('down')
-      break
+      navigateHistory('down');
+      break;
     case '\u001B[D': // 左箭头
-      moveCursorLeft()
-      break
+      moveCursorLeft();
+      break;
     case '\u001B[C': // 右箭头
-      moveCursorRight()
-      break
+      moveCursorRight();
+      break;
     case '\u0001': // Ctrl+A
-      moveCursorToStart()
-      break
+      moveCursorToStart();
+      break;
     case '\u0005': // Ctrl+E
-      moveCursorToEnd()
-      break
+      moveCursorToEnd();
+      break;
     case '\u007F': // Backspace
-      backspace()
-      break
+      backspace();
+      break;
     case '\t': // Tab键（自动补全）
-      autoComplete()
-      break
+      autoComplete();
+      break;
     case '\u000c': // Ctrl+L
-      clearScreen()
-      break
+      clearScreen();
+      break;
     default:
       inputData(data)
-      break
+      break;
   }
 }
 
@@ -146,10 +159,9 @@ function getCursorX() {
   return term.buffer.active.cursorX
 }
 
-function getLine() {
+function getLine(){
   return term.buffer.active.getLine(term.buffer.active.cursorY).translateToString(true)
 }
-
 function getCommand() {
   return getLine().substring(prefixClean.value.length)
 }
@@ -171,7 +183,7 @@ async function keyEnter() {
 
     // 添加到历史记录（避免重复添加）
     if (commandHistory.length === 0 ||
-        commandHistory[commandHistory.length - 1] !== command) {
+      commandHistory[commandHistory.length - 1] !== command) {
       commandHistory.push(command)
     }
 
@@ -187,7 +199,7 @@ async function keyEnter() {
 
 // 历史命令处理
 let commandHistory = []
-let historyIndex = -1
+let historyIndex   = -1
 
 function navigateHistory(direction) {
   if (commandHistory.length === 0) return
@@ -224,7 +236,6 @@ function moveCursorLeft() {
   if (getCursorX() <= prefixLen.value) return
   term.write('\x1B[D')
 }
-
 function moveCursorRight() {
   if (getCursorX() >= getLine().length) return
   term.write('\x1B[C')
@@ -247,13 +258,12 @@ function backspace() {
 }
 
 // TODO 自动完成
-function autoComplete() {
-}
+function autoComplete() {}
 
 // 清除屏幕
 function clearScreen() {
   term.write('\x1B[2J\x1B[3J\x1B[H') // 清除整个屏幕并移动光标到左上角
-  term.writeln(welcome) // 重新显示欢迎信息
+  term.write(welcome) // 重新显示欢迎信息
   prompt() // 显示提示符
 }
 

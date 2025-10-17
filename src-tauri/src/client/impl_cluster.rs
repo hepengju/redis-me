@@ -42,7 +42,11 @@ impl RedisMeCluster {
     // 获取节点路由
     fn get_node_route(&self, node: Option<String>) -> AnyResult<(RoutingInfo, String)> {
         let node: String = if let Some(node) = node {
-            node.to_string()
+            if node == "" {
+                random_item(&self.node_list).node.clone()
+            } else {
+                node.to_string()
+            }
         } else {
             random_item(&self.node_list).node.clone()
         };
@@ -163,7 +167,7 @@ impl RedisMeClient for RedisMeCluster {
         // Error: This command cannot be safely routed in cluster mode- ClientError
         // let keys: Vec<String> = conn.scan_options(opts)?.collect();
         let mut conn = self.pool.get()?;
-        let mut cc = param.cursor;
+        let mut cc = param.cursor.unwrap_or_default();
 
         // 空白或单字母查询，扫描1000槽位数即可；否则扫描10000个槽位数
         let batch_count = if param.pattern.replace("*", "").chars().count() <= 1 {

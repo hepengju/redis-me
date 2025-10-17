@@ -1,27 +1,21 @@
 <script setup>
-import useGlobalStore from '@/utils/store.js'
-import RedisTerminal from './tag/RedisTerminal.vue'
 import RedisInfo from './tag/RedisInfo.vue'
-import RedisMemory from './tag/RedisMemory.vue'
-import RedisSlow from './tag/RedisSlow.vue'
 import RedisValue from './tag/RedisValue.vue'
-import RedisChart from './tag/RedisChart.vue'
-import RedisTauri from "@/views/tag/RedisTauri.vue";
+// import RedisSlow from './tag/RedisSlow.vue'
+// import RedisMemory from './tag/RedisMemory.vue'
+// import RedisTerminal from './tag/RedisTerminal.vue'
+// import RedisConfig from './tag/RedisConfig.vue'
+// import RedisClient from './tag/RedisClient.vue'
+// import RedisMonitor from './tag/RedisMonitor.vue'
+// import RedisPubsub from './tag/RedisPubsub.vue'
 
-
-const global = useGlobalStore()
+// 共享数据
+const share = inject('share')
+const canEdit = computed(() => true)
 </script>
 
 <template>
-  <el-tabs class="redis-tag" v-model="global.tabName" type="border-card" addable>
-
-    <el-tab-pane name="tauri" lazy>
-      <template #label>
-        <me-icon name="Tauri" icon="el-icon-data-line"/>
-      </template>
-      <RedisTauri/>
-    </el-tab-pane>
-
+  <el-tabs class="redis-tag" v-model="share.tabName" type="border-card">
     <el-tab-pane name="info">
       <template #label>
         <me-icon name="信息" icon="el-icon-calendar"/>
@@ -29,49 +23,61 @@ const global = useGlobalStore()
       <RedisInfo/>
     </el-tab-pane>
 
-    <el-tab-pane name="value" lazy>
+    <el-tab-pane name="value">
       <template #label>
         <me-icon name="键值" icon="el-icon-memo"/>
       </template>
       <RedisValue/>
     </el-tab-pane>
 
-    <el-tab-pane name="slow" lazy>
-      <template #label>
-        <me-icon name="慢日志" icon="me-icon-slow"/>
-      </template>
-      <RedisSlow/>
-    </el-tab-pane>
+<!--    <el-tab-pane name="console" lazy v-if="canEdit">-->
+<!--      <template #label>-->
+<!--        <me-icon name="终端" icon="me-icon-console"/>-->
+<!--      </template>-->
+<!--      <RedisTerminal/>-->
+<!--    </el-tab-pane>-->
 
-    <el-tab-pane name="console" lazy>
-      <template #label>
-        <me-icon name="终端" icon="me-icon-console"/>
-      </template>
-      <RedisTerminal/>
-    </el-tab-pane>
+<!--    <el-tab-pane name="config" lazy>-->
+<!--      <template #label>-->
+<!--        <me-icon name="配置" icon="el-icon-wallet"/>-->
+<!--      </template>-->
+<!--      <RedisConfig/>-->
+<!--    </el-tab-pane>-->
 
-    <el-tab-pane name="memory" lazy>
-      <template #label>
-        <me-icon name="内存分析" icon="me-icon-memory"/>
-      </template>
-      <RedisMemory/>
-    </el-tab-pane>
+<!--    <el-tab-pane name="memory" lazy v-if="canEdit">-->
+<!--      <template #label>-->
+<!--        <me-icon name="内存" icon="me-icon-memory"/>-->
+<!--      </template>-->
+<!--      <RedisMemory/>-->
+<!--    </el-tab-pane>-->
 
-    <el-tab-pane name="chart" lazy>
-      <template #label>
-        <me-icon name="监控图表" icon="el-icon-data-line"/>
-      </template>
-      <RedisChart/>
-    </el-tab-pane>
+<!--    <el-tab-pane name="slow" lazy>-->
+<!--      <template #label>-->
+<!--        <me-icon name="慢日志" icon="me-icon-slow"/>-->
+<!--      </template>-->
+<!--      <RedisSlow/>-->
+<!--    </el-tab-pane>-->
 
+<!--    <el-tab-pane name="client" lazy>-->
+<!--      <template #label>-->
+<!--        <me-icon name="客户端" icon="el-icon-mic"/>-->
+<!--      </template>-->
+<!--      <RedisClient/>-->
+<!--    </el-tab-pane>-->
 
+<!--    <el-tab-pane name="monitor" lazy v-if="canEdit">-->
+<!--      <template #label>-->
+<!--        <me-icon name="监控" icon="el-icon-monitor"/>-->
+<!--      </template>-->
+<!--      <RedisMonitor/>-->
+<!--    </el-tab-pane>-->
 
-    <!-- 此处利用tab的新增按钮位置放置一个redis值的编辑功能 -->
-    <template #add-icon>
-      <el-switch v-model="global.readonly" v-if="global.tabName === 'value'"
-                 inline-prompt active-text="只读" inactive-text="编辑"
-                 style="margin-right: 60px;--el-switch-on-color: #13ce66"/>
-    </template>
+<!--    <el-tab-pane name="pubsub" lazy v-if="canEdit">-->
+<!--      <template #label>-->
+<!--        <me-icon name="发布订阅" icon="me-icon-pubsub"/>-->
+<!--      </template>-->
+<!--      <RedisPubsub/>-->
+<!--    </el-tab-pane>-->
   </el-tabs>
 </template>
 

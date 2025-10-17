@@ -61,7 +61,7 @@ impl RedisMeClient for RedisMeSingle {
     fn scan(&self, param: ScanParam) -> AnyResult<ScanResult> {
         let mut conn = self.pool.get()?;
 
-        let mut cc = param.cursor;
+        let mut cc = param.cursor.unwrap_or_default();
         let batch_count = if param.pattern.replace("*", "").chars().count() <= 1 {
             1000
         } else {

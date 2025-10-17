@@ -22,11 +22,12 @@ api_model!( RedisNode {
 
 // 扫描参数
 api_model!( ScanParam {
+    #[serde(rename = "match")]
     pattern: String,
     count: u64,
     scan_type: Option<String>,
 
-    cursor: ScanCursor,
+    cursor: Option<ScanCursor>,
     load_all: bool,
 });
 
@@ -37,6 +38,17 @@ api_model!( ScanCursor {
     now_cursor: u64,
     finished: bool,
 });
+
+impl Default for ScanCursor {
+    fn default() -> Self {
+        ScanCursor {
+            ready_nodes: vec![],
+            now_node: "".to_string(),
+            now_cursor: 0,
+            finished: false,
+        }
+    }
+}
 
 // 扫描结果
 api_model!( ScanResult {

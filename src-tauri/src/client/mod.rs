@@ -50,12 +50,12 @@ mod tests {
             count: 10,
             scan_type: None,
 
-            cursor: ScanCursor {
+            cursor: Some(ScanCursor {
                 ready_nodes: vec![],
                 now_node: "".into(),
                 now_cursor: 0,
                 finished: false,
-            },
+            }),
             load_all: false,
         };
         let result1 = client().scan(param).unwrap();
@@ -65,7 +65,7 @@ mod tests {
             pattern: "*".into(),
             count: 10,
             scan_type: None,
-            cursor: result1.cursor,
+            cursor: Some(result1.cursor),
             load_all: false,
         };
         let result2 = client().scan(param2).unwrap();
