@@ -7,6 +7,8 @@ use rand::prelude::IteratorRandom;
 use rand::Rng;
 use redis::{FromRedisValue, Value};
 use std::collections::HashMap;
+use base64::Engine;
+use base64::prelude::BASE64_STANDARD;
 
 // 统一应用返回值
 pub type AnyResult<T> = anyhow::Result<T>;

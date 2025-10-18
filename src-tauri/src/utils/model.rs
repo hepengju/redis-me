@@ -1,13 +1,11 @@
 #![cfg_attr(test, allow(warnings))] // 整个文件在测试时禁用该警告
 
-use std::time::Instant;
-use chrono::{DateTime, Local, Utc};
 use crate::api_model;
 use crate::utils::util::vec8_to_display_string;
 use redis::{RedisWrite, ToRedisArgs, ToSingleRedisArg};
 use serde::{Deserialize, Serialize};
 
-api_model!(RedisInfo {
+api_model!( RedisInfo {
     node: String,
     info: String,
 });
@@ -57,11 +55,12 @@ api_model!( ScanResult {
 });
 
 // Redis键: 由于键是字节存储的，考虑转换为utf-8字符串显示后可能会丢失信息，因此封装为对象
-// 备注: fastjson针对bytes序列化示例: "bytes":[104,101,112,101,110,103,106,117],
-//      与serde序列化Vec<u8>是一致的. 为了方便处理, 不考虑base64编码了.
-//      jackson针对bytes序列化, 默认会进行base64编码, 返回是字符串
+// 备注: 为了方便传输与前端对比是否相等，将bytes序列化为base64字符串。
+//     （jackson针对bytes序列化, 默认会进行base64编码, 返回是字符串）
 api_model!( RedisKey {
     key: String,    // 显示
+
+    #[serde(with = "v8_base64")]
     bytes: Vec<u8>, // 修改、删除等依据 ==>
 });
 
@@ -182,6 +181,8 @@ api_model!( RedisMemoryParam {
 // 内存分析结果
 api_model!( RedisKeySize {
     key: String,    // 显示
+
+    #[serde(with = "v8_base64")]
     bytes: Vec<u8>, // 修改、删除等依据
 
     #[serde(rename = "type")]
@@ -233,3 +234,29 @@ api_model!( RedisClientInfo {
     rbs: Option<String>,            // 客户端读取缓冲区当前大小（字节）。在 Redis 7.0 中添加
     io_thread: Option<String>,       // 分配给客户端的 I/O 线程 ID。在 Redis 8.0 中添加
 });
+
+//~~~~~ 自定义Vec<u8>序列化为Base64字符串
+mod v8_base64 {
+    use base64::Engine;
+    use base64::prelude::BASE64_STANDARD;
+    use serde::{Deserialize, Deserializer, Serializer};
+    use serde::de::Error;
+
+    pub fn serialize<S>(bytes: &Vec<u8>, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        let base64_string = BASE64_STANDARD.encode(bytes);
+        serializer.serialize_str(&base64_string)
+    }
+
+    pub fn deserialize<'de, D>(deserializer: D) -> Result<Vec<u8>, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        let base64_string = String::deserialize(deserializer)?;
+        let bytes = BASE64_STANDARD.decode(base64_string.as_bytes())
+            .map_err(|e| Error::custom(format!("Base64 decode error: {}", e)))?;
+        Ok(bytes)
+    }
+}

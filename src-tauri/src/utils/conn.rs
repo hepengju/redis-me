@@ -8,7 +8,7 @@ use std::time::Duration;
 // 获取连接池(单机)
 // docker run -d --net host --name redis-6379 redis:7 --requirepass hepengju
 pub fn get_pool_single(id: &str) -> AnyResult<Pool<redis::Client>> {
-    let is_company = true;
+    let is_company = false;
 
     let mut host = "192.168.1.11";
     let mut password = "hepengju";
@@ -30,7 +30,7 @@ pub fn get_pool_single(id: &str) -> AnyResult<Pool<redis::Client>> {
 }
 // 获取连接池(集群)
 pub fn get_pool_cluster(id: &str) -> AnyResult<Pool<ClusterClient>> {
-    let is_company = true;
+    let is_company = false;
 
     let mut nodes = vec!["rediss://192.168.1.11:7001"];
     let mut password = "hepengju";
