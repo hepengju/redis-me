@@ -1,7 +1,7 @@
 <script setup>
 import 'dayjs/locale/zh-cn'
 import zhCn from 'element-plus/es/locale/lang/zh-cn'
-import RedisMain from '@/views/index.vue'
+import RedisMain from '@/views/RedisMain.vue'
 </script>
 
 <template>

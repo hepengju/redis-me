@@ -58,25 +58,10 @@ async function apiNodeList() {
 
 <style scoped lang="scss">
 .redis-main {
-  overflow: hidden;
-  // 恢复部分ElementPlus的属性
-  --el-color-primary: #409EFF;
-  --el-border-color: #4C4D4F;
-  margin-bottom: 10px;
-  margin-right: 10px;
-
-  /* 自定义深色背景颜色 */
-  --me-bg-color: #2b2b2b;
-
-  background-color: var(--me-bg-color);
-  --el-bg-color: var(--me-bg-color);         /* el-dialog的背景色: 基础设置-标题 */
-  --el-card-bg-color: var(--me-bg-color);    /* el-tab的背景色: 基础设置-外观    */
-  --el-bg-color-overlay: var(--me-bg-color); /* el-tabs的背景色: Redis信息       */
-
-  height: calc(100% - 10px);
+  height: 100%;
   //border: 2px solid blue;
 
-  //中间分隔面板的样式调整
+  /* 中间分隔面板的样式调整 */
   :deep(.el-splitter-bar) {
     width: 5px !important;
 
@@ -84,21 +69,6 @@ async function apiNodeList() {
       width: 0; // 宽度为0，不显示原始的竖线
       background-color: transparent;
     }
-  }
-
-  /* 单行文本省略号 */
-  :deep(.single-line-ellipsis) {
-    white-space: nowrap;     /* 禁止文本换行 */
-    overflow: hidden;        /* 隐藏超出范围的内容 */
-    text-overflow: ellipsis; /* 使用省略号 */
-  }
-
-  /* flex布局 */
-  :deep(.me-flex) {
-    display: flex;
-    flex-direction: row;
-    justify-content: space-between;
-    align-items: center
   }
 
   /* icon图标hover变色 */
