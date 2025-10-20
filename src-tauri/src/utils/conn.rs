@@ -5,14 +5,14 @@ use redis::cluster::ClusterClient;
 use redis::TlsMode;
 use std::time::Duration;
 
+const IS_COMPANY: bool = true;
+
 // 获取连接池(单机)
 // docker run -d --net host --name redis-6379 redis:7 --requirepass hepengju
-pub fn get_pool_single(id: &str) -> AnyResult<Pool<redis::Client>> {
-    let is_company = false;
-
+pub fn get_pool_single(_id: &str) -> AnyResult<Pool<redis::Client>> {
     let mut host = "192.168.1.11";
     let mut password = "hepengju";
-    if is_company {
+    if IS_COMPANY {
         host = "10.105.100.63";
         password = "Jiyu1212";
     }
@@ -29,12 +29,10 @@ pub fn get_pool_single(id: &str) -> AnyResult<Pool<redis::Client>> {
     Ok(pool)
 }
 // 获取连接池(集群)
-pub fn get_pool_cluster(id: &str) -> AnyResult<Pool<ClusterClient>> {
-    let is_company = false;
-
+pub fn get_pool_cluster(_id: &str) -> AnyResult<Pool<ClusterClient>> {
     let mut nodes = vec!["rediss://192.168.1.11:7001"];
     let mut password = "hepengju";
-    if is_company {
+    if IS_COMPANY {
         nodes = vec!["rediss://10.106.0.167:7001"];
         password = "Jiyu1212";
     }
