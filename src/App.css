@@ -2,6 +2,8 @@ html, body {
   margin: 0;
   padding: 0;
   height: 100%; /*app的height单独加高度100%不生效*/
+  /*参考ElementPlus网站的字体*/
+  font-family: Inter,Helvetica Neue,Helvetica,PingFang SC,Hiragino Sans GB,Microsoft YaHei,微软雅黑,Arial,sans-serif;
 }
 
 /* 黑色主题 */
