@@ -1,7 +1,7 @@
 export const mockConnList = [
   {
     id: 'single',
-    name: '127.0.0.1-本机',
+    name: '127.0.0.1-单机',
     host: '127.0.0.1',
     port: '6379',
     username: '',
@@ -16,7 +16,7 @@ export const mockConnList = [
   },
   {
     id: 'cluster',
-    name: '10.106.100.140',
+    name: '10.106.100.140-集群',
     host: '10.106.100.140',
     port: '7001',
     username: '',
@@ -29,20 +29,20 @@ export const mockConnList = [
     order: 2,
     color: '#67C23A',
   },
-  {
-    id: 'sit',
-    name: '10.106.0.167-测试',
-    host: '10.106.0.167',
-    port: '7001',
-    username: '',
-    password: 'Jiyu1212',
-    cluster: true,
-    readonly: true,
-    ssl: true,
-    sslOption: {},
-    order: 3,
-    color: '#F56C6C',
-  },
+  // {
+  //   id: 'sit',
+  //   name: '10.106.0.167-测试',
+  //   host: '10.106.0.167',
+  //   port: '7001',
+  //   username: '',
+  //   password: 'Jiyu1212',
+  //   cluster: true,
+  //   readonly: true,
+  //   ssl: true,
+  //   sslOption: {},
+  //   order: 3,
+  //   color: '#F56C6C',
+  // },
 ]
 
 export const mockDbList = [

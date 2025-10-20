@@ -5,7 +5,7 @@ use redis::cluster::ClusterClient;
 use redis::TlsMode;
 use std::time::Duration;
 
-const IS_COMPANY: bool = true;
+const IS_COMPANY: bool = false;
 
 // 获取连接池(单机)
 // docker run -d --net host --name redis-6379 redis:7 --requirepass hepengju
