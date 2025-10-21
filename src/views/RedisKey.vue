@@ -72,7 +72,7 @@ const filterKeyList = computed(() => {
   return keyList.value.filter(k => k.key.toLowerCase().indexOf(key) > -1)
 })
 
-async function scanKey(useCursor, loadAll) {
+async function scanKey(useCursor = false, loadAll = false) {
   loading.value = true
   try {
     if (!useCursor) {
@@ -101,7 +101,9 @@ async function scanKey(useCursor, loadAll) {
 }
 
 onMounted(() => bus.on(DELETE_KEY, deleteKey))
+onMounted(() => bus.on(CONN_REFRESH, refresh))
 onUnmounted(() => bus.off(DELETE_KEY, deleteKey))
+onUnmounted(() => bus.off(CONN_REFRESH, refresh))
 function deleteKey(redisKey) {
   keyList.value = keyList.value.filter(rk => rk.bytes !== redisKey.bytes)
   share.redisKey = null
@@ -200,7 +202,9 @@ function keyMemory(folder) {
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 // 切换连接
 function changeConn() {
-  bus.emit(CONN_REFRESH)
+  if (share.conn) {
+    bus.emit(CONN_REFRESH)
+  }
 }
 
 // 弹出框
@@ -284,7 +288,7 @@ function saveConn(_, mode) {
       <Setting :dialog="dialog"/>
     </div>
 
-    <div class="key-main">
+    <div class="key-main" v-if="share.conn">
       <el-input class="key-search" v-model="keyword" placeholder="Enter 键进行搜索" @keyup.enter="scanKey(false, false)" clearable>
         <template #prepend>
           <el-dropdown placement="bottom-start" @command="chooseKeyType">

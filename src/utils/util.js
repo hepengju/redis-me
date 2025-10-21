@@ -22,6 +22,19 @@ export const PREDEFINE_COLORS = [
     '#909399',  // info
 ]
 
+// 打印日志
+export async function invoke_then(command, params) {
+    try {
+        const data = await invoke(command, params)
+        console.log(`命令: ${command}, 参数: ${JSON.stringify(params)}, 结果: ${JSON.stringify(data).slice(0, 200)}`)
+        return {code: 200, data}
+    } catch (error) {
+        ElMessageBox.alert(error, `api err: ${command}`, {type: 'error'})
+        console.log(`命令: ${command}, 参数: ${JSON.stringify(params)}, 错误: ${error}`)
+        return {code: 500, error}
+    }
+}
+
 // 复制文本
 export function copy(text) {
     useClipboard({legacy: true}).copy(text)
@@ -106,17 +119,4 @@ export function commonDeleteKey(env, redisKey) {
             ElMessageBox.alert(res.msg, "提示", {type: 'error'})
         }
     }).catch(() => {})
-}
-
-// 打印日志
-export async function invoke_then(command, params) {
-    try {
-        const data = await invoke(command, params)
-        console.log(`命令: ${command}, 参数: ${JSON.stringify(params)}, 结果: ${JSON.stringify(data).slice(0, 100)}`)
-        return {code: 200, data}
-    } catch (error) {
-        ElMessageBox.alert(error, "提示", {type: 'error'})
-        console.log(`命令: ${command}, 参数: ${JSON.stringify(params)}, 错误: ${error}`)
-        return {code: 500, error}
-    }
 }

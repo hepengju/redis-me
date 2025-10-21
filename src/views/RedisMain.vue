@@ -2,11 +2,11 @@
 import RedisKey from './RedisKey.vue'
 import RedisTag from './RedisTag.vue'
 import {sortBy} from 'lodash'
-import {invoke_then} from "@/utils/util.js";
+import {bus, CONN_REFRESH, invoke_then} from "@/utils/util.js";
 import {mockConnList} from "@/utils/api-mock.js";
 
 // 共享数据
-const tabShow = ref(false)
+const tagShow = ref(false)
 const share = reactive({
   conn: '',     // 当前连接
   connList: [], // 连接列表
@@ -19,16 +19,23 @@ const share = reactive({
 share.connList = mockConnList
 provide('share', share)
 
-// 当环境发生变化时，销毁整个redisTag组件（避免状态保留）
-watch(() => share.conn, async (newValue) => {
-  // 生产环境颜色特殊展示
-  share.color = newValue.id.indexOf('cluster') > -1 ? 'var(--el-color-danger)' : 'var(--el-color-primary)'
-  await apiNodeList()
+// 当环境发生变化时，销毁整个key和tag组件（避免状态保留）
+onMounted(() => bus.on(CONN_REFRESH, toggleTag))
+onUnmounted(() => bus.off(CONN_REFRESH, toggleTag))
 
-  tabShow.value = false
-  nextTick(() => {
-    tabShow.value = true
-  })
+function toggleTag() {
+  tagShow.value = false
+  nextTick(() => tagShow.value = true)
+}
+
+watch(() => share.conn, async (newValue) => {
+  toggleTag()
+
+  if (newValue) {
+    // 生产环境颜色特殊展示
+    share.color = newValue.id.indexOf('cluster') > -1 ? 'var(--el-color-danger)' : 'var(--el-color-primary)'
+    await apiNodeList()
+  }
 })
 
 // 获取节点列表
@@ -50,7 +57,7 @@ async function apiNodeList() {
 
       <!-- 右侧值 -->
       <el-splitter-panel :min="250">
-        <RedisTag v-if="tabShow"/>
+        <RedisTag v-if="tagShow && share.conn"/>
       </el-splitter-panel>
     </el-splitter>
   </div>
