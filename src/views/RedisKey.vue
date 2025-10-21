@@ -216,7 +216,7 @@ const dialog = reactive({
 // 处理额外命令
 const connRef = useTemplateRef('conn')
 const settingRef = useTemplateRef('setting')
-function handleCommand(command) {
+async function handleCommand(command) {
   if (command === 'addConn') {
     dialog.conn = true
     nextTick(() => connRef.value.open('add'))
@@ -227,6 +227,7 @@ function handleCommand(command) {
     // TODO
     //global.deleteConn(global.conn, true)
   } else if (command === 'refreshConn') {
+    await invoke_then('disconnect', {id: share.conn.id})
     bus.emit(CONN_REFRESH)
   } else if (command === 'setting') {
     dialog.setting = true
@@ -269,10 +270,8 @@ function saveConn(_, mode) {
         <el-button type="success" icon="el-icon-operation"/>
         <template #dropdown>
           <el-dropdown-menu>
-            <el-dropdown-item command="refreshConn"><me-icon name="刷新连接" icon="el-icon-refresh"/></el-dropdown-item>
-            <el-dropdown-item command="mockData"   ><me-icon name="模拟数据"   icon="el-icon-coffee-cup"/></el-dropdown-item>
-            <el-dropdown-item command="clearPool"  ><me-icon name="重置连接池" icon="el-icon-coffee-cup"/></el-dropdown-item>
-
+            <el-dropdown-item command="refreshConn" :disabled="!share.conn"><me-icon name="刷新连接" icon="el-icon-refresh"/></el-dropdown-item>
+            <el-dropdown-item command="mockData"    :disabled="!share.conn"><me-icon name="模拟数据"   icon="el-icon-coffee-cup"/></el-dropdown-item>
             <el-dropdown-item command="addConn"><me-icon name="新增连接" icon="el-icon-plus"/></el-dropdown-item>
             <el-dropdown-item command="editConn" :disabled="!share.conn"><me-icon name="编辑连接" icon="el-icon-edit"/></el-dropdown-item>
             <el-dropdown-item command="deleteConn" :disabled="!share.conn"><me-icon name="删除连接" icon="el-icon-delete"/></el-dropdown-item>

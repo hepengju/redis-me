@@ -1,3 +1,4 @@
+use log::info;
 use crate::client::client::RedisMeClient;
 use crate::client::impl_cluster::RedisMeCluster;
 use crate::client::impl_single::RedisMeSingle;
@@ -6,6 +7,7 @@ use anyhow::anyhow;
 use std::collections::HashMap;
 use std::sync::{Arc, RwLock};
 use tauri::{AppHandle, Manager, State};
+use crate::api::info;
 
 #[derive(Default)]
 pub struct AppState {
@@ -59,6 +61,7 @@ impl ClientAccess for AppHandle {
             .write()
             .map_err(|e| anyhow!("Lock error: {e}"))?;
         clients.remove(id);
+        info!("断开连接: {}", id);
         Ok(())
     }
 }
