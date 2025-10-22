@@ -93,9 +93,13 @@ macro_rules! implement_common_commands {
                     serde_json::to_value(list)
                 }
                 ValueType::Hash => {
-                    if let Some(hash_key) = hash_key {
-                        let value: String = conn.hget(&key, hash_key)?;
-                        serde_json::to_value(value)
+                    if let Some(hash_key) = hash_key && !hash_key.is_empty() {
+                        let value: Option<String> = conn.hget(&key, &hash_key)?;
+                        if let Some(str) = value {
+                            serde_json::to_value(str)
+                        } else {
+                            bail!("哈希键不存在: {}", hash_key)
+                        }
                     } else {
                         let value: HashMap<String, String> = conn.hgetall(&key)?;
                         serde_json::to_value(value)

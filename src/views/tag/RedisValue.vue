@@ -296,7 +296,7 @@ watch(() => share.tabName, newValue => {
             <el-button icon="el-icon-plus" @click="fieldAdd">插入行</el-button>
           </div>
           <div class="table-view">
-            <el-table :data="filterDataList" border stripe ref="table" size="large" height="100%"
+            <el-table :data="filterDataList" border stripe ref="table" height="100%"
                       :row-class-name="rowClassName" @row-click="rowClick">
               <el-table-column label="#" type="index" width="50" align="center" show-overflow-tooltip>
                 <template #default="scope">

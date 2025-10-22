@@ -1,6 +1,7 @@
 <script setup>
 import RedisInfo from './tag/RedisInfo.vue'
 import RedisValue from './tag/RedisValue.vue'
+import RedisTauri from './tag/RedisTauri.vue'
 // import RedisSlow from './tag/RedisSlow.vue'
 // import RedisMemory from './tag/RedisMemory.vue'
 // import RedisTerminal from './tag/RedisTerminal.vue'
@@ -78,6 +79,13 @@ const canEdit = computed(() => true)
 <!--      </template>-->
 <!--      <RedisPubsub/>-->
 <!--    </el-tab-pane>-->
+
+    <el-tab-pane name="tauri" lazy>
+      <template #label>
+        <me-icon name="Tauri" icon="el-icon-data-line"/>
+      </template>
+      <RedisTauri/>
+    </el-tab-pane>
   </el-tabs>
 </template>
 

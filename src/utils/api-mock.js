@@ -4467,8 +4467,8 @@ export const mockApiCommands = [
     param: {
       id: 'test',
       key: {
-        key: 'hepengju:string',
-        bytes: []
+        "key": "hepengju:key",
+        "bytes": "aGVwZW5nanU6a2V5"
       },
       hash_key: null
     }

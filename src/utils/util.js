@@ -30,7 +30,7 @@ export async function invoke_then(command, params) {
         //return {code: 200, data}
         return data
     } catch (error) {
-        ElMessageBox.alert(error, `api err: ${command}`, {type: 'error'})
+        ElMessageBox.alert(error, `错误: ${command}`, {type: 'error'})
         console.log(`命令: ${command}, 参数: ${JSON.stringify(params)}, 错误: ${error}`)
         // return {code: 500, error}
         throw error;
