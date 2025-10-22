@@ -10,10 +10,11 @@ const tagShow = ref(false)
 const share = reactive({
   conn: '',     // 当前连接
   connList: [], // 连接列表
+  tagShow: false,
   color: 'var(--el-color-primary)',
   redisKey: null,
   tabName: 'info',
-  nodeList: []
+  nodeList: []  // 节点列表
 })
 
 share.connList = mockConnList
@@ -28,22 +29,18 @@ function toggleTag() {
   nextTick(() => tagShow.value = true)
 }
 
-watch(() => share.conn, async (newValue) => {
+watch(() => share.conn, newConn => {
   toggleTag()
-
-  if (newValue) {
-    // 生产环境颜色特殊展示
-    share.color = newValue.id.indexOf('cluster') > -1 ? 'var(--el-color-danger)' : 'var(--el-color-primary)'
-    await apiNodeList()
+  if (newConn) {
+    share.color = newConn.color
+    apiNodeList()
   }
 })
 
 // 获取节点列表
 async function apiNodeList() {
-  const res = await invoke_then('node_list', {id: share.conn.id})
-  if (res.code == 200) {
-    share.nodeList = sortBy(res.data, 'node')
-  }
+  const data = await invoke_then('node_list', {id: share.conn.id})
+  share.nodeList = sortBy(data, 'node')
 }
 </script>
 

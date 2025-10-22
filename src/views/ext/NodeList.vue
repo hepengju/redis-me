@@ -6,7 +6,7 @@ const share = inject('share')
 </script>
 
 <template>
-  <el-select v-model="node" style="width: 220px" placeholder="指定节点【可选】">
+  <el-select v-model="node" style="width: 220px" placeholder="指定节点【可选】" v-if="share.nodeList.length > 0">
     <el-option v-for="item in share.nodeList" :key="item.node" :value="item.node">
       <el-tag :type="item.master ? 'primary' : 'info'" hit>{{item.node}} ({{item.master ? '主' : '从'}})</el-tag>
     </el-option>

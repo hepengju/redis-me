@@ -75,17 +75,14 @@ const tableData = computed(() => {
 
 async function refresh() {
   loading.value = true
-
-  const res = await invoke_then('info', {id: share.conn.id, node: node.value})
-  if (res.code == 200) {
-    raw.value = res.data.info || ''
+  try {
+    const data = await invoke_then('info', {id: share.conn.id, node: node.value})
+    raw.value = data.info || ''
+    const data2 = await invoke_then('config_get', {id: share.conn.id, pattern: 'save', node: node.value})
+    config.value = data2 || ''
+  } finally {
+    loading.value = false
   }
-
-  const res2 = await invoke_then('config_get', {id: share.conn.id, pattern: 'save', node: node.value})
-  if (res2.code == 200) {
-    config.value = res2.data || ''
-  }
-  loading.value = false
 }
 refresh()
 
@@ -228,7 +225,7 @@ watch(() => share.tabName, newValue => {
             </el-tooltip>
           </el-button>
         </div>
-        <el-table size="large" ref="table" :data="tableData" border stripe height="100%">
+        <el-table ref="table" :data="tableData" border stripe height="100%">
           <el-table-column prop="tag" label="分类" width="120"/>
           <el-table-column prop="key" label="键" show-overflow-tooltip/>
           <el-table-column prop="value" label="值" show-overflow-tooltip/>

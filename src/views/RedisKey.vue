@@ -87,14 +87,11 @@ async function scanKey(useCursor = false, loadAll = false) {
       loadAll: loadAll,
       cursor: cursor.value,
     }
-    //const res = await api.ark.extops.redis.scanCursor(share.env, params)
-    const res = await invoke_then('scan', {id: share.conn.id, param: params})
-    if (res.code == 200) {
-      cursor.value = res.data.cursor
-      keyList.value.push(...res.data.keyList)
-      // 排序下, 虽然后端排序更快，但多次扫描的结果还是需要前端排序
-      keyList.value.sort((a, b) => a.key.toLowerCase().localeCompare(b.key.toLowerCase()))
-    }
+    const data = await invoke_then('scan', {id: share.conn.id, param: params})
+    cursor.value = data.cursor
+    keyList.value.push(...data.keyList)
+    // 排序下, 虽然后端排序更快，但多次扫描的结果还是需要前端排序
+    keyList.value.sort((a, b) => a.key.toLowerCase().localeCompare(b.key.toLowerCase()))
   } finally {
     loading.value = false
   }
@@ -166,8 +163,8 @@ function contextFolder(command, folder){
 }
 
 // mockData
-async function mockData() {
-  await invoke_then('mockData', {id: share.id})
+function mockData() {
+  invoke_then('mockData', {id: share.id})
 }
 
 // 重置连接池

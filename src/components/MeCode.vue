@@ -11,6 +11,7 @@ import 'codemirror/theme/idea.css'
 // import 'codemirror/theme/darcula.css'
 import "codemirror/theme/monokai.css"
 import 'codemirror/addon/display/autorefresh'
+import {useDark} from '@vueuse/core'
 
 // 支持Ctrl+F搜索
 import 'codemirror/addon/search/searchcursor.js'
@@ -31,12 +32,13 @@ const initOptions = reactive({
   border: false,
 })
 
+const isDark = useDark()
 const cmOptions = computed(() => {
   return ({
     ...initOptions,
     mode,
     readOnly,
-    theme: 'monokai'
+    theme: isDark.value ? 'monokai' : 'idea'
   })
 })
 </script>

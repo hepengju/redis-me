@@ -1,7 +1,7 @@
 <script setup>
 import {capitalize} from 'lodash'
 import {bus, copy, DELETE_KEY, humanSize, REFRESH_KEY, commonDeleteKey} from '@/utils/util.js'
-import {ElMessage, ElMessageBox} from 'element-plus'
+import {ElMessage} from 'element-plus'
 import FieldAdd from '../ext/FieldAdd.vue'
 import FieldSet from '../ext/FieldSet.vue'
 import {invoke_then} from "@/utils/util.js";
@@ -98,10 +98,8 @@ async function setTTL(){
     return
   }
 
-  const res = await invoke_then('ttl', {id: share.conn.id, ttl: seconds, ...share.redisKey})
-  if (res.code == 200) {
-    ElMessage.success("设置TTL成功")
-  }
+  await invoke_then('ttl', {id: share.conn.id, ttl: seconds, ...share.redisKey})
+  ElMessage.success("设置TTL成功")
 }
 
 function resetParam(){
@@ -118,14 +116,12 @@ async function refreshKey(reset = true) {
 
   loading.value = true
   try {
-    const res = await invoke_then('get', {id: share.conn.id, redisKey: share.redisKey, hashKey: hashKey.value})
-    if (res.code == 200) {
-      redisValue.value = res.data
-      if (hashKey.value) {
-        withHashKey.value = true
-      } else {
-        withHashKey.value = false
-      }
+    const data = await invoke_then('get', {id: share.conn.id, key: share.redisKey, hashKey: hashKey.value})
+    redisValue.value = data
+    if (hashKey.value) {
+      withHashKey.value = true
+    } else {
+      withHashKey.value = false
     }
   } finally {
     loading.value = false
@@ -146,13 +142,12 @@ function delKey() {
 
 // 保存值
 async function setValue() {
-  const params = {value: redisValue.value.newValue || redisValue.value.value, seconds: redisValue.value.ttl, ...share.redisKey}
-  const res = await invoke_then({id: share.conn.id, params});
-  if (res.code == 200) {
-    ElMessage({message: '保存成功', type: 'success'})
-  } else {
-    ElMessageBox.alert(res.msg, '提示', { type: 'error'})
+  const params = {
+    value: redisValue.value.newValue || redisValue.value.value,
+    seconds: redisValue.value.ttl, ...share.redisKey
   }
+  await invoke_then({id: share.conn.id, params});
+  ElMessage.success('保存成功')
 }
 
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -216,14 +211,8 @@ async function fieldDel(row) {
   if (redisValue.value.type === 'list') {
     params.fieldIndex = redisValue.value.value.indexOf(row.value)
   }
-
-  const res = await invoke_then('field_delete',{id: share.conn.id, params});
-  if (res.code == 200) {
-    ElMessage({message: '删除成功', type: 'success'})
-  } else {
-    ElMessageBox.alert(res.msg, '提示', { type: 'error'})
-  }
-
+  await invoke_then('field_delete',{id: share.conn.id, params});
+  ElMessage.success('删除成功')
   await refreshKey()
 }
 
