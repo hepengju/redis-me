@@ -162,9 +162,9 @@ function contextFolder(command, folder){
   }
 }
 
-// mockData
+// 新增模拟数据
 function mockData() {
-  invoke_then('mockData', {id: share.id})
+  invoke_then('mock_data', {id: share.conn.id, count: 10})
 }
 
 // 重置连接池

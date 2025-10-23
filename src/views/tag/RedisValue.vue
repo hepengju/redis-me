@@ -137,7 +137,7 @@ function deleteKey() {
 }
 
 function delKey() {
-  commonDeleteKey(share.env, share.redisKey)
+  commonDeleteKey(share.conn.id, share.redisKey)
 }
 
 // 保存值
