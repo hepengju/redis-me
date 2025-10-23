@@ -44,7 +44,7 @@ function handleClose(){
 
 function getNodeClass(node){
   const clazz = []
-  if (node.isLeaf && node.data.redisKey.key === contextMenuNode.value?.data?.redisKey.key
+  if (node.isLeaf && node.data.redisKey.key === contextMenuNode.value?.data?.redisKey?.key
   || !node.isLeaf && node.key == contextMenuNode.value?.key) {
     clazz.push('context-key')
   }
@@ -172,8 +172,14 @@ function countLeaves(node) {
 </template>
 
 <style scoped lang="scss">
-// 高亮当前行的颜色
+/* 高亮当前行的颜色 */
 :deep(.el-tree--highlight-current .el-tree-node.is-current>.el-tree-node__content) {
   background-color: var(--el-color-info-light-8);
+}
+
+/* 右键选中的键 */
+:deep(.context-key) {
+  outline: 1px dashed var(--el-color-primary);
+  outline-offset: 1px;
 }
 </style>

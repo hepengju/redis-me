@@ -458,11 +458,5 @@ function saveConn(_, mode) {
   :deep(.choose-key) {
     background-color: var(--el-color-info-light-8);
   }
-
-  /* 右键选中的键 */
-  :deep(.context-key) {
-    outline: 1px dashed var(--el-color-primary);
-    outline-offset: -1px;
-  }
 }
 </style>
