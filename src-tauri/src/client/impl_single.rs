@@ -91,6 +91,7 @@ impl RedisMeClient for RedisMeSingle {
             }
 
             if next_cursor == 0 {
+                cc.finished = true;
                 break;
             }
         }

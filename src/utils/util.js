@@ -26,7 +26,7 @@ export const PREDEFINE_COLORS = [
 export async function invoke_then(command, params) {
     try {
         const data = await invoke(command, params)
-        console.log(`命令: ${command}, 参数: ${JSON.stringify(params)}, 结果: ${JSON.stringify(data).slice(0, 200)}`)
+        console.log(`命令: ${command}, 参数: ${JSON.stringify(params)}, 结果: `, data)
         //return {code: 200, data}
         return data
     } catch (error) {
