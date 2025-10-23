@@ -7,7 +7,7 @@ const share = inject('share')
 const canEdit = computed(() => true)
 
 const emit = defineEmits(['chooseKey', 'contextKey'])
-const {filterKeyList} = defineProps({
+const {color, redisKey, filterKeyList} = defineProps({
   color: {type: String, default: 'var(--el-color-primary)'},
   redisKey: {type: Object, default: null},
   filterKeyList: {type: Array, default: []},
@@ -32,6 +32,21 @@ function handleCommand(command) {
   const redisKey = contextMenuKey.value
   emit('contextKey', command, redisKey)
 }
+
+function handleClose(){
+  contextMenuKey.value = {}
+}
+
+function getKeyClass(item){
+  const clazz = []
+  if (item.data.key === redisKey?.key) {
+    clazz.push('choose-key')
+  }
+  if (item.data.key === contextMenuKey.value?.key) {
+    clazz.push('context-key')
+  }
+  return clazz
+}
 </script>
 
 <template>
@@ -40,14 +55,14 @@ function handleCommand(command) {
       <div v-for="item in list" :key="item.index"
            @click="emit('chooseKey', item.data)"
            @contextmenu="keyContextMenu($event, item.data)"
-           :style="item.data.key === redisKey?.key ? {backgroundColor: 'var(--el-color-info-light-7)'} : {}"
+           :class="getKeyClass(item)"
            class="key single-line-ellipsis">
         {{ item.data.key }}
       </div>
     </div>
 
     <!-- 右键菜单 -->
-    <me-context ref="meContextRef" @handle-command="handleCommand">
+    <me-context ref="meContextRef" @handle-command="handleCommand" @handle-close="handleClose">
       <el-dropdown-item command="refreshKey"><me-icon icon="el-icon-refresh"       name="重新载入"/></el-dropdown-item>
       <el-dropdown-item command="copyKey"   ><me-icon icon="el-icon-document-copy" name="复制键名"/></el-dropdown-item>
       <el-dropdown-item command="deleteKey" divided v-if="canEdit"><me-icon icon="el-icon-delete" name="删除键"/></el-dropdown-item>
@@ -63,7 +78,7 @@ function handleCommand(command) {
   padding: 3px 4px;
 
   &:hover {
-    background-color: var(--el-color-info-light-7);
+    background-color: var(--el-color-info-light-8);
   }
 }
 </style>

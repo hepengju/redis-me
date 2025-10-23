@@ -107,18 +107,14 @@ export function filterHandler(value, row, column){
 }
 
 // 删除键
-export function commonDeleteKey(env, redisKey) {
+export function commonDeleteKey(id, redisKey) {
     ElMessageBox.confirm(
       `确定删除键【${redisKey.key}】吗？`,
       '提示',
       {type: 'warning'},
     ).then(async () => {
-        const res = await api.ark.extops.redis.del(env, redisKey)
-        if (res.code == 200) {
-            bus.emit(DELETE_KEY, redisKey)
-            ElMessage({message: '删除成功', type: 'success'})
-        } else {
-            ElMessageBox.alert(res.msg, "提示", {type: 'error'})
-        }
+        await invoke_then('del', {id, key: redisKey})
+        bus.emit(DELETE_KEY, redisKey)
+        ElMessage.success('删除成功')
     }).catch(() => {})
 }

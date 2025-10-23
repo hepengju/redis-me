@@ -131,7 +131,7 @@ function contextKey(command, redisKey) {
   } else if (command == 'copyKey') {
     copy(redisKey.key)
   } else if (command == 'deleteKey') {
-    commonDeleteKey(share.env, redisKey)
+    commonDeleteKey(share.conn.id, redisKey)
   } else {
     ElMessage.warning(`TODO: 键右键 ${command}`)
   }
@@ -454,5 +454,15 @@ function saveConn(_, mode) {
     }
   }
 
+   /* 选中的键 */
+  :deep(.choose-key) {
+    background-color: var(--el-color-info-light-8);
+  }
+
+  /* 右键选中的键 */
+  :deep(.context-key) {
+    outline: 1px dashed var(--el-color-primary);
+    outline-offset: -1px;
+  }
 }
 </style>

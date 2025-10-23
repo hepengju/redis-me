@@ -38,6 +38,19 @@ function handleCommand(command) {
   }
 }
 
+function handleClose(){
+  contextMenuNode.value = {}
+}
+
+function getNodeClass(node){
+  const clazz = []
+  if (node.isLeaf && node.data.redisKey.key === contextMenuNode.value?.data?.redisKey.key
+  || !node.isLeaf && node.key == contextMenuNode.value?.key) {
+    clazz.push('context-key')
+  }
+  return clazz
+}
+
 // 计算树的数据
 const emptyText = ref('没有数据')
 const treeData = computed(() => {
@@ -114,6 +127,8 @@ function countLeaves(node) {
   // 返回根节点的叶子节点数量
   return keyCounts.get(node)
 }
+
+
 </script>
 
 <template>
@@ -122,14 +137,15 @@ function countLeaves(node) {
       <el-tree-v2 ref="tree" :data="treeData"
                   @node-click="nodeClick"
                   @node-contextmenu="nodeContextMenu"
+                  highlight-current
                   :style="{'--el-text-color-regular': color,
-                           '--el-tree-node-hover-bg-color': 'var(--el-color-info-light-7)'}"
+                           '--el-tree-node-hover-bg-color': 'var(--el-color-info-light-8)'}"
                   :empty-text="emptyText" :height="height" :item-size="20">
         <template #default="{ node }">
-          <div style="width: 100%" v-if="node.isLeaf">
+          <div style="width: 100%" v-if="node.isLeaf" :class="getNodeClass(node)">
             {{ node.label }}
           </div>
-          <div class="me-flex" v-else style="width: 100%">
+          <div class="me-flex" v-else style="width: 100%" :class="getNodeClass(node)">
             <me-icon :name="node.label" :icon="node.expanded ? 'el-icon-folderOpened' : 'el-icon-folder'"/>
             <div style="color: var(--el-color-info); margin-right: 10px">[ {{ node.data.keyCount }} ]</div>
           </div>
@@ -137,7 +153,7 @@ function countLeaves(node) {
       </el-tree-v2>
 
       <!-- 右键菜单 -->
-      <me-context ref="meContextRef" @handle-command="handleCommand">
+      <me-context ref="meContextRef" @handle-command="handleCommand" @handle-close="handleClose">
         <template v-if="contextMenuNode.isLeaf">
           <el-dropdown-item command="refreshKey"><me-icon icon="el-icon-refresh"       name="重新载入"/></el-dropdown-item>
           <el-dropdown-item command="copyKey"   ><me-icon icon="el-icon-document-copy" name="复制键名"/></el-dropdown-item>
@@ -154,3 +170,10 @@ function countLeaves(node) {
     </template>
   </el-auto-resizer>
 </template>
+
+<style scoped lang="scss">
+// 高亮当前行的颜色
+:deep(.el-tree--highlight-current .el-tree-node.is-current>.el-tree-node__content) {
+  background-color: var(--el-color-info-light-8);
+}
+</style>
