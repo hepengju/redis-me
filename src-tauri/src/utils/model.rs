@@ -83,6 +83,22 @@ impl From<&str> for RedisKey {
         }
     }
 }
+impl From<String> for RedisKey {
+    fn from(s: String) -> Self {
+        RedisKey {
+            key: s,
+            bytes: Vec::new(),
+        }
+    }
+}
+impl From<Vec<u8>> for RedisKey {
+    fn from(bytes: Vec<u8>) -> Self {
+        RedisKey {
+            key: "".to_string(),
+            bytes,
+        }
+    }
+}
 
 impl ToRedisArgs for RedisKey {
     fn write_redis_args<W>(&self, out: &mut W)
@@ -111,7 +127,7 @@ api_model!(RedisZetItem {
 
 // 字段新增
 api_model!( RedisFieldAdd {
-    key: RedisKey,
+    key: String,
     mode: String,    // key-新增键, field-新增字段
 
     #[serde(rename = "type")]
@@ -125,7 +141,8 @@ api_model!( RedisFieldAdd {
 
 // 字段修改
 api_model!(RedisFieldSet {
-    key: RedisKey,
+    #[serde(with = "v8_base64")]
+    bytes: Vec<u8>,
     src_field_key: String,
     src_field_value: String,
     field_index: isize,
@@ -143,7 +160,8 @@ api_model!(RedisFieldValue {
 
 // 字段删除
 api_model!(RedisFieldDel {
-    key: RedisKey,
+    #[serde(with = "v8_base64")]
+    bytes: Vec<u8>,
     field_index: isize,
     field_key: String,
     field_value: String,

@@ -180,9 +180,9 @@ function addKey() {
   fieldAddRef.value?.open({mode: 'key', key: prefix})
 }
 
-function addKeyOk(form) {
-  keyList.value.unshift({key: form.key})
-  chooseKey({key: form.key})
+function addKeyOk(redisKey) {
+  keyList.value.unshift(redisKey)
+  chooseKey(redisKey)
 }
 
 // 批量删除键

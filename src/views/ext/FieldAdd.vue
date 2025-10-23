@@ -22,7 +22,7 @@ const initForm = readonly({
   key: '',
   bytes: '',
   type: 'string',
-  seconds: -1,
+  ttl: -1,
   value: '',
 
   listPushMethod: 'rpush',
@@ -43,7 +43,16 @@ const form = ref(cloneDeep(initForm))
 const rules = {
   key: [{required: true, message: '请输入键名'}],
   type: [{required: true, message: '请选择类型'}],
-  seconds: [{required: true, message: '请输入TTL'}],
+  ttl: [{required: true, message: '请输入TTL'},
+    {
+      validator: (rule, value, callback) => {
+        if (!(form.value.ttl == -1 || form.value.ttl > 0)) {
+          callback(new Error('TTL超时时长只允许-1或正整数'))
+        }
+        callback()
+      }
+    }
+  ],
   value: [{required: true, message: '值不允许为空'}],
   fieldValueList: [
     {
@@ -85,14 +94,10 @@ function submit(){
 
     isSaving.value = true
     try {
-      const res = await invoke_then({id: share.conn.id, params: form.value})
-      if (res.code == 200) {
-        visible.value = false
-        emit('success', form.value)
-        ElMessage({message: '新增成功', type: 'success'})
-      } else {
-        ElMessageBox.alert(res.msg, '提示', {type: 'error'})
-      }
+      await invoke_then('field_add',{id: share.conn.id, param: form.value})
+      visible.value = false
+      emit('success', {key: form.value.key, bytes: ''})
+      ElMessage.success('新增成功')
     } finally {
       isSaving.value = false
     }
@@ -111,7 +116,7 @@ const hint = computed(() => {
              v-model="visible" :width="600" @closed="emit('closed')"
              destroy-on-close close-on-press-escape close-on-click-modal draggable>
     <el-form ref="formRef" :model="form" :rules="rules" label-position="top">
-      <el-row :gutter="20" v-if="form.mode === 'key'">
+      <el-row :gutter="40" v-if="form.mode === 'key'">
         <el-col :span="12">
           <el-form-item label="类型" prop="type">
             <el-select v-model="form.type" style="width: 100%">
@@ -125,11 +130,11 @@ const hint = computed(() => {
         </el-col>
 
         <el-col :span="12">
-          <el-form-item label="TTL" prop="seconds">
-            <el-input v-model.number="form.seconds">
+          <el-form-item label="TTL超时时长" prop="ttl">
+            <el-input v-model.number="form.ttl">
               <template #append>
                 <el-tooltip content="-1代表永久" placement="top">
-                  <div>秒</div>
+                  <div>{{form.ttl == -1 ? '永久' : '秒'}}</div>
                 </el-tooltip>
               </template>
             </el-input>
