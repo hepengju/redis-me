@@ -23,14 +23,16 @@ export const PREDEFINE_COLORS = [
 ]
 
 // 打印日志
-export async function invoke_then(command, params) {
+export async function invoke_then(command, params, alert = true) {
     try {
         const data = await invoke(command, params)
         console.log(`命令: ${command}, 参数: ${JSON.stringify(params)}, 结果: `, data)
         //return {code: 200, data}
         return data
     } catch (error) {
-        ElMessageBox.alert(error, `错误: ${command}`, {type: 'error'})
+        if (alert) {
+            ElMessageBox.alert(error, `错误: ${command}`, {type: 'error'})
+        }
         console.log(`命令: ${command}, 参数: ${JSON.stringify(params)}, 错误: ${error}`)
         // return {code: 500, error}
         throw error;

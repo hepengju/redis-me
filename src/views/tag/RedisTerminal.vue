@@ -1,6 +1,8 @@
 <script setup>
-import api from '@/api/index.js'
-import NodeList from '@/views/ark/extops/redis-me/ext/NodeList.vue'
+import NodeList from '../ext/NodeList.vue'
+import {invoke_then} from "@/utils/util.js";
+import MeIcon from "@/components/MeIcon.vue";
+
 // 共享数据
 const share = inject('share')
 
@@ -18,13 +20,12 @@ const prefix = computed(() =>
 // 定制化执行命令
 async function execCommand(command) {
   try {
-    const res = await api.ark.extops.redis.execCommand(share.env, {command, node: node.value, autoBroadcast: autoBroadcast.value})
-    if (res.code == 200) {
-      const result = replaceEnter(res.data)
-      return `\x1b[35;1m${result}\x1b[0m`
-    } else {
-      return `\x1b[31;1m(error) ${res.msg}\x1b[0m`
+    const param = {
+      command, node: node.value, autoBroadcast: autoBroadcast.value
     }
+    const data = await invoke_then('execute_command', {id: share.conn.id, param}, false)
+    const result = replaceEnter(data)
+    return `\x1b[35;1m${result}\x1b[0m`
   } catch (e) {
     return `\x1b[31;1m(error) ${e}\x1b[0m`
   }
@@ -44,14 +45,10 @@ function replaceEnter(data) {
 <template>
   <div class="redis-terminal">
     <me-xterm class="terminal" :exec-command="execCommand" :prefix/>
-    <div class="node me-flex">
-      <el-tooltip raw-content :content="hint" placement="top">
-        <el-icon style="font-size: 16px;">
-          <el-icon-question-filled/>
-        </el-icon>
-      </el-tooltip>
-      <el-checkbox v-model="autoBroadcast" label="自动广播" border style="margin: 0 10px"/>
-      <node-list v-model="node" clearable/>
+    <div class="node me-flex" style="color: wheat">
+      <me-icon icon="el-icon-question-filled" :info="hint" raw-content placement="top" show-after="0"/>
+      <el-checkbox v-model="autoBroadcast" label="自动广播" border style="margin-left: 10px"/>
+      <node-list v-model="node" clearable style="margin-left: 10px"/>
     </div>
   </div>
 </template>
@@ -64,6 +61,10 @@ function replaceEnter(data) {
 
   .terminal {
     height: 100%;
+  }
+
+  :deep(.xterm) {
+    padding: 10px;
   }
 
   .node {
