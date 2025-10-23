@@ -1,5 +1,5 @@
 <script setup>
-import {ElMessage, ElMessageBox} from 'element-plus'
+import {ElMessage} from 'element-plus'
 import {capitalize, cloneDeep} from 'lodash'
 import {invoke_then} from "@/utils/util.js";
 
@@ -20,7 +20,6 @@ const isSaving = ref(false)
 const initForm = readonly({
   mode: 'key',  // key-新增键, field-新增字段
   key: '',
-  bytes: '',
   type: 'string',
   ttl: -1,
   value: '',

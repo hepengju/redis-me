@@ -13,7 +13,7 @@ onUnmounted(() => bus.off(REFRESH_KEY, refreshKey))
 // 共享数据
 const share = inject('share')
 const canEdit = computed(() => true)
-const canSave = computed(() => stringType && canEdit)
+const canSave = computed(() => stringType.value && canEdit)
 
 // 值的显示方式
 const viewTypeList = ['json', 'table']
@@ -98,7 +98,7 @@ async function setTTL(){
     return
   }
 
-  await invoke_then('ttl', {id: share.conn.id, ttl: seconds, ...share.redisKey})
+  await invoke_then('ttl', {id: share.conn.id, ttl: seconds, key: share.redisKey})
   ElMessage.success("设置TTL成功")
 }
 
@@ -143,10 +143,11 @@ function delKey() {
 // 保存值
 async function setValue() {
   const params = {
+    key: share.redisKey,
     value: redisValue.value.newValue || redisValue.value.value,
-    seconds: redisValue.value.ttl, ...share.redisKey
+    ttl: redisValue.value.ttl
   }
-  await invoke_then({id: share.conn.id, params});
+  await invoke_then('set', {id: share.conn.id, ...params});
   ElMessage.success('保存成功')
 }
 
@@ -171,16 +172,18 @@ function fieldSetInit() {
 function fieldSet(row, index) {
   fieldSetIndex.value = index
   const params = {
-    fieldKey: row.key,
+    fieldKey: row.key || '',
     fieldValue: row.value,
-    fieldScore: row.score,
+    fieldScore: row.score || 0,
     srcFieldValue: row.value,
     type: redisValue.value.type,
-    ...share.redisKey,
+    key: share.redisKey,
   }
   if (redisValue.value.type === 'list') {
     // 此处不要直接取索引，而是重新去计算下（因为表格可能被关键字过滤过）
     params.fieldIndex = redisValue.value.value.indexOf(row.value)
+  } else {
+    params.fieldIndex = -1
   }
   fieldSetRef.value.open(params)
 }
@@ -207,11 +210,13 @@ function rowClick(row, column, event) {
 
 // 字段删除
 async function fieldDel(row) {
-  const params = {fieldKey: row.key, fieldValue: row.value , ...share.redisKey}
+  const param = {fieldKey: row.key, fieldValue: row.value , key: share.redisKey}
   if (redisValue.value.type === 'list') {
-    params.fieldIndex = redisValue.value.value.indexOf(row.value)
+    param.fieldIndex = redisValue.value.value.indexOf(row.value)
+  } else {
+    param.fieldIndex = -1  // 其他类型使用不到，但接口需传递
   }
-  await invoke_then('field_delete',{id: share.conn.id, params});
+  await invoke_then('field_del',{id: share.conn.id, param});
   ElMessage.success('删除成功')
   await refreshKey()
 }
@@ -373,7 +378,7 @@ watch(() => share.tabName, newValue => {
     overflow: hidden;
 
     .btn-rt {
-      background-color: #272822;
+      //background-color: #272822;
       position: absolute;
       right: 0;
       top: 0;

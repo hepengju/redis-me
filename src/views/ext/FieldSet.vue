@@ -1,6 +1,8 @@
 <script setup>
-import {ElMessage, ElMessageBox} from 'element-plus'
+import {ElMessage} from 'element-plus'
 import {cloneDeep} from "lodash";
+import {invoke_then} from "@/utils/util.js";
+
 const emit = defineEmits(['success', 'closed'])
 defineExpose({open, close})
 
@@ -11,12 +13,12 @@ const share = inject('share')
 const visible = ref(false)
 const isSaving = ref(false)
 const initForm = readonly({
-  key: '',
-  bytes: '',
+  key: {
+    key: '',
+    bytes: ''
+  },
   type: 'string',
-
   srcFieldValue: '', // set/zset 需要先删除原始值再新增新的值
-
   fieldIndex: 0,
   fieldKey: '',
   fieldValue: '',
@@ -53,15 +55,10 @@ function submit() {
 
     isSaving.value = true
     try {
-      // const res = await api.ark.extops.redis.fieldSet(share.env, form.value)
-      const res = {}
-      if (res.code == 200) {
-        visible.value = false
-        emit('success')
-        ElMessage({message: '编辑成功', type: 'success'})
-      } else {
-        ElMessageBox.alert(res.msg, '提示', {type: 'error'})
-      }
+      await invoke_then('field_set',{id: share.conn.id, param: form.value})
+      visible.value = false
+      emit('success')
+      ElMessage.success('编辑成功')
     } finally {
       isSaving.value = false
     }

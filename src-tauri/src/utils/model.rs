@@ -141,9 +141,7 @@ api_model!( RedisFieldAdd {
 
 // 字段修改
 api_model!(RedisFieldSet {
-    #[serde(with = "v8_base64")]
-    bytes: Vec<u8>,
-    src_field_key: String,
+    key: RedisKey,
     src_field_value: String,
     field_index: isize,
     field_key: String,
@@ -160,8 +158,7 @@ api_model!(RedisFieldValue {
 
 // 字段删除
 api_model!(RedisFieldDel {
-    #[serde(with = "v8_base64")]
-    bytes: Vec<u8>,
+    key: RedisKey,
     field_index: isize,
     field_key: String,
     field_value: String,

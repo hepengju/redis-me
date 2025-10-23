@@ -219,8 +219,7 @@ macro_rules! implement_common_commands {
 
         fn field_set(&self, param: RedisFieldSet) -> AnyResult<()> {
             let mut conn = self.pool.get()?;
-
-            let key: RedisKey = param.bytes.into();
+            let key: RedisKey = param.key;
             let key_type: ValueType = conn.key_type(&key)?;
 
             match key_type {
@@ -254,7 +253,7 @@ macro_rules! implement_common_commands {
 
         fn field_del(&self, param: RedisFieldDel) -> AnyResult<()> {
             let mut conn = self.pool.get()?;
-            let key: RedisKey = param.bytes.into();
+            let key: RedisKey = param.key;
             let key_type: ValueType = conn.key_type(&key)?;
 
             match key_type {
