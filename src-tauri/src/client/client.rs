@@ -20,6 +20,8 @@ pub trait RedisMeClient: Send + Sync {
 
     fn del(&self, key: RedisKey) -> AnyResult<()>;
 
+    fn batch_del(&self, param: RedisBatchDelete) -> AnyResult<()>;
+
     fn field_add(&self, param: RedisFieldAdd) -> AnyResult<()>;
 
     fn field_set(&self, param: RedisFieldSet) -> AnyResult<()>;
@@ -148,6 +150,33 @@ macro_rules! implement_common_commands {
         fn del(&self, key: RedisKey) -> AnyResult<()> {
             let mut conn = self.pool.get()?;
             let _: () = conn.del(&key)?;
+            Ok(())
+        }
+
+        fn batch_del(&self, param: RedisBatchDelete) -> AnyResult<()> {
+            let mut conn = self.pool.get()?;
+            let key_list = if param.key_list.is_empty() {
+                if param.pattern.is_empty() {
+                    bail!("键列表和匹配参数不能同时为空")
+                }
+                let scan_result = self.scan(ScanParam::all(param.pattern))?;
+                info!("扫描出键个数: {}", scan_result.key_list.len());
+                scan_result.key_list
+            } else {
+                param.key_list
+            };
+    
+            if key_list.is_empty() {
+                return Ok(());
+            }
+    
+            let size = key_list.len();
+            let mut pipe = $struct_name::with_capacity(size);
+            for key in key_list.into_iter() {
+                pipe.del(&key).ignore();
+            }
+            let _: () = pipe.query(&mut conn)?;
+            info!("批量删除键完成: {}", size);
             Ok(())
         }
 

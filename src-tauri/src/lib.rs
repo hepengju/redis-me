@@ -26,6 +26,7 @@ pub fn run() {
             ttl,
             set,
             del,
+            batch_del,
             field_add,
             field_set,
             field_del,

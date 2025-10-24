@@ -29,6 +29,18 @@ api_model!( ScanParam {
     load_all: bool,
 });
 
+impl ScanParam {
+    pub fn all(pattern: String) -> Self {
+        ScanParam {
+            pattern,
+            count: 0,
+            scan_type: None,
+            cursor: None,
+            load_all: true,
+        }
+    }
+}
+
 // 扫描游标
 api_model!( ScanCursor {
     ready_nodes: Vec<String>,
@@ -112,15 +124,22 @@ impl ToSingleRedisArg for RedisKey {}
 
 
 // Redis值
-api_model!(RedisValue {
+api_model!( RedisValue {
     #[serde(rename = "type")]
     key_type: String,
     ttl: i64,
     value: serde_json::Value,
 });
 
+// 批量删除
+api_model!( RedisBatchDelete {
+    #[serde(rename = "match")]
+    pattern: String,
+    key_list: Vec<RedisKey>,
+});
+
 // Zset条目
-api_model!(RedisZetItem {
+api_model!( RedisZetItem {
     value: String,
     score: f64,
 });
@@ -140,7 +159,7 @@ api_model!( RedisFieldAdd {
 });
 
 // 字段修改
-api_model!(RedisFieldSet {
+api_model!( RedisFieldSet {
     key: RedisKey,
     src_field_value: String,
     field_index: isize,
@@ -150,14 +169,14 @@ api_model!(RedisFieldSet {
 });
 
 // 字段值
-api_model!(RedisFieldValue {
+api_model!( RedisFieldValue {
     field_key: String,
     field_value: String,
     field_score: f64,
 });
 
 // 字段删除
-api_model!(RedisFieldDel {
+api_model!( RedisFieldDel {
     key: RedisKey,
     field_index: isize,
     field_key: String,
@@ -172,7 +191,7 @@ api_model!( RedisCommand {
 });
 
 // 慢日志
-api_model!(RedisSlowLog {
+api_model!( RedisSlowLog {
     node: String,
     id: u64,
     time: String,

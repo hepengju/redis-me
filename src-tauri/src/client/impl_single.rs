@@ -14,6 +14,7 @@ use std::sync::Arc;
 use std::thread;
 use std::thread::{spawn, JoinHandle};
 use std::time::{Duration};
+use crate::api::scan;
 
 pub struct RedisMeSingle {
     id: String,

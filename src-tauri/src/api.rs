@@ -51,6 +51,9 @@ api_command!(set(key: RedisKey, value: String, ttl: i64) -> ());
 // 删除键
 api_command!(del(key: RedisKey) -> ());
 
+// 批量删除
+api_command!(batch_del(key: RedisBatchDelete) -> ());
+
 // 新增字段
 api_command!(field_add(param: RedisFieldAdd) -> ());
 
