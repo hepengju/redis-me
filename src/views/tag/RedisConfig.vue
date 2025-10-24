@@ -1,15 +1,15 @@
 <script setup>
-import api from '@/api/index.js'
 import {useTemplateRef} from 'vue'
-import {ElMessage, ElMessageBox} from 'element-plus'
-import MeButton from '@/components/arkMe/MeButton.vue'
-import {configTip as tips} from '@/views/ark/extops/redis-me/util/tip.js'
-import NodeList from '@/views/ark/extops/redis-me/ext/NodeList.vue'
+import {ElMessage} from 'element-plus'
+import MeButton from '@/components/MeButton.vue'
+import {configTip as tips} from '@/utils/tip.js'
+import NodeList from '../ext/NodeList.vue'
+import {invoke_then} from "@/utils/util.js";
 
 // 共享数据
 const share = inject('share')
 
-const node = ref(share.nodeList ? share.nodeList[0].node : '')
+const node = ref(share.nodeList && share.nodeList.length > 0 ? share.nodeList[0].node : '')
 const keyword = ref('')
 const loading = ref(false)
 const dataList = ref([])
@@ -23,15 +23,12 @@ const filterDataList = computed(() => {
 })
 
 async function apiConfigGet() {
-  const res = await api.ark.extops.redis.configGet(share.env, {pattern: '*', node: node.value})
-  if (res.code == 200) {
-    const tableData = []
-    const configMap = res.data
-    Object.entries(configMap).forEach(([key, value]) => tableData.push({param: key, value}))
-    dataList.value = tableData
-  } else {
-    ElMessageBox.alert(res.msg, '提示', { type: 'error'})
-  }
+  const data = await invoke_then('config_get', {id: share.conn.id, pattern: '*', node: node.value})
+  const tableData = []
+  const configMap = data
+  Object.entries(configMap).forEach(([key, value]) => tableData.push({param: key, value}))
+  console.log(tableData)
+  dataList.value = tableData
 }
 
 async function refresh() {
@@ -45,7 +42,7 @@ async function refresh() {
 refresh()
 
 async function downloadConfigFile() {
-  await api.ark.extops.redis.downloadConfigFile()
+  //await api.ark.extops.redis.downloadConfigFile()
 }
 
 function editParam(row) {
@@ -80,7 +77,7 @@ watch(() => share.tabName, newValue => {
       </div>
     </div>
     <div class="table">
-      <el-table size="large" :data="filterDataList" ref="table"
+      <el-table :data="filterDataList" ref="table"
                 style="margin-top: 10px"
                 v-loading="loading"
                 border stripe height="100%">
