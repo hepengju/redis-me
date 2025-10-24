@@ -1,54 +1,67 @@
+use crate::utils::model::RedisConn;
 use crate::utils::util::AnyResult;
 use log::info;
 use r2d2::Pool;
-use redis::cluster::ClusterClient;
-use redis::TlsMode;
+use redis::cluster::{ClusterClient, ClusterConfig};
+use redis::{Client, TlsMode, TypedCommands};
 use std::time::Duration;
-
-const IS_COMPANY: bool = true;
 
 // 获取连接池(单机)
 // docker run -d --net host --name redis-6379 redis:7 --requirepass hepengju
-pub fn get_pool_single(_id: &str) -> AnyResult<Pool<redis::Client>> {
-    let mut host = "192.168.1.11";
-    let mut password = "hepengju";
-    if IS_COMPANY {
-        host = "10.105.100.63";
-        password = "Jiyu1212";
-    }
-
-    let redis_url = format!("redis://:{}@{}:6379", password, host);
-    info!("redis_url: {redis_url}");
-
-    let client = redis::Client::open(redis_url)?;
-    // 使用连接池管理
+pub fn get_pool_single(conn: &RedisConn) -> AnyResult<Pool<Client>> {
+    let client = get_client_single(conn)?;
     let pool = Pool::builder()
         .min_idle(Some(0))
         .max_size(5)
         .build(client)?;
     Ok(pool)
 }
+
+pub fn get_client_single(conn: &RedisConn) -> AnyResult<Client> {
+    let prefix = if conn.ssl { "rediss" } else { "redis" };
+    let redis_url = format!(
+        "{}://{}:{}@{}:{}",
+        prefix, conn.username, conn.password, conn.host, conn.port
+    );
+    info!("redis_url: {redis_url}");
+    // TODO 研究SSL证书如何配置
+    let client = Client::open(redis_url)?;
+    let mut conn = client.get_connection_with_timeout(Duration::from_secs(1))?;
+    let _ = conn.ping()?;
+    info!("测试连接成功");
+    Ok(client)
+}
+
 // 获取连接池(集群)
-pub fn get_pool_cluster(_id: &str) -> AnyResult<Pool<ClusterClient>> {
-    let mut nodes = vec!["rediss://192.168.1.11:7001"];
-    let mut password = "hepengju";
-    if IS_COMPANY {
-        nodes = vec!["rediss://10.106.0.167:7001"];
-        password = "Jiyu1212";
-    }
-
-    let client = ClusterClient::builder(nodes)
-        .connection_timeout(Duration::from_secs(5))
-        .tls(TlsMode::Insecure)
-        .password(password)
-        .build()?;
-
-    // 使用连接池管理
+pub fn get_pool_cluster(conn: &RedisConn) -> AnyResult<Pool<ClusterClient>> {
+    let client = get_client_cluster(conn)?;
     let pool = Pool::builder()
         .min_idle(Some(0))
         .max_size(5)
         .build(client)?;
     Ok(pool)
+}
+
+pub fn get_client_cluster(conn: &RedisConn) -> AnyResult<ClusterClient> {
+    let prefix = if conn.ssl { "rediss" } else { "redis" };
+    let redis_url = format!("{}://{}:{}", prefix, conn.host, conn.port);
+    info!("redis_url: {redis_url}");
+
+    let mut builder = ClusterClient::builder(vec![redis_url])
+        .tls(TlsMode::Insecure);
+    if !conn.username.is_empty() {
+        builder = builder.username(conn.username.clone());
+    }
+    if !conn.password.is_empty() {
+        builder = builder.password(conn.password.clone());
+    }
+    let client = builder.build()?;
+
+    let cc = ClusterConfig::new().set_connection_timeout(Duration::from_secs(1));
+    let mut conn = client.get_connection_with_config(cc)?;
+    let _ = conn.ping()?;
+    info!("测试集群连接成功");
+    Ok(client)
 }
 
 #[cfg(test)]
@@ -61,17 +74,39 @@ mod tests {
 
     #[test]
     fn test_get_pool_single() {
-        let pool = get_pool_single("1").unwrap();
+        let redis_conn = RedisConn {
+            id: "single".to_string(),
+            name: "单机".to_string(),
+            host: "192.168.1.11".to_string(),
+            port: 6379,
+            username: "".to_string(),
+            password: "hepengju".to_string(),
+            cluster: false,
+            ssl: false,
+            sslOption: None,
+        };
+        let pool = get_pool_single(&redis_conn).unwrap();
         let mut conn = pool.get().unwrap();
         let value: Vec<u8> = vec![100, 200, 255];
-        let _:() = conn.set("hepengju:bytes", &value[..]).unwrap();
+        let _: () = Commands::set(&mut conn, "hepengju:bytes", &value[..]).unwrap();
     }
 
     #[test]
     fn test_get_pool_cluster() {
-        let pool = get_pool_cluster("1").unwrap();
+        let redis_conn = RedisConn {
+            id: "cluster".to_string(),
+            name: "集群".to_string(),
+            host: "192.168.1.11".to_string(),
+            port: 7001,
+            username: "".to_string(),
+            password: "hepengju".to_string(),
+            cluster: true,
+            ssl: true,
+            sslOption: None,
+        };
+        let pool = get_pool_cluster(&redis_conn).unwrap();
         let mut conn = pool.get().unwrap();
-        let _:() =conn.set("hepengju:name", "hepengju").unwrap();
+        let _: () = Commands::set(&mut conn, "hepengju:name", "hepengju").unwrap();
     }
 
     fn get_key_cert() -> AnyResult<(Vec<u8>, Vec<u8>)> {
@@ -79,7 +114,7 @@ mod tests {
         let cert_file = "redis-server.crt";
         let key_file = "redis-server.key";
         let cert_vec8 = fs::read(Path::new(path).join(cert_file)).context("cert读取失败")?;
-        let key_vec8= fs::read(Path::new(path).join(key_file)).context("key读取失败")?;
+        let key_vec8 = fs::read(Path::new(path).join(key_file)).context("key读取失败")?;
         Ok((cert_vec8, key_vec8))
     }
 

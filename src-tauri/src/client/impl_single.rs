@@ -9,6 +9,7 @@ use r2d2::Pool;
 use redis::{Client, Commands, Pipeline, SetExpiry, SetOptions, Value, ValueType};
 use std::collections::HashMap;
 use std::collections::HashSet;
+use std::process::id;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 use std::thread;
@@ -25,13 +26,13 @@ pub struct RedisMeSingle {
 
 // 个性化方法
 impl RedisMeSingle {
-    pub fn new(id: &str) -> AnyResult<Box<dyn RedisMeClient>> {
-        let pool = get_pool_single(id)?;
+    pub fn new(redis_conn: &RedisConn) -> AnyResult<Box<dyn RedisMeClient>> {
+        let pool = get_pool_single(redis_conn)?;
         let mut conn = pool.get()?;
         let _: String = conn.ping()?;
-        info!("Redis单机连接初始化成功: {id}");
+        info!("Redis单机连接初始化成功: {}", redis_conn.name);
         Ok(Box::new(RedisMeSingle {
-            id: id.to_string(),
+            id: redis_conn.id.clone(),
             pool,
             subscribe_running: Arc::new(AtomicBool::new( false)),
             monitor_running: Arc::new(AtomicBool::new( false))

@@ -1,54 +1,64 @@
-use log::info;
 use crate::client::client::RedisMeClient;
 use crate::client::impl_cluster::RedisMeCluster;
 use crate::client::impl_single::RedisMeSingle;
+use crate::utils::model::RedisConn;
 use crate::utils::util::AnyResult;
-use anyhow::anyhow;
+use anyhow::{anyhow, bail};
+use log::info;
 use std::collections::HashMap;
-use std::sync::{Arc, RwLock};
+use std::sync::{Arc, Mutex, RwLock};
 use tauri::{AppHandle, Manager, State};
-use crate::api::info;
 
 #[derive(Default)]
 pub struct AppState {
+    // 初始化连接列表
+    pub connections: Mutex<HashMap<String, RedisConn>>,
+
+    // 缓存连接客户端
     pub clients: RwLock<HashMap<String, Arc<Box<dyn RedisMeClient>>>>,
 }
 
 pub trait ClientAccess {
+    fn init_conn_list(&self, conn_list: Vec<RedisConn>) -> AnyResult<()>;
     fn get_client(&self, id: &str) -> AnyResult<Arc<Box<dyn RedisMeClient>>>;
     fn connect(&self, id: &str) -> AnyResult<Arc<Box<dyn RedisMeClient>>>;
     fn disconnect(&self, id: &str) -> AnyResult<()>;
 }
 
 impl ClientAccess for AppHandle {
+    fn init_conn_list(&self, conn_list: Vec<RedisConn>) -> AnyResult<()> {
+        let state: State<AppState> = self.state();
+        let mut map = state.connections.lock().unwrap();
+        map.clear();
+        for conn in conn_list {
+            map.insert(conn.id.clone(), conn);
+        }
+        info!("初始化连接列表完成: {}", map.len());
+        Ok(())
+    }
+
     fn get_client(&self, id: &str) -> AnyResult<Arc<Box<dyn RedisMeClient>>> {
         let state: State<AppState> = self.state();
         {
             // Read lock在此代码块内，自动释放锁
-            let clients = state
-                .clients
-                .read()
-                .map_err(|e| anyhow!("Lock error: {e}"))?;
-
+            let clients = state.clients.read().unwrap();
             if let Some(client) = clients.get(id) {
                 return Ok(Arc::clone(client));
             }
         }
-
         self.connect(id)
     }
 
     fn connect(&self, id: &str) -> AnyResult<Arc<Box<dyn RedisMeClient>>> {
         let state: State<AppState> = self.state();
-        let mut clients = state
-            .clients
-            .write()
-            .map_err(|e| anyhow!("Lock error: {e}"))?;
+        let map = state.connections.lock().unwrap();
+        let conn = map.get(id).ok_or(anyhow!("未找到连接: {}", id))?;
 
-        let client = Arc::new(if "cluster" == id {
-            RedisMeCluster::new(id)?
+        let mut clients = state.clients.write().unwrap();
+        let client = Arc::new(if conn.cluster {
+            RedisMeCluster::new(conn)?
         } else {
-            RedisMeSingle::new(id)?
+            RedisMeSingle::new(conn)?
         });
         clients.insert(id.to_string(), Arc::clone(&client));
         info!("连接成功: {}", id);
@@ -57,10 +67,7 @@ impl ClientAccess for AppHandle {
 
     fn disconnect(&self, id: &str) -> AnyResult<()> {
         let state: State<AppState> = self.state();
-        let mut clients = state
-            .clients
-            .write()
-            .map_err(|e| anyhow!("Lock error: {e}"))?;
+        let mut clients = state.clients.write().unwrap();
         clients.remove(id);
         info!("断开连接: {}", id);
         Ok(())

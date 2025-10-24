@@ -12,6 +12,7 @@ use redis::cluster_routing::RoutingInfo::SingleNode;
 use redis::cluster_routing::SingleNodeRoutingInfo::ByAddress;
 use redis::{Commands, FromRedisValue, SetExpiry, SetOptions, Value, ValueType};
 use std::collections::{HashMap, HashSet};
+use std::process::id;
 use std::thread;
 use std::time::Duration;
 
@@ -323,17 +324,17 @@ impl RedisMeClient for RedisMeCluster {
 
 // 个性化方法
 impl RedisMeCluster {
-    pub fn new(id: &str) -> AnyResult<Box<dyn RedisMeClient>> {
-        let pool = get_pool_cluster(id)?;
+    pub fn new(redis_conn: &RedisConn) -> AnyResult<Box<dyn RedisMeClient>> {
+        let pool = get_pool_cluster(redis_conn)?;
 
         // 获取一个连接, 初始化节点列表 (同时验证连接可用性)
         let mut conn = pool.get()?;
         let cluster_nodes: String = redis::cmd("cluster").arg("nodes").query(&mut conn)?;
         let node_list = Self::parse_node_list(cluster_nodes)?;
-        info!("Redis集群连接初始化成功: {id}");
+        info!("Redis集群连接初始化成功: {}", redis_conn.name);
 
         Ok(Box::new(RedisMeCluster {
-            id: id.into(),
+            id: redis_conn.id.clone(),
             pool,
             node_list,
         }))

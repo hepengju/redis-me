@@ -8,15 +8,23 @@ pub mod state;
 mod tests {
     use crate::client::client::RedisMeClient;
     use crate::client::impl_cluster::RedisMeCluster;
-    use crate::utils::model::{
-        RedisCommand, RedisFieldAdd, RedisFieldValue, RedisKey, RedisMemoryParam, ScanCursor,
-        ScanParam,
-    };
+    use crate::utils::model::{RedisCommand, RedisConn, RedisFieldAdd, RedisFieldValue, RedisKey, RedisMemoryParam, ScanCursor, ScanParam};
     use redis::TlsMode;
     use redis::cluster::{ClusterClient, ClusterPipeline};
 
     fn client() -> Box<dyn RedisMeClient> {
-        RedisMeCluster::new("test").unwrap()
+        let conn = RedisConn {
+            id: "test".into(),
+            name: "test".into(),
+            host: "192.168.1.11".into(),
+            port: 7001,
+            username: "".into(),
+            password: "hepengju".into(),
+            cluster: true,
+            ssl: false,
+            sslOption: None,
+        };
+        RedisMeCluster::new(&conn).unwrap()
     }
 
     #[test]

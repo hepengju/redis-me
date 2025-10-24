@@ -13,12 +13,18 @@ pub fn greet(name: &str) -> String {
     format!("Hello, {}! You've been greeted from Rust!", name)
 }
 
-// 信息: 原始写法，其余用宏简化一下
+// 连接信息发送到后端
+pub fn init_conn_list(app_handle: AppHandle, param: Vec<RedisConn>){
+    
+}
+
+// 连接
 #[command]
 pub fn connect(app_handle: AppHandle, id: &str) -> ApiResult<()> {
     to_api_result(app_handle.connect(id)).and_then(|_| Ok(()))
 }
 
+// 断开
 #[command]
 pub fn disconnect(app_handle: AppHandle, id: &str) -> ApiResult<()> {
     to_api_result(app_handle.disconnect(id))

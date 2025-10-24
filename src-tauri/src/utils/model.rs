@@ -5,6 +5,29 @@ use crate::utils::util::vec8_to_display_string;
 use redis::{RedisWrite, ToRedisArgs, ToSingleRedisArg};
 use serde::{Deserialize, Serialize};
 
+
+// 连接信息
+api_model!( RedisConn {
+    id: String,
+    name: String,
+
+    host: String,
+    port: u16,
+    username: String,
+    password: String,
+
+    cluster: bool,
+    ssl: bool,
+    sslOption: Option<SslOption>,
+});
+
+api_model!( SslOption {
+    key: String,
+    cert: String,
+    ca: String,
+});
+
+// 信息 info命令
 api_model!( RedisInfo {
     node: String,
     info: String,
