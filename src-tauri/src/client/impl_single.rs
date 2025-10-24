@@ -291,5 +291,4 @@ impl RedisMeClient for RedisMeSingle {
 
     implement_common_commands!(Pipeline);
 
-
 }

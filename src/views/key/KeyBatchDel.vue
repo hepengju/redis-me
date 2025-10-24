@@ -1,7 +1,8 @@
 <script setup>
 import {useVirtualList} from '@vueuse/core'
-import {ElMessage, ElMessageBox} from 'element-plus'
+import {ElMessage} from 'element-plus'
 import {cloneDeep} from 'lodash'
+import {invoke_then} from "@/utils/util.js";
 
 const emit = defineEmits(['success', 'closed'])
 defineExpose({open})
@@ -42,15 +43,10 @@ function submit() {
 
     loading.value = true
     try {
-      // const res = await api.ark.extops.redis.batchDel(share.env, form.value)
-      const res = {}
-      if (res.code == 200) {
-        ElMessage.success("删除成功")
-        emit('success')
-        visible.value = false
-      } else {
-        ElMessageBox.alert(res.msg, "提示", {type: 'error'})
-      }
+      await invoke_then('batch_del', {id: share.conn.id, param: form.value})
+      ElMessage.success("删除成功")
+      emit('success')
+      visible.value = false
     } finally {
       loading.value = false
     }
@@ -65,17 +61,13 @@ async function scanKey() {
     const params = {
       match: form.value.match,
       type: '',
+      count: 0,
       loadAll: true,
       cursor: null,
     }
-    // const res = await api.ark.extops.redis.scanCursor(share.env, params)
-    const res = {}
-    if (res.code == 200) {
-      form.value.keyList = res.data.keyList
-      showScan.value = false
-    } else {
-      ElMessageBox.alert(res.msg, "提示", {type: 'error'})
-    }
+    const data = await invoke_then('scan', {id: share.conn.id, param: params})
+    form.value.keyList = data.keyList
+    showScan.value = false
   } finally {
     loading.value = false
   }
