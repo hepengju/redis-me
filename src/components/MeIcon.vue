@@ -27,7 +27,7 @@ export default {
 
     <!-- 图标 + 文字提示 -->
     <template v-else-if="hint">
-      <el-tooltip :placement="placement" :content="name" :show-after="500">
+      <el-tooltip :placement="placement" :content="name" :show-after="showAfter">
         <el-icon v-if="icon.startsWith('el-icon-')">
           <Component :is="icon"/>
         </el-icon>
