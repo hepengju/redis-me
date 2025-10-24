@@ -1,12 +1,12 @@
 <script setup>
 import {useVirtualList} from '@vueuse/core'
-import {ElMessageBox} from 'element-plus'
 import {humanSize, invoke_then} from '@/utils/util.js'
 import {sortBy} from 'lodash'
 
 defineExpose({open})
 
 function open(data) {
+  keyList.value = []
   visible.value = true
   form.value.match = data.match
   keyMemory()
