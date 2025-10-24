@@ -22,9 +22,9 @@ const form = ref({
   match: '',
   addKeyType: false,
   sizeLimit: 0,
-  countLimit: -1,
+  countLimit: 0,
   scanCount: 10000,
-  scanTotal: -1,
+  scanTotal: 0,
   sleepMillis: 0
 })
 
@@ -33,13 +33,8 @@ const keyList = ref([])
 async function keyMemory() {
   loading.value = true
   try {
-    //const res = await api.ark.extops.redis.memoryUsage(share.env, form.value)
-    const res = await invoke_then('memory_usage', {id: share.conn.id, params: form.value})
-    if (res.code == 200) {
-      keyList.value = sortBy(res.data, 'size').reverse()
-    } else {
-      ElMessageBox.alert(res.msg, "提示", {type: 'error'})
-    }
+    const data = await invoke_then('memory_usage', {id: share.conn.id, param: form.value})
+    keyList.value = sortBy(data, 'size').reverse()
   } finally {
     loading.value = false
   }

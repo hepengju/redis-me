@@ -163,8 +163,10 @@ function contextFolder(command, folder){
 }
 
 // 新增模拟数据
-function mockData() {
-  invoke_then('mock_data', {id: share.conn.id, count: 10})
+async function mockData() {
+  await invoke_then('mock_data', {id: share.conn.id, count: 10})
+  ElMessage.success("模拟数据插入完成")
+  await scanKey(false, false)
 }
 
 // 重置连接池

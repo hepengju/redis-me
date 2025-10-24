@@ -14,7 +14,6 @@ use std::sync::Arc;
 use std::thread;
 use std::thread::{spawn, JoinHandle};
 use std::time::{Duration};
-use crate::api::scan;
 
 pub struct RedisMeSingle {
     id: String,
@@ -87,7 +86,7 @@ impl RedisMeClient for RedisMeSingle {
             keys.extend(new_keys);
 
             cc.now_cursor = next_cursor;
-            if !param.load_all && keys.len() >= param.count as usize {
+            if !param.load_all && param.count > 0 && keys.len() >= param.count as usize {
                 break;
             }
 
@@ -193,7 +192,7 @@ impl RedisMeClient for RedisMeSingle {
 
             scan_times += 1;
 
-            if keys.len() >= param.count_limit as usize {
+            if param.count_limit > 0 && keys.len() >= param.count_limit as usize {
                 info!("扫描结果>={}个, 返回", param.count_limit);
                 break;
             }

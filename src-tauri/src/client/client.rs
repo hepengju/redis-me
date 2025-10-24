@@ -165,11 +165,11 @@ macro_rules! implement_common_commands {
             } else {
                 param.key_list
             };
-    
+
             if key_list.is_empty() {
                 return Ok(());
             }
-    
+
             let size = key_list.len();
             let mut pipe = $struct_name::with_capacity(size);
             for key in key_list.into_iter() {

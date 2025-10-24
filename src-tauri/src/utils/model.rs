@@ -203,6 +203,7 @@ api_model!( RedisSlowLog {
 
 // 内存分析参数
 api_model!( RedisMemoryParam {
+    #[serde(rename = "match")]
     pattern: Option<String>, // 匹配模式
 
     size_limit: u64,   // 大小限制, 推荐: 100kb 即102400
