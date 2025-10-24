@@ -14,7 +14,9 @@ html.dark {
   background-color: var(--me-bg-color);
   --el-bg-color: var(--me-bg-color);         /* el-dialog的背景色: 基础设置-标题 */
   --el-card-bg-color: var(--me-bg-color);    /* el-tab的背景色: 基础设置-外观    */
-  --el-bg-color-overlay: var(--me-bg-color); /* el-tabs的背景色: Redis信息       */
+  --el-bg-color-overlay: var(--me-bg-color); /* el-tabs的背景色: Redis信息      */
+
+  --el-fill-color-lighter: #2F2F2F;          /* el-table表格斑马纹 */
 }
 
 /*所有元素的盒子模型的宽高统一包含边框*/

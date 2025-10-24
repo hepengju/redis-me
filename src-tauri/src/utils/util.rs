@@ -98,7 +98,7 @@ pub fn random_range(min: i32, max: i32) -> i32 {
 
 // 解析命令: 主要考虑解析带有引号的参数, 比如: config set save "3600 1 300 100 60 10000"
 pub fn parse_command(command: &str) -> AnyResult<(String, Vec<String>)> {
-    let tokens = shell_words::split(command)?;
+    let tokens = shell_words::split(command.trim())?;
     let first = tokens.first().cloned().unwrap_or_default();
     let other = tokens.into_iter().skip(1).collect();
     Ok((first, other))
