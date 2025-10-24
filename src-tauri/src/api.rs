@@ -1,12 +1,12 @@
-use crate::api_command;
+use crate::api_commands;
 use crate::client::state::ClientAccess;
 use crate::utils::model::*;
 use crate::utils::util::*;
 use log::info;
 use std::collections::HashMap;
-use tauri::{AppHandle, command};
+use tauri::{command, AppHandle};
 
-// 默认演示李明亮
+// 默认示例
 // Learn more about Tauri commands at https://tauri.app/develop/calling-rust/
 #[command]
 pub fn greet(name: &str) -> String {
@@ -16,10 +16,7 @@ pub fn greet(name: &str) -> String {
 // 信息: 原始写法，其余用宏简化一下
 #[command]
 pub fn connect(app_handle: AppHandle, id: &str) -> ApiResult<()> {
-    to_api_result(app_handle.connect(id)).and_then(|_| {
-        info!("{} connect success", id);
-        Ok(())
-    })
+    to_api_result(app_handle.connect(id)).and_then(|_| Ok(()))
 }
 
 #[command]
@@ -27,70 +24,31 @@ pub fn disconnect(app_handle: AppHandle, id: &str) -> ApiResult<()> {
     to_api_result(app_handle.disconnect(id))
 }
 
-// 信息
-api_command!(info(node: Option<String>) -> RedisInfo);
-
-// 信息列表
-api_command!(info_list() -> Vec<RedisInfo>);
-
-// 节点列表
-api_command!(node_list() -> Vec<RedisNode>);
-
-// 扫描
-api_command!(scan(param: ScanParam) -> ScanResult);
-
-// 获取值
-api_command!(get(key: RedisKey, hash_key: Option<String>) -> RedisValue);
-
-// 设置TTL
-api_command!(ttl(key: RedisKey, ttl: i64) -> ());
-
-// 设置值
-api_command!(set(key: RedisKey, value: String, ttl: i64) -> ());
-
-// 删除键
-api_command!(del(key: RedisKey) -> ());
-
-// 批量删除
-api_command!(batch_del(param: RedisBatchDelete) -> ());
-
-// 新增字段
-api_command!(field_add(param: RedisFieldAdd) -> ());
-
-// 编辑字段
-api_command!(field_set(param: RedisFieldSet) -> ());
-
-// 删除字段
-api_command!(field_del(param: RedisFieldDel) -> ());
-
-// 执行命令
-api_command!(execute_command(param: RedisCommand) -> String);
-
-// 获取配置
-api_command!(config_get(pattern: &str, node: Option<String>) -> HashMap<String, String>);
-
-// 设置配置
-api_command!(config_set(key: &str, value: &str, node: Option<String>) -> ());
-
-// 慢日志
-api_command!(slow_log(count: Option<u64>, node: Option<String>) -> Vec<RedisSlowLog>);
-
-// 内存分析
-api_command!(memory_usage(param: RedisMemoryParam) -> Vec<RedisKeySize>);
-
-// 客户端列表
-api_command!(client_list(node: Option<String>, client_type: Option<String>) -> Vec<RedisClientInfo>);
-
-// 发布消息
-api_command!(publish(channel: &str, message: &str) -> ());
-
-// 订阅消息
-api_command!(subscribe(channel: Option<String>) -> ());
-api_command!(subscribe_stop() -> ());
-
-// 监控命令
-api_command!(monitor(node: &str) -> ());
-api_command!(monitor_stop(node: &str) -> ());
-
-// 模拟数据
-api_command!(mock_data(count: u64) -> ());
+// 使用宏简化代码
+// to_api_result(app_handle.get_client(id).and_then(|client| client.$name($($param),*)))
+api_commands!(
+    info(node: Option<String>) -> RedisInfo; // 信息
+    info_list() -> Vec<RedisInfo>;           // 信息列表
+    node_list() -> Vec<RedisNode>;           // 节点列表
+    scan(param: ScanParam) -> ScanResult;    // 扫描
+    get(key: RedisKey, hash_key: Option<String>) -> RedisValue; // 获取值
+    ttl(key: RedisKey, ttl: i64) -> ();                 // 设置TTL
+    set(key: RedisKey, value: String, ttl: i64) -> ();  // 设置值
+    del(key: RedisKey) -> ();                           // 删除键
+    batch_del(param: RedisBatchDelete) -> ();           // 批量删除
+    field_add(param: RedisFieldAdd) -> ();              // 新增字段
+    field_set(param: RedisFieldSet) -> ();              // 编辑字段
+    field_del(param: RedisFieldDel) -> ();              // 删除字段
+    execute_command(param: RedisCommand) -> String;     // 执行命令
+    config_get(pattern: &str, node: Option<String>) -> HashMap<String, String>; // 获取配置
+    config_set(key: &str, value: &str, node: Option<String>) -> ();             // 设置配置
+    slow_log(count: Option<u64>, node: Option<String>) -> Vec<RedisSlowLog>;    // 慢日志
+    memory_usage(param: RedisMemoryParam) -> Vec<RedisKeySize>;                 // 内存分析
+    client_list(node: Option<String>, client_type: Option<String>) -> Vec<RedisClientInfo>; // 客户端列表
+    publish(channel: &str, message: &str) -> (); // 发布消息
+    subscribe(channel: Option<String>) -> ();    // 订阅消息
+    subscribe_stop() -> ();
+    monitor(node: &str) -> ();                   // 监控命令
+    monitor_stop(node: &str) -> ();
+    mock_data(count: u64) -> ();                 // 模拟数据
+);

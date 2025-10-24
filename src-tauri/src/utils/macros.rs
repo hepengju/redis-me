@@ -21,19 +21,29 @@ macro_rules! api_model {
 
 // Api定义宏（DeepSeek生成）
 #[macro_export]
-macro_rules! api_command {
-    // 匹配模式：函数名(参数列表) -> 返回值类型
+macro_rules! api_commands {
+    // 匹配多个函数定义的语法：用分号分隔每个定义
     (
-        $func:ident(
-            $($param:ident: $param_type:ty),*
-        ) -> $return_type:ty
+        $(
+            $name:ident(
+                $($param:ident: $param_type:ty),*
+            ) -> $return_type:ty
+        );*
+        $(;)?
     ) => {
-        // 展开为 Tauri 命令函数
-        #[command]
-        pub fn $func(
-            app_handle: AppHandle, id: &str, $($param: $param_type),*
-        ) -> ApiResult<$return_type> {
-            to_api_result(app_handle.get_client(id).and_then(|client| client.$func($($param),*)))
-        }
+        $(
+            #[command]
+            pub fn $name(
+                app_handle: AppHandle,
+                id: &str,
+                $($param: $param_type),*
+            ) -> ApiResult<$return_type> {
+                to_api_result(
+                    app_handle
+                        .get_client(id)
+                        .and_then(|client| client.$name($($param),*))
+                )
+            }
+        )*
     };
 }
