@@ -5,6 +5,9 @@ import MeButton from '@/components/MeButton.vue'
 import {configTip as tips} from '@/utils/tip.js'
 import NodeList from '../ext/NodeList.vue'
 import {invoke_then} from "@/utils/util.js";
+import { resolveResource } from '@tauri-apps/api/path';
+import { readTextFile } from '@tauri-apps/plugin-fs';
+import {save} from "@tauri-apps/plugin-dialog";
 
 // 共享数据
 const share = inject('share')
@@ -27,7 +30,6 @@ async function apiConfigGet() {
   const tableData = []
   const configMap = data
   Object.entries(configMap).forEach(([key, value]) => tableData.push({param: key, value}))
-  console.log(tableData)
   dataList.value = tableData
 }
 
@@ -42,7 +44,21 @@ async function refresh() {
 refresh()
 
 async function downloadConfigFile() {
-  //await api.ark.extops.redis.downloadConfigFile()
+  console.log('down')
+  // //await api.ark.extops.redis.downloadConfigFile()
+  // const resourcePath = await resolveResource('conf/redis-7.4.conf');
+  // const content = await readTextFile(resourcePath);
+  // console.log(content)
+
+  const path = await save({
+    filters: [
+      {
+        name: 'My Filter',
+        extensions: ['png', 'jpeg'],
+      },
+    ],
+  });
+  console.log(path);
 }
 
 function editParam(row) {
