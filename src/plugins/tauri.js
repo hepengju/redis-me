@@ -1,5 +1,5 @@
-import {pluginFs} from '@tauri-apps/plugin-fs'
-
-export default function (app) {
-  pluginFs().register()
-}
+// import {pluginFs} from '@tauri-apps/plugin-fs'
+//
+// export default function (app) {
+//   pluginFs().register()
+// }

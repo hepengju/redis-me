@@ -18,7 +18,7 @@ api_model!( RedisConn {
 
     cluster: bool,
     ssl: bool,
-    sslOption: Option<SslOption>,
+    ssl_option: Option<SslOption>,
 });
 
 impl RedisConn {

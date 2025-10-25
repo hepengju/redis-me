@@ -7,13 +7,6 @@
   ],
   "permissions": [
     "core:default",
-    "opener:default",
-    "log:default",
-    "dialog:allow-save",
-    "dialog:default",
-    {
-      "identifier": "core:resources:default",
-      "allow": [{ "path": "$RESOURCE/conf/*" }]
-    }
+    "log:default"
   ]
 }

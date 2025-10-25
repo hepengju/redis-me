@@ -20,7 +20,6 @@ tauri-build = { version = "2", features = [] }
 [dependencies]
 # tauri默认依赖
 tauri = { version = "2", features = [] }
-tauri-plugin-opener = "2"
 tauri-plugin-log = "2"
 
 serde = { version = "1", features = ["derive"] }
@@ -28,7 +27,6 @@ serde_json = "1"
 
 # 项目添加依赖
 redis = { version = "=1.0.0-rc.1", features = ["r2d2", "cluster", "sentinel", "json", "tls-native-tls"] }
-native-tls = "0.2"
 log = "0.4.28"
 r2d2 = "0.8.10"
 rand = "0.9.2"
@@ -38,5 +36,4 @@ base64 = "0.22.1"
 chrono = "0.4.23"
 chrono-tz = "0.8"
 fern = { version = "0.7", features = ["colored"] }
-tauri-plugin-dialog = "2.4.0"
 
