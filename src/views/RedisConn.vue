@@ -2,9 +2,9 @@
 import {invoke_then, PREDEFINE_COLORS} from '@/utils/util.js'
 import SaveConn from '@/views/ext/SaveConn.vue'
 import {nextTick, useTemplateRef} from 'vue'
-import {cloneDeep, debounce} from "lodash";
-import {nanoid} from "nanoid";
+import {debounce} from "lodash";
 import {Sortable} from 'sortablejs'
+import {ElMessageBox} from "element-plus";
 
 const share = inject('share')
 
@@ -28,32 +28,35 @@ function addConn() {
   nextTick(() => connRef.value.open('add'))
 }
 
+// 复制连接
+function copyConn(conn) {
+  dialog.conn = true
+  nextTick(() => connRef.value.open('add', conn))
+}
+
 // 编辑连接
 function editConn(conn) {
   dialog.conn = true
   nextTick(() => connRef.value.open('edit', conn))
 }
 
-// 复制连接
-function copyConn(conn) {
-  dialog.conn = true
-  const newConn = cloneDeep(conn)
-  newConn.id = nanoid()
-  newConn.name = conn.name + '-副本'
-  nextTick(() => connRef.value.open('add', newConn))
-}
-
 // 删除连接
 function deleteConn(conn) {
-  const index = share.connList.indexOf(conn)
-  if (index > -1) {
-    share.connList.splice(index, 1)
-  }
+  ElMessageBox.confirm(
+      `确定删除连接【${conn.name}】吗？`,
+      '提示',
+      {type: 'warning'},
+  ).then(async () => {
+    const index = share.connList.indexOf(conn)
+    if (index > -1) {
+      share.connList.splice(index, 1)
+    }
+  }).catch(() => {})
 }
 
 // 选中连接: 添加防抖函数，避免连接不可用时多次点击导致的多次报错
 const selectConn = debounce(async (conn) => {
-  // 测试连接成功后再发送所有连接信息到后端，RedisMain中监控连接变化自动处理
+  // 测试连接成功后再发送所有连接信息到后端，AppMain中监控连接变化自动处理
   await invoke_then('test_conn', {redisConn: conn})
   await invoke_then('conn_list', {connList: share.connList})
   share.conn = conn
@@ -82,7 +85,6 @@ function rowDrag() {
       }
   )
 }
-
 onMounted(() => rowDrag())
 // rowDrag()
 </script>
@@ -136,12 +138,8 @@ onMounted(() => rowDrag())
         <template #default="scope">
           <div class="me-flex">
             <me-icon info="复制" icon="el-icon-document-copy" class="icon-btn" @click="copyConn(scope.row) "/>
-            <me-icon info="编辑" icon="el-icon-edit" class="icon-btn" @click="editConn(scope.row, scope.$index)"/>
-            <el-popconfirm :hide-after="0" title="确定删除吗？" @confirm.stop="deleteConn(scope.row)">
-              <template #reference>
-                <me-icon info="删除" icon="el-icon-delete" class="icon-btn"/>
-              </template>
-            </el-popconfirm>
+            <me-icon info="编辑" icon="el-icon-edit"          class="icon-btn" @click="editConn(scope.row)"/>
+            <me-icon info="删除" icon="el-icon-delete"        class="icon-btn" @click="deleteConn(scope.row)"/>
           </div>
         </template>
       </el-table-column>

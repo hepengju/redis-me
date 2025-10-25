@@ -1,6 +1,6 @@
 <script setup>
 import {bus, CONN_REFRESH, invoke_then} from "@/utils/util.js"
-import {ElMessage} from 'element-plus'
+import {ElMessage, ElMessageBox} from 'element-plus'
 import SaveConn from '@/views/ext/SaveConn.vue'
 import Setting from '@/views/ext/Setting.vue'
 
@@ -28,24 +28,33 @@ const settingRef = useTemplateRef('setting')
 async function handleCommand(command) {
   if (command === 'addConn') {
     dialog.conn = true
-    nextTick(() => connRef.value.open('add'))
+    await nextTick(() => connRef.value.open('add'))
+  } else if (command === 'copyConn') {
+    dialog.conn = true
+    await nextTick(() => connRef.value.open('add', share.conn))
   } else if (command === 'editConn') {
     dialog.conn = true
-    nextTick(() => connRef.value.open('edit', share.conn))
+    await nextTick(() => connRef.value.open('edit', share.conn))
   } else if (command === 'deleteConn') {
-    const index = share.connList.indexOf(share.conn)
-    if (index > -1) {
-      share.connList.splice(index, 1)
-    }
-    share.conn = null
+    ElMessageBox.confirm(
+        `确定删除连接【${share.conn.name}】吗？`,
+        '提示',
+        {type: 'warning'},
+    ).then(async () => {
+      const index = share.connList.indexOf(share.conn)
+      if (index > -1) {
+        share.connList.splice(index, 1)
+      }
+      share.conn = null
+    }).catch(() => {})
   } else if (command === 'refreshConn') {
     await invoke_then('connect', {id: share.conn.id})
     bus.emit(CONN_REFRESH)
   } else if (command === 'setting') {
     dialog.setting = true
-    nextTick(() => settingRef.value.open())
+    await nextTick(() => settingRef.value.open())
   } else if ('mockData' === command) {
-    mockData()
+    await mockData()
   }
 }
 </script>
@@ -73,17 +82,20 @@ async function handleCommand(command) {
           <el-dropdown-item command="refreshConn" :disabled="!share.conn">
             <me-icon name="刷新连接" icon="el-icon-refresh"/>
           </el-dropdown-item>
-          <el-dropdown-item command="mockData" :disabled="!share.conn">
-            <me-icon name="模拟数据" icon="el-icon-coffee-cup"/>
-          </el-dropdown-item>
           <el-dropdown-item command="addConn">
             <me-icon name="新增连接" icon="el-icon-plus"/>
+          </el-dropdown-item>
+          <el-dropdown-item command="copyConn" :disabled="!share.conn">
+            <me-icon name="复制连接" icon="el-icon-document-copy"/>
           </el-dropdown-item>
           <el-dropdown-item command="editConn" :disabled="!share.conn">
             <me-icon name="编辑连接" icon="el-icon-edit"/>
           </el-dropdown-item>
           <el-dropdown-item command="deleteConn" :disabled="!share.conn">
             <me-icon name="删除连接" icon="el-icon-delete"/>
+          </el-dropdown-item>
+          <el-dropdown-item command="mockData" divided :disabled="!share.conn">
+            <me-icon name="模拟数据" icon="el-icon-coffee-cup"/>
           </el-dropdown-item>
           <el-dropdown-item command="appLog" divided>
             <me-icon name="命令日志" icon="el-icon-stopwatch"/>

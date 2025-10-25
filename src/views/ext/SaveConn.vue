@@ -42,7 +42,13 @@ function open(modeValue, data) {
   visible.value = true
   mode.value = modeValue
   if (data) {
-    Object.assign(form, cloneDeep(data))
+    const newData = cloneDeep(data)
+    // 新增时给了数据，则是复制连接。id和name需要重置
+    if (modeValue === 'add') {
+      newData.id = nanoid()
+      newData.name = data.name + '-副本'
+    }
+    Object.assign(form, newData)
   }
 }
 
