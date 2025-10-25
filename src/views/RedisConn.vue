@@ -69,7 +69,7 @@ function cellStyle({row}) {
 // 行可拖拽 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 // https://sortablejs.com/options
 const table = useTemplateRef('table')
-
+// TODO 正常浏览器中式可以的，但tauri中不支持，原因待排查
 function rowDrag() {
   Sortable.create(
       table.value.$el.querySelector('.el-table__body-wrapper tbody'),
