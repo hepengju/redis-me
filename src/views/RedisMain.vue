@@ -40,16 +40,18 @@ watch(() => share.conn, async (newConn, oldConn) => {
 
   // 打开新连接，获取节点列表和数据库列表（TODO）
   if (newConn) {
+    console.log('新连接')
     share.color = newConn.color
     await invoke_then('connect', {id: newConn.id})
     const data = await invoke_then('node_list', {id: share.conn.id})
     share.nodeList = sortBy(data, 'node')
   }
-})
+}, {deep: true})
 
 watch(() => share.connList, async (newConnList) => {
+  console.log("连接列表变化")
   await invoke_then('conn_list', {connList: newConnList})
-})
+}, {deep: true})
 </script>
 
 <template>
