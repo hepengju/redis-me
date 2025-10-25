@@ -8,7 +8,7 @@ import FieldAdd from '@/views/ext/FieldAdd.vue'
 import KeyBatchDel from './key/KeyBatchDel.vue'
 import KeyMemory from './key/KeyMemory.vue'
 import {invoke_then} from "@/utils/util.js";
-import SaveConn from '@/views/conn/SaveConn.vue'
+import SaveConn from '@/views/ext/SaveConn.vue'
 import Setting from '@/views/ext/Setting.vue'
 
 // 共享数据
@@ -221,7 +221,7 @@ async function handleCommand(command) {
     nextTick(() => connRef.value.open('add'))
   } else if (command === 'editConn') {
     dialog.conn = true
-    nextTick(() => connRef.value.open('edit', global.conn))
+    nextTick(() => connRef.value.open('edit', share.conn))
   } else if (command === 'deleteConn') {
     // TODO
     //global.deleteConn(global.conn, true)

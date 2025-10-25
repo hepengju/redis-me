@@ -1,5 +1,4 @@
 <script setup>
-import useGlobalStore from '@/utils/store.js'
 import {ElMessage} from 'element-plus'
 import {cloneDeep} from 'lodash'
 import {nanoid} from 'nanoid'
@@ -14,7 +13,7 @@ const form = reactive({
   name: '',
 
   host: '127.0.0.1',
-  port: '6379',
+  port: 6379,
   username: '',
   password: '',
 
@@ -48,7 +47,7 @@ function open(modeValue, data) {
 }
 
 // 提交表单
-const global = useGlobalStore()
+const share = inject('share')
 const formRef = useTemplateRef('formRef')
 function submit() {
   formRef.value.validate(valid => {
@@ -57,12 +56,12 @@ function submit() {
     if (mode.value === 'add') {
       form.id = nanoid()
       autoGenName()
-      global.connList.push(form)
+      share.connList.push(form)
       ElMessage.success('新增成功')
       emit('success', form, mode.value)
     } else if (mode.value === 'edit') {
       autoGenName()
-      const conn = global.connList.filter(c => c.id === form.id)[0]
+      const conn = share.connList.filter(c => c.id === form.id)[0]
       Object.assign(conn, cloneDeep(form))
       ElMessage.success('保存成功')
       emit('success', form, mode.value)
@@ -74,10 +73,10 @@ function submit() {
 // 自动生成名称
 function autoGenName() {
   if (!form.name) {
-    form.name = form.host + '@' + form.port
+    form.name = form.host + ':' + form.port
   }
 
-  if (global.connList.find(c => c.name === form.name && c.id !== form.id)) {
+  if (share.connList.find(c => c.name === form.name && c.id !== form.id)) {
     form.name += ' (' + randomString(3) + ')'
   }
 }
@@ -99,7 +98,9 @@ function autoGenName() {
         </el-col>
         <el-col :span="12">
           <el-form-item label="端口" prop="port">
-            <el-input v-model.number="form.port" placeholder="6379"/>
+            <el-input-number :min="1" :max="65535" v-model="form.port"
+                             :controls='false' align="left" style="width: 100%"
+                             placeholder="6379"/>
           </el-form-item>
         </el-col>
       </el-row>
@@ -112,7 +113,7 @@ function autoGenName() {
         </el-col>
         <el-col :span="12">
           <el-form-item label="密码">
-            <el-input v-model.trim="form.password" placeholder="auth"/>
+            <el-input type="password" v-model.trim="form.password" placeholder="password"/>
           </el-form-item>
         </el-col>
       </el-row>

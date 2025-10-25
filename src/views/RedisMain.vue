@@ -4,6 +4,7 @@ import RedisTag from './RedisTag.vue'
 import {sortBy} from 'lodash'
 import {bus, CONN_REFRESH, invoke_then} from "@/utils/util.js";
 import {mockConnList} from "@/utils/api-mock.js";
+import RedisConn from "@/views/RedisConn.vue";
 
 // 共享数据
 const tagShow = ref(false)
@@ -29,19 +30,19 @@ function toggleTag() {
   nextTick(() => tagShow.value = true)
 }
 
-watch(() => share.conn, newConn => {
+watch(() => share.conn, async (newConn) => {
   toggleTag()
   if (newConn) {
     share.color = newConn.color
-    apiNodeList()
+    await invoke_then('connect', {id: newConn.id}, )
+    const data = await invoke_then('node_list', {id: share.conn.id})
+    share.nodeList = sortBy(data, 'node')
   }
 })
 
-// 获取节点列表
-async function apiNodeList() {
-  const data = await invoke_then('node_list', {id: share.conn.id})
-  share.nodeList = sortBy(data, 'node')
-}
+watch(() => share.connList, async (newConnList) => {
+  await invoke_then('conn_list', {param: newConnList})
+})
 </script>
 
 <template>
@@ -54,7 +55,8 @@ async function apiNodeList() {
 
       <!-- 右侧值 -->
       <el-splitter-panel :min="250">
-        <RedisTag v-if="tagShow && share.conn"/>
+        <RedisConn     v-if="!share.conn"/>
+        <RedisTag v-else-if="tagShow"/>
       </el-splitter-panel>
     </el-splitter>
   </div>

@@ -19,14 +19,14 @@ pub struct AppState {
 }
 
 pub trait ClientAccess {
-    fn init_conn_list(&self, conn_list: Vec<RedisConn>) -> AnyResult<()>;
+    fn conn_list(&self, conn_list: Vec<RedisConn>) -> AnyResult<()>;
     fn get_client(&self, id: &str) -> AnyResult<Arc<Box<dyn RedisMeClient>>>;
     fn connect(&self, id: &str) -> AnyResult<Arc<Box<dyn RedisMeClient>>>;
     fn disconnect(&self, id: &str) -> AnyResult<()>;
 }
 
 impl ClientAccess for AppHandle {
-    fn init_conn_list(&self, conn_list: Vec<RedisConn>) -> AnyResult<()> {
+    fn conn_list(&self, conn_list: Vec<RedisConn>) -> AnyResult<()> {
         let state: State<AppState> = self.state();
         let mut map = state.connections.lock().unwrap();
         map.clear();

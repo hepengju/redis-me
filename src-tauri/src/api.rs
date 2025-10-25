@@ -14,8 +14,9 @@ pub fn greet(name: &str) -> String {
 }
 
 // 连接信息发送到后端
-pub fn init_conn_list(app_handle: AppHandle, param: Vec<RedisConn>){
-    
+#[command]
+pub fn conn_list(app_handle: AppHandle, param: Vec<RedisConn>) -> ApiResult<()> {
+    to_api_result(app_handle.conn_list(param))
 }
 
 // 连接

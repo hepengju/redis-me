@@ -1,129 +1,131 @@
 <script setup>
 import {apiConnList} from '@/utils/api.js'
-import useGlobalStore from '@/utils/store.js'
-import {bus, CONN_REFRESH, PREDEFINE_COLORS} from '@/utils/util.js'
-import SaveConn from '@/views/conn/SaveConn.vue'
+import {invoke_then, PREDEFINE_COLORS} from '@/utils/util.js'
+import SaveConn from '@/views/ext/SaveConn.vue'
 import {nextTick, useTemplateRef} from 'vue'
+import {cloneDeep} from "lodash";
+import {nanoid} from "nanoid";
 
-// 全局属性
-const global = useGlobalStore()
+const share = inject('share')
 
-// 获取连接列表
-function getConnList() {
-  global.connList = apiConnList()
-}
-getConnList()
+// 连接列表
+share.connList = apiConnList()
 
-function colorStyle(conn) {
-  return {color: conn.color}
-}
+const keyword = ref('')
+const filterDataList = computed(() => {
+  const key = keyword.value.toLowerCase()
+  return share.connList.filter(row => !key
+      || row.name?.toLowerCase().indexOf(key) > -1
+      || row.host?.toLowerCase().indexOf(key) > -1
+  )
+})
 
-// 选中连接
-function selectConn(conn) {
-  global.conn = conn
-  bus.emit(CONN_REFRESH)
-}
-
-// 新增、编辑连接
+const connRef = useTemplateRef('conn')
 const dialog = reactive({
   conn: false
 })
-const connRef = useTemplateRef('conn')
+
+// 新增连接
 function addConn() {
   dialog.conn = true
   nextTick(() => connRef.value.open('add'))
 }
+
+// 编辑连接
 function editConn(conn) {
   dialog.conn = true
   nextTick(() => connRef.value.open('edit', conn))
 }
-function doNothing(){}
+
+// 复制连接
+function copyConn(conn) {
+  dialog.conn = true
+  const newConn = cloneDeep(conn)
+  newConn.id = nanoid()
+  newConn.name = conn.name + '-副本'
+  nextTick(() => connRef.value.open('add', newConn))
+}
+
+// 删除连接
+function deleteConn(conn) {
+  const index = share.connList.indexOf(conn)
+  if (index > -1) {
+    share.connList.splice(index, 1)
+  }
+}
+
+// 选中连接
+async function selectConn(conn) {
+  await invoke_then('conn_list', {param: share.connList})
+  share.conn = conn
+}
+
+// 单元格样式: 颜色显示
+function cellStyle({row}) {
+  if (row.color) return {color: row.color} // 优先考虑列中定义的颜色
+}
 </script>
 
 <template>
   <div class="redis-conn">
-    <el-descriptions class="desc" v-for="conn in global.connList" :column="1" border label-width="80" @click="selectConn(conn)">
-      <el-descriptions-item class-name="single-line-ellipsis">
-        <template #label>
-          <me-icon name="名称" icon="el-icon-tickets"/>
-        </template>
-        <div :style="colorStyle(conn)" class="single-line-ellipsis" style="width: 150px">{{ conn.name }}</div>
-      </el-descriptions-item>
-      <el-descriptions-item>
-        <template #label>
-          <me-icon name="主机" icon="el-icon-data-board"/>
-        </template>
-        <span :style="colorStyle(conn)" class="single-line-ellipsis" style="width: 150px">{{ conn.host }}@{{ conn.port }}</span>
-      </el-descriptions-item>
-      <el-descriptions-item>
-        <template #label>
-          <me-icon name="其他" icon="el-icon-memo"/>
-        </template>
-          <div class="me-flex"  @click.stop="doNothing">
-            <div>
-              <el-color-picker size="small" v-model="conn.color" :predefine="PREDEFINE_COLORS"/>
-              <!--
-              <el-tag style="margin-left: 10px" type="info" v-if="conn.ssl">SSL</el-tag>
-              <el-tag style="margin-left: 10px" type="info" v-if="conn.cluster">集群</el-tag>
-              -->
-            </div>
-            <div class="me-flex" :style="colorStyle(conn)">
-              <me-icon name="编辑" icon="el-icon-edit"   hint placement="top" @click="editConn(conn)"/>
-              <me-icon name="删除" icon="el-icon-delete" hint placement="top" style="margin-left: 10px" @click="global.deleteConn(conn)"/>
-            </div>
-          </div>
-      </el-descriptions-item>
-    </el-descriptions>
-
-    <div class="add" @click="addConn">
-      <el-button size="large" plain icon="el-icon-plus">新增连接</el-button>
+    <div class="me-flex header">
+      <div>
+        <el-button icon="el-icon-plus" type="primary" @click="addConn">新增连接</el-button>
+      </div>
+      <div>
+        <el-input v-model="keyword" placeholder="模糊筛选（名称、主机）" style="width: 300px; margin-right: 10px" clearable/>
+      </div>
     </div>
+    <div class="table">
+      <el-table :data="filterDataList" ref="table"
+                :cell-style="cellStyle"
+                @row-dblclick="selectConn"
+                border stripe height="100%">
+        <el-table-column label="#"   type="index" width="50" align="center"/>
+        <el-table-column label="颜色" prop="color" width="60">
+          <template #default="scope">
+            <el-color-picker size="small" v-model="scope.row.color" :predefine="PREDEFINE_COLORS"/>
+          </template>
+        </el-table-column>
+        <el-table-column label="名称" prop="name"  show-overflow-tooltip/>
+        <el-table-column label="主机端口" prop="host" width="160" show-overflow-tooltip>
+          <template #default="scope">
+            {{scope.row.host + ':' + scope.row.port}}
+          </template>
+        </el-table-column>
+        <el-table-column label="其他属性" width="180">
+          <template #default="scope">
+            <el-checkbox disabled size="small" v-model="scope.row.cluster">集群</el-checkbox>
+            <el-checkbox disabled size="small" v-model="scope.row.ssl">SSL</el-checkbox>
+          </template>
+        </el-table-column>
+        <el-table-column label="操作" width="100" fixed="right" align="center">
+          <template #default="scope">
+            <div class="me-flex">
+              <me-icon info="复制" icon="el-icon-document-copy" class="icon-btn"  @click="copyConn(scope.row) "/>
+              <me-icon info="编辑" icon="el-icon-edit" class="icon-btn"  @click="editConn(scope.row, scope.$index)"/>
+              <el-popconfirm :hide-after="0" title="确定删除吗？" @confirm.stop="deleteConn(scope.row)">
+                <template #reference>
+                  <me-icon info="删除" icon="el-icon-delete" class="icon-btn"/>
+                </template>
+              </el-popconfirm>
+            </div>
+          </template>
+        </el-table-column>
+      </el-table>
 
-    <SaveConn ref="conn" v-if="dialog.conn" @closed="dialog.conn = false"/>
+      <SaveConn ref="conn" v-if="dialog.conn" @closed="dialog.conn = false"/>
+    </div>
   </div>
 </template>
 
 <style scoped lang="scss">
 .redis-conn {
-  border: var(--el-border);
+  //border: 2px solid red;
   height: 100%;
 
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  flex-wrap: wrap;
-
-  .desc {
-    margin: 10px;
-    width: 250px;
-    //height: 150px;
-    border: var(--el-border);
-    cursor: pointer;
-
-    &:hover {
-      border-color: var(--el-color-primary);
-    }
-
-    .icon-main {
-      &:hover {
-        color: pink !important;
-      }
-    }
-  }
-
-  .add {
-    margin: 10px;
-    width: 250px;
-    height: 122px;
-
-    display: flex;
-    align-items: center;
-    justify-content: center;
-
-    .el-button {
-      height: 100%;
-      width: 100%;
-    }
+  .table {
+    margin-top: 10px;
   }
 }
 </style>
