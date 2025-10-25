@@ -5,6 +5,7 @@ import SaveConn from '@/views/ext/SaveConn.vue'
 import {nextTick, useTemplateRef} from 'vue'
 import {cloneDeep} from "lodash";
 import {nanoid} from "nanoid";
+import {Sortable} from 'sortablejs'
 
 const share = inject('share')
 
@@ -64,6 +65,28 @@ async function selectConn(conn) {
 function cellStyle({row}) {
   if (row.color) return {color: row.color} // 优先考虑列中定义的颜色
 }
+
+// 行可拖拽 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+// https://sortablejs.com/options
+const table = useTemplateRef('table')
+
+function rowDrag() {
+  Sortable.create(
+      table.value.$el.querySelector('.el-table__body-wrapper tbody'),
+      {
+        // handle：selector 格式为简单css选择器的字符串，使列表单元中符合选择器的元素成为拖动的手柄，只有按住拖动手柄才能使列表单元进行拖动；
+        handle: '.drag-handle',
+        onEnd: ({oldIndex, newIndex}) => {
+          console.log('oldIndex:', oldIndex, 'newIndex:', newIndex)
+          const dragRow = share.connList.splice(oldIndex, 1)[0]
+          share.connList.splice(newIndex, 0, dragRow)
+        }
+      }
+  )
+}
+
+onMounted(() => rowDrag())
+// rowDrag()
 </script>
 
 <template>
@@ -73,7 +96,8 @@ function cellStyle({row}) {
         <el-button icon="el-icon-plus" type="primary" @click="addConn">新增连接</el-button>
       </div>
       <div>
-        <el-input v-model="keyword" placeholder="模糊筛选（名称、主机）" style="width: 300px; margin-right: 10px" clearable/>
+        <el-input v-model="keyword" placeholder="模糊筛选（名称、主机）" style="width: 300px; margin-right: 10px"
+                  clearable/>
       </div>
     </div>
     <div class="table">
@@ -81,16 +105,16 @@ function cellStyle({row}) {
                 :cell-style="cellStyle"
                 @row-dblclick="selectConn"
                 border stripe height="100%">
-        <el-table-column label="#"   type="index" width="50" align="center"/>
+        <el-table-column label="#" type="index" width="50" align="center" class-name="drag-handle"/>
         <el-table-column label="颜色" prop="color" width="60">
           <template #default="scope">
             <el-color-picker size="small" v-model="scope.row.color" :predefine="PREDEFINE_COLORS"/>
           </template>
         </el-table-column>
-        <el-table-column label="名称" prop="name"  show-overflow-tooltip/>
+        <el-table-column label="名称" prop="name" show-overflow-tooltip/>
         <el-table-column label="主机端口" prop="host" width="160" show-overflow-tooltip>
           <template #default="scope">
-            {{scope.row.host + ':' + scope.row.port}}
+            {{ scope.row.host + ':' + scope.row.port }}
           </template>
         </el-table-column>
         <el-table-column label="其他属性" width="180">
@@ -102,8 +126,8 @@ function cellStyle({row}) {
         <el-table-column label="操作" width="100" fixed="right" align="center">
           <template #default="scope">
             <div class="me-flex">
-              <me-icon info="复制" icon="el-icon-document-copy" class="icon-btn"  @click="copyConn(scope.row) "/>
-              <me-icon info="编辑" icon="el-icon-edit" class="icon-btn"  @click="editConn(scope.row, scope.$index)"/>
+              <me-icon info="复制" icon="el-icon-document-copy" class="icon-btn" @click="copyConn(scope.row) "/>
+              <me-icon info="编辑" icon="el-icon-edit" class="icon-btn" @click="editConn(scope.row, scope.$index)"/>
               <el-popconfirm :hide-after="0" title="确定删除吗？" @confirm.stop="deleteConn(scope.row)">
                 <template #reference>
                   <me-icon info="删除" icon="el-icon-delete" class="icon-btn"/>
@@ -126,6 +150,14 @@ function cellStyle({row}) {
 
   .table {
     margin-top: 10px;
+  }
+
+  :deep(.drag-handle) {
+    cursor: move;
+  }
+
+  :deep(.sortable-ghost) {
+    background-color: var(--el-color-primary-light-8);
   }
 }
 </style>
