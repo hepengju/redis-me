@@ -57,6 +57,8 @@ function deleteConn(conn) {
 
 // 选中连接
 async function selectConn(conn) {
+  // 测试连接成功后再发送所有连接信息到后端，RedisMain中监控连接变化自动处理
+  await invoke_then('test_conn', {redisConn: conn})
   await invoke_then('conn_list', {connList: share.connList})
   share.conn = conn
 }
@@ -100,46 +102,46 @@ onMounted(() => rowDrag())
                   clearable/>
       </div>
     </div>
-    <div class="table">
-      <el-table :data="filterDataList" ref="table"
-                :cell-style="cellStyle"
-                @row-dblclick="selectConn"
-                border stripe height="100%">
-        <el-table-column label="#" type="index" width="50" align="center" class-name="drag-handle"/>
-        <el-table-column label="颜色" prop="color" width="60">
-          <template #default="scope">
-            <el-color-picker size="small" v-model="scope.row.color" :predefine="PREDEFINE_COLORS"/>
-          </template>
-        </el-table-column>
-        <el-table-column label="名称" prop="name" show-overflow-tooltip/>
-        <el-table-column label="主机端口" prop="host" width="160" show-overflow-tooltip>
-          <template #default="scope">
-            {{ scope.row.host + ':' + scope.row.port }}
-          </template>
-        </el-table-column>
-        <el-table-column label="其他属性" width="180">
-          <template #default="scope">
-            <el-checkbox disabled size="small" v-model="scope.row.cluster">集群</el-checkbox>
-            <el-checkbox disabled size="small" v-model="scope.row.ssl">SSL</el-checkbox>
-          </template>
-        </el-table-column>
-        <el-table-column label="操作" width="100" fixed="right" align="center">
-          <template #default="scope">
-            <div class="me-flex">
-              <me-icon info="复制" icon="el-icon-document-copy" class="icon-btn" @click="copyConn(scope.row) "/>
-              <me-icon info="编辑" icon="el-icon-edit" class="icon-btn" @click="editConn(scope.row, scope.$index)"/>
-              <el-popconfirm :hide-after="0" title="确定删除吗？" @confirm.stop="deleteConn(scope.row)">
-                <template #reference>
-                  <me-icon info="删除" icon="el-icon-delete" class="icon-btn"/>
-                </template>
-              </el-popconfirm>
-            </div>
-          </template>
-        </el-table-column>
-      </el-table>
+    <el-table ref="table"
+              :data="filterDataList"
+              :cell-style="cellStyle"
+              @row-dblclick="selectConn"
+              border stripe
+              height="100%">
+      <el-table-column label="#" type="index" width="50" align="center" class-name="drag-handle"/>
+      <el-table-column label="颜色" prop="color" width="60">
+        <template #default="scope">
+          <el-color-picker size="small" v-model="scope.row.color" :predefine="PREDEFINE_COLORS"/>
+        </template>
+      </el-table-column>
+      <el-table-column label="名称" prop="name" show-overflow-tooltip/>
+      <el-table-column label="主机端口" prop="host" width="160" show-overflow-tooltip>
+        <template #default="scope">
+          {{ scope.row.host + ':' + scope.row.port }}
+        </template>
+      </el-table-column>
+      <el-table-column label="其他属性" width="180">
+        <template #default="scope">
+          <el-checkbox disabled size="small" v-model="scope.row.cluster">集群</el-checkbox>
+          <el-checkbox disabled size="small" v-model="scope.row.ssl">SSL</el-checkbox>
+        </template>
+      </el-table-column>
+      <el-table-column label="操作" width="100" fixed="right" align="center">
+        <template #default="scope">
+          <div class="me-flex">
+            <me-icon info="复制" icon="el-icon-document-copy" class="icon-btn" @click="copyConn(scope.row) "/>
+            <me-icon info="编辑" icon="el-icon-edit" class="icon-btn" @click="editConn(scope.row, scope.$index)"/>
+            <el-popconfirm :hide-after="0" title="确定删除吗？" @confirm.stop="deleteConn(scope.row)">
+              <template #reference>
+                <me-icon info="删除" icon="el-icon-delete" class="icon-btn"/>
+              </template>
+            </el-popconfirm>
+          </div>
+        </template>
+      </el-table-column>
+    </el-table>
 
-      <SaveConn ref="conn" v-if="dialog.conn" @closed="dialog.conn = false"/>
-    </div>
+    <SaveConn ref="conn" v-if="dialog.conn" @closed="dialog.conn = false"/>
   </div>
 </template>
 
@@ -147,9 +149,11 @@ onMounted(() => rowDrag())
 .redis-conn {
   //border: 2px solid red;
   height: 100%;
+  display: flex;
+  flex-direction: column;
 
-  .table {
-    margin-top: 10px;
+  .header {
+    margin: 0px 0 10px 0px;
   }
 
   :deep(.drag-handle) {

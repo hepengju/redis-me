@@ -226,7 +226,7 @@ async function handleCommand(command) {
     // TODO
     //global.deleteConn(global.conn, true)
   } else if (command === 'refreshConn') {
-    await invoke_then('disconnect', {id: share.conn.id})
+    await invoke_then('connect', {id: share.conn.id})
     bus.emit(CONN_REFRESH)
   } else if (command === 'setting') {
     dialog.setting = true
@@ -287,7 +287,11 @@ function saveConn(_, mode) {
     </div>
 
     <div class="key-main" v-if="share.conn">
-      <el-input class="key-search" v-model="keyword" placeholder="Enter 键进行搜索" @keyup.enter="scanKey(false, false)" clearable>
+      <el-input class="key-search"
+                v-model="keyword"
+                placeholder="Enter 键进行搜索"
+                @keyup.enter="scanKey(false, false)"
+                clearable>
         <template #prepend>
           <el-dropdown placement="bottom-start" @command="chooseKeyType">
             <el-tag :type="keyType.type" effect="plain" style="width: 32px; height: 32px">{{keyType.value.slice(0, 1)}}
@@ -333,7 +337,7 @@ function saveConn(_, mode) {
                  @contextFolder="contextFolder"/>
       </div>
 
-      <div class="key-footer">
+      <div class="key-footer" >
         <div class="me-flex" style="align-items: center">
           <el-segmented v-model="keyShowType" :options="keyShowTypeList">
             <template #default="scope">
@@ -352,6 +356,10 @@ function saveConn(_, mode) {
           </template>
         </div>
       </div>
+    </div>
+
+    <div v-else>
+      <el-empty />
     </div>
 
     <!-- 字段新增、批量删除键、目录内存分析 -->

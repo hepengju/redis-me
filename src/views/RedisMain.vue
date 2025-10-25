@@ -30,11 +30,18 @@ function toggleTag() {
   nextTick(() => tagShow.value = true)
 }
 
-watch(() => share.conn, async (newConn) => {
+watch(() => share.conn, async (newConn, oldConn) => {
   toggleTag()
+
+  // 关闭旧连接
+  if (oldConn) {
+    await invoke_then('disconnect', {id: oldConn.id})
+  }
+
+  // 打开新连接，获取节点列表和数据库列表（TODO）
   if (newConn) {
     share.color = newConn.color
-    await invoke_then('connect', {id: newConn.id}, )
+    await invoke_then('connect', {id: newConn.id})
     const data = await invoke_then('node_list', {id: share.conn.id})
     share.nodeList = sortBy(data, 'node')
   }
@@ -55,7 +62,7 @@ watch(() => share.connList, async (newConnList) => {
 
       <!-- 右侧值 -->
       <el-splitter-panel :min="250">
-        <RedisConn     v-if="!share.conn"/>
+        <RedisConn v-if="!share.conn"/>
         <RedisTag v-else-if="tagShow"/>
       </el-splitter-panel>
     </el-splitter>
