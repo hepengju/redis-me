@@ -92,7 +92,7 @@ const {list, containerProps, wrapperProps} = useVirtualList(
       </el-form-item>
 
       <el-form-item :label="`受影响的键名（${form.keyList.length}）`" v-if="!showScan">
-        <div v-bind="containerProps" :style="{height: '400px', width: '100%'}">
+        <div v-bind="containerProps" :style="{height: '300px', width: '100%'}">
           <div v-bind="wrapperProps">
             <div v-for="item in list" :key="item.index" class="key single-line-ellipsis">
               {{ item.data.key }}
