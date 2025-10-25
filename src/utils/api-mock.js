@@ -53,7 +53,7 @@ export const mockConnList = [
       ca: '',
     },
     order: 3,
-    color: '#F56C6C',
+    color: '#0e2e4f',
   },
   {
     id: 'cc',
@@ -71,7 +71,7 @@ export const mockConnList = [
       ca: '',
     },
     order: 4,
-    color: '#F56C6C',
+    color: '#980e0e',
   },
 ]
 

@@ -3,7 +3,7 @@ import {apiConnList} from '@/utils/api.js'
 import {invoke_then, PREDEFINE_COLORS} from '@/utils/util.js'
 import SaveConn from '@/views/ext/SaveConn.vue'
 import {nextTick, useTemplateRef} from 'vue'
-import {cloneDeep} from "lodash";
+import {cloneDeep, debounce} from "lodash";
 import {nanoid} from "nanoid";
 import {Sortable} from 'sortablejs'
 
@@ -55,13 +55,13 @@ function deleteConn(conn) {
   }
 }
 
-// 选中连接
-async function selectConn(conn) {
+// 选中连接: 添加防抖函数，避免连接不可用时多次点击导致的多次报错
+const selectConn = debounce(async (conn) => {
   // 测试连接成功后再发送所有连接信息到后端，RedisMain中监控连接变化自动处理
   await invoke_then('test_conn', {redisConn: conn})
   await invoke_then('conn_list', {connList: share.connList})
   share.conn = conn
-}
+}, 200)
 
 // 单元格样式: 颜色显示
 function cellStyle({row}) {
@@ -114,7 +114,17 @@ onMounted(() => rowDrag())
           <el-color-picker size="small" v-model="scope.row.color" :predefine="PREDEFINE_COLORS"/>
         </template>
       </el-table-column>
-      <el-table-column label="名称" prop="name" show-overflow-tooltip/>
+      <el-table-column label="名称" prop="name" show-overflow-tooltip>
+        <template #default="scope">
+          <div style="display: flex">
+            <el-link :underline="'never'" type="primary"
+                     @click="selectConn(scope.row)"
+                     :style="{'--el-link-text-color': scope.row.color}">
+              <me-icon icon="el-icon-connection" :name="scope.row.name"/>
+            </el-link>
+          </div>
+        </template>
+      </el-table-column>
       <el-table-column label="主机端口" prop="host" width="160" show-overflow-tooltip>
         <template #default="scope">
           {{ scope.row.host + ':' + scope.row.port }}

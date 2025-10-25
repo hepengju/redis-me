@@ -82,11 +82,17 @@ function autoGenName() {
 }
 
 // 测试连接
+const loading = ref(false)
 function testConn() {
   formRef.value.validate(async valid => {
     if (!valid) return
-    await invoke_then('test_conn', {redisConn: form})
-    ElMessage.success('测试连接成功')
+    loading.value = true
+    try {
+      await invoke_then('test_conn', {redisConn: form})
+      ElMessage.success('测试连接成功')
+    } finally {
+      loading.value = false
+    }
   });
 }
 </script>
@@ -155,7 +161,9 @@ function testConn() {
     </el-form>
     <template #footer>
       <div class="me-flex">
-        <el-button type="primary" style="margin-left: 20px" @click="testConn">测试连接</el-button>
+        <el-button type="primary" style="margin-left: 20px"
+                   :loading="loading"
+                   @click="testConn">测试连接</el-button>
         <div>
           <el-button @click="visible = false">取消</el-button>
           <el-button type="primary" @click="submit">确定</el-button>
