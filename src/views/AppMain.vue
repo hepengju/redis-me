@@ -1,18 +1,17 @@
 <script setup>
-import RedisKey from './RedisKey.vue'
 import RedisTag from './RedisTag.vue'
 import {sortBy} from 'lodash'
 import {bus, CONN_REFRESH, invoke_then} from "@/utils/util.js";
 import {mockConnList} from "@/utils/api-mock.js";
 import RedisConn from "@/views/RedisConn.vue";
+import KeyHeader from "@/views/KeyHeader.vue";
+import KeyMain from "@/views/KeyMain.vue";
 
 // 共享数据
-const tagShow = ref(false)
 const share = reactive({
-  conn: '',     // 当前连接
+  conn: null,     // 当前连接
   connList: [], // 连接列表
-  tagShow: false,
-  color: 'var(--el-color-primary)',
+  color: 'var(--el-color-primary)', // 即 share.conn.color（便于使用和移植）
   redisKey: null,
   tabName: 'info',
   nodeList: []  // 节点列表
@@ -22,16 +21,18 @@ share.connList = mockConnList
 provide('share', share)
 
 // 当环境发生变化时，销毁整个key和tag组件（避免状态保留）
-onMounted(() => bus.on(CONN_REFRESH, toggleTag))
-onUnmounted(() => bus.off(CONN_REFRESH, toggleTag))
+onMounted(() => bus.on(CONN_REFRESH, toggleKeyTag))
+onUnmounted(() => bus.off(CONN_REFRESH, toggleKeyTag))
 
-function toggleTag() {
-  tagShow.value = false
-  nextTick(() => tagShow.value = true)
+// 切换连接时销毁key/tag组件
+const connPrepared = ref(false)
+function toggleKeyTag() {
+  connPrepared.value = false
+  nextTick(() => connPrepared.value = true)
 }
 
 watch(() => share.conn, async (newConn, oldConn) => {
-  toggleTag()
+  connPrepared.value = false
 
   // 关闭旧连接
   if (oldConn) {
@@ -40,18 +41,18 @@ watch(() => share.conn, async (newConn, oldConn) => {
 
   // 打开新连接，获取节点列表和数据库列表（TODO）
   if (newConn) {
-    console.log('新连接')
     share.color = newConn.color
+    share.tabName = 'info'
     await invoke_then('connect', {id: newConn.id})
+    connPrepared.value = true
     const data = await invoke_then('node_list', {id: share.conn.id})
     share.nodeList = sortBy(data, 'node')
   }
 }, {deep: true})
 
 watch(() => share.connList, async (newConnList) => {
-  console.log("连接列表变化")
   await invoke_then('conn_list', {connList: newConnList})
-}, {deep: true})
+}, {deep: true, immediate: true})
 </script>
 
 <template>
@@ -59,13 +60,17 @@ watch(() => share.connList, async (newConnList) => {
     <el-splitter>
       <!-- 左侧键 -->
       <el-splitter-panel :min="250" size="30%">
-        <RedisKey/>
+        <div class="redis-key">
+          <KeyHeader/>
+          <KeyMain v-if="share.conn && connPrepared"/>
+          <el-empty v-else/>
+        </div>
       </el-splitter-panel>
 
       <!-- 右侧值 -->
       <el-splitter-panel :min="250">
-        <RedisConn v-if="!share.conn"/>
-        <RedisTag v-else-if="tagShow"/>
+        <RedisConn     v-if="!share.conn"/>
+        <RedisTag v-else-if="connPrepared"/>
       </el-splitter-panel>
     </el-splitter>
   </div>
@@ -76,7 +81,14 @@ watch(() => share.connList, async (newConnList) => {
   height: 100%;
   //border: 2px solid blue;
 
-  /* 中间分隔面板的样式调整 */
+  .redis-key {
+    //border: 2px solid red;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+
+  }
+    /* 中间分隔面板的样式调整 */
   :deep(.el-splitter-bar) {
     width: 5px !important;
 

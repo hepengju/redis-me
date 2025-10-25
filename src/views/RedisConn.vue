@@ -1,5 +1,4 @@
 <script setup>
-import {apiConnList} from '@/utils/api.js'
 import {invoke_then, PREDEFINE_COLORS} from '@/utils/util.js'
 import SaveConn from '@/views/ext/SaveConn.vue'
 import {nextTick, useTemplateRef} from 'vue'
@@ -8,9 +7,6 @@ import {nanoid} from "nanoid";
 import {Sortable} from 'sortablejs'
 
 const share = inject('share')
-
-// 连接列表
-share.connList = apiConnList()
 
 const keyword = ref('')
 const filterDataList = computed(() => {

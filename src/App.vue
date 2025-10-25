@@ -1,12 +1,12 @@
 <script setup>
 import 'dayjs/locale/zh-cn'
 import zhCn from 'element-plus/es/locale/lang/zh-cn'
-import RedisMain from '@/views/RedisMain.vue'
+import AppMain from '@/views/AppMain.vue'
 </script>
 
 <template>
   <el-config-provider :locale="zhCn">
-    <RedisMain/>
+    <AppMain/>
   </el-config-provider>
 </template>
 

@@ -33,7 +33,7 @@ impl ClientAccess for AppHandle {
         for conn in conn_list {
             map.insert(conn.id.clone(), conn);
         }
-        info!("初始化连接列表完成: {}", map.len());
+        info!("同步连接列表完成: {}", map.len());
         Ok(())
     }
 
@@ -68,8 +68,12 @@ impl ClientAccess for AppHandle {
     fn disconnect(&self, id: &str) -> AnyResult<()> {
         let state: State<AppState> = self.state();
         let mut clients = state.clients.write().unwrap();
-        clients.remove(id);
-        info!("断开连接: {}", id);
+        if clients.get(id).is_some() {
+            clients.remove(id);
+            info!("断开连接: {}", id);
+        } else {
+            info!("未找到连接, 断开忽略: {}", id)
+        }
         Ok(())
     }
 }
