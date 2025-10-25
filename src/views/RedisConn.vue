@@ -57,7 +57,7 @@ function deleteConn(conn) {
 
 // 选中连接
 async function selectConn(conn) {
-  await invoke_then('conn_list', {param: share.connList})
+  await invoke_then('conn_list', {connList: share.connList})
   share.conn = conn
 }
 

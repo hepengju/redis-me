@@ -5,6 +5,7 @@ use crate::utils::util::*;
 use log::info;
 use std::collections::HashMap;
 use tauri::{command, AppHandle};
+use crate::utils::conn::{get_client_cluster, get_client_single};
 
 // 默认示例
 // Learn more about Tauri commands at https://tauri.app/develop/calling-rust/
@@ -13,10 +14,16 @@ pub fn greet(name: &str) -> String {
     format!("Hello, {}! You've been greeted from Rust!", name)
 }
 
+// 测试连接
+#[command]
+pub fn test_conn(redis_conn: RedisConn) -> ApiResult<()> {
+    to_api_result(redis_conn.test())
+}
+
 // 连接信息发送到后端
 #[command]
-pub fn conn_list(app_handle: AppHandle, param: Vec<RedisConn>) -> ApiResult<()> {
-    to_api_result(app_handle.conn_list(param))
+pub fn conn_list(app_handle: AppHandle, conn_list: Vec<RedisConn>) -> ApiResult<()> {
+    to_api_result(app_handle.conn_list(conn_list))
 }
 
 // 连接

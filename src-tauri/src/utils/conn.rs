@@ -28,7 +28,7 @@ pub fn get_client_single(conn: &RedisConn) -> AnyResult<Client> {
     let client = Client::open(redis_url)?;
     let mut conn = client.get_connection_with_timeout(Duration::from_secs(1))?;
     let _ = conn.ping()?;
-    info!("测试连接成功");
+    info!("测试单机连接成功");
     Ok(client)
 }
 

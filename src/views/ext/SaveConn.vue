@@ -3,7 +3,7 @@ import {ElMessage} from 'element-plus'
 import {cloneDeep} from 'lodash'
 import {nanoid} from 'nanoid'
 import {ref, useTemplateRef} from 'vue'
-import {PREDEFINE_COLORS, randomString} from '@/utils/util.js'
+import {invoke_then, PREDEFINE_COLORS, randomString} from '@/utils/util.js'
 
 const emit = defineEmits(['success', 'closed'])
 
@@ -80,6 +80,15 @@ function autoGenName() {
     form.name += ' (' + randomString(3) + ')'
   }
 }
+
+// 测试连接
+function testConn() {
+  formRef.value.validate(async valid => {
+    if (!valid) return
+    await invoke_then('test_conn', {redisConn: form})
+    ElMessage.success('测试连接成功')
+  });
+}
 </script>
 
 <template>
@@ -145,9 +154,12 @@ function autoGenName() {
       </div>
     </el-form>
     <template #footer>
-      <div class="dialog-footer">
-        <el-button @click="visible = false">取消</el-button>
-        <el-button type="primary" @click="submit">确定</el-button>
+      <div class="me-flex">
+        <el-button type="primary" style="margin-left: 20px" @click="testConn">测试连接</el-button>
+        <div>
+          <el-button @click="visible = false">取消</el-button>
+          <el-button type="primary" @click="submit">确定</el-button>
+        </div>
       </div>
     </template>
   </el-dialog>

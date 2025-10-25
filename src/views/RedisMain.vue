@@ -41,7 +41,7 @@ watch(() => share.conn, async (newConn) => {
 })
 
 watch(() => share.connList, async (newConnList) => {
-  await invoke_then('conn_list', {param: newConnList})
+  await invoke_then('conn_list', {connList: newConnList})
 })
 </script>
 

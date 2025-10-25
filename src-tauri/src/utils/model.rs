@@ -1,10 +1,10 @@
 #![cfg_attr(test, allow(warnings))] // 整个文件在测试时禁用该警告
 
 use crate::api_model;
-use crate::utils::util::vec8_to_display_string;
+use crate::utils::util::{vec8_to_display_string, AnyResult};
 use redis::{RedisWrite, ToRedisArgs, ToSingleRedisArg};
 use serde::{Deserialize, Serialize};
-
+use crate::utils::conn::{get_client_cluster, get_client_single};
 
 // 连接信息
 api_model!( RedisConn {
@@ -20,6 +20,17 @@ api_model!( RedisConn {
     ssl: bool,
     sslOption: Option<SslOption>,
 });
+
+impl RedisConn {
+    pub fn test(&self) -> AnyResult<()> {
+        let _ = if self.cluster {
+            get_client_cluster(&self)?;
+        } else {
+            get_client_single(&self)?;
+        };
+        Ok(())
+    }
+}
 
 api_model!( SslOption {
     key: String,
