@@ -55,7 +55,7 @@ const cmOptions = computed(() => {
 
 <style>
 .CodeMirror-search-field {
-  font-family: Consolas !important;
+  font-family: 'Consolas,Menlo,Monaco,黑体' !important;
 }
 .codemirror-opacity {
   opacity: 0.6;
