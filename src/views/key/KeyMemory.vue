@@ -1,7 +1,6 @@
 <script setup>
 import {useVirtualList} from '@vueuse/core'
 import {humanSize, invoke_then} from '@/utils/util.js'
-import {sortBy} from 'lodash'
 
 defineExpose({open})
 
@@ -34,7 +33,7 @@ async function keyMemory() {
   loading.value = true
   try {
     const data = await invoke_then('memory_usage', {id: share.conn.id, param: form.value})
-    keyList.value = sortBy(data, 'size').reverse()
+    keyList.value = data
   } finally {
     loading.value = false
   }

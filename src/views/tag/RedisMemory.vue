@@ -1,15 +1,14 @@
 <script setup>
 // 官网参考: https://redis.ac.cn/docs/latest/commands/slowlog-get/
-import api from '@/api/index.js'
 import {useTemplateRef} from 'vue'
-import {bus, copy, DELETE_KEY, filterHandler, humanSize, REFRESH_KEY} from '../util/me.js'
+import {bus, copy, filterHandler, humanSize, REFRESH_KEY} from '@/utils/util.js'
 import {ElMessage, ElMessageBox} from 'element-plus'
-import {isEnvEdit} from '@/utils/permission.js'
 import {capitalize} from 'lodash'
+import {commonDeleteKey, invoke_then} from "@/utils/util.js";
 
 // 共享数据
 const share = inject('share')
-const canEdit = computed(() => isEnvEdit(share.env))
+const canEdit = computed(() => true)
 const hint = computed(() => {
   return `
 <b>原理：scan / memory usage / pipeline / type</b> <br/>
@@ -23,7 +22,7 @@ const sizeLimitKb = ref(100)
 const countLimit  = ref(500)
 const scanCount  = ref(1000)
 const scanTotal  = ref(10000)
-const sleepMillis  = ref(share.env.indexOf('prd') > -1 ? 50 : 0)
+const sleepMillis  = ref(0)
 const match = ref('')
 const matchParam = computed(() => {
   if (match.value==='') return '*'
@@ -42,27 +41,20 @@ const filterTypes = computed(() => {
     return [...new Set(dataList.value.map(d => d.type))].map(d => ({text: capitalize(d), value: d}))
 })
 
-async function apiMemoryUsage() {
-  const params = {
-    match: matchParam.value,
-    sizeLimit: sizeLimitKb.value * 1024,
-    countLimit: countLimit.value,
-    scanCount: scanCount.value,
-    scanTotal: scanTotal.value,
-    sleepMillis: sleepMillis.value,
-  }
-  const res = await api.ark.extops.redis.memoryUsage(share.env, params)
-  if (res.code === 200) {
-    dataList.value = res.data || []
-  } else {
-    ElMessageBox.alert(res.msg, '提示', { type: 'error'})
-  }
-}
-
 async function refresh() {
   loading.value = true
   try {
-    await apiMemoryUsage()
+    const param = {
+      match: matchParam.value,
+      sizeLimit: sizeLimitKb.value * 1024,
+      countLimit: countLimit.value,
+      scanCount: scanCount.value,
+      scanTotal: scanTotal.value,
+      sleepMillis: sleepMillis.value,
+      needKeyType: true
+    }
+    const data = await invoke_then('memory_usage', {id: share.conn.id, param})
+    dataList.value = data
   } finally {
     loading.value = false
   }
@@ -91,20 +83,9 @@ function chooseKey(redisKey) {
 
 // 删除键
 async function delKey(redisKey) {
-  ElMessageBox.confirm(
-    `确定删除键【${redisKey.key}】吗？`,
-    '提示',
-    {type: 'warning'},
-  ).then(async () => {
-    const res = await api.ark.extops.redis.del(share.env, redisKey)
-    if (res.code == 200) {
-      bus.emit(DELETE_KEY, redisKey)
-      ElMessage({message: '删除成功', type: 'success'})
-      dataList.value = dataList.value.filter(rk => rk.bytes !== redisKey.bytes)
-    } else {
-      ElMessageBox.alert(res.msg, "提示", {type: 'error'})
-    }
-  }).catch(() => {})
+  commonDeleteKey(share.conn.id, redisKey, () => {
+    dataList.value = dataList.value.filter(rk => rk.bytes !== redisKey.bytes)
+  })
 }
 
 // 批量删除键
@@ -118,20 +99,16 @@ async function batchDelKey() {
     '提示',
     {type: 'warning'},
   ).then(async () => {
-    const params = {
+    const param = {
+      match: '',
       keyList: selection.value.map(row => ({key: row.key, bytes: row.bytes})),
     }
-    const res = await api.ark.extops.redis.batchDel(share.env, params)
-    if (res.code == 200) {
-      const keyBytesArr = params.keyList.map(rk => rk.bytes)
-      ElMessage({message: '删除成功', type: 'success'})
-      dataList.value = dataList.value.filter(rk => keyBytesArr.indexOf(rk.bytes) < 0)
-    } else {
-      ElMessageBox.alert(res.msg, "提示", {type: 'error'})
-    }
+    await invoke_then('batch_del', {id: share.conn.id, param})
+    ElMessage.success("删除成功")
+    const keyBytesArr = param.keyList.map(rk => rk.bytes)
+    dataList.value = dataList.value.filter(rk => keyBytesArr.indexOf(rk.bytes) < 0)
   }).catch(() => {})
 }
-
 
 // 避免表格自动调整列宽时闪烁一下
 const tableRef = useTemplateRef(('table'))

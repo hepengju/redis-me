@@ -109,7 +109,7 @@ export function filterHandler(value, row, column){
 }
 
 // 删除键
-export function commonDeleteKey(id, redisKey) {
+export function commonDeleteKey(id, redisKey, thenFn) {
     ElMessageBox.confirm(
       `确定删除键【${redisKey.key}】吗？`,
       '提示',
@@ -118,5 +118,8 @@ export function commonDeleteKey(id, redisKey) {
         await invoke_then('del', {id, key: redisKey})
         bus.emit(DELETE_KEY, redisKey)
         ElMessage.success('删除成功')
+        if (thenFn) {
+            thenFn()
+        }
     }).catch(() => {})
 }

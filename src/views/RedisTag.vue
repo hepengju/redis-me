@@ -3,7 +3,7 @@ import RedisInfo from './tag/RedisInfo.vue'
 import RedisValue from './tag/RedisValue.vue'
 import RedisTauri from './tag/RedisTauri.vue'
 // import RedisSlow from './tag/RedisSlow.vue'
-// import RedisMemory from './tag/RedisMemory.vue'
+import RedisMemory from './tag/RedisMemory.vue'
 import RedisTerminal from './tag/RedisTerminal.vue'
 import RedisConfig from './tag/RedisConfig.vue'
 // import RedisClient from './tag/RedisClient.vue'
@@ -45,12 +45,12 @@ const canEdit = computed(() => true)
       <RedisConfig/>
     </el-tab-pane>
 
-<!--    <el-tab-pane name="memory" lazy v-if="canEdit">-->
-<!--      <template #label>-->
-<!--        <me-icon name="内存" icon="me-icon-memory"/>-->
-<!--      </template>-->
-<!--      <RedisMemory/>-->
-<!--    </el-tab-pane>-->
+    <el-tab-pane name="memory" lazy v-if="canEdit">
+      <template #label>
+        <me-icon name="内存" icon="me-icon-memory"/>
+      </template>
+      <RedisMemory/>
+    </el-tab-pane>
 
 <!--    <el-tab-pane name="slow" lazy>-->
 <!--      <template #label>-->
