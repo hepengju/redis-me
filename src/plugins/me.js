@@ -4,6 +4,7 @@ import MeIcon from '@/components/MeIcon.vue'
 import MeFileInput from '@/components/MeFileInput.vue'
 import MeXterm from '@/components/MeXterm.vue'
 import MeContext from "@/components/MeContext.vue";
+import '@/App.css'
 
 export default function (app) {
   app.component('me-icon', MeIcon)

@@ -3,6 +3,7 @@ import '@xterm/xterm/css/xterm.css'
 import {Terminal} from '@xterm/xterm'
 import {FitAddon} from '@xterm/addon-fit'
 import {computed, onMounted, onUnmounted, watch} from 'vue'
+import {useDark} from "@vueuse/core";
 
 /*
 ANSI 转义序列颜色规则
@@ -41,7 +42,7 @@ watch(() => prefix, () => prompt())
 // 主题
 const baseTheme = {
   foreground: '#F8F8F8',
-  background: '#2c2c2c',  // 背景和应用保持一致
+  background: '#222222',
   selection: '#5DA5D533',
   black: '#1E1E1D',
   brightBlack: '#262625',
@@ -61,21 +62,25 @@ const baseTheme = {
   brightWhite: '#FFFFFF',
 }
 
-// const isDark = useDark()
-// const computedTheme = computed(() => {
-//   return ({
-//     ...baseTheme,
-//     foreground: isDark.value ? baseTheme.foreground : baseTheme.background,
-//     background: isDark.value ? baseTheme.background : baseTheme.foreground,
-//   })
-// })
+const isDark = useDark()
+const computedTheme = computed(() => {
+  return ({
+    ...baseTheme,
+    foreground: isDark.value ? baseTheme.foreground : baseTheme.background,
+    background: isDark.value ? baseTheme.background : baseTheme.foreground,
+  })
+})
 
 // 设置终端尺寸
 const term = new Terminal({
-  theme: baseTheme,
-  fontFamily: 'Menlo,Consolas,Monaco,黑体',
+  theme: computedTheme.value,
+  fontFamily: 'Menlo,Consolas,Monaco',
   cursorBlink: true,  // 光标闪烁
   cursorStyle: 'bar', // 竖线
+})
+
+watch(computedTheme, () => {
+  term.options.theme = {...computedTheme.value}
 })
 
 // 附属插件

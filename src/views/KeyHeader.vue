@@ -24,7 +24,6 @@ const dialog = reactive({
 
 // 处理额外命令
 const connRef = useTemplateRef('conn')
-const settingRef = useTemplateRef('setting')
 async function handleCommand(command) {
   if (command === 'addConn') {
     dialog.conn = true
@@ -52,7 +51,6 @@ async function handleCommand(command) {
     bus.emit(CONN_REFRESH)
   } else if (command === 'setting') {
     dialog.setting = true
-    await nextTick(() => settingRef.value.open())
   } else if ('mockData' === command) {
     await mockData()
   }

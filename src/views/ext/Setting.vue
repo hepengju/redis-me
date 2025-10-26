@@ -1,12 +1,10 @@
 <script setup>
 import {useDark, usePreferredDark, useStorage} from '@vueuse/core'
 import {ref} from 'vue'
-import useGlobalStore from '@/utils/store.js'
 
 const {dialog} = defineProps({
   dialog: {type: Object, default: {setting: false}},
 })
-const global = useGlobalStore()
 
 // 主题
 const theme = ref('system')
@@ -78,20 +76,6 @@ function changeZoomFactor(value) {
         <el-form-item label="缩放">
           <el-input-number v-model="zoomFactor" @change="changeZoomFactor"
                            :min="0.5" :max="2" :step="0.1" :precision="1" style="width: 120px"/>
-        </el-form-item>
-      </el-form>
-    </el-card>
-    <el-card header="通用" header-class="me-card" style="margin-top: 10px">
-      <el-form inline>
-        <el-form-item label="scan数量">
-          <el-input-number v-model="global.scanCount" :min="500" :max="2000" :step="100"/>
-          <template #label>
-            <me-icon name="scan数量" icon="el-icon-question-filled"
-                     info="每次扫描加载的key数量，设置过大可能会影响性能" placement="top-start"/>
-          </template>
-        </el-form-item>
-        <el-form-item label="hscan数量">
-          <el-input-number v-model="global.hscanCount" :min="100" :max="2000" :step="100"/>
         </el-form-item>
       </el-form>
     </el-card>

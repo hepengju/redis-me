@@ -2,15 +2,23 @@ html, body {
   margin: 0;
   padding: 0;
   height: 100%; /*app的height单独加高度100%不生效*/
-  /*参考ElementPlus网站的字体*/
-  /*font-family: Inter,Helvetica Neue,Helvetica,PingFang SC,Hiragino Sans GB,Microsoft YaHei,微软雅黑,Arial,sans-serif;*/
-  /*参考TinyRDM的字体设置，优先使用系统字体*/
-  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
+  /*https://element-plus.org/zh-CN/component/typography#%E5%AD%97%E4%BD%93*/
+  font-family: Inter, 'Helvetica Neue', Helvetica, 'PingFang SC', 'Hiragino Sans GB',
+  'Microsoft YaHei', '微软雅黑', Arial, sans-serif;;
   overflow: hidden;
 }
 
-.CodeMirror pre.CodeMirror-line, .CodeMirror pre.CodeMirror-line-like {
-  font-family: Menlo,Consolas,Monaco !important;
+/* CodeMirror */
+/*//.CodeMirror pre.CodeMirror-line, .CodeMirror pre.CodeMirror-line-like {
+//  font-family: Menlo, Consolas, Monaco, monospace !important;
+//}*/
+
+.codemirror-opacity {
+  opacity: 0.6;
+}
+
+.codemirror-container {
+  font-size: 15px !important;
 }
 
 /* 黑色主题 */
@@ -56,12 +64,13 @@ svg {
   justify-content: space-between;
 }
 
+/* 图标按钮 */
 .icon-btn {
   cursor: pointer;
+}
 
-  & :hover {
-    color: var(--el-color-primary);
-  }
+.icon-btn :hover{
+  color: var(--el-color-primary);
 }
 
 /* 覆盖所有禁用按钮 */

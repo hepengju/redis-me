@@ -46,15 +46,3 @@ const cmOptions = computed(() => {
 <template>
   <CodeMirror v-bind="$attrs" ref="cm" :options="cmOptions" :class="readOnly ? ['codemirror-opacity' , 'is-disabled'] : []"/>
 </template>
-
-<style scoped lang="scss">
-.codemirror-container {
-  font-size: 14px;
-}
-</style>
-
-<style>
-.codemirror-opacity {
-  opacity: 0.6;
-}
-</style>
