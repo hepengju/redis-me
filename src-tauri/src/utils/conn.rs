@@ -83,7 +83,7 @@ mod tests {
             password: "hepengju".to_string(),
             cluster: false,
             ssl: false,
-            sslOption: None,
+            ssl_option: None,
         };
         let pool = get_pool_single(&redis_conn).unwrap();
         let mut conn = pool.get().unwrap();
@@ -102,7 +102,7 @@ mod tests {
             password: "hepengju".to_string(),
             cluster: true,
             ssl: true,
-            sslOption: None,
+            ssl_option: None,
         };
         let pool = get_pool_cluster(&redis_conn).unwrap();
         let mut conn = pool.get().unwrap();

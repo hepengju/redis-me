@@ -255,18 +255,19 @@ impl RedisMeClient for RedisMeCluster {
         }
 
         // 计算键类型
-        let mut pipe = ClusterPipeline::with_capacity(keys.len());
-        for key in keys.iter() {
-            pipe.cmd("type").arg(&key.0);
-        }
-        let types: Vec<Option<String>> = pipe.query(&mut conn)?;
-        for (index, key_type) in types.into_iter().enumerate() {
-            keys[index].2 = key_type.unwrap_or("deleted".into());
+        if param.need_key_type.unwrap_or(false) {
+            let mut pipe = ClusterPipeline::with_capacity(keys.len());
+            for key in keys.iter() {
+                pipe.cmd("type").arg(&key.0);
+            }
+            let types: Vec<Option<String>> = pipe.query(&mut conn)?;
+            for (index, key_type) in types.into_iter().enumerate() {
+                keys[index].2 = key_type.unwrap_or("deleted".into());
+            }
         }
 
         // 映射为返回值
-        let key_list = keys.into_iter().map(RedisKeySize::from).collect();
-        Ok(key_list)
+        Ok(tuple_to_key_size(keys))
     }
 
     fn client_list(

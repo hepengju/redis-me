@@ -22,7 +22,7 @@ mod tests {
             password: "hepengju".into(),
             cluster: true,
             ssl: false,
-            sslOption: None,
+            ssl_option: None,
         };
         RedisMeCluster::new(&conn).unwrap()
     }
@@ -194,6 +194,7 @@ mod tests {
                 scan_count: 1000,
                 scan_total: 10000,
                 sleep_millis: 0,
+                need_key_type: Some(true)
             })
             .unwrap();
         println!("{result:#?}");

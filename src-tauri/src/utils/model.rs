@@ -245,6 +245,8 @@ api_model!( RedisMemoryParam {
     scan_count: u64,   // 每次扫描, 推荐: 1000
     scan_total: u64,   // 扫描数量限制, 推荐: 10000
     sleep_millis: u64, // 扫描间隔, 推荐: 1000
+    
+    need_key_type: Option<bool>, // 是否需要返回键类型
 });
 
 // 内存分析结果

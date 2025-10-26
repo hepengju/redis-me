@@ -1,4 +1,4 @@
-use crate::utils::model::{RedisClientInfo, RedisSlowLog};
+use crate::utils::model::{RedisClientInfo, RedisKeySize, RedisSlowLog};
 use anyhow::bail;
 use chrono::DateTime;
 use log::error;
@@ -69,6 +69,15 @@ pub fn vec8_to_display_string(bytes: &[u8]) -> String {
         }
     }
     result
+}
+
+// 辅助函数
+pub fn tuple_to_key_size(keys: Vec<(Vec<u8>, u64, String)>) -> Vec<RedisKeySize> {
+    let mut key_list: Vec<RedisKeySize> = keys.into_iter()
+        .map(RedisKeySize::from).collect();
+    key_list.sort_by_key(|x| x.size);
+    key_list.reverse();
+    key_list
 }
 
 // 字节数组转Base64字符串: RedisKey 的 bytes
