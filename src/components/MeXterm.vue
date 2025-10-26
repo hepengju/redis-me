@@ -73,7 +73,7 @@ const baseTheme = {
 // 设置终端尺寸
 const term = new Terminal({
   theme: baseTheme,
-  fontFamily: 'Consolas,Menlo,Monaco,黑体',
+  fontFamily: 'Menlo,Consolas,Monaco,黑体',
   cursorBlink: true,  // 光标闪烁
   cursorStyle: 'bar', // 竖线
 })
