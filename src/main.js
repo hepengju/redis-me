@@ -1,6 +1,6 @@
 import {createApp} from 'vue'
 import App from './App.vue'
-
+import './App.scss'
 import setupElementPlus from '@/plugins/element-plus.js'
 import setupSvgIcon from '@/plugins/icon.js'
 import setupMe from '@/plugins/me.js'

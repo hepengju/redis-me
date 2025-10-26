@@ -3,7 +3,6 @@ import MeCode from '@/components/MeCode.vue'
 import MeIcon from '@/components/MeIcon.vue'
 import MeFileInput from '@/components/MeFileInput.vue'
 import MeXterm from '@/components/MeXterm.vue'
-import '@/App.css'
 import MeContext from "@/components/MeContext.vue";
 
 export default function (app) {
