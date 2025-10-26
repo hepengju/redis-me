@@ -1,10 +1,10 @@
 <script setup>
 import {useTemplateRef} from 'vue'
 import {ElMessage} from 'element-plus'
-import MeButton from '@/components/MeButton.vue'
-import {configTip as tips} from '@/utils/tip.js'
+import {configTip as tips, redisConfList} from '@/utils/tip.js'
 import NodeList from '../ext/NodeList.vue'
 import {invoke_then} from "@/utils/util.js";
+import {sortBy} from "lodash";
 
 // 共享数据
 const share = inject('share')
@@ -40,12 +40,25 @@ async function refresh() {
 }
 refresh()
 
-async function downloadConfigFile() {
-  console.log('down')
-}
-
 function editParam(row) {
   ElMessage({message: 'TODO编辑配置', type: 'success'})
+}
+
+// 官网默认配置参考
+const dialog = reactive({
+  raw: false
+})
+const configVersion = ref('')  // 版本
+const configList = computed(() => {
+  const list = Object.entries(redisConfList).map(([key, value]) => ({key, value}))
+  return sortBy(list, ['key']).reverse()
+})
+const configRaw = computed(() => {
+  return redisConfList[configVersion.value] || '暂不支持'
+})
+function handleCommand(command){
+  dialog.raw = true
+  configVersion.value = command
 }
 
 // 避免表格自动调整列宽时闪烁一下
@@ -66,7 +79,14 @@ watch(() => share.tabName, newValue => {
       <div>
         <div class="me-flex">
           <node-list v-model="node" style="margin-right: 10px" @change="refresh"/>
-          <me-button plain style="margin-right: 10px" @click="downloadConfigFile" info="下载Redis的默认配置（Redis7.4)" icon="el-icon-download"/>
+          <el-dropdown @command="handleCommand">
+            <el-button plain icon="el-icon-notebook" type="info">配置参考</el-button>
+            <template #dropdown>
+              <el-dropdown-menu>
+                <el-dropdown-item :command="item.key" v-for="item in configList">{{item.key}}</el-dropdown-item>
+              </el-dropdown-menu>
+            </template>
+          </el-dropdown>
         </div>
       </div>
       <div>
@@ -89,6 +109,10 @@ watch(() => share.tabName, newValue => {
         </el-table-column>
       </el-table>
     </div>
+
+    <el-dialog :title="`默认配置：${configVersion}`" v-model="dialog.raw" width="60vw" center align-center draggable>
+      <me-code :value="configRaw" mode="properties" read-only height="60vh" />
+    </el-dialog>
   </div>
 </template>
 
