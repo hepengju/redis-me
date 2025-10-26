@@ -10,7 +10,7 @@ html, body {
 }
 
 .CodeMirror pre.CodeMirror-line, .CodeMirror pre.CodeMirror-line-like {
-  font-family: Menlo,Consolas,Monaco,黑体;
+  font-family: Menlo,Consolas,Monaco !important;
 }
 
 /* 黑色主题 */
