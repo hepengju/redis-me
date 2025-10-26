@@ -9,6 +9,10 @@ html, body {
   overflow: hidden;
 }
 
+.CodeMirror pre.CodeMirror-line, .CodeMirror pre.CodeMirror-line-like {
+  font-family: Menlo,Consolas,Monaco,黑体;
+}
+
 /* 黑色主题 */
 html.dark {
   /* 自定义深色背景颜色 */
