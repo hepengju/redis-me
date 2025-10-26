@@ -46,7 +46,9 @@ watch(() => share.conn, async (newConn, oldConn) => {
     await invoke_then('connect', {id: newConn.id})
     connPrepared.value = true
     const data = await invoke_then('node_list', {id: share.conn.id})
-    share.nodeList = sortBy(data, 'node')
+    // 节点列表排序: 主节点在前面，相同类型节点按照node升序
+    const nodeList = sortBy(data, 'node').reverse()
+    share.nodeList = sortBy(nodeList, 'isMaster').reverse()
   }
 }, {deep: true})
 
