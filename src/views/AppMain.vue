@@ -33,7 +33,6 @@ function toggleKeyTag() {
 
 watch(() => share.conn, async (newConn, oldConn) => {
   connPrepared.value = false
-
   // 关闭旧连接
   if (oldConn) {
     await invoke_then('disconnect', {id: oldConn.id})
@@ -52,8 +51,10 @@ watch(() => share.conn, async (newConn, oldConn) => {
   }
 }, {deep: true})
 
-watch(() => share.connList, async (newConnList) => {
-  await invoke_then('conn_list', {connList: newConnList})
+// 保存连接列表: 列表真实变化时才发送命令
+const connListToString = computed(() => JSON.stringify(share.connList))
+watch(connListToString, async (newConnList) => {
+  await invoke_then('conn_list', {connList: JSON.parse(newConnList)})
 }, {deep: true, immediate: true})
 </script>
 
