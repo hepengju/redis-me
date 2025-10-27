@@ -1,12 +1,16 @@
 <script setup>
 import { Window } from '@tauri-apps/api/window';
+import {useDark, useToggle} from "@vueuse/core";
 const appWindow = new Window('main');
+
+const isDark = useDark()
+const toggleDark = useToggle(isDark)
 </script>
 
 <template>
   <div data-tauri-drag-region class="title-bar me-flex">
     <div class="me-flex" style="align-items: end">
-      <me-icon icon="me-icon-redis-me" style="margin-left: 5px; font-size: 16px;"/>
+      <me-icon icon="me-icon-redis-me" class="icon-btn" style="margin-left: 5px; font-size: 16px;" @click="toggleDark()"/>
       <div style="margin-left: 5px;font-size: 12px">RedisME</div>
     </div>
     <div style="font-size: 12px;">
