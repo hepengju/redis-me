@@ -1,8 +1,27 @@
 <script setup>
 import { Window } from '@tauri-apps/api/window';
 import {useDark, useToggle} from "@vueuse/core";
-const appWindow = new Window('main');
 
+// 模拟窗口操作
+const appWindow = new Window('main');
+const isMaximized = ref(false)
+
+const toMin = () => {
+  appWindow.minimize()
+}
+
+const toMax = async () => {
+  await appWindow.toggleMaximize()
+  isMaximized.value = await appWindow.isMaximized()
+  console.log(isMaximized.value)
+}
+
+const toClose = () => {
+  appWindow.close()
+}
+
+
+// 主题切换
 const isDark = useDark()
 const toggleDark = useToggle(isDark)
 </script>
@@ -14,10 +33,10 @@ const toggleDark = useToggle(isDark)
       <div style="margin-left: 5px;font-size: 12px">RedisME</div>
     </div>
     <div style="font-size: 12px;">
-      <me-icon icon="me-icon-window-minimize" class="title-button normal-btn" @click="appWindow.minimize()"/>
-      <me-icon icon="me-icon-window-maximize" class="title-button normal-btn" @click="appWindow.toggleMaximize()" v-show="appWindow.isMaximized()"/>
-      <me-icon icon="me-icon-window-restore"  class="title-button normal-btn" @click="appWindow.toggleMaximize()" v-show="!appWindow.isMaximized()"/>
-      <me-icon icon="me-icon-window-close"    class="title-button danger-btn" @click="appWindow.close()"/>
+      <me-icon icon="me-icon-window-minimize" class="title-button normal-btn" @click="toMin"/>
+      <me-icon icon="me-icon-window-maximize" class="title-button normal-btn" @click="toMax" v-show="!isMaximized"/>
+      <me-icon icon="me-icon-window-restore"  class="title-button normal-btn" @click="toMax" v-show="isMaximized"/>
+      <me-icon icon="me-icon-window-close"    class="title-button danger-btn" @click="toClose"/>
     </div>
   </div>
 </template>
