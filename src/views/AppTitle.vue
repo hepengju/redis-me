@@ -1,6 +1,7 @@
 <script setup>
 import { Window } from '@tauri-apps/api/window';
 import {useDark, useToggle} from "@vueuse/core";
+import {VxeUI} from "vxe-table";
 
 // 模拟窗口操作
 const appWindow = new Window('main');
@@ -20,10 +21,12 @@ const toClose = () => {
   appWindow.close()
 }
 
-
 // 主题切换
 const isDark = useDark()
 const toggleDark = useToggle(isDark)
+watch(() => isDark.value, (newValue) => {
+  VxeUI.setTheme(newValue ? 'dark' : 'light')
+})
 </script>
 
 <template>

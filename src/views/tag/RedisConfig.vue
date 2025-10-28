@@ -1,5 +1,4 @@
 <script setup>
-import {useTemplateRef} from 'vue'
 import {ElMessage} from 'element-plus'
 import {configTip as tips, redisConfList} from '@/utils/tip.js'
 import NodeList from '../ext/NodeList.vue'
@@ -22,12 +21,17 @@ const filterDataList = computed(() => {
   )
 })
 
+const footerData = computed(() => {
+  return [{ param: '总数', value: filterDataList.value.length }]
+})
+
+
 async function apiConfigGet() {
   const data = await invoke_then('config_get', {id: share.conn.id, pattern: '*', node: node.value})
   const tableData = []
   const configMap = data
   Object.entries(configMap).forEach(([key, value]) => tableData.push({param: key, value}))
-  dataList.value = tableData
+  dataList.value = sortBy(tableData, ['param'])
 }
 
 async function refresh() {
@@ -61,16 +65,6 @@ function handleCommand(command){
   configVersion.value = command
 }
 
-// 避免表格自动调整列宽时闪烁一下
-const tableRef = useTemplateRef(('table'))
-const tableTotal = computed(() => tableRef.value?.store?.states?.data?.value?.length ?? 0)
-watch(() => share.tabName, newValue => {
-  if (newValue === 'config') {
-    nextTick(() => {
-      tableRef.value.doLayout()
-    })
-  }
-})
 </script>
 
 <template>
@@ -90,12 +84,25 @@ watch(() => share.tabName, newValue => {
         </div>
       </div>
       <div>
-        <el-text v-if="tableTotal > 0" type="info" style="margin-right: 10px">[ 总数: {{tableTotal}} ]</el-text>
         <el-input  v-model="keyword" placeholder="模糊筛选（配置项、配置值）" style="width: 300px; margin-right: 10px" clearable/>
         <el-button icon="el-icon-search" @click="refresh" type="primary" :loading="loading"/>
       </div>
     </div>
     <div class="table">
+      <vxe-table :data="filterDataList"
+                 :footer-data="footerData" show-footer
+                 :loading="loading"
+                 height="100%"
+                 border stripe size="small">
+        <vxe-column title="配置项" field="param" sortable/>
+        <vxe-column title="配置值" field="value"/>
+        <vxe-column title="说明"   show-overflow="tooltip">
+          <template #default="{ row }">
+            {{ tips[row.param] }}
+          </template>
+        </vxe-column>
+      </vxe-table>
+      <!--
       <el-table :data="filterDataList" ref="table"
                 style="margin-top: 10px"
                 v-loading="loading"
@@ -104,10 +111,10 @@ watch(() => share.tabName, newValue => {
         <el-table-column label="配置值" prop="value" show-overflow-tooltip/>
         <el-table-column label="说明" show-overflow-tooltip>
           <template #default="scope">
-            <span style="color: var(--el-color-info)">{{tips[scope.row.param]}}</span>
+            <span style="color: var(&#45;&#45;el-color-info)">{{tips[scope.row.param]}}</span>
           </template>
         </el-table-column>
-      </el-table>
+      </el-table>-->
     </div>
 
     <el-dialog :title="`默认配置：${configVersion}`" v-model="dialog.raw" width="60vw" center align-center draggable>
@@ -131,6 +138,7 @@ watch(() => share.tabName, newValue => {
   }
 
   .table {
+    margin-top: 10px;
     flex-grow: 1;
     height: 0;
   }

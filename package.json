@@ -26,7 +26,10 @@
     "nanoid": "^5.1.6",
     "pinia": "^3.0.3",
     "sortablejs": "^1.15.6",
-    "vue": "^3.5.22"
+    "vue": "^3.5.22",
+    "vxe-pc-ui": "4.10.12",
+    "vxe-table": "4.17.3",
+    "xe-utils": "3.7.9"
   },
   "devDependencies": {
     "@tauri-apps/cli": "^2.8.4",

@@ -6,6 +6,7 @@ import setupMe from '@/plugins/me.js'
 import setupBus from '@/plugins/bus.js'
 import setupPinia from '@/plugins/pinia.js'
 import setupDirective from '@/plugins/directive.js'
+import setupVxe from '@/plugins/vxe.js'
 
 const app = createApp(App)
 setupElementPlus(app)
@@ -14,4 +15,5 @@ setupBus(app)
 setupPinia(app)
 setupMe(app)
 setupDirective(app)
+setupVxe(app)
 app.mount('#app')
