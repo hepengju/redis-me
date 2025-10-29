@@ -18,7 +18,7 @@ html.dark {
   --el-fill-color-lighter: #2F2F2F;          /* el-table表格斑马纹 */
 }
 
-body {
+html, body {
   margin: 0;
   padding: 0;
   height: 100%; /*app的height单独加高度100%不生效*/

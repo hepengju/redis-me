@@ -57,7 +57,7 @@ export const mockConnList = [
   },
   {
     id: 'cc-dev',
-    name: '公司-集群-开发',
+    name: '公司-集群-开发(崩溃)',
     host: '10.106.100.140',
     port: 7001,
     username: '',
@@ -89,7 +89,7 @@ export const mockConnList = [
       ca: '',
     },
     order: 4,
-    color: '#980e0e',
+    color: '#bfaaaa',
   },
 ]
 

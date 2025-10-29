@@ -70,7 +70,9 @@ function cellStyle({row}) {
 // 行可拖拽 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 // https://sortablejs.com/options
 const table = useTemplateRef('table')
-// TODO 正常浏览器中式可以的，但tauri中不支持，原因待排查
+// 正常浏览器中式可以的，但tauri中不支持
+// 原因: tauri v2里的配置文件默认监听了tauri的webview的拖拽功能，导致了HTML5的拖拽功能失效。
+// 参考: https://owl.xylib.top/posts/tauri-drag-drop
 function rowDrag() {
   Sortable.create(
       table.value.$el.querySelector('.el-table__body-wrapper tbody'),
@@ -96,8 +98,7 @@ onMounted(() => rowDrag())
         <el-button icon="el-icon-plus" type="primary" @click="addConn">新增连接</el-button>
       </div>
       <div>
-        <el-input v-model="keyword" placeholder="模糊筛选（名称、主机）" style="width: 300px; margin-right: 10px"
-                  clearable/>
+        <el-input v-model="keyword" placeholder="模糊筛选（名称、主机）" style="width: 300px; margin-right: 10px" clearable/>
       </div>
     </div>
     <el-table ref="table"

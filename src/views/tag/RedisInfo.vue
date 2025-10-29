@@ -73,11 +73,13 @@ const tableData = computed(() => {
   )
 })
 
+const infoNode = ref('')
 async function refresh() {
   loading.value = true
   try {
     const data = await invoke_then('info', {id: share.conn.id, node: node.value})
     raw.value = data.info || ''
+    infoNode.value = data.node || (share.conn.host + ':' + share.conn.port)
     const data2 = await invoke_then('config_get', {id: share.conn.id, pattern: 'save', node: node.value})
     config.value = data2 || ''
   } finally {
@@ -103,24 +105,15 @@ function goClient() {
 function goMemory() {
   share.tabName = 'memory'
 }
-
-// 避免表格自动调整列宽时闪烁一下
-// watch(() => share.tabName, newValue => {
-//   if (newValue === 'info') {
-//     nextTick(() => {
-//       tableRef.value.doLayout()
-//     })
-//   }
-// })
 </script>
 
 <template>
   <div class="redis-info" v-loading="loading">
     <el-descriptions border>
       <template #title>
-        <div class="me-flex">
+        <div class="me-flex" style="align-items: center">
           <div>
-            <el-text size="large" style="margin-left: 5px">{{ dic['ark_node'] }}</el-text>
+            <el-text size="large" style="margin-left: 5px">{{ infoNode }}</el-text>
             <el-tag style="margin-left: 10px">v{{ dic['redis_version'] }}</el-tag>
             <el-tag type="success" style="margin-left: 10px" v-if="dic['redis_mode']">{{ dic['redis_mode'] }}</el-tag>
             <el-tag type="success" style="margin-left: 10px" v-if="dic['role']">{{ dic['role'] }}</el-tag>
@@ -209,33 +202,24 @@ function goMemory() {
 
           <div class="detail-header-right">
             <me-icon info="原始信息" icon="me-icon-raw" class="raw-info icon-btn" @click="dialog.raw = true"/>
+            <el-select v-model="tagSelected" placeholder="分类" clearable style="width: 150px; margin: 0 10px">
+              <el-option v-for="tag in tagList" :key="tag" :label="tag" :value="tag"/>
+            </el-select>
             <el-input v-model="keyword" clearable style="width: 200px" prefix-icon="el-icon-search" placeholder="键值过滤"/>
           </div>
         </div>
       </template>
 
-      <div class="detail-main">
-        <div class="tags">
-          <el-button class="tag" @click="clickTag('')">
-            <span :style="{color: tagSelected === '' ? 'var(--el-color-primary)' : '', fontWeight: 'bold'}">全部</span>
-          </el-button>
-          <el-button class="tag" plain v-for="tag in tagList" @click="clickTag(tag)">
-            <el-tooltip :content="tips[tag.toLowerCase()] || '暂无提示'" placement="right" :show-after="1000">
-              <span :style="{color: tagSelected === tag ? 'var(--el-color-primary)' : ''}">{{tag}}</span>
-            </el-tooltip>
-          </el-button>
-        </div>
-        <el-table ref="table" :data="tableData" border stripe height="100%">
-          <el-table-column prop="tag" label="分类" width="100"/>
-          <el-table-column prop="key" label="键" show-overflow-tooltip/>
-          <el-table-column prop="value" label="值" show-overflow-tooltip/>
-          <el-table-column label="说明" show-overflow-tooltip>
-            <template #default="scope">
-              <span style="color: var(--el-color-info)">{{tips[scope.row.key]}}</span>
-            </template>
-          </el-table-column>
-        </el-table>
-      </div>
+      <el-table ref="table" :data="tableData" stripe height="100%">
+        <el-table-column prop="tag" label="分类" width="100"/>
+        <el-table-column prop="key" label="键" show-overflow-tooltip/>
+        <el-table-column prop="value" label="值" show-overflow-tooltip/>
+        <el-table-column label="说明" show-overflow-tooltip>
+          <template #default="scope">
+            <span style="color: var(--el-color-info)">{{tips[scope.row.key]}}</span>
+          </template>
+        </el-table-column>
+      </el-table>
     </el-card>
   </div>
 
@@ -264,6 +248,11 @@ function goMemory() {
     padding: 10px;
   }
 
+  // 参数详情的Body去掉Padding
+  :deep(.el-card__body) {
+    padding: 0;
+  }
+
   .refresh {
     font-size: 20px;
     color: var(--el-color-success);
@@ -279,31 +268,14 @@ function goMemory() {
 
     .detail-header {
       font-weight: bold;
+      align-items: center;
 
       .detail-header-right {
         display: flex;
 
         .raw-info {
-          margin-right: 10px;
           font-size: 20px;
           color: var(--el-color-success);
-        }
-      }
-    }
-
-    .detail-main {
-      height: 100%;
-      display: flex;
-      justify-content: space-between;
-
-      .tags {
-        margin-right: 20px;
-        display: flex;
-        flex-direction: column;
-
-        .tag {
-          width: 88px;
-          margin: 0 0 5px 0;
         }
       }
     }
