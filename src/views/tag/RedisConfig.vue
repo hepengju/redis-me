@@ -21,9 +21,9 @@ const filterDataList = computed(() => {
   )
 })
 
-const footerData = computed(() => {
-  return [{ param: '总数', value: filterDataList.value.length }]
-})
+function getSummaries() {
+  return ['总数', filterDataList.value.length, '']
+}
 
 
 async function apiConfigGet() {
@@ -64,7 +64,6 @@ function handleCommand(command){
   dialog.raw = true
   configVersion.value = command
 }
-
 </script>
 
 <template>
@@ -74,7 +73,7 @@ function handleCommand(command){
         <div class="me-flex">
           <node-list v-model="node" style="margin-right: 10px" @change="refresh"/>
           <el-dropdown @command="handleCommand">
-            <el-button plain icon="el-icon-notebook" type="info">配置参考</el-button>
+            <el-button plain icon="el-icon-notebook" type="info">参考</el-button>
             <template #dropdown>
               <el-dropdown-menu>
                 <el-dropdown-item :command="item.key" v-for="item in configList">{{item.key}}</el-dropdown-item>
@@ -88,34 +87,21 @@ function handleCommand(command){
         <el-button icon="el-icon-search" @click="refresh" type="primary" :loading="loading"/>
       </div>
     </div>
-    <div class="table">
-      <vxe-table :data="filterDataList"
-                 :footer-data="footerData" show-footer
-                 :loading="loading"
-                 height="100%"
-                 border stripe size="small">
-        <vxe-column title="配置项" field="param" sortable/>
-        <vxe-column title="配置值" field="value"/>
-        <vxe-column title="说明"   show-overflow="tooltip">
-          <template #default="{ row }">
-            {{ tips[row.param] }}
-          </template>
-        </vxe-column>
-      </vxe-table>
-      <!--
-      <el-table :data="filterDataList" ref="table"
-                style="margin-top: 10px"
-                v-loading="loading"
-                border stripe height="100%">
-        <el-table-column label="配置项" prop="param" sortable show-overflow-tooltip/>
-        <el-table-column label="配置值" prop="value" show-overflow-tooltip/>
-        <el-table-column label="说明" show-overflow-tooltip>
-          <template #default="scope">
-            <span style="color: var(&#45;&#45;el-color-info)">{{tips[scope.row.param]}}</span>
-          </template>
-        </el-table-column>
-      </el-table>-->
-    </div>
+
+    <el-table :data="filterDataList" ref="table"
+              style="margin-top: 10px"
+              v-loading="loading"
+              show-summary
+              :summary-method="getSummaries"
+              border stripe height="100%">
+      <el-table-column label="配置项" prop="param" sortable show-overflow-tooltip/>
+      <el-table-column label="配置值" prop="value" show-overflow-tooltip/>
+      <el-table-column label="说明" show-overflow-tooltip>
+        <template #default="scope">
+          <span style="color: var(--el-color-info)">{{tips[scope.row.param]}}</span>
+        </template>
+      </el-table-column>
+    </el-table>
 
     <el-dialog :title="`默认配置：${configVersion}`" v-model="dialog.raw" width="60vw" center align-center draggable>
       <me-code :value="configRaw" mode="properties" read-only height="60vh" />

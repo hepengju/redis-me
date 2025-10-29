@@ -81,9 +81,9 @@ watch(connListToString, async (newConnList) => {
 
 <style scoped lang="scss">
 .redis-main {
-  //height: 100%;
+  height: calc(100% - 30px);
   //border: 2px solid blue;
-  padding: 10px 5px 5px 5px;
+  padding: 0px 5px 5px 5px;
   flex: 1;
 
   .redis-key {

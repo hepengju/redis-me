@@ -105,13 +105,13 @@ function goMemory() {
 }
 
 // 避免表格自动调整列宽时闪烁一下
-watch(() => share.tabName, newValue => {
-  if (newValue === 'info') {
-    nextTick(() => {
-      tableRef.value.doLayout()
-    })
-  }
-})
+// watch(() => share.tabName, newValue => {
+//   if (newValue === 'info') {
+//     nextTick(() => {
+//       tableRef.value.doLayout()
+//     })
+//   }
+// })
 </script>
 
 <template>
@@ -226,7 +226,7 @@ watch(() => share.tabName, newValue => {
           </el-button>
         </div>
         <el-table ref="table" :data="tableData" border stripe height="100%">
-          <el-table-column prop="tag" label="分类" width="120"/>
+          <el-table-column prop="tag" label="分类" width="100"/>
           <el-table-column prop="key" label="键" show-overflow-tooltip/>
           <el-table-column prop="value" label="值" show-overflow-tooltip/>
           <el-table-column label="说明" show-overflow-tooltip>
@@ -274,7 +274,7 @@ watch(() => share.tabName, newValue => {
     flex: 1;
 
     :deep(.el-card__body) {
-      height: calc(100% - var(--el-card-padding) * 2 - 30px);
+      height: calc(100% - var(--el-card-padding) * 2 - 10px);
     }
 
     .detail-header {
