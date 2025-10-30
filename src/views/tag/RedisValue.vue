@@ -220,16 +220,6 @@ async function fieldDel(row) {
   ElMessage.success('删除成功')
   await refreshKey()
 }
-
-// 避免表格自动调整列宽时闪烁一下
-const tableRef = useTemplateRef(('table'))
-watch(() => share.tabName, newValue => {
-  if (newValue === 'value') {
-    nextTick(() => {
-      tableRef.value?.doLayout()
-    })
-  }
-})
 </script>
 
 <template>
@@ -306,7 +296,7 @@ watch(() => share.tabName, newValue => {
               <el-table-column label="#" type="index" width="50" align="center" show-overflow-tooltip>
                 <template #default="scope">
                   <div v-if="fieldSetIndex != scope.$index">{{scope.$index + 1}}</div>
-                  <me-icon v-else icon="el-icon-edit" :style="{color: share.color}"></me-icon>
+                  <me-icon v-else icon="el-icon-edit" :style="{color: share.color, display: 'block'}" ></me-icon>
                 </template>
               </el-table-column>
 
