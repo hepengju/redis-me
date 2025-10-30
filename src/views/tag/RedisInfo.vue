@@ -64,14 +64,25 @@ watchEffect(() => {
 })
 
 // 表格数据
-const tableData = computed(() => {
+const dataList = computed(() => {
+  return tagTable.value.filter(d => !tagSelected.value || d.tag === tagSelected.value)
+})
+const filterDataList = computed(() => {
   const key = keyword.value.toLowerCase()
-  return tagTable.value.filter(d =>
+  return dataList.value.filter(d =>
     (!key || d.key.toLowerCase().indexOf(key) > -1 || d.value.toLowerCase().indexOf(key) > -1)
-    &&
-    (!tagSelected.value || d.tag === tagSelected.value)
   )
 })
+
+// 合计列
+function getSummaries() {
+  return ['合计', '', filterDataList.value.length + ' / ' + dataList.value.length, '']
+}
+
+const tableRef = useTemplateRef(('table'))
+function tagChange(){
+  tableRef.value.scrollTo(0, 0) // 滚动条归零
+}
 
 const infoNode = ref('')
 async function refresh() {
@@ -88,13 +99,6 @@ async function refresh() {
 }
 refresh()
 
-// 点击标签后滚动到最上方
-const tableRef = useTemplateRef(('table'))
-function clickTag(tag) {
-  tagSelected.value = tag
-  tableRef.value.scrollTo(0, 0) // 滚动条归零
-}
-
 function goClient() {
   share.tabName = 'client'
   nextTick(() => {
@@ -105,6 +109,8 @@ function goClient() {
 function goMemory() {
   share.tabName = 'memory'
 }
+
+
 </script>
 
 <template>
@@ -202,7 +208,7 @@ function goMemory() {
 
           <div class="detail-header-right">
             <me-icon info="原始信息" icon="me-icon-raw" class="raw-info icon-btn" @click="dialog.raw = true"/>
-            <el-select v-model="tagSelected" placeholder="分类" clearable style="width: 150px; margin: 0 10px">
+            <el-select v-model="tagSelected" placeholder="分类" clearable style="width: 150px; margin: 0 10px" @change="tagChange">
               <el-option v-for="tag in tagList" :key="tag" :label="tag" :value="tag"/>
             </el-select>
             <el-input v-model="keyword" clearable style="width: 200px" prefix-icon="el-icon-search" placeholder="键值过滤"/>
@@ -210,7 +216,9 @@ function goMemory() {
         </div>
       </template>
 
-      <el-table ref="table" :data="tableData" stripe height="100%">
+      <el-table ref="table" :data="filterDataList"
+                show-summary :summary-method="getSummaries"
+                stripe height="100%">
         <el-table-column prop="tag" label="分类" width="100"/>
         <el-table-column prop="key" label="键" show-overflow-tooltip/>
         <el-table-column prop="value" label="值" show-overflow-tooltip/>

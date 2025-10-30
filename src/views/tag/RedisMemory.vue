@@ -41,6 +41,19 @@ const filterTypes = computed(() => {
     return [...new Set(dataList.value.map(d => d.type))].map(d => ({text: capitalize(d), value: d}))
 })
 
+// 避免表格自动调整列宽时闪烁一下
+function humanTotalSize(list) {
+  return humanSize(list.value.map(d => d.size).reduce((sum, cur) => sum + cur, 0) ?? 0)
+}
+
+// 合计列
+function getSummaries() {
+  const count = filterDataList.value.length + ' / ' + dataList.value.length
+  const size = humanTotalSize(filterDataList) + ' / ' + humanTotalSize(dataList)
+  const show = h('div', {class: 'me-flex'}, [h('div',null, count), h('div', null, size)])
+  return ['', '合计', show, '']
+}
+
 async function refresh() {
   loading.value = true
   try {
@@ -109,18 +122,6 @@ async function batchDelKey() {
     dataList.value = dataList.value.filter(rk => keyBytesArr.indexOf(rk.bytes) < 0)
   }).catch(() => {})
 }
-
-// 避免表格自动调整列宽时闪烁一下
-const tableRef = useTemplateRef(('table'))
-const tableTotal = computed(() => tableRef.value?.store?.states?.data?.value?.length ?? 0)
-const tableTotalSize = computed(() => humanSize(tableRef.value?.store?.states?.data?.value?.map(d => d.size).reduce((sum, cur) => sum + cur, 0) ?? 0))
-watch(() => share.tabName, newValue => {
-  if (newValue === 'memory') {
-    nextTick(() => {
-      tableRef.value.doLayout()
-    })
-  }
-})
 </script>
 
 <template>
@@ -187,13 +188,12 @@ watch(() => share.tabName, newValue => {
       </div>
 
       <div>
-        <el-text v-if="tableTotal > 0" type="info" style="margin-right: 10px">[ 总数: {{tableTotal}}，大小: {{tableTotalSize}} ]</el-text>
         <el-input v-model="keyword" placeholder="键模糊筛选" style="width: 260px; margin:0 10px" clearable/>
         <el-button icon="el-icon-search" @click="memoryUsage" type="primary" :loading="loading" >开始分析</el-button>
       </div>
     </div>
-    <div class="table">
-      <el-table size="large" :data="filterDataList" ref="table"
+    <el-table :data="filterDataList" ref="table"
+              show-summary :summary-method="getSummaries"
                 :default-sort="{prop: 'size', order: 'descending'}"
                 style="margin-top: 10px"
                 v-loading="loading"
@@ -225,7 +225,6 @@ watch(() => share.tabName, newValue => {
           </template>
         </el-table-column>
       </el-table>
-    </div>
   </div>
 </template>
 
@@ -244,11 +243,6 @@ watch(() => share.tabName, newValue => {
     :deep(.el-input-group__append) {
       width: 40px;
     }
-  }
-
-  .table {
-    flex-grow: 1;
-    height: 0;
   }
 }
 </style>

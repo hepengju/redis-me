@@ -21,10 +21,10 @@ const filterDataList = computed(() => {
   )
 })
 
+// 合计列
 function getSummaries() {
-  return ['总数', filterDataList.value.length, '']
+  return ['配置数', filterDataList.value.length + ' / ' + dataList.value.length, '']
 }
-
 
 async function apiConfigGet() {
   const data = await invoke_then('config_get', {id: share.conn.id, pattern: '*', node: node.value})
@@ -91,8 +91,7 @@ function handleCommand(command){
     <el-table :data="filterDataList" ref="table"
               style="margin-top: 10px"
               v-loading="loading"
-              show-summary
-              :summary-method="getSummaries"
+              show-summary :summary-method="getSummaries"
               border stripe height="100%">
       <el-table-column label="配置项" prop="param" sortable show-overflow-tooltip/>
       <el-table-column label="配置值" prop="value" show-overflow-tooltip/>

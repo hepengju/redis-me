@@ -46,7 +46,7 @@ function replaceEnter(data) {
   <div class="redis-terminal">
     <me-xterm class="terminal" :exec-command="execCommand" :prefix/>
     <div class="node me-flex" v-if="share.conn?.cluster">
-      <me-icon icon="el-icon-question-filled" :info="hint" raw-content placement="top" :show-after="0" style="color: white"/>
+      <me-icon icon="el-icon-question-filled" :info="hint" raw-content placement="top" :show-after="0"/>
       <el-checkbox v-model="autoBroadcast" label="自动广播" border style="margin-left: 10px"/>
       <node-list v-model="node" clearable style="margin-left: 10px"/>
     </div>
