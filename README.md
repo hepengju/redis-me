@@ -1,12 +1,12 @@
 # RedisME
 开源、简洁、智能的跨平台Redis管理客户端
 
-# 目标平台
-支持Windows、macOS、Linux、Android、iOS、HarmonyOS
 
-# 技术框架
-element-plus, vue3, vite, tauri
-
-# 说明
-- 自定义组件: me-xxx
-- 自定义图标: me-icon-xxx
+# TODO
+- tauri第三方组件unwrap导致程序直接退出
+- tauri考虑是否需要使用异步模式执行
+- Redis的SSL连接
+- Redis的哨兵模式
+- 执行命令支持数据库切换
+- 自动升级检测支持
+- 微信登录同步账号信息
