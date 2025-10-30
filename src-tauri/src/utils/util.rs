@@ -163,13 +163,13 @@ pub fn redis_value_to_log(value: Value, node: &str) -> AnyResult<RedisSlowLog> {
     let time = timestamp_to_string(FromRedisValue::from_redis_value_ref(&items[1])?);
     let cost: f64 = FromRedisValue::from_redis_value_ref(&items[2])?;
     let command: String = redis_value_to_string(items[3].clone(), " ");
-    let client: String = if items.len() > 5 {
+    let client: String = if items.len() > 4 {
         FromRedisValue::from_redis_value_ref(&items[4])?
     } else {
         "".into()
     };
 
-    let client_name: String = if items.len() > 6 {
+    let client_name: String = if items.len() > 5 {
         FromRedisValue::from_redis_value_ref(&items[5])?
     } else {
         "".into()
