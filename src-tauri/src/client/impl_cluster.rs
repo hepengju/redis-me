@@ -280,8 +280,8 @@ impl RedisMeClient for RedisMeCluster {
         let mut clients = vec![];
         for redis_node in &self.node_list {
             // 如果参数中包含节点参数，则只返回指定节点的慢日志
-            if let Some(ref n) = node {
-                if n != &redis_node.node {
+            if let Some(ref node_limit) = node && !node_limit.is_empty() {
+                if *node_limit != redis_node.node {
                     continue;
                 }
             }
@@ -290,12 +290,12 @@ impl RedisMeClient for RedisMeCluster {
 
             let mut cmd = redis::cmd("client");
             cmd.arg("list");
-            if let Some(ref client_type_val) = client_type {
+            if let Some(ref client_type_val) = client_type && !client_type_val.is_empty() {
                 cmd.arg("type").arg(client_type_val);
             }
             let value = conn.route_command(&cmd, route)?;
-            let value_list: Vec<String> = FromRedisValue::from_redis_value(value)?;
-            for client_info in value_list.into_iter() {
+            let client: String = FromRedisValue::from_redis_value(value)?;
+            for client_info in client.lines().into_iter() {
                 let client: RedisClientInfo = parse_client_info(&client_info)?;
                 clients.push(client);
             }

@@ -121,7 +121,7 @@ refresh()
       </div>
     </div>
     <div class="table">
-      <me-table :data="filterDataList" ref="table"
+      <me-table :data="filterDataList" ref="table" v-loading="loading"
                 :default-sort="{prop: 'cost', order: 'descending'}"
                 @sort-change="sortChange"
                 border stripe>

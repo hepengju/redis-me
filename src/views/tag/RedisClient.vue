@@ -1,7 +1,7 @@
 <script setup>
-import {onMounted, onUnmounted, useTemplateRef} from 'vue'
-import NodeList from "@/views/ext/NodeList.vue";
-import {bus, GO_CLIENT, humanSeconds, invoke_then} from "@/utils/util.js";
+import {onMounted, onUnmounted} from 'vue'
+import NodeList from '@/views/ext/NodeList.vue'
+import {bus, GO_CLIENT, humanSeconds, invoke_then} from '@/utils/util.js'
 
 // 共享数据
 const share = inject('share')
@@ -17,8 +17,8 @@ const sortOrder = ref('ascending')
 const filterDataList = computed(() => {
   const key = keyword.value.toLowerCase()
   const arr = dataList.value.filter(row => !key
-      || row.addr?.toLowerCase().indexOf(key) > -1
-      || row.name?.toLowerCase().indexOf(key) > -1
+    || row.addr?.toLowerCase().indexOf(key) > -1
+    || row.name?.toLowerCase().indexOf(key) > -1
   )
 
   const prop = sortProperty.value
@@ -42,13 +42,13 @@ function sortChange({prop, order}) {
 async function refresh() {
   loading.value = true
   try {
-    const param = {node: node.value, clientType: clientType.value}
-    const res = await invoke_then('client_list', {id: share.conn.id, param})
-    dataList.value = res.data
+    const data = await invoke_then('client_list', {id: share.conn.id, node: node.value, clientType: clientType.value})
+    dataList.value = data
   } finally {
     loading.value = false
   }
 }
+refresh()
 
 function eventGoClient(nodeValue) {
   node.value = nodeValue
@@ -57,24 +57,14 @@ function eventGoClient(nodeValue) {
 
 onMounted(() => bus.on(GO_CLIENT, eventGoClient))
 onUnmounted(() => bus.off(GO_CLIENT, eventGoClient))
-
-// 避免表格自动调整列宽时闪烁一下
-const tableRef = useTemplateRef(('table'))
-watch(() => share.tabName, newValue => {
-  if (newValue === 'client') {
-    nextTick(() => {
-      tableRef.value.doLayout()
-    })
-  }
-})
 </script>
 
 <template>
   <div class="redis-client">
     <div class="me-flex header">
       <div>
-        <node-list v-model="node" style="margin-right: 10px" @change="refresh"/>
-        <el-select v-model="clientType" style="width: 140px;margin-right: 10px;" placeholder="客户端类型" clearable>
+        <node-list v-model="node" style="margin-right: 10px" @change="refresh" init-node/>
+        <el-select v-model="clientType" style="width: 120px;margin-right: 10px;" placeholder="客户端类型" clearable>
           <el-option value="NORMAL"/>
           <el-option value="MASTER"/>
           <el-option value="SLAVE"/>
@@ -89,26 +79,23 @@ watch(() => share.tabName, newValue => {
       </div>
     </div>
     <div class="table">
-      <sc-static-table size="large" :data="filterDataList" ref="table"
-                       :pageSize="100" :page-sizes="[100, 200, 500]"
-                       style="margin-top: 10px"
-                       :default-sort="{prop: 'id', order: 'ascending'}"
-                       :init-loading="false"
-                       @sort-change="sortChange"
-                       border stripe height="100%">
+      <me-table :data="filterDataList" ref="table" v-loading="loading"
+                :default-sort="{prop: 'id', order: 'ascending'}"
+                @sort-change="sortChange"
+                border stripe height="100%">
         <el-table-column label="ID" prop="id" show-overflow-tooltip sortable width="100" align="right"/>
-        <el-table-column label="客户端" prop="addr" show-overflow-tooltip width="180"/>
-        <el-table-column label="客户端名称" prop="name" show-overflow-tooltip width="180"/>
-        <el-table-column label="持续时间" prop="age" show-overflow-tooltip sortable width="140" align="right"
+        <el-table-column label="客户端" prop="addr" show-overflow-tooltip width="160"/>
+        <el-table-column label="客户端名称" prop="name" show-overflow-tooltip width="160"/>
+        <el-table-column label="持续时间" prop="age" show-overflow-tooltip sortable width="120" align="right"
                          :formatter="row => humanSeconds(row.age)"/>
-        <el-table-column label="空闲时间" prop="idle" show-overflow-tooltip sortable width="140" align="right"
+        <el-table-column label="空闲时间" prop="idle" show-overflow-tooltip sortable width="120" align="right"
                          :formatter="row => humanSeconds(row.idle)"/>
         <el-table-column label="最后命令" prop="cmd" show-overflow-tooltip sortable min-width="200"/>
         <el-table-column label="user" prop="user" show-overflow-tooltip sortable width="100"/>
-        <el-table-column label="db" prop="db" show-overflow-tooltip sortable width="100" align="center"/>
-        <el-table-column label="totMem" prop="totMem" show-overflow-tooltip sortable width="120" align="right"/>
-        <el-table-column label="rbs" prop="rbs" show-overflow-tooltip sortable width="120" align="right"/>
-      </sc-static-table>
+        <el-table-column label="db" prop="db" show-overflow-tooltip sortable width="80" align="center"/>
+        <el-table-column label="totMem" prop="totMem" show-overflow-tooltip sortable width="100" align="right"/>
+        <el-table-column label="rbs" prop="rbs" show-overflow-tooltip sortable width="100" align="right"/>
+      </me-table>
     </div>
   </div>
 </template>
@@ -128,6 +115,7 @@ watch(() => share.tabName, newValue => {
   }
 
   .table {
+    margin-top: 10px;
     flex-grow: 1;
     height: 0;
   }

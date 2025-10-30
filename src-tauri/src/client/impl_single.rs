@@ -234,13 +234,13 @@ impl RedisMeClient for RedisMeSingle {
         let mut conn = self.pool.get()?;
         let mut cmd = redis::cmd("client");
         cmd.arg("list");
-        if let Some(ref client_type_val) = client_type {
+        if let Some(ref client_type_val) = client_type && !client_type_val.is_empty() {
             cmd.arg("type").arg(client_type_val);
         }
-        let value_list: Vec<String> = cmd.query(&mut conn)?;
+        let client: String = cmd.query(&mut conn)?;
 
         let mut clients = vec![];
-        for client_info in value_list.into_iter() {
+        for client_info in client.lines().into_iter() {
             let client: RedisClientInfo = parse_client_info(&client_info)?;
             clients.push(client);
         }
