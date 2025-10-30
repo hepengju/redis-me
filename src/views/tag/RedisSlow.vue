@@ -1,10 +1,6 @@
 <script setup>
 // 官网参考: https://redis.ac.cn/docs/latest/commands/slowlog-get/
-import api from '@/api/index.js'
-import {useTemplateRef} from 'vue'
-import MeButton from '@/components/arkMe/MeButton.vue'
-import {sortBy} from 'lodash'
-import {filterHandler} from '@/views/ark/extops/redis-me/util/me.js'
+import {invoke_then} from "@/utils/util.js";
 
 // 共享数据
 const share = inject('share')
@@ -55,14 +51,14 @@ function sortChange({prop, order}) {
 // })
 
 async function apiConfigGet() {
-  const res = await api.ark.extops.redis.configGet(share.env, {pattern: 'slowlog*'})
-  slowerThan.value = res.data['slowlog-log-slower-than']
-  slowerMaxLen.value = res.data['slowlog-max-len']
+  const data = await invoke_then('config_get', {id: share.conn.id, pattern: 'slowlog*'})
+  slowerThan.value = data['slowlog-log-slower-than']
+  slowerMaxLen.value = data['slowlog-max-len']
 }
 
 async function apiSlowLog() {
-  const res = await api.ark.extops.redis.slowLog(share.env, {count: slowerGetCount.value})
-  dataList.value = res.data || []
+  const data = await invoke_then('slow_log', {id: share.conn.id, count: slowerGetCount.value})
+  dataList.value = data || []
 }
 
 async function refresh() {
@@ -76,15 +72,6 @@ async function refresh() {
 }
 refresh()
 
-// 避免表格自动调整列宽时闪烁一下
-const tableRef = useTemplateRef(('table'))
-watch(() => share.tabName, newValue => {
-  if (newValue === 'slow') {
-    nextTick(() => {
-      tableRef.value.doLayout()
-    })
-  }
-})
 </script>
 
 <template>
@@ -119,23 +106,21 @@ watch(() => share.tabName, newValue => {
       </div>
     </div>
     <div class="table">
-      <sc-static-table size="large" :data="filterDataList" ref="table"
+      <me-table :data="filterDataList" ref="table"
                 :default-sort="{prop: 'cost', order: 'descending'}"
-                style="margin-top: 10px" :init-loading="false"
-                :pageSize="100" :page-sizes="[100, 200, 500]"
                 @sort-change="sortChange"
-                border stripe height="100%">
-        <el-table-column label="命令" prop="command" min-width="400" sortable show-overflow-tooltip/>
+                border stripe>
+        <el-table-column label="命令" prop="command" min-width="200" sortable show-overflow-tooltip/>
         <el-table-column label="耗时" prop="cost" width="120" sortable show-overflow-tooltip>
           <template #default="scope">
             {{ scope.row.cost.toFixed(2) }} ms
           </template>
         </el-table-column>
-        <el-table-column label="客户端名称"   prop="clientName" width="180" sortable show-overflow-tooltip/>
+        <el-table-column label="客户端名称"   prop="clientName" width="120" sortable show-overflow-tooltip/>
         <el-table-column label="执行时间" prop="time" width="180" sortable/>
         <el-table-column label="节点" prop="node" width="180" sortable/>
         <el-table-column label="客户端" prop="client" width="180" sortable show-overflow-tooltip/>
-      </sc-static-table>
+      </me-table>
     </div>
   </div>
 </template>
@@ -158,6 +143,7 @@ watch(() => share.tabName, newValue => {
   }
 
   .table {
+    margin-top: 10px;
     flex-grow: 1;
     height: 0;
   }

@@ -54,7 +54,8 @@ function updatePageSize(size){
   justify-content: space-between;
 
   .me-table-main {
-    flex: 1
+    flex: 1;
+    height: 0;
   }
 }
 </style>
