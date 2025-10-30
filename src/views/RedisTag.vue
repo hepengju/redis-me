@@ -9,6 +9,7 @@ import RedisConfig from './tag/RedisConfig.vue'
 import RedisClient from './tag/RedisClient.vue'
 // import RedisMonitor from './tag/RedisMonitor.vue'
 // import RedisPubsub from './tag/RedisPubsub.vue'
+import RedisDemo  from "@/views/tag/RedisDemo.vue";
 
 // 共享数据
 const share = inject('share')
@@ -17,6 +18,13 @@ const canEdit = computed(() => true)
 
 <template>
   <el-tabs class="redis-tag" v-model="share.tabName" type="border-card">
+    <el-tab-pane name="demo">
+      <template #label>
+        <me-icon name="示例" icon="el-icon-calendar"/>
+      </template>
+      <RedisDemo/>
+    </el-tab-pane>
+
     <el-tab-pane name="info">
       <template #label>
         <me-icon name="信息" icon="el-icon-calendar"/>

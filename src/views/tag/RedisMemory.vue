@@ -137,7 +137,7 @@ async function batchDelKey() {
                 <el-input v-model.number="match" style="width: 200px" placeholder="模糊">
                   <template #prepend>匹配参数</template>
                   <template #append>
-                    <el-tooltip raw-content :content="hint" placement="top">
+                    <el-tooltip raw-content :content="hint" popper-style="max-width: 600px">
                       <el-icon>
                         <el-icon-question-filled/>
                       </el-icon>
