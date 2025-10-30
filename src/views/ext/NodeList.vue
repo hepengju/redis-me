@@ -1,8 +1,21 @@
 <script setup lang="ts">
-import {inject} from 'vue'
+import {inject, onMounted} from 'vue'
 
-const node = defineModel()
 const share = inject('share')
+const node = defineModel()
+const emit = defineEmits(['update:modelValue'])
+
+const {initNode} = defineProps({
+  initNode: {type: Boolean, default: false}
+})
+
+onMounted(() => {
+  if (initNode) {
+    if (share.nodeList.length > 0) {
+      emit('update:modelValue', share.nodeList[0].node)
+    }
+  }
+})
 </script>
 
 <template>
