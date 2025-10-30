@@ -57,6 +57,10 @@ svg {
   outline: none;
 }
 
+.el-popper {
+  max-width: 800px;
+}
+
 /* 单行文本省略号 */
 .single-line-ellipsis {
   white-space: nowrap;     /* 禁止文本换行 */

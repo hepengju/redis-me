@@ -48,7 +48,8 @@ async function refresh() {
     loading.value = false
   }
 }
-refresh()
+
+onMounted(() => refresh())
 
 function eventGoClient(nodeValue) {
   node.value = nodeValue

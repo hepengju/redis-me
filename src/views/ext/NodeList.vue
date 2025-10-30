@@ -9,13 +9,9 @@ const {initNode} = defineProps({
   initNode: {type: Boolean, default: false}
 })
 
-onMounted(() => {
-  if (initNode) {
-    if (share.nodeList.length > 0) {
-      emit('update:modelValue', share.nodeList[0].node)
-    }
-  }
-})
+if (initNode && share.nodeList.length > 0) {
+  emit('update:modelValue', share.nodeList[0].node)
+}
 </script>
 
 <template>
