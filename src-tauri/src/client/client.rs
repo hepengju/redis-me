@@ -78,6 +78,7 @@ macro_rules! implement_common_commands {
                     let value: String = vec8_to_display_string(&value);
                     serde_json::to_value(value)
                 }
+                // TODO 无效UTF8字符串的显示与处理
                 ValueType::List => {
                     let value: Vec<String> = conn.lrange(&key, 0, -1)?;
                     serde_json::to_value(value)
