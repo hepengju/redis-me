@@ -60,9 +60,20 @@ api_commands!(
     memory_usage(param: RedisMemoryParam) -> Vec<RedisKeySize>;                 // 内存分析
     client_list(node: Option<String>, client_type: Option<String>) -> Vec<RedisClientInfo>; // 客户端列表
     publish(channel: &str, message: &str) -> (); // 发布消息
-    subscribe(channel: Option<String>) -> ();    // 订阅消息
-    subscribe_stop() -> ();
-    monitor(node: &str) -> ();                   // 监控命令
-    monitor_stop() -> ();
+    subscribe_stop() -> ();                      // 订阅消息停止
+    monitor_stop()   -> ();                      // 监控命令停止
     mock_data(count: u64) -> ();                 // 模拟数据
 );
+
+//~~~~~~~~~这两个命令需要将app_handle传递过去，因此需要单独编写~~~~~~~~~
+// 监控命令
+#[command]
+pub fn monitor(app_handle: AppHandle, id: &str, node: &str) -> ApiResult<()> {
+    to_api_result(app_handle.get_client(id).and_then(|client| client.monitor(app_handle, node)))
+}
+
+// 订阅消息
+#[command]
+pub fn subscribe(app_handle: AppHandle, id: &str, channel: Option<String>) -> ApiResult<()> {
+    to_api_result(app_handle.get_client(id).and_then(|client| client.subscribe(app_handle, channel)))
+}

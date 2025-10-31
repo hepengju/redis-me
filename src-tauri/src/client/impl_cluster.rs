@@ -15,6 +15,7 @@ use std::collections::{HashMap, HashSet};
 use std::process::id;
 use std::thread;
 use std::time::Duration;
+use tauri::AppHandle;
 
 pub struct RedisMeCluster {
     id: String,
@@ -305,7 +306,7 @@ impl RedisMeClient for RedisMeCluster {
 
     implement_common_commands!(ClusterPipeline);
 
-    fn subscribe(&self, channel: Option<String>) -> AnyResult<()> {
+    fn subscribe(&self, app_handle: AppHandle, channel: Option<String>) -> AnyResult<()> {
         info!("TODO 订阅开始");
         Ok(())
     }
@@ -315,7 +316,7 @@ impl RedisMeClient for RedisMeCluster {
         Ok(())
     }
 
-    fn monitor(&self, node: &str) -> AnyResult<()> {
+    fn monitor(&self, app_handle: AppHandle, node: &str) -> AnyResult<()> {
         info!("TODO 监控开始");
         Ok(())
     }

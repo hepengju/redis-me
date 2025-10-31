@@ -12,8 +12,10 @@ use std::collections::HashSet;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 use std::thread;
-use std::thread::{spawn, JoinHandle};
+use std::thread::{JoinHandle};
 use std::time::{Duration};
+use chrono::{Local, Utc};
+use tauri::{AppHandle, Emitter};
 
 pub struct RedisMeSingle {
     id: String,
@@ -246,12 +248,13 @@ impl RedisMeClient for RedisMeSingle {
         Ok(clients)
     }
 
-    fn subscribe(&self, channel: Option<String>) -> AnyResult<()> {
+    fn subscribe(&self, app_handle: AppHandle, channel: Option<String>) -> AnyResult<()> {
         let mut conn = self.pool.get()?;
         self.subscribe_running.store( true, Ordering::Relaxed);
         let r = self.subscribe_running.clone();
 
-        let _: JoinHandle<AnyResult<()>> = spawn(move || {
+        let id = self.id.clone();
+        let _: JoinHandle<AnyResult<()>> = thread::spawn(move || {
             let mut pubsub = conn.as_pubsub();
             let channel = channel.filter(|c| !c.is_empty()).unwrap_or_else(|| "*".into());
             pubsub.psubscribe(&channel)?;
@@ -261,9 +264,15 @@ impl RedisMeClient for RedisMeSingle {
                 let msg = pubsub.get_message()?;
                 let payload: String = msg.get_payload()?;
                 info!("subscribe channel '{}': {}", msg.get_channel_name(), payload);
-                // TODO 发射消息给前端展示
+                let event = SubscribeEvent {
+                    id: id.clone(),
+                    datetime: Local::now().format("%Y-%m-%d %H:%M:%S%.3f").to_string(),
+                    channel: msg.get_channel_name().to_string(),
+                    message: payload,
+                };
+                let _ = &app_handle.emit("subscribe", event);
             }
-            info!("subscribe end: {}", & channel);
+            info!("subscribe end: {}", &channel);
             Ok(())
         });
         Ok(())
@@ -277,7 +286,7 @@ impl RedisMeClient for RedisMeSingle {
         Ok(())
     }
 
-    fn monitor(&self, _node: &str) -> AnyResult<()> {
+    fn monitor(&self, app_handle: AppHandle, _node: &str) -> AnyResult<()> {
         info!("TODO 监控开始");
         Ok(())
     }

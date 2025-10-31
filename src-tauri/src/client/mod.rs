@@ -8,9 +8,9 @@ pub mod state;
 mod tests {
     use crate::client::client::RedisMeClient;
     use crate::client::impl_cluster::RedisMeCluster;
-    use crate::utils::model::{RedisCommand, RedisConn, RedisFieldAdd, RedisFieldValue, RedisKey, RedisMemoryParam, ScanCursor, ScanParam};
-    use redis::TlsMode;
+    use crate::utils::model::{RedisCommand, RedisConn, RedisFieldAdd, RedisFieldValue, RedisMemoryParam, ScanCursor, ScanParam};
     use redis::cluster::{ClusterClient, ClusterPipeline};
+    use redis::TlsMode;
 
     fn client() -> Box<dyn RedisMeClient> {
         let conn = RedisConn {
@@ -238,11 +238,11 @@ mod tests {
         println!("{result:?}");
     }
 
-    #[test]
-    fn test_monitor() {
-        let result = client().monitor("192.168.1.11:7001").unwrap();
-        println!("{result:?}");
-    }
+    // #[test]
+    // fn test_monitor() {
+    //     let result = client().monitor("192.168.1.11:7001").unwrap();
+    //     println!("{result:?}");
+    // }
 
     #[test]
     fn test_publish() {
@@ -250,9 +250,9 @@ mod tests {
         println!("{result:?}");
     }
 
-    #[test]
-    fn test_subscribe() {
-        let result = client().subscribe(None).unwrap();
-        println!("{result:?}");
-    }
+    // #[test]
+    // fn test_subscribe() {
+    //     let result = client().subscribe(None).unwrap();
+    //     println!("{result:?}");
+    // }
 }

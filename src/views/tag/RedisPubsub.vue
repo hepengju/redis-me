@@ -1,7 +1,8 @@
 <script setup>
 import {ElMessage} from 'element-plus'
-import {invoke_then} from '@/utils/util.js'
+import {copy, invoke_then} from '@/utils/util.js'
 import {debounce} from 'lodash'
+import { listen } from '@tauri-apps/api/event';
 
 // 共享数据
 const share = inject('share')
@@ -44,6 +45,21 @@ async function publish() {
     sendLoading.value = false
   }
 }
+
+// 监听消息
+let unlisten = null
+onMounted(async () => {
+  unlisten = await listen('subscribe', (event) => {
+    const payload = event.payload
+    if (payload.id != share.conn.id) return
+    dataList.value.push(event.payload)
+  })
+})
+onUnmounted(() => {
+  if (unlisten) {
+    unlisten()
+  }
+})
 </script>
 
 <template>
@@ -61,15 +77,13 @@ async function publish() {
       </div>
     </div>
     <div class="table">
-      <el-table :data="filterDataList" ref="table"
-                v-loading="loading"
-                border stripe height="100%">
+      <el-table :data="filterDataList" ref="table" border stripe height="100%">
         <el-table-column label="时间" prop="datetime" sortable width="200"/>
         <el-table-column label="频道" prop="channel"  show-overflow-tooltip/>
         <el-table-column label="消息" prop="message"  show-overflow-tooltip/>
         <el-table-column label="操作" width="60" align="center">
           <template #default="scope">
-            <me-icon info="复制" icon="el-icon-document-copy" class="icon-btn" @click.stop="copy(scope.row.message)"
+            <me-icon info="复制" icon="el-icon-document-copy" class="icon-btn" @click="copy(scope.row.message)"
                      style="justify-content: center"/>
           </template>
         </el-table-column>

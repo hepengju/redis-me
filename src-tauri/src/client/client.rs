@@ -1,6 +1,7 @@
 use crate::utils::model::*;
 use crate::utils::util::AnyResult;
 use std::collections::HashMap;
+use tauri::AppHandle;
 
 /// RedisME服务接口
 pub trait RedisMeClient: Send + Sync {
@@ -48,10 +49,10 @@ pub trait RedisMeClient: Send + Sync {
 
     fn publish(&self, channel: &str, message: &str) -> AnyResult<()>;
 
-    fn subscribe(&self, channel: Option<String>) -> AnyResult<()>;
+    fn subscribe(&self, app_handle: AppHandle, channel: Option<String>) -> AnyResult<()>;
     fn subscribe_stop(&self) -> AnyResult<()>;
 
-    fn monitor(&self, node: &str) -> AnyResult<()>;
+    fn monitor(&self, app_handle: AppHandle, node: &str) -> AnyResult<()>;
     fn monitor_stop(&self) -> AnyResult<()>;
 
     fn mock_data(&self, count: u64) -> AnyResult<()>;
