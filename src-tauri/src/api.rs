@@ -63,6 +63,6 @@ api_commands!(
     subscribe(channel: Option<String>) -> ();    // 订阅消息
     subscribe_stop() -> ();
     monitor(node: &str) -> ();                   // 监控命令
-    monitor_stop(node: &str) -> ();
+    monitor_stop() -> ();
     mock_data(count: u64) -> ();                 // 模拟数据
 );

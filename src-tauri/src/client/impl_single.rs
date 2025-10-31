@@ -9,7 +9,6 @@ use r2d2::Pool;
 use redis::{Client, Commands, Pipeline, SetExpiry, SetOptions, Value, ValueType};
 use std::collections::HashMap;
 use std::collections::HashSet;
-use std::process::id;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 use std::thread;
@@ -282,12 +281,14 @@ impl RedisMeClient for RedisMeSingle {
         Ok(())
     }
 
-    fn monitor(&self, node: &str) -> AnyResult<()> {
-        todo!()
+    fn monitor(&self, _node: &str) -> AnyResult<()> {
+        info!("TODO 监控开始");
+        Ok(())
     }
 
-    fn monitor_stop(&self, node: &str) -> AnyResult<()> {
-        todo!()
+    fn monitor_stop(&self) -> AnyResult<()> {
+        info!("TODO 监控停止");
+        Ok(())
     }
 
     implement_common_commands!(Pipeline);

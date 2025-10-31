@@ -1,39 +1,39 @@
 <script setup>
-import api from '@/api/index.js'
-import {ElMessageBox} from 'element-plus'
-import MeButton from '@/components/arkMe/MeButton.vue'
-import NodeList from '@/views/ark/extops/redis-me/ext/NodeList.vue'
+import NodeList from '@/views/ext/NodeList.vue'
+import {invoke_then} from '@/utils/util.js'
+import {ElMessage, ElMessageBox} from 'element-plus'
 
 // 共享数据
 const share = inject('share')
 
-const node = ref(share.nodeList ? share.nodeList[0].node : '')
-const timeout = ref(2)
+const node = ref('')
 const keyword = ref('')
-const loading = ref(false)
+const monitoring = ref(false)
 const dataList = ref([])
 const filterDataList = computed(() => {
   const key = keyword.value.toLowerCase()
   return dataList.value.filter(item => !key || item.toLowerCase().indexOf(key) > -1)
 })
 
-async function apiMonitor() {
-  const res = await api.ark.extops.redis.monitor(share.env, {node: node.value, timeout: timeout.value * 1000})
-  if (res.code == 200) {
-    dataList.value = res.data
+async function monitor() {
+  if (monitoring.value) {
+    await invoke_then('monitor_stop', {id: share.conn.id})
+    monitoring.value = false
+    ElMessage.success('监控已停止')
   } else {
-    ElMessageBox.alert(res.msg, '提示', { type: 'error'})
+    ElMessageBox.confirm(
+      '命令监控可能造成服务端阻塞，请谨慎在生产环境中使用！',
+      '提示',
+      {type: 'warning'},
+    ).then(async () => {
+      await invoke_then('monitor', {id: share.conn.id, node: node.value})
+      monitoring.value = true
+      ElMessage.success('监控已开始')
+    }).catch(() => {
+    })
   }
 }
 
-async function refresh() {
-  loading.value = true
-  try {
-    await apiMonitor()
-  } finally {
-    loading.value = false
-  }
-}
 const tableTotal = computed(() => filterDataList.value.length)
 </script>
 
@@ -41,19 +41,19 @@ const tableTotal = computed(() => filterDataList.value.length)
   <div class="redis-monitor">
     <div class="me-flex header">
       <div>
-        <node-list v-model="node" style="margin-right: 10px" @change="refresh"/>
-        <el-input-number v-model="timeout" style="width: 120px" :min="1" :max="10">
-          <template #suffix>秒</template>
-        </el-input-number>
+        <node-list v-model="node" style="margin-right: 10px" init-node/>
       </div>
       <div>
-        <el-text v-if="tableTotal > 0" type="info" style="margin-right: 10px">[ 总数: {{tableTotal}} ]</el-text>
-        <el-input  v-model="keyword" placeholder="模糊筛选" style="width: 280px; margin-right: 10px" clearable/>
-        <el-button icon="el-icon-search" @click="refresh" type="primary" :loading="loading"/>
+        <el-text v-if="tableTotal > 0" type="info" style="margin-right: 10px">[ 总数: {{ tableTotal }} ]</el-text>
+        <el-input v-model="keyword" placeholder="模糊搜索" style="width: 280px; margin-right: 10px" clearable/>
+        <el-button :icon="monitoring ? 'el-icon-video-pause' : 'el-icon-video-play'"
+                   @click="monitor" type="danger">
+          {{monitoring ? '停止监控' : '开始监控'}}
+        </el-button>
       </div>
     </div>
-    <div class="command" v-loading="loading">
-      <div v-for="item in filterDataList" class="single-line-ellipsis">{{item}}</div>
+    <div class="command">
+      <div v-for="item in filterDataList" class="single-line-ellipsis">{{ item }}</div>
     </div>
   </div>
 </template>
@@ -79,8 +79,8 @@ const tableTotal = computed(() => filterDataList.value.length)
     height: 0;
 
     font-size: 13px;
-    font-family: Consolas, "Helvetica Neue", Helvetica, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "微软雅黑", Arial, sans-serif!important;
-    background-color: #454545;
+    font-family: Consolas, "Helvetica Neue", Helvetica, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "微软雅黑", Arial, sans-serif !important;
+    background-color: var(--el-fill-color-lighter);
     padding: 10px;
 
     div {

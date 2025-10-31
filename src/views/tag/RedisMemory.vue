@@ -1,10 +1,8 @@
 <script setup>
 // 官网参考: https://redis.ac.cn/docs/latest/commands/slowlog-get/
-import {useTemplateRef} from 'vue'
-import {bus, copy, filterHandler, humanSize, REFRESH_KEY} from '@/utils/util.js'
+import {bus, commonDeleteKey, copy, filterHandler, humanSize, invoke_then, REFRESH_KEY} from '@/utils/util.js'
 import {ElMessage, ElMessageBox} from 'element-plus'
 import {capitalize} from 'lodash'
-import {commonDeleteKey, invoke_then} from "@/utils/util.js";
 
 // 共享数据
 const share = inject('share')
@@ -19,13 +17,13 @@ const hint = computed(() => {
 })
 
 const sizeLimitKb = ref(100)
-const countLimit  = ref(500)
-const scanCount  = ref(1000)
-const scanTotal  = ref(10000)
-const sleepMillis  = ref(0)
+const countLimit = ref(500)
+const scanCount = ref(1000)
+const scanTotal = ref(10000)
+const sleepMillis = ref(0)
 const match = ref('')
 const matchParam = computed(() => {
-  if (match.value==='') return '*'
+  if (match.value === '') return '*'
   return '*' + match.value + '*'
 })
 
@@ -38,7 +36,7 @@ const filterDataList = computed(() => {
   return dataList.value.filter(row => !key || row.key?.toLowerCase().indexOf(key) > -1)
 })
 const filterTypes = computed(() => {
-    return [...new Set(dataList.value.map(d => d.type))].map(d => ({text: capitalize(d), value: d}))
+  return [...new Set(dataList.value.map(d => d.type))].map(d => ({text: capitalize(d), value: d}))
 })
 
 // 避免表格自动调整列宽时闪烁一下
@@ -50,7 +48,7 @@ function humanTotalSize(list) {
 function getSummaries() {
   const count = filterDataList.value.length + ' / ' + dataList.value.length
   const size = humanTotalSize(filterDataList) + ' / ' + humanTotalSize(dataList)
-  const show = h('div', {class: 'me-flex'}, [h('div',null, count), h('div', null, size)])
+  const show = h('div', {class: 'me-flex'}, [h('div', null, count), h('div', null, size)])
   return ['', '合计', show, '']
 }
 
@@ -81,7 +79,8 @@ function memoryUsage() {
       {type: 'warning'},
     ).then(async () => {
       await refresh()
-    }).catch(() => {})
+    }).catch(() => {
+    })
   } else {
     refresh()
   }
@@ -103,9 +102,11 @@ async function delKey(redisKey) {
 
 // 批量删除键
 const selection = ref([])
-function selectionChange(newSelection){
+
+function selectionChange(newSelection) {
   selection.value = newSelection
 }
+
 async function batchDelKey() {
   ElMessageBox.confirm(
     `确定批量删除【${selection.value.length}】个键吗？`,
@@ -117,10 +118,11 @@ async function batchDelKey() {
       keyList: selection.value.map(row => ({key: row.key, bytes: row.bytes})),
     }
     await invoke_then('batch_del', {id: share.conn.id, param})
-    ElMessage.success("删除成功")
+    ElMessage.success('删除成功')
     const keyBytesArr = param.keyList.map(rk => rk.bytes)
     dataList.value = dataList.value.filter(rk => keyBytesArr.indexOf(rk.bytes) < 0)
-  }).catch(() => {})
+  }).catch(() => {
+  })
 }
 </script>
 
@@ -167,7 +169,9 @@ async function batchDelKey() {
               <el-dropdown-item divided>
                 <el-input v-model.number="sizeLimitKb" style="width: 200px; ">
                   <template #prepend>大小限制</template>
-                  <template #prefix> <div style="margin-right: 10px">&gE;</div> </template>
+                  <template #prefix>
+                    <div style="margin-right: 10px">&gE;</div>
+                  </template>
                   <template #append>Kb</template>
                 </el-input>
               </el-dropdown-item>
@@ -189,42 +193,43 @@ async function batchDelKey() {
 
       <div>
         <el-input v-model="keyword" placeholder="键模糊筛选" style="width: 260px; margin:0 10px" clearable/>
-        <el-button icon="el-icon-search" @click="memoryUsage" type="primary" :loading="loading" >开始分析</el-button>
+        <el-button icon="el-icon-search" @click="memoryUsage" type="primary" :loading="loading">开始分析</el-button>
       </div>
     </div>
     <el-table :data="filterDataList" ref="table"
               show-summary :summary-method="getSummaries"
-                :default-sort="{prop: 'size', order: 'descending'}"
-                style="margin-top: 10px"
-                v-loading="loading"
-                @selection-change="selectionChange"
-                border stripe height="100%">
-        <el-table-column type="selection" width="50" align="center"/>
-        <el-table-column label="类型" prop="type" width="100" show-overflow-tooltip sortable :filters="filterTypes" :filter-method="filterHandler">
-          <template #default="scope">
-            {{ capitalize(scope.row.type) }}
-          </template>
-        </el-table-column>
-        <el-table-column label="键" prop="key" show-overflow-tooltip>
-          <template #default="scope">
-            {{ scope.row.key }}
-          </template>
-        </el-table-column>
-        <el-table-column label="大小" prop="size" width="120" sortable show-overflow-tooltip>
-          <template #default="scope">
-            {{ humanSize(scope.row.size) }}
-          </template>
-        </el-table-column>
-        <el-table-column label="操作" :width="canEdit ? 100 : 80" fixed="right" align="center">
-          <template #default="scope">
-            <div class="me-flex">
-              <me-icon info="复制" icon="el-icon-document-copy" class="icon-btn" @click="copy(scope.row.key) "/>
-              <me-icon info="详情" icon="el-icon-view"          class="icon-btn" @click="chooseKey(scope.row)"/>
-              <me-icon info="删除" icon="el-icon-delete"        class="icon-btn" @click="delKey(scope.row)" v-if="canEdit"/>
-            </div>
-          </template>
-        </el-table-column>
-      </el-table>
+              :default-sort="{prop: 'size', order: 'descending'}"
+              style="margin-top: 10px"
+              v-loading="loading"
+              @selection-change="selectionChange"
+              border stripe height="100%">
+      <el-table-column type="selection" width="50" align="center"/>
+      <el-table-column label="类型" prop="type" width="100" show-overflow-tooltip sortable :filters="filterTypes"
+                       :filter-method="filterHandler">
+        <template #default="scope">
+          {{ capitalize(scope.row.type) }}
+        </template>
+      </el-table-column>
+      <el-table-column label="键" prop="key" show-overflow-tooltip>
+        <template #default="scope">
+          {{ scope.row.key }}
+        </template>
+      </el-table-column>
+      <el-table-column label="大小" prop="size" width="120" sortable show-overflow-tooltip>
+        <template #default="scope">
+          {{ humanSize(scope.row.size) }}
+        </template>
+      </el-table-column>
+      <el-table-column label="操作" :width="canEdit ? 100 : 80" fixed="right" align="center">
+        <template #default="scope">
+          <div class="me-flex">
+            <me-icon info="复制" icon="el-icon-document-copy" class="icon-btn" @click="copy(scope.row.key) "/>
+            <me-icon info="详情" icon="el-icon-view" class="icon-btn" @click="chooseKey(scope.row)"/>
+            <me-icon info="删除" icon="el-icon-delete" class="icon-btn" @click="delKey(scope.row)" v-if="canEdit"/>
+          </div>
+        </template>
+      </el-table-column>
+    </el-table>
   </div>
 </template>
 
@@ -240,6 +245,7 @@ async function batchDelKey() {
     :deep(.el-input-group__prepend) {
       padding: 0 14px;
     }
+
     :deep(.el-input-group__append) {
       width: 40px;
     }

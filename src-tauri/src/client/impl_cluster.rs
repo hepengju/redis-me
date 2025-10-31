@@ -314,11 +314,13 @@ impl RedisMeClient for RedisMeCluster {
     }
 
     fn monitor(&self, node: &str) -> AnyResult<()> {
-        todo!()
+        info!("TODO 监控开始");
+        Ok(())
     }
 
-    fn monitor_stop(&self, node: &str) -> AnyResult<()> {
-        todo!()
+    fn monitor_stop(&self) -> AnyResult<()> {
+        info!("TODO 监控停止");
+        Ok(())
     }
 }
 

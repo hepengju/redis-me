@@ -25,10 +25,11 @@ pub fn get_client_single(conn: &RedisConn) -> AnyResult<Client> {
     );
     info!("redis_url: {redis_url}");
     // TODO 研究SSL证书如何配置
-    let client = Client::open(redis_url)?;
+    let mut client = Client::open(redis_url)?;
     let mut conn = client.get_connection_with_timeout(Duration::from_secs(1))?;
     let _ = conn.ping()?;
     info!("测试单机连接成功");
+    client.client_setname("RedisME")?;
     Ok(client)
 }
 
@@ -56,7 +57,6 @@ pub fn get_client_cluster(conn: &RedisConn) -> AnyResult<ClusterClient> {
         builder = builder.password(conn.password.clone());
     }
     let client = builder.build()?;
-
     let cc = ClusterConfig::new().set_connection_timeout(Duration::from_secs(1));
     let mut conn = client.get_connection_with_config(cc)?;
     let _ = conn.ping()?;

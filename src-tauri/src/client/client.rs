@@ -4,6 +4,7 @@ use std::collections::HashMap;
 
 /// RedisME服务接口
 pub trait RedisMeClient: Send + Sync {
+
     fn info(&self, node: Option<String>) -> AnyResult<RedisInfo>;
 
     fn info_list(&self) -> AnyResult<Vec<RedisInfo>>;
@@ -51,7 +52,7 @@ pub trait RedisMeClient: Send + Sync {
     fn subscribe_stop(&self) -> AnyResult<()>;
 
     fn monitor(&self, node: &str) -> AnyResult<()>;
-    fn monitor_stop(&self, node: &str) -> AnyResult<()>;
+    fn monitor_stop(&self) -> AnyResult<()>;
 
     fn mock_data(&self, count: u64) -> AnyResult<()>;
 }
