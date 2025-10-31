@@ -1,10 +1,12 @@
 use crate::client::client::RedisMeClient;
 use crate::client::impl_cluster::RedisMeCluster;
 use crate::client::impl_single::RedisMeSingle;
+use crate::utils::conn::get_client_single;
 use crate::utils::model::RedisConn;
 use crate::utils::util::AnyResult;
-use anyhow::{anyhow, bail};
+use anyhow::{anyhow};
 use log::info;
+use redis::Connection;
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex, RwLock};
 use tauri::{AppHandle, Manager, State};
@@ -23,6 +25,9 @@ pub trait ClientAccess {
     fn get_client(&self, id: &str) -> AnyResult<Arc<Box<dyn RedisMeClient>>>;
     fn connect(&self, id: &str) -> AnyResult<Arc<Box<dyn RedisMeClient>>>;
     fn disconnect(&self, id: &str) -> AnyResult<()>;
+
+    // 创建新单节点连接: 用于新线程的监控或订阅
+    fn new_node_conn(&self, id: &str) -> AnyResult<Connection>;
 }
 
 impl ClientAccess for AppHandle {
@@ -75,5 +80,14 @@ impl ClientAccess for AppHandle {
             info!("未找到连接, 断开忽略: {}", id)
         }
         Ok(())
+    }
+
+    fn new_node_conn(&self, id: &str) -> AnyResult<Connection> {
+        let state: State<AppState> = self.state();
+        let map = state.connections.lock().unwrap();
+        let redis_conn = map.get(id).ok_or(anyhow!("未找到连接: {}", id))?;
+        let client = get_client_single(redis_conn)?;
+        let conn = client.get_connection()?;
+        Ok(conn)
     }
 }

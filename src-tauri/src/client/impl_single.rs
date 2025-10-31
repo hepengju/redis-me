@@ -1,9 +1,11 @@
 use crate::client::client::RedisMeClient;
+use crate::client::state::ClientAccess;
 use crate::implement_common_commands;
 use crate::utils::conn::get_pool_single;
 use crate::utils::model::*;
 use crate::utils::util::*;
 use anyhow::bail;
+use chrono::{Local};
 use log::info;
 use r2d2::Pool;
 use redis::{Client, Commands, Pipeline, SetExpiry, SetOptions, Value, ValueType};
@@ -12,9 +14,8 @@ use std::collections::HashSet;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 use std::thread;
-use std::thread::{JoinHandle};
-use std::time::{Duration};
-use chrono::{Local, Utc};
+use std::thread::JoinHandle;
+use std::time::Duration;
 use tauri::{AppHandle, Emitter};
 
 pub struct RedisMeSingle {
@@ -249,7 +250,7 @@ impl RedisMeClient for RedisMeSingle {
     }
 
     fn subscribe(&self, app_handle: AppHandle, channel: Option<String>) -> AnyResult<()> {
-        let mut conn = self.pool.get()?;
+        let mut conn = app_handle.new_node_conn(&self.id)?;
         self.subscribe_running.store( true, Ordering::Relaxed);
         let r = self.subscribe_running.clone();
 
