@@ -1,7 +1,6 @@
 <script setup>
 import RedisInfo from './tag/RedisInfo.vue'
 import RedisValue from './tag/RedisValue.vue'
-import RedisTauri from './tag/RedisTauri.vue'
 import RedisSlow from './tag/RedisSlow.vue'
 import RedisMemory from './tag/RedisMemory.vue'
 import RedisTerminal from './tag/RedisTerminal.vue'
@@ -9,7 +8,8 @@ import RedisConfig from './tag/RedisConfig.vue'
 import RedisClient from './tag/RedisClient.vue'
 // import RedisMonitor from './tag/RedisMonitor.vue'
 // import RedisPubsub from './tag/RedisPubsub.vue'
-import RedisDemo  from "@/views/tag/RedisDemo.vue";
+// import RedisDemo from '@/views/tag/RedisDemo.vue'
+// import RedisTauri from './tag/RedisTauri.vue'
 
 // 共享数据
 const share = inject('share')
@@ -18,12 +18,22 @@ const canEdit = computed(() => true)
 
 <template>
   <el-tabs class="redis-tag" v-model="share.tabName" type="border-card">
+    <!--
     <el-tab-pane name="demo">
       <template #label>
-        <me-icon name="示例" icon="el-icon-calendar"/>
+        <me-icon name="测试" icon="el-icon-calendar"/>
       </template>
       <RedisDemo/>
+    </el-tab-pane>-->
+
+    <!--
+    <el-tab-pane name="tauri" lazy>
+      <template #label>
+        <me-icon name="Tauri" icon="el-icon-data-line"/>
+      </template>
+      <RedisTauri/>
     </el-tab-pane>
+    -->
 
     <el-tab-pane name="info">
       <template #label>
@@ -74,26 +84,21 @@ const canEdit = computed(() => true)
       <RedisClient/>
     </el-tab-pane>
 
-<!--    <el-tab-pane name="monitor" lazy v-if="canEdit">-->
-<!--      <template #label>-->
-<!--        <me-icon name="监控" icon="el-icon-monitor"/>-->
-<!--      </template>-->
-<!--      <RedisMonitor/>-->
-<!--    </el-tab-pane>-->
+    <!--    <el-tab-pane name="monitor" lazy v-if="canEdit">-->
+    <!--      <template #label>-->
+    <!--        <me-icon name="监控" icon="el-icon-monitor"/>-->
+    <!--      </template>-->
+    <!--      <RedisMonitor/>-->
+    <!--    </el-tab-pane>-->
 
-<!--    <el-tab-pane name="pubsub" lazy v-if="canEdit">-->
-<!--      <template #label>-->
-<!--        <me-icon name="发布订阅" icon="me-icon-pubsub"/>-->
-<!--      </template>-->
-<!--      <RedisPubsub/>-->
-<!--    </el-tab-pane>-->
+    <!--    <el-tab-pane name="pubsub" lazy v-if="canEdit">-->
+    <!--      <template #label>-->
+    <!--        <me-icon name="发布订阅" icon="me-icon-pubsub"/>-->
+    <!--      </template>-->
+    <!--      <RedisPubsub/>-->
+    <!--    </el-tab-pane>-->
 
-    <el-tab-pane name="tauri" lazy>
-      <template #label>
-        <me-icon name="Tauri" icon="el-icon-data-line"/>
-      </template>
-      <RedisTauri/>
-    </el-tab-pane>
+
   </el-tabs>
 </template>
 

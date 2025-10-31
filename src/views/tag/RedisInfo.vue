@@ -102,15 +102,13 @@ refresh()
 function goClient() {
   share.tabName = 'client'
   nextTick(() => {
-    bus.emit(GO_CLIENT, node.value || dic.value['ark_node'])
+    bus.emit(GO_CLIENT, node.value || infoNode.value)
   })
 }
 
 function goMemory() {
   share.tabName = 'memory'
 }
-
-
 </script>
 
 <template>
@@ -144,7 +142,7 @@ function goMemory() {
       <el-descriptions-item>
         <template #label><me-icon name="连接数" icon="me-icon-conn"/></template>
         <div class="me-flex">
-          <el-link @click="goClient" :underline="false">{{dic['connected_clients']}}</el-link>
+          <el-link @click="goClient" :underline="false" type="primary">{{dic['connected_clients']}}</el-link>
           <el-text type="info" style="margin-left: 10px">
             [ 限制: {{dic['maxclients']}} ]
           </el-text>
@@ -163,7 +161,7 @@ function goMemory() {
       <el-descriptions-item :span="2">
         <template #label><me-icon name="内存" icon="me-icon-memory"/></template>
         <div class="me-flex">
-          <el-link :underline="false" @click="goMemory">{{dic['used_memory_human']}}</el-link>
+          <el-link :underline="false" @click="goMemory" type="primary">{{dic['used_memory_human']}}</el-link>
           <el-text type="info" style="margin-left: 10px">
             [
             <span style="margin-left:  0px">峰值: {{dic['used_memory_peak_human']}}</span>
