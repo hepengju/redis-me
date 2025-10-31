@@ -306,11 +306,13 @@ impl RedisMeClient for RedisMeCluster {
     implement_common_commands!(ClusterPipeline);
 
     fn subscribe(&self, channel: Option<String>) -> AnyResult<()> {
-        todo!()
+        info!("TODO 订阅开始");
+        Ok(())
     }
 
     fn subscribe_stop(&self) -> AnyResult<()> {
-        todo!()
+        info!("TODO 订阅停止");
+        Ok(())
     }
 
     fn monitor(&self, node: &str) -> AnyResult<()> {

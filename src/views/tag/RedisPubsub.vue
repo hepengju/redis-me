@@ -1,16 +1,14 @@
 <script setup>
-import api from '@/api/index.js'
-import {useTemplateRef} from 'vue'
-import {ElMessage, ElMessageBox} from 'element-plus'
-import {copy} from '@/views/ark/extops/redis-me/util/me.js'
+import {ElMessage} from 'element-plus'
+import {invoke_then} from '@/utils/util.js'
+import {debounce} from 'lodash'
 
 // 共享数据
 const share = inject('share')
 
-const timeout = ref(5)
 const channel = ref('')
 const keyword = ref('')
-const loading = ref(false)
+const subscribing = ref(false)
 const dataList = ref([])
 const filterDataList = computed(() => {
   const key = keyword.value.toLowerCase()
@@ -20,83 +18,50 @@ const filterDataList = computed(() => {
   )
 })
 
-async function apiSubscribe() {
-  const channelList = channel.value ? channel.value.split(',') : []
-  const res = await api.ark.extops.redis.subscribe(share.env, {channelList, timeout: timeout.value * 1000})
-  if (res.code == 200) {
-    dataList.value = res.data
+// 订阅按钮防抖
+const subscribe = debounce(async () => {
+  if (subscribing.value) {
+    await invoke_then('subscribe_stop', {id: share.conn.id})
+    subscribing.value = false
+    ElMessage.success('订阅已停止')
   } else {
-    ElMessageBox.alert(res.msg, '提示', { type: 'error'})
+    await invoke_then('subscribe', {id: share.conn.id, channel: channel.value})
+    subscribing.value = true
+    ElMessage.success('订阅已开始')
   }
-}
-
-async function refresh() {
-  loading.value = true
-  try {
-    await apiSubscribe()
-  } finally {
-    loading.value = false
-  }
-}
+}, 200)
 
 // 发送消息
 const sendChannel = ref('')
 const sendMessage = ref('')
 const sendLoading = ref(false)
-async function apiPublish() {
-  const res = await api.ark.extops.redis.publish(share.env, {
-    channel: sendChannel.value,
-    message: sendMessage.value
-  })
-  if (res.code == 200) {
-    ElMessage.success("发布消息成功")
-  } else {
-    ElMessageBox.alert(res.msg, '提示', {type: 'error'})
-  }
-}
-
 async function publish() {
   sendLoading.value = true
   try {
-    await apiPublish()
+    await invoke_then('publish', {id: share.conn.id, channel: sendChannel.value, message: sendMessage.value})
+    ElMessage.success("发布消息成功")
   } finally {
     sendLoading.value = false
   }
 }
-
-// 避免表格自动调整列宽时闪烁一下
-const tableRef = useTemplateRef(('table'))
-const tableTotal = computed(() => tableRef.value?.store?.states?.data?.value?.length ?? 0)
-watch(() => share.tabName, newValue => {
-  if (newValue === 'pubsub') {
-    nextTick(() => {
-      tableRef.value.doLayout()
-    })
-  }
-})
 </script>
 
 <template>
   <div class="redis-pubsub">
     <div class="me-flex header">
       <div>
-        <el-input v-model="channel" style="width: 250px; margin-right: 10px" placeholder=" 可选订阅频道（逗号分隔多个）">
-          <template #prefix>
-            <div style="margin-right: 10px">频道</div>
-          </template>
-        </el-input>
-        <el-input-number v-model="timeout" style="width: 120px" :min="1" :max="30">
-          <template #suffix>秒</template>
-        </el-input-number>
+        <el-input v-model="channel" style="width: 200px; margin-right: 10px" placeholder="可选订阅频道"/>
       </div>
       <div>
-        <el-text v-if="tableTotal > 0" type="info" style="margin-right: 10px">[ 总数: {{tableTotal}} ]</el-text>
         <el-input  v-model="keyword" placeholder="模糊筛选（频道、消息）" style="width: 280px; margin-right: 10px" clearable/>
-        <el-button icon="el-icon-search" @click="refresh" type="primary" :loading="loading"/>
+        <el-button :icon="subscribing ? 'el-icon-video-pause' : 'el-icon-video-play'"
+                   @click="subscribe" type="primary">
+          {{subscribing ? '停止订阅' : '开启订阅'}}
+        </el-button>
       </div>
     </div>
     <div class="table">
-      <el-table size="large" :data="filterDataList" ref="table"
+      <el-table :data="filterDataList" ref="table"
                 v-loading="loading"
                 border stripe height="100%">
         <el-table-column label="时间" prop="datetime" sortable width="200"/>

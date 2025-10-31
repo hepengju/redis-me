@@ -253,11 +253,7 @@ impl RedisMeClient for RedisMeSingle {
 
         let _: JoinHandle<AnyResult<()>> = spawn(move || {
             let mut pubsub = conn.as_pubsub();
-
-            let mut channel = channel.unwrap_or("*".into());
-            if channel.is_empty() {
-                channel = "*".into();
-            }
+            let channel = channel.filter(|c| !c.is_empty()).unwrap_or_else(|| "*".into());
             pubsub.psubscribe(&channel)?;
 
             info!("subscribe start: {}", &channel);

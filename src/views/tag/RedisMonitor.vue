@@ -2,6 +2,7 @@
 import NodeList from '@/views/ext/NodeList.vue'
 import {invoke_then} from '@/utils/util.js'
 import {ElMessage, ElMessageBox} from 'element-plus'
+import {debounce} from 'lodash'
 
 // 共享数据
 const share = inject('share')
@@ -15,7 +16,8 @@ const filterDataList = computed(() => {
   return dataList.value.filter(item => !key || item.toLowerCase().indexOf(key) > -1)
 })
 
-async function monitor() {
+// 监控函数防抖
+const monitor = debounce(async () => {
   if (monitoring.value) {
     await invoke_then('monitor_stop', {id: share.conn.id})
     monitoring.value = false
@@ -32,8 +34,7 @@ async function monitor() {
     }).catch(() => {
     })
   }
-}
-
+}, 200)
 const tableTotal = computed(() => filterDataList.value.length)
 </script>
 
@@ -47,7 +48,7 @@ const tableTotal = computed(() => filterDataList.value.length)
         <el-text v-if="tableTotal > 0" type="info" style="margin-right: 10px">[ 总数: {{ tableTotal }} ]</el-text>
         <el-input v-model="keyword" placeholder="模糊搜索" style="width: 280px; margin-right: 10px" clearable/>
         <el-button :icon="monitoring ? 'el-icon-video-pause' : 'el-icon-video-play'"
-                   @click="monitor" type="danger">
+                   @click="monitor" type="primary">
           {{monitoring ? '停止监控' : '开始监控'}}
         </el-button>
       </div>

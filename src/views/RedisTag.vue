@@ -7,7 +7,7 @@ import RedisTerminal from './tag/RedisTerminal.vue'
 import RedisConfig from './tag/RedisConfig.vue'
 import RedisClient from './tag/RedisClient.vue'
 import RedisMonitor from './tag/RedisMonitor.vue'
-// import RedisPubsub from './tag/RedisPubsub.vue'
+import RedisPubsub from './tag/RedisPubsub.vue'
 // import RedisDemo from '@/views/tag/RedisDemo.vue'
 // import RedisTauri from './tag/RedisTauri.vue'
 
@@ -91,14 +91,12 @@ const canEdit = computed(() => true)
       <RedisMonitor/>
     </el-tab-pane>
 
-    <!--    <el-tab-pane name="pubsub" lazy v-if="canEdit">-->
-    <!--      <template #label>-->
-    <!--        <me-icon name="发布订阅" icon="me-icon-pubsub"/>-->
-    <!--      </template>-->
-    <!--      <RedisPubsub/>-->
-    <!--    </el-tab-pane>-->
-
-
+    <el-tab-pane name="pubsub" lazy v-if="canEdit">
+      <template #label>
+        <me-icon name="发布订阅" icon="me-icon-pubsub"/>
+      </template>
+      <RedisPubsub/>
+    </el-tab-pane>
   </el-tabs>
 </template>
 
