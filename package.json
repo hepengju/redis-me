@@ -11,14 +11,14 @@
   },
   "dependencies": {
     "@element-plus/icons-vue": "^2.3.2",
-    "@tauri-apps/api": "^2.8.0",
-    "@tauri-apps/plugin-log": "~2.7.0",
+    "@tauri-apps/api": "^2.9.0",
+    "@tauri-apps/plugin-log": "~2.7.1",
     "@vueuse/core": "^12.8.2",
     "@xterm/addon-fit": "^0.10.0",
     "@xterm/xterm": "^5.5.0",
     "codemirror": "^5.65.20",
     "codemirror-editor-vue3": "^2.8.0",
-    "dayjs": "^1.11.18",
+    "dayjs": "^1.11.19",
     "element-plus": "^2.11.5",
     "jsonpath-plus": "^10.3.0",
     "lodash": "^4.17.21",
@@ -30,13 +30,13 @@
     "xe-utils": "3.7.9"
   },
   "devDependencies": {
-    "@tauri-apps/cli": "^2.8.4",
+    "@tauri-apps/cli": "^2.9.2",
     "@vitejs/plugin-vue": "^6.0.1",
-    "sass-embedded": "^1.93.2",
+    "sass-embedded": "^1.93.3",
     "unplugin-auto-import": "^19.3.0",
     "unplugin-svg-component": "^0.12.4",
     "unplugin-vue-components": "^28.8.0",
     "utools-api-types": "^6.1.0",
-    "vite": "^7.1.10"
+    "vite": "^7.1.12"
   }
 }
