@@ -56,9 +56,13 @@ pub fn get_client_single(conn: &RedisConn) -> AnyResult<Client> {
     );
     info!("redis_url: {redis_url}");
 
-    let certs = get_tls_certs(conn.ssl_option.clone())?;
-    let client = if let Some(tls) = certs {
-        Client::build_with_tls(redis_url, tls)?
+    let client = if conn.ssl {
+        let certs = get_tls_certs(conn.ssl_option.clone())?;
+        if let Some(tls) = certs {
+            Client::build_with_tls(redis_url, tls)?
+        } else {
+            Client::open(redis_url)?
+        }
     } else {
         Client::open(redis_url)?
     };
@@ -90,13 +94,15 @@ pub fn get_client_cluster(conn: &RedisConn) -> AnyResult<ClusterClient> {
     if !conn.password.is_empty() {
         builder = builder.password(conn.password.clone());
     }
-    let certs = get_tls_certs(conn.ssl_option.clone())?;
-    if let Some(certs) = certs {
-        builder = builder.certs(certs)
-            .danger_accept_invalid_hostnames(true)
-            .tls(TlsMode::Insecure)
-        ;
-    };
+    if conn.ssl {
+        let certs = get_tls_certs(conn.ssl_option.clone())?;
+        if let Some(certs) = certs {
+            builder = builder.certs(certs)
+                .danger_accept_invalid_hostnames(true)
+                .tls(TlsMode::Insecure)
+            ;
+        };
+    }
     let client = builder.build()?;
     let cc = ClusterConfig::new().set_connection_timeout(Duration::from_secs(1));
     let mut conn = client.get_connection_with_config(cc)?;
