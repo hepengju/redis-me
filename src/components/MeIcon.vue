@@ -1,15 +1,14 @@
-<script>
-export default {
-  props: {
-    icon: {type: String, default: ''},     // 图标
-    name: {type: String, default: ''},     // 文字
-    hint: {type: Boolean, default: false}, // 文字是否显示为提示(tooltip)
-    info: {type: String, default: ''},     // 图标 + 文字 + 额外的提示
-    placement: {type: String, default: 'auto'},
-    rawContent: {type: Boolean, default: false},
-    showAfter: {type: Number, default: 1000}
-  }
-}
+<script setup>
+// 说明: 统一图标使用方式，支持el-icon-xxx图标和自定义的svg图标me-icon-xxx
+defineProps({
+  icon: {type: String, default: ''},     // 图标
+  name: {type: String, default: ''},     // 文字
+  hint: {type: Boolean, default: false}, // 文字是否显示为提示(tooltip)
+  info: {type: String, default: ''},     // 图标 + 文字 + 额外的提示
+  placement: {type: String, default: 'auto'},
+  rawContent: {type: Boolean, default: false},
+  showAfter: {type: Number, default: 1000}
+})
 </script>
 
 <template>

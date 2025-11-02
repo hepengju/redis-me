@@ -1,15 +1,16 @@
 <script setup>
+// 说明: CodeMirror封装组件，支持代码显示和编辑
 // https://rennzhang.github.io/codemirror-editor-vue3/zh-CN/guide/getting-started
 import CodeMirror from 'codemirror-editor-vue3'
 
 // 语言
 import 'codemirror/mode/javascript/javascript.js'
-import "codemirror/mode/properties/properties.js"
+import 'codemirror/mode/properties/properties.js'
 
 // 主题
 import 'codemirror/theme/idea.css'
 // import 'codemirror/theme/darcula.css'
-import "codemirror/theme/monokai.css"
+import 'codemirror/theme/monokai.css'
 import 'codemirror/addon/display/autorefresh'
 import {useDark} from '@vueuse/core'
 
@@ -44,5 +45,6 @@ const cmOptions = computed(() => {
 </script>
 
 <template>
-  <CodeMirror v-bind="$attrs" ref="cm" :options="cmOptions" :class="readOnly ? ['codemirror-opacity' , 'is-disabled'] : []"/>
+  <CodeMirror v-bind="$attrs" ref="cm" :options="cmOptions"
+              :class="readOnly ? ['codemirror-opacity' , 'is-disabled'] : []"/>
 </template>

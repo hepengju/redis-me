@@ -1,9 +1,10 @@
 <script setup lang="ts">
+// 说明: 基于Xterm的自定义终端组件
 import '@xterm/xterm/css/xterm.css'
 import {Terminal} from '@xterm/xterm'
 import {FitAddon} from '@xterm/addon-fit'
 import {computed, onMounted, onUnmounted, watch} from 'vue'
-import {useDark} from "@vueuse/core";
+import {useDark} from "@vueuse/core"
 
 /*
 ANSI 转义序列颜色规则
@@ -124,7 +125,7 @@ function cursorLen(str) {
 }
 
 const prefixClean = computed(() => prefix.replace(/\x1B\[[0-9;]*m/g, '')) // 移除ANSI转义序列
-const prefixLen  = computed(() => cursorLen(prefixClean.value))
+const prefixLen = computed(() => cursorLen(prefixClean.value))
 
 // 输入数据的处理
 const onTermData = (data) => {
@@ -173,9 +174,10 @@ function getCursorX() {
   return term.buffer.active.cursorX
 }
 
-function getLine(){
+function getLine() {
   return term.buffer.active.getLine(term.buffer.active.cursorY).translateToString(true)
 }
+
 function getCommand() {
   return getLine().substring(prefixClean.value.length)
 }
@@ -197,7 +199,7 @@ async function keyEnter() {
 
     // 添加到历史记录（避免重复添加）
     if (commandHistory.length === 0 ||
-      commandHistory[commandHistory.length - 1] !== command) {
+        commandHistory[commandHistory.length - 1] !== command) {
       commandHistory.push(command)
     }
 
@@ -213,7 +215,7 @@ async function keyEnter() {
 
 // 历史命令处理
 let commandHistory = []
-let historyIndex   = -1
+let historyIndex = -1
 
 function navigateHistory(direction) {
   if (commandHistory.length === 0) return
@@ -250,6 +252,7 @@ function moveCursorLeft() {
   if (getCursorX() <= prefixLen.value) return
   term.write('\x1B[D')
 }
+
 function moveCursorRight() {
   if (getCursorX() >= getLine().length) return
   term.write('\x1B[C')
@@ -272,7 +275,8 @@ function backspace() {
 }
 
 // TODO 自动完成
-function autoComplete() {}
+function autoComplete() {
+}
 
 // 清除屏幕
 function clearScreen() {

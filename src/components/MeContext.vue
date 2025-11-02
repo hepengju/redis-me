@@ -1,4 +1,5 @@
 <script setup>
+// 说明: 自定义右键菜单（使用el-dropdown的虚拟触发实现）
 import {ref, useTemplateRef} from 'vue'
 
 defineExpose({showMenu})
