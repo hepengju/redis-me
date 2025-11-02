@@ -27,8 +27,8 @@ const form = reactive({
   },
 
   color: '#409eff',
-  order: 0
 })
+
 const rules = {
   host: [{required: true, message: '请输入主机'}],
   port: [{required: true, message: '请输入端口'}]
@@ -154,14 +154,14 @@ function testConn() {
 
       <div v-show="form.ssl">
         <el-divider content-position="left">SSL设置</el-divider>
-        <el-form-item label="私钥">
-          <me-file-input v-model="form.sslOption.key" placeholder="SSL Private Key Pem (key)"/>
-        </el-form-item>
         <el-form-item label="公钥">
-          <me-file-input v-model="form.sslOption.cert" placeholder="SSL Public Key Pem (key)"/>
+          <me-file-input v-model="form.sslOption.cert" placeholder="PEM格式公钥文件 (Cert)"/>
+        </el-form-item>
+        <el-form-item label="私钥">
+          <me-file-input v-model="form.sslOption.key" placeholder="PEM格式私钥文件 (Key)"/>
         </el-form-item>
         <el-form-item label="授权">
-          <me-file-input v-model="form.sslOption.ca" placeholder="SSL Certificate Authority (CA)"/>
+          <me-file-input v-model="form.sslOption.ca" placeholder="PEM格式授权文件 (CA)"/>
         </el-form-item>
       </div>
     </el-form>

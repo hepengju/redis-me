@@ -12,6 +12,7 @@ use client::state::AppState;
 pub fn run() {
     tauri::Builder::default()
         .plugin(init_logger().build())
+        .plugin(tauri_plugin_dialog::init())
         .manage(AppState::default())
         .invoke_handler(tauri::generate_handler![
             greet,

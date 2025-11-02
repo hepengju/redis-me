@@ -37,3 +37,4 @@ base64 = "0.22.1"
 chrono = "0.4.23"
 chrono-tz = "0.8"
 fern = { version = "0.7", features = ["colored"] }
+tauri-plugin-dialog = "2.4.2"
