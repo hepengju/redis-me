@@ -57,7 +57,7 @@ const {list, containerProps, wrapperProps} = useVirtualList(
         <el-input type="text" v-model="form.match" disabled/>
       </el-form-item>
 
-      <el-form-item :label="`总数：${keyList.length}，大小：${humanSize(totalSize)}` + (totalSize >= form.countLimit ? `（数据量达到扫描限制：${form.countLimit}）` : '')" :loading="loading">
+      <el-form-item :label="`总数：${keyList.length}，大小：${humanSize(totalSize)}` + (keyList.length >= form.countLimit ? `（数据量达到扫描限制：${form.countLimit}）` : '')" :loading="loading">
         <div v-bind="containerProps" :style="{height: '300px', width: '100%'}">
           <div v-bind="wrapperProps">
             <div v-for="item in list" :key="item.index" class="key me-flex">
