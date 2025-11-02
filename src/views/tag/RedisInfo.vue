@@ -109,6 +109,9 @@ function goClient() {
 function goMemory() {
   share.tabName = 'memory'
 }
+
+// 对话框全屏
+const fullscreen = ref(false)
 </script>
 
 <template>
@@ -229,8 +232,14 @@ function goMemory() {
     </el-card>
   </div>
 
-  <el-dialog title="Info" v-model="dialog.raw" width="60vw" align-center draggable>
-    <me-code :value="raw" mode="properties" read-only height="60vh" />
+  <el-dialog title="Info" v-model="dialog.raw" width="60vw" align-center draggable :fullscreen="fullscreen" @closed="fullscreen=false">
+    <template #header>
+      <div class="me-flex">
+        <div>INFO 原始信息</div>
+        <me-icon icon="me-icon-window-maximize" class="fullscreen-icon" @click="fullscreen = !fullscreen"/>
+      </div>
+    </template>
+    <me-code :value="raw" mode="properties" read-only :height="fullscreen ? 'calc(100vh - 80px)' : '60vh'" />
   </el-dialog>
 </template>
 
@@ -286,5 +295,6 @@ function goMemory() {
       }
     }
   }
+
 }
 </style>
