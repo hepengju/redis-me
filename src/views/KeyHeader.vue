@@ -49,6 +49,8 @@ async function handleCommand(command) {
   } else if (command === 'refreshConn') {
     await invoke_then('connect', {id: share.conn.id})
     bus.emit(CONN_REFRESH)
+  } else if (command === 'closeConn') {
+    share.conn = null
   } else if (command === 'setting') {
     dialog.setting = true
   } else if ('mockData' === command) {
@@ -80,6 +82,10 @@ async function handleCommand(command) {
           <el-dropdown-item command="refreshConn" :disabled="!share.conn">
             <me-icon name="刷新连接" icon="el-icon-refresh"/>
           </el-dropdown-item>
+          <el-dropdown-item command="closeConn" :disabled="!share.conn">
+            <me-icon name="关闭连接" icon="el-icon-circle-close"/>
+          </el-dropdown-item>
+          <!--
           <el-dropdown-item command="addConn">
             <me-icon name="新增连接" icon="el-icon-plus"/>
           </el-dropdown-item>
@@ -92,6 +98,7 @@ async function handleCommand(command) {
           <el-dropdown-item command="deleteConn" :disabled="!share.conn">
             <me-icon name="删除连接" icon="el-icon-delete"/>
           </el-dropdown-item>
+          -->
           <el-dropdown-item command="mockData" divided :disabled="!share.conn">
             <me-icon name="模拟数据" icon="el-icon-coffee-cup"/>
           </el-dropdown-item>
