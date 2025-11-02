@@ -54,7 +54,7 @@ const loading    = ref(false)   // 扫描键过程中loading
 const loadFolder = ref(false)   // 文件夹的右键：仅加载该目录的特殊处理
 const match = computed(() => {
   // 仅扫描该目录，直接返回
-  if (loadFolder.value) return keyword.value + '*'
+  if (loadFolder.value) return keyword.value + ':*'
 
   // 精确查询直接返回；空白则返回*；否则判断前后是否需要添加*
   if (exact.value) return keyword.value
