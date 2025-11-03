@@ -1,18 +1,16 @@
 use crate::client::client::RedisMeClient;
-use crate::client::state::ClientAccess;
 use crate::implement_common_commands;
-use crate::utils::conn::get_pool_single;
+use crate::utils::conn::{get_client_single};
 use crate::utils::model::*;
 use crate::utils::util::*;
 use anyhow::bail;
 use chrono::{Local};
 use log::info;
-use r2d2::Pool;
-use redis::{Client, Commands, Pipeline, SetExpiry, SetOptions, Value, ValueType};
+use redis::{Client, Commands, Connection, Pipeline, SetExpiry, SetOptions, Value, ValueType};
 use std::collections::HashMap;
 use std::collections::HashSet;
 use std::sync::atomic::{AtomicBool, Ordering};
-use std::sync::Arc;
+use std::sync::{Arc, Mutex, MutexGuard};
 use std::thread;
 use std::thread::JoinHandle;
 use std::time::Duration;
@@ -20,31 +18,18 @@ use tauri::{AppHandle, Emitter};
 
 pub struct RedisMeSingle {
     id: String,
-    pool: Pool<Client>,
+    conf: RedisConn,
+    client: Client,
+    conn: Mutex<Connection>,
 
+    db: u8,
     subscribe_running: Arc<AtomicBool>,
     monitor_running: Arc<AtomicBool>,
 }
 
-// 个性化方法
-impl RedisMeSingle {
-    pub fn new(redis_conn: &RedisConn) -> AnyResult<Box<dyn RedisMeClient>> {
-        let pool = get_pool_single(redis_conn)?;
-        let mut conn = pool.get()?;
-        let _: String = conn.ping()?;
-        info!("Redis单机连接初始化成功: {}", redis_conn.name);
-        Ok(Box::new(RedisMeSingle {
-            id: redis_conn.id.clone(),
-            pool,
-            subscribe_running: Arc::new(AtomicBool::new( false)),
-            monitor_running: Arc::new(AtomicBool::new( false))
-        }))
-    }
-}
-
 impl RedisMeClient for RedisMeSingle {
     fn info(&self, _node: Option<String>) -> AnyResult<RedisInfo> {
-        let mut conn = self.pool.get()?;
+        let mut conn = self.get_conn()?;
         let info: String = redis::cmd("info").query(&mut conn)?;
         Ok(RedisInfo {
             node: "".to_string(),
@@ -62,7 +47,7 @@ impl RedisMeClient for RedisMeSingle {
     }
 
     fn scan(&self, param: ScanParam) -> AnyResult<ScanResult> {
-        let mut conn = self.pool.get()?;
+        let mut conn = self.get_conn()?;
 
         let mut cc = param.cursor.unwrap_or_default();
         let batch_count = if param.pattern.replace("*", "").chars().count() <= 1 {
@@ -120,7 +105,7 @@ impl RedisMeClient for RedisMeSingle {
             return Ok("".into());
         };
 
-        let mut conn = self.pool.get()?;
+        let mut conn = self.get_conn()?;
         let value = redis::cmd(cmd.as_str()).arg(args).query(&mut conn)?;
         Ok(redis_value_to_string(value, "\n"))
     }
@@ -130,7 +115,7 @@ impl RedisMeClient for RedisMeSingle {
         pattern: &str,
         _node: Option<String>,
     ) -> AnyResult<HashMap<String, String>> {
-        let mut conn = self.pool.get()?;
+        let mut conn = self.get_conn()?;
         let result: HashMap<String, String> = redis::cmd("config")
             .arg("get")
             .arg(pattern)
@@ -139,7 +124,7 @@ impl RedisMeClient for RedisMeSingle {
     }
 
     fn config_set(&self, key: &str, value: &str, _node: Option<String>) -> AnyResult<()> {
-        let mut conn = self.pool.get()?;
+        let mut conn = self.get_conn()?;
         let _: () = redis::cmd("config")
             .arg("set")
             .arg(key)
@@ -149,7 +134,7 @@ impl RedisMeClient for RedisMeSingle {
     }
 
     fn slow_log(&self, count: Option<u64>, _node: Option<String>) -> AnyResult<Vec<RedisSlowLog>> {
-        let mut conn = self.pool.get()?;
+        let mut conn = self.get_conn()?;
         let mut logs = vec![];
         let value_list: Vec<Value> = redis::cmd("slowlog")
             .arg("get")
@@ -163,7 +148,7 @@ impl RedisMeClient for RedisMeSingle {
     }
 
     fn memory_usage(&self, param: RedisMemoryParam) -> AnyResult<Vec<RedisKeySize>> {
-        let mut conn = self.pool.get()?;
+        let mut conn = self.get_conn()?;
         let mut keys: Vec<(Vec<u8>, u64, String)> = vec![];
 
         let mut scan_times = 0;
@@ -233,7 +218,7 @@ impl RedisMeClient for RedisMeSingle {
         _node: Option<String>,
         client_type: Option<String>,
     ) -> AnyResult<Vec<RedisClientInfo>> {
-        let mut conn = self.pool.get()?;
+        let mut conn = self.get_conn()?;
         let mut cmd = redis::cmd("client");
         cmd.arg("list");
         if let Some(ref client_type_val) = client_type && !client_type_val.is_empty() {
@@ -250,7 +235,7 @@ impl RedisMeClient for RedisMeSingle {
     }
 
     fn subscribe(&self, app_handle: AppHandle, channel: Option<String>) -> AnyResult<()> {
-        let mut conn = app_handle.new_node_conn(&self.id)?;
+        let mut conn = self.client.get_connection()?;
         self.subscribe_running.store( true, Ordering::Relaxed);
         let r = self.subscribe_running.clone();
 
@@ -298,5 +283,31 @@ impl RedisMeClient for RedisMeSingle {
     }
 
     implement_common_commands!(Pipeline);
+}
 
+// 个性化方法
+impl RedisMeSingle {
+    pub fn new(redis_conn: &RedisConn) -> AnyResult<Box<dyn RedisMeClient>> {
+        let client = get_client_single(redis_conn)?;
+        let conn = client.get_connection()?;
+        info!("Redis单机连接初始化成功: {}", redis_conn.name);
+        Ok(Box::new(RedisMeSingle {
+            id: redis_conn.id.clone(),
+            conf: redis_conn.clone(),
+            client,
+            conn: Mutex::new(conn),
+            db: 0,
+            subscribe_running: Arc::new(AtomicBool::new( false)),
+            monitor_running: Arc::new(AtomicBool::new( false))
+        }))
+    }
+
+    fn get_conn(&'_ self) -> AnyResult<MutexGuard<'_, Connection>> {
+        match self.conn.lock() {
+            Ok(conn) => Ok(conn),
+            Err(_) => {
+                bail!("获取连接加锁失败");
+            }
+        }
+    }
 }

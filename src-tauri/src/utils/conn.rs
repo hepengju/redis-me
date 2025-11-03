@@ -38,14 +38,14 @@ fn get_tls_certs(ssl_option: Option<SslOption>) -> AnyResult<Option<TlsCertifica
 
 // 获取连接池(单机)
 // docker run -d --net host --name redis-6379 redis:7 --requirepass hepengju
-pub fn get_pool_single(conn: &RedisConn) -> AnyResult<Pool<Client>> {
-    let client = get_client_single(conn)?;
-    let pool = Pool::builder()
-        .min_idle(Some(0))
-        .max_size(5)
-        .build(client)?;
-    Ok(pool)
-}
+// pub fn get_pool_single(conn: &RedisConn) -> AnyResult<Pool<Client>> {
+//     let client = get_client_single(conn)?;
+//     let pool = Pool::builder()
+//         .min_idle(Some(0))
+//         .max_size(5)
+//         .build(client)?;
+//     Ok(pool)
+// }
 
 
 pub fn get_client_single(conn: &RedisConn) -> AnyResult<Client> {
@@ -73,14 +73,14 @@ pub fn get_client_single(conn: &RedisConn) -> AnyResult<Client> {
 }
 
 // 获取连接池(集群)
-pub fn get_pool_cluster(conn: &RedisConn) -> AnyResult<Pool<ClusterClient>> {
-    let client = get_client_cluster(conn)?;
-    let pool = Pool::builder()
-        .min_idle(Some(0))
-        .max_size(5)
-        .build(client)?;
-    Ok(pool)
-}
+// pub fn get_pool_cluster(conn: &RedisConn) -> AnyResult<Pool<ClusterClient>> {
+//     let client = get_client_cluster(conn)?;
+//     let pool = Pool::builder()
+//         .min_idle(Some(0))
+//         .max_size(5)
+//         .build(client)?;
+//     Ok(pool)
+// }
 
 pub fn get_client_cluster(conn: &RedisConn) -> AnyResult<ClusterClient> {
     let prefix = if conn.ssl { "rediss" } else { "redis" };

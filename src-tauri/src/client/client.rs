@@ -1,7 +1,13 @@
 use crate::utils::model::*;
 use crate::utils::util::AnyResult;
 use std::collections::HashMap;
-use tauri::AppHandle;
+use std::sync::atomic::Ordering;
+use std::thread;
+use std::thread::JoinHandle;
+use chrono::Local;
+use log::info;
+use redis::Connection;
+use tauri::{AppHandle, Emitter};
 
 /// RedisME服务接口
 pub trait RedisMeClient: Send + Sync {
@@ -56,6 +62,7 @@ pub trait RedisMeClient: Send + Sync {
     fn monitor_stop(&self) -> AnyResult<()>;
 
     fn mock_data(&self, count: u64) -> AnyResult<()>;
+
 }
 
 // 集群和单机共享的方法, 由于Commands不是dyn 兼容的, 无法直接写在父类中(也许有其他办法?)
@@ -63,7 +70,7 @@ pub trait RedisMeClient: Send + Sync {
 macro_rules! implement_common_commands {
     ($struct_name:ident) => {
         fn get(&self, key: RedisKey, hash_key: Option<String>) -> AnyResult<RedisValue> {
-            let mut conn = self.pool.get()?;
+            let mut conn = self.get_conn()?;
             let ttl: i64 = conn.ttl(&key)?;
             let key_type: ValueType = conn.key_type(&key)?;
 
@@ -122,7 +129,7 @@ macro_rules! implement_common_commands {
         }
 
         fn ttl(&self, key: RedisKey, ttl: i64) -> AnyResult<()> {
-            let mut conn = self.pool.get()?;
+            let mut conn = self.get_conn()?;
             if ttl < 0 {
                 // 移除 key 上已有的过期时间，将键从易失（设置了过期时间的键）变为变为持久
                 // 整型回复: 如果 key 不存在或没有关联的过期时间，则返回 0。
@@ -140,7 +147,7 @@ macro_rules! implement_common_commands {
         }
 
         fn set(&self, key: RedisKey, value: String, ttl: i64) -> AnyResult<()> {
-            let mut conn = self.pool.get()?;
+            let mut conn = self.get_conn()?;
             if ttl < 0 {
                 let _: () = conn.set(&key, value)?;
             } else {
@@ -151,13 +158,13 @@ macro_rules! implement_common_commands {
         }
 
         fn del(&self, key: RedisKey) -> AnyResult<()> {
-            let mut conn = self.pool.get()?;
+            let mut conn = self.get_conn()?;
             let _: () = conn.del(&key)?;
             Ok(())
         }
 
         fn batch_del(&self, param: RedisBatchDelete) -> AnyResult<()> {
-            let mut conn = self.pool.get()?;
+            let mut conn = self.get_conn()?;
             let key_list = if param.key_list.is_empty() {
                 if param.pattern.is_empty() {
                     bail!("键列表和匹配参数不能同时为空")
@@ -184,7 +191,7 @@ macro_rules! implement_common_commands {
         }
 
         fn field_add(&self, param: RedisFieldAdd) -> AnyResult<()> {
-            let mut conn = self.pool.get()?;
+            let mut conn = self.get_conn()?;
 
             let key: RedisKey = param.key.into();
             let mode = param.mode;
@@ -250,7 +257,7 @@ macro_rules! implement_common_commands {
         }
 
         fn field_set(&self, param: RedisFieldSet) -> AnyResult<()> {
-            let mut conn = self.pool.get()?;
+            let mut conn = self.get_conn()?;
             let key: RedisKey = param.key;
             let key_type: ValueType = conn.key_type(&key)?;
 
@@ -284,7 +291,7 @@ macro_rules! implement_common_commands {
         }
 
         fn field_del(&self, param: RedisFieldDel) -> AnyResult<()> {
-            let mut conn = self.pool.get()?;
+            let mut conn = self.get_conn()?;
             let key: RedisKey = param.key;
             let key_type: ValueType = conn.key_type(&key)?;
 
@@ -318,13 +325,13 @@ macro_rules! implement_common_commands {
         }
 
         fn publish(&self, channel: &str, message: &str) -> AnyResult<()> {
-            let mut conn = self.pool.get()?;
+            let mut conn = self.get_conn()?;
             let _: () = conn.publish(channel, message)?;
             Ok(())
         }
 
         fn mock_data(&self, count: u64) -> AnyResult<()> {
-            let mut conn = self.pool.get()?;
+            let mut conn = self.get_conn()?;
             let mut pipe = $struct_name::with_capacity(count as usize);
 
             for _ in 0..count {
