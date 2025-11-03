@@ -25,9 +25,6 @@ pub trait ClientAccess {
     fn get_client(&self, id: &str) -> AnyResult<Arc<Box<dyn RedisMeClient>>>;
     fn connect(&self, id: &str) -> AnyResult<Arc<Box<dyn RedisMeClient>>>;
     fn disconnect(&self, id: &str) -> AnyResult<()>;
-
-    // 创建新单节点连接: 用于新线程的监控或订阅
-    fn new_node_conn(&self, id: &str) -> AnyResult<Connection>;
 }
 
 impl ClientAccess for AppHandle {
@@ -80,14 +77,5 @@ impl ClientAccess for AppHandle {
             info!("未找到连接, 断开忽略: {}", id)
         }
         Ok(())
-    }
-
-    fn new_node_conn(&self, id: &str) -> AnyResult<Connection> {
-        let state: State<AppState> = self.state();
-        let map = state.connections.lock().unwrap();
-        let redis_conn = map.get(id).ok_or(anyhow!("未找到连接: {}", id))?;
-        let client = get_client_single(redis_conn)?;
-        let conn = client.get_connection()?;
-        Ok(conn)
     }
 }

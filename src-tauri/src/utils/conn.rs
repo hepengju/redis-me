@@ -87,9 +87,7 @@ pub fn get_client_cluster(conn: &RedisConn) -> AnyResult<ClusterClient> {
     let redis_url = format!("{}://{}:{}", prefix, conn.host, conn.port);
     info!("redis_url: {redis_url}");
 
-    let mut builder = ClusterClient::builder(vec![redis_url])
-        .danger_accept_invalid_hostnames(true)
-        .tls(TlsMode::Insecure);
+    let mut builder = ClusterClient::builder(vec![redis_url]);
     if !conn.username.is_empty() {
         builder = builder.username(conn.username.clone());
     }
@@ -97,6 +95,8 @@ pub fn get_client_cluster(conn: &RedisConn) -> AnyResult<ClusterClient> {
         builder = builder.password(conn.password.clone());
     }
     if conn.ssl {
+        builder = builder.danger_accept_invalid_hostnames(true)
+            .tls(TlsMode::Insecure);
         let certs = get_tls_certs(conn.ssl_option.clone())?;
         if let Some(certs) = certs {
             builder = builder.certs(certs);
