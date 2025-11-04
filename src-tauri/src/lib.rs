@@ -20,6 +20,8 @@ pub fn run() {
             conn_list,
             connect,
             disconnect,
+            db_list,
+            select_db,
             info,
             info_list,
             node_list,

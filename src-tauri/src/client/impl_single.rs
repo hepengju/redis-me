@@ -15,6 +15,7 @@ use std::thread;
 use std::thread::JoinHandle;
 use std::time::Duration;
 use tauri::{AppHandle, Emitter};
+use tauri_plugin_dialog::MessageDialogResult::No;
 
 pub struct RedisMeSingle {
     id: String,
@@ -28,6 +29,29 @@ pub struct RedisMeSingle {
 }
 
 impl RedisMeClient for RedisMeSingle {
+
+    fn db_list(&self) -> AnyResult<Vec<RedisDB>> {
+        let map = self.config_get("databases", None)?;
+        let db_count = map.get(&"databases".to_string()).unwrap_or(&"0".to_string()).parse::<u8>()?;
+        info!("db_count: {}", db_count);
+        let mut db_list = vec![];
+        for i in 0..db_count {
+            db_list.push(RedisDB {
+                db: i,
+                name: "".to_string(),
+                size: 0,
+            })
+        }
+        Ok(db_list)
+    }
+
+    fn select_db(&self, db: u8) -> AnyResult<()> {
+        let mut conn = self.get_conn()?;
+        let _: () = redis::cmd("SELECT").arg(db).query(&mut conn)?;
+        info!("select db: {}", db);
+        Ok(())
+    }
+
     fn info(&self, _node: Option<String>) -> AnyResult<RedisInfo> {
         let mut conn = self.get_conn()?;
         let info: String = redis::cmd("info").query(&mut conn)?;

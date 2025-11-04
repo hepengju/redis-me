@@ -6,6 +6,13 @@ use redis::{RedisWrite, ToRedisArgs, ToSingleRedisArg};
 use serde::{Deserialize, Serialize};
 use crate::utils::conn::{get_client_cluster, get_client_single};
 
+// 数据库信息
+api_model!( RedisDB {
+    db: u8,
+    name: String,
+    size: u64,
+});
+
 // 连接信息
 api_model!( RedisConn {
     id: String,

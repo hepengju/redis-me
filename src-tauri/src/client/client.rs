@@ -1,16 +1,14 @@
 use crate::utils::model::*;
 use crate::utils::util::AnyResult;
 use std::collections::HashMap;
-use std::sync::atomic::Ordering;
-use std::thread;
-use std::thread::JoinHandle;
-use chrono::Local;
-use log::info;
-use redis::Connection;
-use tauri::{AppHandle, Emitter};
+use tauri::AppHandle;
 
 /// RedisME服务接口
 pub trait RedisMeClient: Send + Sync {
+
+    fn db_list(&self) -> AnyResult<Vec<RedisDB>>;
+
+    fn select_db(&self, db: u8) -> AnyResult<()>;
 
     fn info(&self, node: Option<String>) -> AnyResult<RedisInfo>;
 

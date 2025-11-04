@@ -32,6 +32,16 @@ pub struct RedisMeCluster {
 }
 
 impl RedisMeClient for RedisMeCluster {
+
+    fn db_list(&self) -> AnyResult<Vec<RedisDB>> {
+        Ok(vec![])
+    }
+
+    fn select_db(&self, _db: u8) -> AnyResult<()> {
+        info!("集群模式下不支持切换DB");
+        Ok(())
+    }
+
     fn info(&self, node: Option<String>) -> AnyResult<RedisInfo> {
         let mut conn = self.get_conn()?;
         let (route, exec_node) = self.get_node_route(node)?;
