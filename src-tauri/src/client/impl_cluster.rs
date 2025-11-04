@@ -1,6 +1,6 @@
 use crate::client::client::RedisMeClient;
 use crate::implement_common_commands;
-use crate::utils::conn::{get_client_cluster, get_client_single};
+use crate::utils::conn::{get_client_cluster, get_client_single, set_client_name};
 use crate::utils::model::*;
 use crate::utils::util::*;
 use anyhow::bail;
@@ -316,6 +316,7 @@ impl RedisMeClient for RedisMeCluster {
 
     fn subscribe(&self, app_handle: AppHandle, channel: Option<String>) -> AnyResult<()> {
         let mut conn = get_client_single(&self.conf)?.get_connection()?;
+        set_client_name(&mut conn)?;
         self.subscribe_running.store( true, Ordering::Relaxed);
         let r = self.subscribe_running.clone();
 
@@ -368,9 +369,10 @@ impl RedisMeClient for RedisMeCluster {
 impl RedisMeCluster {
     pub fn new(redis_conn: &RedisConn) -> AnyResult<Box<dyn RedisMeClient>> {
         let client = get_client_cluster(redis_conn)?;
-
-        // 获取一个连接, 初始化节点列表 (同时验证连接可用性)
         let mut conn = client.get_connection()?;
+
+        // 设置客户端名, 获取节点信息并保存起来
+        set_client_name(&mut conn)?;
         let cluster_nodes: String = redis::cmd("cluster").arg("nodes").query(&mut conn)?;
         let node_list = Self::parse_node_list(cluster_nodes)?;
         info!("Redis集群连接初始化成功: {}", redis_conn.name);
@@ -387,6 +389,7 @@ impl RedisMeCluster {
         }))
     }
 
+    // 获取已创建的连接
     fn get_conn(&'_ self) -> AnyResult<MutexGuard<'_, ClusterConnection>> {
         match self.conn.lock() {
             Ok(conn) => Ok(conn),

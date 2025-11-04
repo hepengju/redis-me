@@ -1,6 +1,6 @@
 use crate::client::client::RedisMeClient;
 use crate::implement_common_commands;
-use crate::utils::conn::{get_client_single};
+use crate::utils::conn::{get_client_single, set_client_name};
 use crate::utils::model::*;
 use crate::utils::util::*;
 use anyhow::bail;
@@ -236,6 +236,7 @@ impl RedisMeClient for RedisMeSingle {
 
     fn subscribe(&self, app_handle: AppHandle, channel: Option<String>) -> AnyResult<()> {
         let mut conn = self.client.get_connection()?;
+        set_client_name(&mut conn)?;
         self.subscribe_running.store( true, Ordering::Relaxed);
         let r = self.subscribe_running.clone();
 
@@ -289,7 +290,8 @@ impl RedisMeClient for RedisMeSingle {
 impl RedisMeSingle {
     pub fn new(redis_conn: &RedisConn) -> AnyResult<Box<dyn RedisMeClient>> {
         let client = get_client_single(redis_conn)?;
-        let conn = client.get_connection()?;
+        let mut conn = client.get_connection()?;
+        set_client_name(&mut conn)?;
         info!("Redis单机连接初始化成功: {}", redis_conn.name);
         Ok(Box::new(RedisMeSingle {
             id: redis_conn.id.clone(),
@@ -302,6 +304,7 @@ impl RedisMeSingle {
         }))
     }
 
+    // 获取已经建立的连接
     fn get_conn(&'_ self) -> AnyResult<MutexGuard<'_, Connection>> {
         match self.conn.lock() {
             Ok(conn) => Ok(conn),
