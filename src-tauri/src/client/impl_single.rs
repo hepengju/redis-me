@@ -9,7 +9,7 @@ use log::info;
 use redis::{Client, Commands, Connection, Pipeline, SetExpiry, SetOptions, Value, ValueType};
 use std::collections::HashMap;
 use std::collections::HashSet;
-use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::atomic::{AtomicBool, AtomicU8, Ordering};
 use std::sync::{Arc, Mutex, MutexGuard};
 use std::thread;
 use std::thread::JoinHandle;
@@ -22,7 +22,7 @@ pub struct RedisMeSingle {
     client: Client,
     conn: Mutex<Connection>,
 
-    db: u8,
+    db: Arc<AtomicU8>,
     subscribe_running: Arc<AtomicBool>,
     monitor_running: Arc<AtomicBool>,
 }
@@ -44,12 +44,12 @@ impl RedisMeClient for RedisMeSingle {
         Ok(db_list)
     }
 
-    fn select_db(&mut self, db: u8) -> AnyResult<()> {
-        if self.db == db {
+    fn select_db(&self, db: u8) -> AnyResult<()> {
+        if self.db.load(Ordering::Relaxed) == db {
             return Ok(());
         }
 
-        self.db = db;
+        self.db.store(db, Ordering::Relaxed);
         let mut conn = self.get_conn()?;
         let _: () = redis::cmd("SELECT").arg(db).query(&mut conn)?;
         info!("select db: {}", db);
@@ -326,7 +326,7 @@ impl RedisMeSingle {
             conf: redis_conn.clone(),
             client,
             conn: Mutex::new(conn),
-            db: 0,
+            db: Arc::new(AtomicU8::new(0)),
             subscribe_running: Arc::new(AtomicBool::new( false)),
             monitor_running: Arc::new(AtomicBool::new( false))
         }))

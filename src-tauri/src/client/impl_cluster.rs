@@ -12,7 +12,7 @@ use redis::cluster_routing::RoutingInfo::SingleNode;
 use redis::cluster_routing::SingleNodeRoutingInfo::ByAddress;
 use redis::{Commands, FromRedisValue, SetExpiry, SetOptions, Value, ValueType};
 use std::collections::{HashMap, HashSet};
-use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::atomic::{AtomicBool, AtomicU8, Ordering};
 use std::sync::{Arc, Mutex, MutexGuard};
 use std::thread;
 use std::thread::JoinHandle;
@@ -26,7 +26,7 @@ pub struct RedisMeCluster {
     conn: Mutex<ClusterConnection>,
     node_list: Vec<RedisNode>,
 
-    db: u8,
+    db: Arc<AtomicU8>,
     subscribe_running: Arc<AtomicBool>,
     monitor_running: Arc<AtomicBool>,
 }
@@ -37,11 +37,12 @@ impl RedisMeClient for RedisMeCluster {
         Ok(vec![])
     }
 
-    fn select_db(&mut self, db: u8) -> AnyResult<()> {
-        if self.db == db {
+    fn select_db(&self, db: u8) -> AnyResult<()> {
+        if self.db.load(Ordering::Relaxed) == db {
             return Ok(());
         }
-        
+
+        self.db.store(db, Ordering::Relaxed);
         info!("集群模式下不支持切换DB");
         Ok(())
     }
@@ -397,7 +398,7 @@ impl RedisMeCluster {
             client,
             conn: Mutex::new(conn),
             node_list,
-            db: 0,
+            db: Arc::new(AtomicU8::new(0)),
             subscribe_running: Arc::new(AtomicBool::new( false)),
             monitor_running: Arc::new(AtomicBool::new( false))
         }))
