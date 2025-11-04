@@ -37,7 +37,11 @@ impl RedisMeClient for RedisMeCluster {
         Ok(vec![])
     }
 
-    fn select_db(&self, _db: u8) -> AnyResult<()> {
+    fn select_db(&mut self, db: u8) -> AnyResult<()> {
+        if self.db == db {
+            return Ok(());
+        }
+        
         info!("集群模式下不支持切换DB");
         Ok(())
     }

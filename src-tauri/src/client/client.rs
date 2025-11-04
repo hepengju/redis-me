@@ -8,7 +8,7 @@ pub trait RedisMeClient: Send + Sync {
 
     fn db_list(&self) -> AnyResult<Vec<RedisDB>>;
 
-    fn select_db(&self, db: u8) -> AnyResult<()>;
+    fn select_db(&mut self, db: u8) -> AnyResult<()>;
 
     fn info(&self, node: Option<String>) -> AnyResult<RedisInfo>;
 
