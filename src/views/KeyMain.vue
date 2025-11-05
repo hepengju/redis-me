@@ -2,14 +2,11 @@
 import ListKey from './key/ListKey.vue'
 import TreeKey from './key/TreeKey.vue'
 import {computed, ref} from 'vue'
-import {bus, commonDeleteKey, CONN_REFRESH, copy, DELETE_KEY, REFRESH_KEY} from "@/utils/util.js"
+import {bus, commonDeleteKey, CONN_REFRESH, copy, DELETE_KEY, invoke_then, REFRESH_KEY} from '@/utils/util.js'
 import {ElMessage} from 'element-plus'
 import FieldAdd from '@/views/ext/FieldAdd.vue'
 import KeyBatchDel from './key/KeyBatchDel.vue'
 import KeyMemory from './key/KeyMemory.vue'
-import {invoke_then} from "@/utils/util.js";
-import SaveConn from '@/views/ext/SaveConn.vue'
-import Setting from '@/views/ext/Setting.vue'
 
 // 共享数据
 const share = inject('share')
@@ -122,7 +119,7 @@ refreshDbList()
 
 async function selectDB(){
   await invoke_then('select_db', {id: share.conn.id, db: db.value})
-  await refresh()
+  await refresh() // RedisInfo的键数量需要更新下
 }
 
 // 选中键
