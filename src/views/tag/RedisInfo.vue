@@ -30,6 +30,7 @@ watchEffect(() => {
   dic.value = {}
   tagList.value = []
   tagTable.value = []
+  keyCount.value = 0
 
   const lines = raw.value.split('\n')
   let tagKey = ''
@@ -54,7 +55,7 @@ watchEffect(() => {
 
       // db0:keys=14410,expires=3997,avg_ttl=736124073
       // db1:keys=50,expires=0,avg_ttl=0,subexpiry=0
-      if (/db\d/.test(key)) {
+      if (/^db\d{1,2}$/.test(key)) {
         try {
           keyCount.value += parseInt(value.split(',')[0].split('=')[1])
         } catch (e) {
