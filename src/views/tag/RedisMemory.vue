@@ -16,7 +16,7 @@ const hint = computed(() => {
 `.trim()
 })
 
-const sizeLimitKb = ref(100)
+const sizeLimitKb = ref(0)
 const countLimit = ref(500)
 const scanCount = ref(1000)
 const scanTotal = ref(10000)

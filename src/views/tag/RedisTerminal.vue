@@ -1,7 +1,7 @@
 <script setup>
 import NodeList from '../ext/NodeList.vue'
-import {invoke_then} from "@/utils/util.js";
-import MeIcon from "@/components/MeIcon.vue";
+import {invoke_then} from '@/utils/util.js'
+import MeIcon from '@/components/MeIcon.vue'
 
 // 共享数据
 const share = inject('share')

@@ -1,8 +1,17 @@
+/*文本选择: 整体禁用，个别地方放开*/
 html {
-  /*禁用文本选择*/
-  -webkit-user-select: none; /* Chrome, Safari */
-  -moz-user-select: none; /* Firefox */
   user-select: none;
+  -webkit-user-select: none; /* Chrome, Safari */
+  -moz-user-select: none;    /* Firefox */
+}
+
+.el-descriptions__content,
+.el-table__body-wrapper .el-table__cell,
+.el-tooltip,
+.xterm {
+  user-select: text;
+  -webkit-user-select: text; /* Chrome, Safari */
+  -moz-user-select: text;    /* Firefox */
 }
 
 /* 黑色主题 */

@@ -69,6 +69,7 @@ const computedTheme = computed(() => {
     ...baseTheme,
     foreground: isDark.value ? baseTheme.foreground : baseTheme.background,
     background: isDark.value ? baseTheme.background : baseTheme.foreground,
+    selectionBackground: isDark.value ? '#656565' : '#E5E5E5'
   })
 })
 
