@@ -111,6 +111,20 @@ function deleteKey(redisKey) {
 const keyShowTypeList = ref(['tree', 'list'])
 const keyShowType = ref('tree')
 
+// 数据库列表
+const db = ref(0)
+const dbList = ref([])
+async function refreshDbList() {
+  const data = await invoke_then('db_list', {id: share.conn.id})
+  dbList.value = data
+}
+refreshDbList()
+
+async function selectDB(){
+  await invoke_then('select_db', {id: share.conn.id, db: db.value})
+  await refresh()
+}
+
 // 选中键
 function chooseKey(redisKey) {
   keyPrefix.value = ''
@@ -249,6 +263,16 @@ function keyMemory(folder) {
             <me-icon name="键树形展示" icon="me-icon-tree" hint placement="top" v-else/>
           </template>
         </el-segmented>
+
+        <!-- 集群不显示数据库列表 -->
+        <el-select v-model="db" @change="selectDB" style="width: 80px; margin-left: 10px" v-if="!share.conn.cluster">
+          <el-option v-for="item in dbList" :key="item.db" :value="item.db">
+            {{ `db${item.db}` }}
+          </el-option>
+          <template #label>
+            {{ `db${db}` }}
+          </template>
+        </el-select>
       </div>
 
       <el-text class="tip" size="large" type="primary">{{ filterKeyList.length }} / {{ keyList.length }}</el-text>
