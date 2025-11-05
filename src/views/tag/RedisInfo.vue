@@ -53,14 +53,16 @@ watchEffect(() => {
       }
 
       // db0:keys=14410,expires=3997,avg_ttl=736124073
-      if (key === 'db0') {
+      // db1:keys=50,expires=0,avg_ttl=0,subexpiry=0
+      if (/db\d/.test(key)) {
         try {
-          keyCount.value = value.split(',')[0].split('=')[1]
+          keyCount.value += parseInt(value.split(',')[0].split('=')[1])
         } catch (e) {
         }
       }
     }
   })
+
 })
 
 // 表格数据
@@ -142,7 +144,7 @@ const fullscreen = ref(false)
       </el-descriptions-item>
 
       <el-descriptions-item>
-        <template #label><me-icon name="键数量" icon="el-icon-key"/></template>
+        <template #label><me-icon name="键总数" icon="el-icon-key"/></template>
         {{ keyCount }}
       </el-descriptions-item>
 
