@@ -9,7 +9,7 @@ import KeyMain from "@/views/KeyMain.vue";
 
 // 共享数据
 const share = reactive({
-  conn: null,     // 当前连接
+  conn: null,   // 当前连接
   connList: [], // 连接列表
   color: 'var(--el-color-primary)', // 即 share.conn.color（便于使用和移植）
   redisKey: null,
