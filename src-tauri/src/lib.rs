@@ -11,9 +11,10 @@ use client::state::AppState;
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
-        .plugin(init_logger().build())
-        .plugin(tauri_plugin_dialog::init())
-        .manage(AppState::default())
+        .plugin(init_logger().build())        // 日志插件
+        .plugin(tauri_plugin_dialog::init())  // 弹框选择文件
+        .plugin(tauri_plugin_opener::init())  // 打开外部链接
+        .manage(AppState::default())          // 状态管理，保持Redis连接
         .invoke_handler(tauri::generate_handler![
             greet,
             test_conn,

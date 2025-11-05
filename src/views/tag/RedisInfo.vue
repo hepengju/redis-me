@@ -1,4 +1,5 @@
 <script setup>
+import { openPath } from '@tauri-apps/plugin-opener'
 import {useTemplateRef} from 'vue'
 import {infoTip as tips} from '@/utils/tip.js'
 import NodeList from '../ext/NodeList.vue'
@@ -110,6 +111,10 @@ function goMemory() {
   share.tabName = 'memory'
 }
 
+function goRedisWebsite(){
+  openPath('https://redis.ac.cn/docs/latest/commands/info/')
+}
+
 // 对话框全屏
 const fullscreen = ref(false)
 </script>
@@ -202,6 +207,7 @@ const fullscreen = ref(false)
           <div>
             <el-text size="large">参数详情</el-text>
             <el-link type="success" target="_blank" style="margin-left: 10px"
+                     @click="goRedisWebsite"
                      href="https://redis.ac.cn/docs/latest/commands/info/">
               <me-icon info="跳转官网参数详解" icon="me-icon-link"/>
             </el-link>
