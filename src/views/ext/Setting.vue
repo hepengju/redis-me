@@ -1,10 +1,7 @@
 <script setup>
 import {useDark, usePreferredDark, useStorage} from '@vueuse/core'
 import {ref} from 'vue'
-
-const {dialog} = defineProps({
-  dialog: {type: Object, default: {setting: false}},
-})
+import {getVersion} from '@tauri-apps/api/app'
 
 // 主题
 const theme = ref('system')
@@ -46,48 +43,34 @@ function changeLanguage() {
   // TODO i18n 多语言支持
 }
 
-//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-// 缩放
-const zoomFactor = useStorage('zoomFactor', 1)
-document.body.style.zoom = zoomFactor.value
-
-// 切换缩放因子
-function changeZoomFactor(value) {
-  // chrome ok, firefox效果不是很好
-  document.body.style.zoom = value + ''
-  zoomFactor.value = value
-}
+// 应用程序版本
+const appVersion = ref('')
+getVersion().then(res => appVersion.value = res).catch(_ => {})
 </script>
 
 <template>
-  <el-dialog title="基础设置" v-model="dialog.setting" width="666">
-    <el-card header="外观" header-class="me-card">
-      <el-form inline label-position="left">
-        <el-form-item label="主题">
-          <el-select v-model="theme" style="width: 120px" @change="changeTheme">
-            <el-option v-for="item in themeList" :label="item.label" :value="item.value" :key="item.value"/>
-          </el-select>
-        </el-form-item>
-        <el-form-item label="语言">
-          <el-select v-model="language" style="width: 120px" @change="changeLanguage">
-            <el-option v-for="item in languageList" :label="item.label" :value="item.value" :key="item.value"/>
-          </el-select>
-        </el-form-item>
-        <el-form-item label="缩放">
-          <el-input-number v-model="zoomFactor" @change="changeZoomFactor"
-                           :min="0.5" :max="2" :step="0.1" :precision="1" style="width: 120px"/>
-        </el-form-item>
-      </el-form>
-    </el-card>
-    <el-card header="当前版本" header-class="me-card" style="margin-top: 10px">
-      <el-link underline="always" class="me-link">快捷键</el-link>
-      <el-link underline="always" class="me-link">清除缓存</el-link>
-      <el-link underline="always" class="me-link">检查更新</el-link>
-      <el-link underline="always" class="me-link">手动下载</el-link>
-      <el-link underline="always" class="me-link" href="https://gitee.com/hepengju/redis-app" target="_blank">项目主页
-      </el-link>
-    </el-card>
-  </el-dialog>
+  <el-card header="外观" header-class="me-card">
+    <el-form inline label-position="left">
+      <el-form-item label="主题">
+        <el-select v-model="theme" style="width: 120px" @change="changeTheme">
+          <el-option v-for="item in themeList" :label="item.label" :value="item.value" :key="item.value"/>
+        </el-select>
+      </el-form-item>
+      <el-form-item label="语言">
+        <el-select v-model="language" style="width: 120px" @change="changeLanguage">
+          <el-option v-for="item in languageList" :label="item.label" :value="item.value" :key="item.value"/>
+        </el-select>
+      </el-form-item>
+    </el-form>
+  </el-card>
+  <el-card :header="'版本: v' + appVersion" header-class="me-card" style="margin-top: 10px">
+    <el-link underline="always" class="me-link">快捷键</el-link>
+    <el-link underline="always" class="me-link">清除缓存</el-link>
+    <el-link underline="always" class="me-link">检查更新</el-link>
+    <el-link underline="always" class="me-link">手动下载</el-link>
+    <el-link underline="always" class="me-link" href="https://gitee.com/hepengju/redis-app" target="_blank">项目主页
+    </el-link>
+  </el-card>
 </template>
 
 <style scoped lang="scss">

@@ -2,7 +2,7 @@
 import 'dayjs/locale/zh-cn'
 import zhCn from 'element-plus/es/locale/lang/zh-cn'
 import AppMain from '@/views/AppMain.vue'
-import AppTitle from "@/views/AppTitle.vue";
+import AppTitle from '@/views/ext/AppTitle.vue'
 </script>
 
 <template>

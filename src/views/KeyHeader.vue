@@ -1,8 +1,8 @@
 <script setup>
-import {bus, CONN_REFRESH, invoke_then} from "@/utils/util.js"
-import {ElMessage, ElMessageBox} from 'element-plus'
-import SaveConn from '@/views/ext/SaveConn.vue'
+import {bus, CONN_REFRESH, invoke_then} from '@/utils/util.js'
+import {ElMessage} from 'element-plus'
 import Setting from '@/views/ext/Setting.vue'
+import AppInfo from '@/views/ext/AppInfo.vue'
 
 // 共享数据
 const share = inject('share')
@@ -10,49 +10,27 @@ const share = inject('share')
 // 新增模拟数据
 async function mockData() {
   await invoke_then('mock_data', {id: share.conn.id, count: 10})
-  ElMessage.success("模拟数据插入完成")
-  if (share.conn) {
-    bus.emit(CONN_REFRESH)
-  }
+  ElMessage.success('模拟数据插入完成')
+  bus.emit(CONN_REFRESH)
 }
 
 // 弹出框
 const dialog = reactive({
-  conn: false,         // 编辑连接
   setting: false,      // 基础设置
+  info: false,         // 应用信息
 })
 
 // 处理额外命令
-const connRef = useTemplateRef('conn')
 async function handleCommand(command) {
-  if (command === 'addConn') {
-    dialog.conn = true
-    await nextTick(() => connRef.value.open('add'))
-  } else if (command === 'copyConn') {
-    dialog.conn = true
-    await nextTick(() => connRef.value.open('add', share.conn))
-  } else if (command === 'editConn') {
-    dialog.conn = true
-    await nextTick(() => connRef.value.open('edit', share.conn))
-  } else if (command === 'deleteConn') {
-    ElMessageBox.confirm(
-        `确定删除连接【${share.conn.name}】吗？`,
-        '提示',
-        {type: 'warning'},
-    ).then(async () => {
-      const index = share.connList.indexOf(share.conn)
-      if (index > -1) {
-        share.connList.splice(index, 1)
-      }
-      share.conn = null
-    }).catch(() => {})
-  } else if (command === 'refreshConn') {
+  if (command === 'refreshConn') {
     await invoke_then('connect', {id: share.conn.id})
     bus.emit(CONN_REFRESH)
   } else if (command === 'closeConn') {
     share.conn = null
   } else if (command === 'setting') {
     dialog.setting = true
+  } else if (command === 'info') {
+    dialog.info = true
   } else if ('mockData' === command) {
     await mockData()
   }
@@ -85,20 +63,6 @@ async function handleCommand(command) {
           <el-dropdown-item command="closeConn" :disabled="!share.conn">
             <me-icon name="关闭连接" icon="el-icon-circle-close"/>
           </el-dropdown-item>
-          <!--
-          <el-dropdown-item command="addConn">
-            <me-icon name="新增连接" icon="el-icon-plus"/>
-          </el-dropdown-item>
-          <el-dropdown-item command="copyConn" :disabled="!share.conn">
-            <me-icon name="复制连接" icon="el-icon-document-copy"/>
-          </el-dropdown-item>
-          <el-dropdown-item command="editConn" :disabled="!share.conn">
-            <me-icon name="编辑连接" icon="el-icon-edit"/>
-          </el-dropdown-item>
-          <el-dropdown-item command="deleteConn" :disabled="!share.conn">
-            <me-icon name="删除连接" icon="el-icon-delete"/>
-          </el-dropdown-item>
-          -->
           <el-dropdown-item command="mockData" divided :disabled="!share.conn">
             <me-icon name="模拟数据" icon="el-icon-coffee-cup"/>
           </el-dropdown-item>
@@ -108,14 +72,20 @@ async function handleCommand(command) {
           <el-dropdown-item command="setting">
             <me-icon name="基础设置" icon="el-icon-setting"/>
           </el-dropdown-item>
+          <el-dropdown-item command="info" divided>
+            <me-icon name="关于" icon="me-icon-info"/>
+          </el-dropdown-item>
         </el-dropdown-menu>
       </template>
     </el-dropdown>
 
-    <SaveConn ref="conn" v-if="dialog.conn" @closed="dialog.conn = false"/>
-
     <!--为了方便主题语言等初始化，组件一直存在；为了方便v-model直接绑定弹框是否显示直接传入dialog-->
-    <Setting :dialog="dialog"/>
+    <el-dialog title="基础设置" v-model="dialog.setting" width="500" align-center draggable>
+      <Setting/>
+    </el-dialog>
+    <el-dialog v-model="dialog.info" width="400" align-center draggable>
+      <AppInfo/>
+    </el-dialog>
   </div>
 </template>
 
