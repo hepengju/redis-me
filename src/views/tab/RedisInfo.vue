@@ -112,13 +112,6 @@ function goClient() {
 function goMemory() {
   share.tabName = 'memory'
 }
-
-// function goRedisWebsite(){
-//   openPath('https://redis.ac.cn/docs/latest/commands/info/')
-// }
-
-// 对话框全屏
-const fullscreen = ref(false)
 </script>
 
 <template>
@@ -239,15 +232,9 @@ const fullscreen = ref(false)
     </el-card>
   </div>
 
-  <el-dialog title="Info" v-model="dialog.raw" width="60vw" align-center draggable :fullscreen="fullscreen" @closed="fullscreen=false">
-    <template #header>
-      <div class="me-flex">
-        <div>INFO 原始信息</div>
-        <me-icon icon="me-icon-window-maximize" class="fullscreen-icon" @click="fullscreen = !fullscreen"/>
-      </div>
-    </template>
-    <me-code :value="raw" mode="properties" read-only :height="fullscreen ? 'calc(100vh - 80px)' : '60vh'" />
-  </el-dialog>
+  <me-dialog v-model="dialog.raw" title="Info 原始信息"  width="60vw">
+    <me-code :value="raw" mode="properties" read-only/>
+  </me-dialog>
 </template>
 
 <style scoped lang="scss">
