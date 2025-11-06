@@ -1,14 +1,14 @@
 <script setup>
 import {capitalize} from 'lodash'
-import {bus, copy, DELETE_KEY, humanSize, REFRESH_KEY, commonDeleteKey} from '@/utils/util.js'
+import {bus, copy, KEY_DELETE, humanSize, KEY_REFRESH, commonDeleteKey} from '@/utils/util.js'
 import {ElMessage} from 'element-plus'
 import FieldAdd from '../ext/FieldAdd.vue'
 import FieldSet from '../ext/FieldSet.vue'
 import {invoke_then} from "@/utils/util.js";
 
 // 刷新键
-onMounted(() => bus.on(REFRESH_KEY, refreshKey))
-onUnmounted(() => bus.off(REFRESH_KEY, refreshKey))
+onMounted(() => bus.on(KEY_REFRESH, refreshKey))
+onUnmounted(() => bus.off(KEY_REFRESH, refreshKey))
 
 // 共享数据
 const share = inject('share')
@@ -129,8 +129,8 @@ async function refreshKey(reset = true) {
 }
 
 // 删除键
-onMounted(() => bus.on(DELETE_KEY, deleteKey))
-onUnmounted(() => bus.off(DELETE_KEY, deleteKey))
+onMounted(() => bus.on(KEY_DELETE, deleteKey))
+onUnmounted(() => bus.off(KEY_DELETE, deleteKey))
 
 function deleteKey() {
   redisValue.value = null

@@ -1,24 +1,27 @@
 <script setup>
+import {load} from '@tauri-apps/plugin-store'
 import RedisTag from './RedisTag.vue'
 import {sortBy} from 'lodash'
-import {bus, CONN_REFRESH, invoke_then} from "@/utils/util.js";
-import {mockConnList} from "@/utils/api-mock.js";
-import RedisConn from "@/views/RedisConn.vue";
-import KeyHeader from "@/views/KeyHeader.vue";
-import KeyMain from "@/views/KeyMain.vue";
+import {bus, CONN_REFRESH, invoke_then, STORE_CONN_LIST, STORE_FILE_NAME} from '@/utils/util.js'
+import RedisConn from '@/views/RedisConn.vue'
+import KeyHeader from '@/views/KeyHeader.vue'
+import KeyMain from '@/views/KeyMain.vue'
 
 // 共享数据
 const share = reactive({
-  conn: null,   // 当前连接
-  connList: [], // 连接列表
+  conn: null,    // 当前连接
+  connList: [],  // 连接列表
+  nodeList: [],  // 节点列表
   color: 'var(--el-color-primary)', // 即 share.conn.color（便于使用和移植）
   redisKey: null,
   tabName: 'info',
-  nodeList: []  // 节点列表
 })
 
-share.connList = mockConnList
 provide('share', share)
+
+// 导入存储的连接信息 ==> 顶层await, 需要包含在Suspense组件中
+let store = await load(STORE_FILE_NAME)
+share.connList = await store.get(STORE_CONN_LIST) || []
 
 // 当环境发生变化时，销毁整个key和tag组件（避免状态保留）
 onMounted(() => bus.on(CONN_REFRESH, toggleKeyTag))
@@ -55,7 +58,8 @@ watch(() => share.conn, async (newConn, oldConn) => {
 const connListToString = computed(() => JSON.stringify(share.connList))
 watch(connListToString, async (newConnList) => {
   await invoke_then('conn_list', {connList: JSON.parse(newConnList)})
-}, {deep: true, immediate: true})
+  await store?.set(STORE_CONN_LIST, share.connList)
+})
 </script>
 
 <template>

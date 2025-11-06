@@ -7,9 +7,14 @@ import {invoke} from "@tauri-apps/api/core";
 // 全局事件总线: setup直接导入，app全局属性也添加
 export const bus = mitt()
 
+// 存储
+export const STORE_FILE_NAME = 'store.json'
+export const STORE_CONN_LIST = 'connList'
+export const STORE_SETTING = 'setting'
+
 // 常量
-export const DELETE_KEY = 'DELETE_KEY'
-export const REFRESH_KEY = 'REFRESH_KEY'
+export const KEY_DELETE = 'DELETE_KEY'
+export const KEY_REFRESH = 'REFRESH_KEY'
 export const GO_CLIENT = 'GO_CLIENT'
 export const CONN_REFRESH = 'CONN_REFRESH'
 
@@ -116,7 +121,7 @@ export function commonDeleteKey(id, redisKey, thenFn) {
       {type: 'warning'},
     ).then(async () => {
         await invoke_then('del', {id, key: redisKey})
-        bus.emit(DELETE_KEY, redisKey)
+        bus.emit(KEY_DELETE, redisKey)
         ElMessage.success('删除成功')
         if (thenFn) {
             thenFn()

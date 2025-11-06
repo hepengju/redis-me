@@ -8,7 +8,9 @@ import AppTitle from '@/views/ext/AppTitle.vue'
 <template>
   <el-config-provider :locale="zhCn">
     <AppTitle/>
-    <AppMain/>
+    <Suspense>
+      <AppMain/>
+    </Suspense>
   </el-config-provider>
 </template>
 

@@ -2,7 +2,7 @@
 import ListKey from './key/ListKey.vue'
 import TreeKey from './key/TreeKey.vue'
 import {computed, ref} from 'vue'
-import {bus, commonDeleteKey, CONN_REFRESH, copy, DELETE_KEY, invoke_then, REFRESH_KEY} from '@/utils/util.js'
+import {bus, commonDeleteKey, CONN_REFRESH, copy, KEY_DELETE, invoke_then, KEY_REFRESH} from '@/utils/util.js'
 import {ElMessage} from 'element-plus'
 import FieldAdd from '@/views/ext/FieldAdd.vue'
 import KeyBatchDel from './key/KeyBatchDel.vue'
@@ -95,9 +95,9 @@ async function scanKey(useCursor = false, loadAll = false) {
   }
 }
 
-onMounted(() => bus.on(DELETE_KEY, deleteKey))
+onMounted(() => bus.on(KEY_DELETE, deleteKey))
 onMounted(() => bus.on(CONN_REFRESH, refresh))
-onUnmounted(() => bus.off(DELETE_KEY, deleteKey))
+onUnmounted(() => bus.off(KEY_DELETE, deleteKey))
 onUnmounted(() => bus.off(CONN_REFRESH, refresh))
 function deleteKey(redisKey) {
   keyList.value = keyList.value.filter(rk => rk.bytes !== redisKey.bytes)
@@ -127,7 +127,7 @@ function chooseKey(redisKey) {
   keyPrefix.value = ''
   share.redisKey = redisKey
   share.tabName = 'value'
-  bus.emit(REFRESH_KEY)
+  bus.emit(KEY_REFRESH)
 }
 
 // 选中文件夹

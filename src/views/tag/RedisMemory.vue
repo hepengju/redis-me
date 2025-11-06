@@ -1,6 +1,6 @@
 <script setup>
 // 官网参考: https://redis.ac.cn/docs/latest/commands/slowlog-get/
-import {bus, commonDeleteKey, copy, filterHandler, humanSize, invoke_then, REFRESH_KEY} from '@/utils/util.js'
+import {bus, commonDeleteKey, copy, filterHandler, humanSize, invoke_then, KEY_REFRESH} from '@/utils/util.js'
 import {ElMessage, ElMessageBox} from 'element-plus'
 import {capitalize} from 'lodash'
 
@@ -90,7 +90,7 @@ function memoryUsage() {
 function chooseKey(redisKey) {
   share.redisKey = redisKey
   share.tabName = 'value'
-  bus.emit(REFRESH_KEY)
+  bus.emit(KEY_REFRESH)
 }
 
 // 删除键
