@@ -16,15 +16,22 @@ const share = reactive({
   color: 'var(--el-color-primary)', // 即 share.conn.color（便于使用和移植）
   redisKey: null,
   tabName: 'info',
+  store: null    // 共享存储对象
 })
 
 provide('share', share)
 
 // 导入存储的连接信息
-let store
+let initConnList = false
 async function loadStore() {
-  store = await load(STORE_FILE_NAME)
-  share.connList = await store.get(STORE_CONN_LIST) || []
+  // markRaw 将一个对象标记为不可被转为代理。返回该对象本身。
+  // 避免报错: Cannot read private member from an object whose class did not declare it
+  const store = await load(STORE_FILE_NAME)
+  share.store = markRaw(store)
+  share.connList = await share.store.get(STORE_CONN_LIST) || []
+  nextTick(() => {
+    initConnList = true
+  })
 }
 onMounted(() => loadStore())
 
@@ -62,8 +69,10 @@ watch(() => share.conn, async (newConn, oldConn) => {
 // 保存连接列表: 列表真实变化时才发送命令
 const connListToString = computed(() => JSON.stringify(share.connList))
 watch(connListToString, async (newConnList) => {
-  await invoke_then('conn_list', {connList: JSON.parse(newConnList)})
-  await store?.set(STORE_CONN_LIST, share.connList)
+  if (initConnList) {
+    await invoke_then('conn_list', {connList: JSON.parse(newConnList)})
+    await share.store?.set(STORE_CONN_LIST, share.connList)
+  }
 })
 </script>
 
