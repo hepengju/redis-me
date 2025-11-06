@@ -3,7 +3,7 @@ use crate::client::state::ClientAccess;
 use crate::utils::model::*;
 use crate::utils::util::*;
 use std::collections::HashMap;
-use tauri::{command, AppHandle};
+use tauri::{AppHandle, command};
 
 // 默认示例
 // Learn more about Tauri commands at https://tauri.app/develop/calling-rust/
@@ -69,11 +69,19 @@ api_commands!(
 // 监控命令
 #[command]
 pub fn monitor(app_handle: AppHandle, id: &str, node: &str) -> ApiResult<()> {
-    to_api_result(app_handle.get_client(id).and_then(|client| client.monitor(app_handle, node)))
+    to_api_result(
+        app_handle
+            .get_client(id)
+            .and_then(|client| client.monitor(app_handle, node)),
+    )
 }
 
 // 订阅消息
 #[command]
 pub fn subscribe(app_handle: AppHandle, id: &str, channel: Option<String>) -> ApiResult<()> {
-    to_api_result(app_handle.get_client(id).and_then(|client| client.subscribe(app_handle, channel)))
+    to_api_result(
+        app_handle
+            .get_client(id)
+            .and_then(|client| client.subscribe(app_handle, channel)),
+    )
 }

@@ -4,7 +4,11 @@ import SaveConn from '@/views/ext/SaveConn.vue'
 import {nextTick, useTemplateRef} from 'vue'
 import {debounce} from "lodash";
 import {Sortable} from 'sortablejs'
-import {ElMessageBox} from "element-plus";
+import {ElMessage, ElMessageBox} from 'element-plus'
+import {open, save} from '@tauri-apps/plugin-dialog'
+import {readTextFile, writeTextFile} from '@tauri-apps/plugin-fs'
+import dayjs from 'dayjs'
+import {error} from '@tauri-apps/plugin-log'
 
 const share = inject('share')
 
@@ -90,12 +94,60 @@ onMounted(() => rowDrag())
 // rowDrag()
 
 // 扩展功能
-function handleCommand(command){
+const filters = [{name: '', extensions: ['json']}]
+async function handleCommand(command) {
   if (command === 'export') {
-
+    const fileName = 'redis-me-connections-' + dayjs().format('YYYYMMDDHHmmss')
+    const path = await save({multiple: false, directory: true, filters, defaultPath: fileName})
+    if (path) {
+      try {
+        await writeTextFile(path, JSON.stringify(share.connList, null, 2))
+        ElMessage.success('导出成功')
+      } catch (e) {
+        ElMessageBox.alert(e, '导出失败', {type: 'error'})
+      }
+    }
   } else if (command === 'import') {
-
+    const file = await open({multiple: false, directory: false, filters})
+    if (file) {
+      // 读取文件并检查文件内容是否符合要求
+      try {
+        const content = await readTextFile(file)
+        const oldConnList = share.connList
+        const impConnList = checkImportContent(content)
+        const impIds = impConnList.map(conn => conn.id)
+        const newConnList = []
+        newConnList.push(...oldConnList.filter(conn => !impIds.includes(conn.id)))
+        newConnList.push(...impConnList)
+        share.connList = newConnList
+        ElMessage.success('导入成功')
+      } catch (e) {
+        ElMessageBox.alert(e.message, '导入失败', {type: 'error'})
+      }
+    }
   }
+}
+
+function checkImportContent(content) {
+  let connList
+  try {
+    connList = JSON.parse(content)
+  } catch (e) {
+    throw new Error('文件JSON解析错误')
+  }
+  // 数组检查
+  if (!Array.isArray(connList) || connList.length === 0) {
+    throw new Error('文件不包含有效连接')
+  }
+
+  // 属性检查（简单检查）
+  connList.forEach(conn => {
+    if (!conn.id || !conn.name || !conn.host || !conn.port) {
+      throw new Error('文件连接格式错误')
+    }
+  })
+
+  return connList
 }
 </script>
 
