@@ -56,8 +56,13 @@ const emptyText = ref('没有数据')
 const treeData = computed(() => {
   const root = buildTree(filterKeyList)
   root.forEach(node => countLeaves(node))
-  // 排序: 目录下的键个数，名称
-  root.sort((n1, n2) =>  n2.keyCount - n1.keyCount === 0 ? (n2.id > n1.id ? -1 : 1) : n2.keyCount - n1.keyCount)
+  root.sort((n1, n2) =>  {
+    // 文件夹在上面，叶子在下面（将叶子节点的数量归零，避免和只有1个键的文件夹混在一起）
+    const n1Count = n1.children.length > 0 ? n1.keyCount : 0
+    const n2Count = n2.children.length > 0 ? n2.keyCount : 0
+    // 文件夹按照键数量排序, 键数量相同时按照名称排序
+    return n2Count - n1Count === 0 ? (n2.id > n1.id ? -1 : 1 ): n2Count - n1Count
+  })
   return root
 })
 
