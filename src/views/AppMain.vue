@@ -1,9 +1,9 @@
 <script setup>
 import {load} from '@tauri-apps/plugin-store'
-import TagMain from './TagMain.vue'
+import TabMain from './TabMain.vue'
 import {sortBy} from 'lodash'
 import {bus, CONN_REFRESH, invoke_then, STORE_CONN_LIST, STORE_FILE_NAME} from '@/utils/util.js'
-import TagConn from '@/views/TagConn.vue'
+import TabConn from '@/views/TabConn.vue'
 import KeyHeader from '@/views/KeyHeader.vue'
 import KeyMain from '@/views/KeyMain.vue'
 import {onMounted} from 'vue'
@@ -97,8 +97,8 @@ watch(connListToString, async (newConnList) => {
 
       <!-- 右侧值 -->
       <el-splitter-panel :min="250">
-        <TagConn     v-if="!share.conn"/>
-        <TagMain v-else-if="connPrepared"/>
+        <TabConn     v-if="!share.conn"/>
+        <TabMain v-else-if="connPrepared"/>
       </el-splitter-panel>
     </el-splitter>
   </div>

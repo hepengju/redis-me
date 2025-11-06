@@ -1,15 +1,15 @@
 <script setup>
-import RedisInfo from './tag/RedisInfo.vue'
-import RedisValue from './tag/RedisValue.vue'
-import RedisSlow from './tag/RedisSlow.vue'
-import RedisMemory from './tag/RedisMemory.vue'
-import RedisTerminal from './tag/RedisTerminal.vue'
-import RedisConfig from './tag/RedisConfig.vue'
-import RedisClient from './tag/RedisClient.vue'
-import RedisMonitor from './tag/RedisMonitor.vue'
-import RedisPubsub from './tag/RedisPubsub.vue'
-// import RedisDemo from '@/views/tag/RedisDemo.vue'
-// import RedisTauri from './tag/RedisTauri.vue'
+import RedisInfo from './tab/RedisInfo.vue'
+import RedisValue from './tab/RedisValue.vue'
+import RedisSlow from './tab/RedisSlow.vue'
+import RedisMemory from './tab/RedisMemory.vue'
+import RedisTerminal from './tab/RedisTerminal.vue'
+import RedisConfig from './tab/RedisConfig.vue'
+import RedisClient from './tab/RedisClient.vue'
+import RedisMonitor from './tab/RedisMonitor.vue'
+import RedisPubsub from './tab/RedisPubsub.vue'
+// import RedisDemo from '@/views/tab/RedisDemo.vue'
+// import RedisTauri from './tab/RedisTauri.vue'
 
 // 共享数据
 const share = inject('share')
