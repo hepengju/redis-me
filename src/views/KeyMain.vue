@@ -42,6 +42,8 @@ const keyTypeList = [
 const keyType = ref({value: 'ALL', type: 'info'})    // 键类型
 function chooseKeyType(keyTypeSelected) {
   keyType.value = keyTypeSelected
+  keyword.value = ''
+  scanKey(false, false)
 }
 
 // 查询框: SCAN cursor [MATCH pattern] [COUNT count] [TYPE type]
