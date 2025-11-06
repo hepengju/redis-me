@@ -6,6 +6,7 @@ import {bus, CONN_REFRESH, invoke_then, STORE_CONN_LIST, STORE_FILE_NAME} from '
 import RedisConn from '@/views/RedisConn.vue'
 import KeyHeader from '@/views/KeyHeader.vue'
 import KeyMain from '@/views/KeyMain.vue'
+import {onMounted} from 'vue'
 
 // 共享数据
 const share = reactive({
@@ -19,9 +20,13 @@ const share = reactive({
 
 provide('share', share)
 
-// 导入存储的连接信息 ==> 顶层await, 需要包含在Suspense组件中
-let store = await load(STORE_FILE_NAME)
-share.connList = await store.get(STORE_CONN_LIST) || []
+// 导入存储的连接信息
+let store
+async function loadStore() {
+  store = await load(STORE_FILE_NAME)
+  share.connList = await store.get(STORE_CONN_LIST) || []
+}
+onMounted(() => loadStore())
 
 // 当环境发生变化时，销毁整个key和tag组件（避免状态保留）
 onMounted(() => bus.on(CONN_REFRESH, toggleKeyTag))
