@@ -64,6 +64,8 @@ api_model!( ScanParam {
     #[serde(rename = "match")]
     pattern: String,
     count: u64,
+
+    #[serde(rename = "type")]
     scan_type: Option<String>,
 
     cursor: Option<ScanCursor>,

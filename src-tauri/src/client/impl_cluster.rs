@@ -118,7 +118,7 @@ impl RedisMeClient for RedisMeCluster {
                     .arg("count")
                     .arg(batch_count);
 
-                if let Some(ref scan_type) = param.scan_type {
+                if let Some(ref scan_type) = param.scan_type && !scan_type.is_empty() {
                     cmd.arg("type").arg(scan_type);
                 }
 
