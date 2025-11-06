@@ -1,13 +1,13 @@
 #![cfg_attr(test, allow(warnings))] // 整个文件在测试时禁用该警告
 
 use crate::api_model;
-use crate::utils::util::{vec8_to_display_string, AnyResult};
+use crate::utils::conn::{get_client_cluster, get_client_single};
+use crate::utils::util::{AnyResult, vec8_to_display_string};
 use redis::{RedisWrite, ToRedisArgs, ToSingleRedisArg};
 use serde::{Deserialize, Serialize};
-use crate::utils::conn::{get_client_cluster, get_client_single};
 
 // 数据库信息
-api_model!( RedisDB {
+api_model!(RedisDB {
     db: u8,
     name: String,
     size: u64,
@@ -39,14 +39,14 @@ impl RedisConn {
     }
 }
 
-api_model!( SslOption {
+api_model!(SslOption {
     key: String,
     cert: String,
     ca: String,
 });
 
 // 信息 info命令
-api_model!( RedisInfo {
+api_model!(RedisInfo {
     node: String,
     info: String,
 });
@@ -163,9 +163,8 @@ impl ToRedisArgs for RedisKey {
 }
 impl ToSingleRedisArg for RedisKey {}
 
-
 // Redis值
-api_model!( RedisValue {
+api_model!(RedisValue {
     #[serde(rename = "type")]
     key_type: String,
     ttl: i64,
@@ -180,7 +179,7 @@ api_model!( RedisBatchDelete {
 });
 
 // Zset条目
-api_model!( RedisZetItem {
+api_model!(RedisZetItem {
     value: String,
     score: f64,
 });
@@ -200,7 +199,7 @@ api_model!( RedisFieldAdd {
 });
 
 // 字段修改
-api_model!( RedisFieldSet {
+api_model!(RedisFieldSet {
     key: RedisKey,
     src_field_value: String,
     field_index: isize,
@@ -210,14 +209,14 @@ api_model!( RedisFieldSet {
 });
 
 // 字段值
-api_model!( RedisFieldValue {
+api_model!(RedisFieldValue {
     field_key: String,
     field_value: String,
     field_score: f64,
 });
 
 // 字段删除
-api_model!( RedisFieldDel {
+api_model!(RedisFieldDel {
     key: RedisKey,
     field_index: isize,
     field_key: String,
@@ -232,7 +231,7 @@ api_model!( RedisCommand {
 });
 
 // 慢日志
-api_model!( RedisSlowLog {
+api_model!(RedisSlowLog {
     node: String,
     id: u64,
     time: String,
@@ -252,7 +251,7 @@ api_model!( RedisMemoryParam {
     scan_count: u64,   // 每次扫描, 推荐: 1000
     scan_total: u64,   // 扫描数量限制, 推荐: 10000
     sleep_millis: u64, // 扫描间隔, 推荐: 1000
-    
+
     need_key_type: Option<bool>, // 是否需要返回键类型
 });
 
@@ -313,21 +312,19 @@ api_model!( RedisClientInfo {
     io_thread: Option<String>,       // 分配给客户端的 I/O 线程 ID。在 Redis 8.0 中添加
 });
 
-api_model!( SubscribeEvent {
+api_model!(SubscribeEvent {
     id: String,
     datetime: String,
     channel: String,
     message: String
 });
 
-
-
 //~~~~~ 自定义Vec<u8>序列化为Base64字符串
 mod v8_base64 {
     use base64::Engine;
     use base64::prelude::BASE64_STANDARD;
-    use serde::{Deserialize, Deserializer, Serializer};
     use serde::de::Error;
+    use serde::{Deserialize, Deserializer, Serializer};
 
     pub fn serialize<S>(bytes: &Vec<u8>, serializer: S) -> Result<S::Ok, S::Error>
     where
@@ -342,7 +339,8 @@ mod v8_base64 {
         D: Deserializer<'de>,
     {
         let base64_string = String::deserialize(deserializer)?;
-        let bytes = BASE64_STANDARD.decode(base64_string.as_bytes())
+        let bytes = BASE64_STANDARD
+            .decode(base64_string.as_bytes())
             .map_err(|e| Error::custom(format!("Base64 decode error: {}", e)))?;
         Ok(bytes)
     }

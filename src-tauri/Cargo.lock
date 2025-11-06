@@ -3381,6 +3381,7 @@ dependencies = [
  "tauri-plugin-dialog",
  "tauri-plugin-log",
  "tauri-plugin-opener",
+ "tauri-plugin-store",
 ]
 
 [[package]]
@@ -4511,6 +4512,22 @@ dependencies = [
 ]
 
 [[package]]
+name = "tauri-plugin-store"
+version = "2.4.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "59a77036340a97eb5bbe1b3209c31e5f27f75e6f92a52fd9dd4b211ef08bf310"
+dependencies = [
+ "dunce",
+ "serde",
+ "serde_json",
+ "tauri",
+ "tauri-plugin",
+ "thiserror 2.0.17",
+ "tokio",
+ "tracing",
+]
+
+[[package]]
 name = "tauri-runtime"
 version = "2.9.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4744,8 +4761,20 @@ dependencies = [
  "pin-project-lite",
  "signal-hook-registry",
  "socket2",
+ "tokio-macros",
  "tracing",
  "windows-sys 0.61.2",
+]
+
+[[package]]
+name = "tokio-macros"
+version = "2.6.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "af407857209536a95c8e56f8231ef2c2e2aff839b22e07a1ffcbc617e9db9fa5"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn 2.0.108",
 ]
 
 [[package]]

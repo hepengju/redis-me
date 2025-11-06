@@ -1,12 +1,10 @@
 use crate::client::client::RedisMeClient;
 use crate::client::impl_cluster::RedisMeCluster;
 use crate::client::impl_single::RedisMeSingle;
-use crate::utils::conn::get_client_single;
 use crate::utils::model::RedisConn;
 use crate::utils::util::AnyResult;
-use anyhow::{anyhow};
+use anyhow::anyhow;
 use log::info;
-use redis::Connection;
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex, RwLock};
 use tauri::{AppHandle, Manager, State};

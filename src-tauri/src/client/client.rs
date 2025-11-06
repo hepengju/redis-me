@@ -5,7 +5,6 @@ use tauri::AppHandle;
 
 /// RedisME服务接口
 pub trait RedisMeClient: Send + Sync {
-
     fn db_list(&self) -> AnyResult<Vec<RedisDB>>;
 
     fn select_db(&self, db: u8) -> AnyResult<()>;
@@ -60,7 +59,6 @@ pub trait RedisMeClient: Send + Sync {
     fn monitor_stop(&self) -> AnyResult<()>;
 
     fn mock_data(&self, count: u64) -> AnyResult<()>;
-
 }
 
 // 集群和单机共享的方法, 由于Commands不是dyn 兼容的, 无法直接写在父类中(也许有其他办法?)
@@ -103,7 +101,9 @@ macro_rules! implement_common_commands {
                     serde_json::to_value(list)
                 }
                 ValueType::Hash => {
-                    if let Some(hash_key) = hash_key && !hash_key.is_empty() {
+                    if let Some(hash_key) = hash_key
+                        && !hash_key.is_empty()
+                    {
                         let value: Option<String> = conn.hget(&key, &hash_key)?;
                         if let Some(str) = value {
                             serde_json::to_value(str)
@@ -116,7 +116,7 @@ macro_rules! implement_common_commands {
                     }
                 }
                 ValueType::Stream => bail!("stream类型暂不支持获取值"),
-                _ => todo!()
+                _ => todo!(),
             }?;
 
             Ok(RedisValue {
@@ -242,8 +242,8 @@ macro_rules! implement_common_commands {
                     } else {
                         bail!("未知类型: {other}")
                     }
-                },
-                _ => todo!()
+                }
+                _ => todo!(),
             };
 
             if "key" == mode {
@@ -282,8 +282,8 @@ macro_rules! implement_common_commands {
                     } else {
                         bail!("未知类型: {other}")
                     }
-                },
-                _ => todo!()
+                }
+                _ => todo!(),
             };
             Ok(())
         }
@@ -316,8 +316,8 @@ macro_rules! implement_common_commands {
                     } else {
                         bail!("未知类型: {other}")
                     }
-                },
-                _ => todo!()
+                }
+                _ => todo!(),
             };
             Ok(())
         }

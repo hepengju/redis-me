@@ -32,7 +32,6 @@ pub struct RedisMeCluster {
 }
 
 impl RedisMeClient for RedisMeCluster {
-
     fn db_list(&self) -> AnyResult<Vec<RedisDB>> {
         Ok(vec![])
     }
@@ -304,7 +303,9 @@ impl RedisMeClient for RedisMeCluster {
         let mut clients = vec![];
         for redis_node in &self.node_list {
             // 如果参数中包含节点参数，则只返回指定节点的慢日志
-            if let Some(ref node_limit) = node && !node_limit.is_empty() {
+            if let Some(ref node_limit) = node
+                && !node_limit.is_empty()
+            {
                 if *node_limit != redis_node.node {
                     continue;
                 }
@@ -314,7 +315,9 @@ impl RedisMeClient for RedisMeCluster {
 
             let mut cmd = redis::cmd("client");
             cmd.arg("list");
-            if let Some(ref client_type_val) = client_type && !client_type_val.is_empty() {
+            if let Some(ref client_type_val) = client_type
+                && !client_type_val.is_empty()
+            {
                 cmd.arg("type").arg(client_type_val);
             }
             let value = conn.route_command(&cmd, route)?;
@@ -332,20 +335,26 @@ impl RedisMeClient for RedisMeCluster {
     fn subscribe(&self, app_handle: AppHandle, channel: Option<String>) -> AnyResult<()> {
         let mut conn = get_client_single(&self.conf)?.get_connection()?;
         set_client_name(&mut conn)?;
-        self.subscribe_running.store( true, Ordering::Relaxed);
+        self.subscribe_running.store(true, Ordering::Relaxed);
         let r = self.subscribe_running.clone();
 
         let id = self.id.clone();
         let _: JoinHandle<AnyResult<()>> = thread::spawn(move || {
             let mut pubsub = conn.as_pubsub();
-            let channel = channel.filter(|c| !c.is_empty()).unwrap_or_else(|| "*".into());
+            let channel = channel
+                .filter(|c| !c.is_empty())
+                .unwrap_or_else(|| "*".into());
             pubsub.psubscribe(&channel)?;
 
             info!("subscribe start: {}", &channel);
             while r.load(Ordering::Relaxed) {
                 let msg = pubsub.get_message()?;
                 let payload: String = msg.get_payload()?;
-                info!("subscribe channel '{}': {}", msg.get_channel_name(), payload);
+                info!(
+                    "subscribe channel '{}': {}",
+                    msg.get_channel_name(),
+                    payload
+                );
                 let event = SubscribeEvent {
                     id: id.clone(),
                     datetime: Local::now().format("%Y-%m-%d %H:%M:%S%.3f").to_string(),
@@ -361,7 +370,7 @@ impl RedisMeClient for RedisMeCluster {
     }
 
     fn subscribe_stop(&self) -> AnyResult<()> {
-        self.subscribe_running.store( false, Ordering::Relaxed);
+        self.subscribe_running.store(false, Ordering::Relaxed);
         // 由于pubsub.get_message()是阻塞的, 所以此处需要再发送一个消息才能结束
         // 如果订阅的频道不是*, 需要发送到指定频道才能结束
         self.publish(REDIS_ME_SUBSCRIBE_STOP_CHANNEL, "")?;
@@ -378,7 +387,6 @@ impl RedisMeClient for RedisMeCluster {
         Ok(())
     }
 }
-
 
 // 个性化方法
 impl RedisMeCluster {
@@ -399,8 +407,8 @@ impl RedisMeCluster {
             conn: Mutex::new(conn),
             node_list,
             db: Arc::new(AtomicU8::new(0)),
-            subscribe_running: Arc::new(AtomicBool::new( false)),
-            monitor_running: Arc::new(AtomicBool::new( false))
+            subscribe_running: Arc::new(AtomicBool::new(false)),
+            monitor_running: Arc::new(AtomicBool::new(false)),
         }))
     }
 

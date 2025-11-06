@@ -8,9 +8,9 @@ pub mod state;
 mod tests {
     use crate::client::client::RedisMeClient;
     use crate::client::impl_cluster::RedisMeCluster;
-    use crate::utils::model::{RedisCommand, RedisConn, RedisFieldAdd, RedisFieldValue, RedisMemoryParam, ScanCursor, ScanParam};
-    use redis::cluster::{ClusterClient, ClusterPipeline};
+    use crate::utils::model::*;
     use redis::TlsMode;
+    use redis::cluster::{ClusterClient, ClusterPipeline};
 
     fn client() -> Box<dyn RedisMeClient> {
         let conn = RedisConn {
@@ -194,7 +194,7 @@ mod tests {
                 scan_count: 1000,
                 scan_total: 10000,
                 sleep_millis: 0,
-                need_key_type: Some(true)
+                need_key_type: Some(true),
             })
             .unwrap();
         println!("{result:#?}");

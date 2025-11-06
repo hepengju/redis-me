@@ -2,10 +2,8 @@ use crate::api_commands;
 use crate::client::state::ClientAccess;
 use crate::utils::model::*;
 use crate::utils::util::*;
-use log::info;
 use std::collections::HashMap;
 use tauri::{command, AppHandle};
-use crate::utils::conn::{get_client_cluster, get_client_single};
 
 // 默认示例
 // Learn more about Tauri commands at https://tauri.app/develop/calling-rust/

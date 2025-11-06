@@ -2,13 +2,11 @@ use crate::utils::model::{RedisClientInfo, RedisKeySize, RedisSlowLog};
 use anyhow::bail;
 use chrono::DateTime;
 use log::error;
+use rand::Rng;
 use rand::distr::{Alphanumeric, SampleString};
 use rand::prelude::IteratorRandom;
-use rand::Rng;
 use redis::{FromRedisValue, Value};
 use std::collections::HashMap;
-use base64::Engine;
-use base64::prelude::BASE64_STANDARD;
 
 // 统一应用返回值
 pub type AnyResult<T> = anyhow::Result<T>;
@@ -73,8 +71,7 @@ pub fn vec8_to_display_string(bytes: &[u8]) -> String {
 
 // 辅助函数
 pub fn tuple_to_key_size(keys: Vec<(Vec<u8>, u64, String)>) -> Vec<RedisKeySize> {
-    let mut key_list: Vec<RedisKeySize> = keys.into_iter()
-        .map(RedisKeySize::from).collect();
+    let mut key_list: Vec<RedisKeySize> = keys.into_iter().map(RedisKeySize::from).collect();
     key_list.sort_by_key(|x| x.size);
     key_list.reverse();
     key_list
@@ -213,8 +210,8 @@ pub fn parse_client_info(client_info: &str) -> AnyResult<RedisClientInfo> {
 mod tests {
     use super::*;
     use crate::utils::model::RedisKey;
-    use base64::prelude::BASE64_STANDARD;
     use base64::Engine;
+    use base64::prelude::BASE64_STANDARD;
 
     #[test]
     fn test_serde() -> AnyResult<()> {

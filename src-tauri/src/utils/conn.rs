@@ -47,7 +47,8 @@ pub fn get_client_cluster(conn: &RedisConn) -> AnyResult<ClusterClient> {
         builder = builder.password(conn.password.clone());
     }
     if conn.ssl {
-        builder = builder.danger_accept_invalid_hostnames(true)
+        builder = builder
+            .danger_accept_invalid_hostnames(true)
             .tls(TlsMode::Insecure);
         let certs = get_tls_certs(conn.ssl_option.clone())?;
         if let Some(certs) = certs {
@@ -65,11 +66,11 @@ pub fn get_client_cluster(conn: &RedisConn) -> AnyResult<ClusterClient> {
 // 获取证书
 fn get_tls_certs(ssl_option: Option<SslOption>) -> AnyResult<Option<TlsCertificates>> {
     if ssl_option.is_none() {
-        return Ok(None)
+        return Ok(None);
     }
     let ssl_option = ssl_option.unwrap();
     if ssl_option.key.is_empty() && ssl_option.cert.is_empty() && ssl_option.ca.is_empty() {
-        return Ok(None)
+        return Ok(None);
     };
     let cert_vec8 = fs::read(ssl_option.cert).context("公钥文件读取失败")?;
     let key_vec8 = fs::read(ssl_option.key).context("私钥文件读取失败")?;
@@ -79,12 +80,10 @@ fn get_tls_certs(ssl_option: Option<SslOption>) -> AnyResult<Option<TlsCertifica
         Some(fs::read(ssl_option.ca).context("授权文件读取失败")?)
     };
     let certs = TlsCertificates {
-        client_tls: Some(
-            ClientTlsConfig {
-                client_cert: cert_vec8,
-                client_key: key_vec8,
-            }
-        ),
+        client_tls: Some(ClientTlsConfig {
+            client_cert: cert_vec8,
+            client_key: key_vec8,
+        }),
         root_cert,
     };
     Ok(Some(certs))
@@ -92,7 +91,10 @@ fn get_tls_certs(ssl_option: Option<SslOption>) -> AnyResult<Option<TlsCertifica
 
 // 设置客户端名称
 pub fn set_client_name(conn: &mut dyn ConnectionLike) -> AnyResult<()> {
-    let _: () = redis::cmd("CLIENT").arg("SETNAME").arg("RedisME").query(conn)?;
+    let _: () = redis::cmd("CLIENT")
+        .arg("SETNAME")
+        .arg("RedisME")
+        .query(conn)?;
     Ok(())
 }
 
@@ -115,7 +117,6 @@ pub fn set_client_name(conn: &mut dyn ConnectionLike) -> AnyResult<()> {
 //         .build(client)?;
 //     Ok(pool)
 // }
-
 
 #[cfg(test)]
 mod tests {
@@ -158,7 +159,7 @@ mod tests {
     }
 
     #[test]
-    fn test_cluster() -> AnyResult<()>{
+    fn test_cluster() -> AnyResult<()> {
         let mut redis_conn = RedisConn {
             id: "cluster".to_string(),
             name: "集群".to_string(),
