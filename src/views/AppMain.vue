@@ -22,15 +22,20 @@ const share = reactive({
 provide('share', share)
 
 // 导入存储的连接信息
-let initConnList = false
+let initConnListReady = false
 async function loadStore() {
   // markRaw 将一个对象标记为不可被转为代理。返回该对象本身。
   // 避免报错: Cannot read private member from an object whose class did not declare it
-  const store = await load(STORE_FILE_NAME)
-  share.store = markRaw(store)
-  share.connList = await share.store.get(STORE_CONN_LIST) || []
-  nextTick(() => {
-    initConnList = true
+  try {
+    const store = await load(STORE_FILE_NAME)
+    share.store = markRaw(store)
+    share.connList = await share.store.get(STORE_CONN_LIST) || []
+  } catch (e) {
+    console.error('加载存储文件失败', e)
+  }
+
+  await nextTick(() => {
+    initConnListReady = true
   })
 }
 onMounted(() => loadStore())
@@ -69,8 +74,10 @@ watch(() => share.conn, async (newConn, oldConn) => {
 // 保存连接列表: 列表真实变化时才发送命令
 const connListToString = computed(() => JSON.stringify(share.connList))
 watch(connListToString, async (newConnList) => {
-  if (initConnList) {
-    await invoke_then('conn_list', {connList: JSON.parse(newConnList)})
+  // 应用启动读取到所有连接信息发送给后端
+  await invoke_then('conn_list', {connList: JSON.parse(newConnList)})
+  if (initConnListReady) {
+    // 首次读取无需写入，后续有变化时才需写入
     await share.store?.set(STORE_CONN_LIST, share.connList)
   }
 })

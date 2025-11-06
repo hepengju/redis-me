@@ -58,7 +58,6 @@ function deleteConn(conn) {
 const selectConn = debounce(async (conn) => {
   // 测试连接成功后再发送所有连接信息到后端，AppMain中监控连接变化自动处理
   await invoke_then('test_conn', {redisConn: conn})
-  await invoke_then('conn_list', {connList: share.connList})
   share.conn = conn
 }, 200)
 
@@ -89,6 +88,15 @@ function rowDrag() {
 }
 onMounted(() => rowDrag())
 // rowDrag()
+
+// 扩展功能
+function handleCommand(command){
+  if (command === 'export') {
+
+  } else if (command === 'import') {
+
+  }
+}
 </script>
 
 <template>
@@ -98,6 +106,19 @@ onMounted(() => rowDrag())
         <el-button icon="el-icon-plus" type="primary" @click="addConn">新增连接</el-button>
       </div>
       <div>
+        <el-dropdown placement="bottom-start" @command="handleCommand" style="margin-right: 10px">
+          <el-button>...</el-button>
+          <template #dropdown>
+            <el-dropdown-menu>
+              <el-dropdown-item command="export" :disabled="share.connList.length === 0 ">
+                <me-icon name="导出" icon="el-icon-upload"/>
+              </el-dropdown-item>
+              <el-dropdown-item command="import">
+                <me-icon name="导入" icon="el-icon-download"/>
+              </el-dropdown-item>
+            </el-dropdown-menu>
+          </template>
+        </el-dropdown>
         <el-input v-model="keyword" placeholder="模糊筛选（名称、主机）" style="width: 300px; margin-right: 10px" clearable/>
       </div>
     </div>
