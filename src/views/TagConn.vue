@@ -1,6 +1,6 @@
 <script setup>
 import {invoke_then, PREDEFINE_COLORS} from '@/utils/util.js'
-import SaveConn from '@/views/ext/SaveConn.vue'
+import ConnSave from '@/views/ext/ConnSave.vue'
 import {nextTick, useTemplateRef} from 'vue'
 import {debounce} from 'lodash'
 import {Sortable} from 'sortablejs'
@@ -229,7 +229,7 @@ function checkImportContent(content) {
       </el-table-column>
     </el-table>
 
-    <SaveConn ref="conn" v-if="dialog.conn" @closed="dialog.conn = false"/>
+    <ConnSave ref="conn" v-if="dialog.conn" @closed="dialog.conn = false"/>
   </div>
 </template>
 
