@@ -128,7 +128,7 @@ export function meFilterHandler(value, row, column){
 }
 
 // 删除键
-export function commonDeleteKey(id, redisKey, thenFn) {
+export function meDeleteKey(id, redisKey, thenFn) {
   meConfirm(`确定删除键【${redisKey.key}】吗？`, async () => {
     await meInvoke('del', {id, key: redisKey})
     bus.emit(KEY_DELETE, redisKey)

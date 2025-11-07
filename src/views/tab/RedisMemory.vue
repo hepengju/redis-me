@@ -2,7 +2,7 @@
 // 官网参考: https://redis.ac.cn/docs/latest/commands/slowlog-get/
 import {
   bus,
-  commonDeleteKey,
+  meDeleteKey,
   meFilterHandler,
   KEY_REFRESH,
   meConfirm,
@@ -98,7 +98,7 @@ function chooseKey(redisKey) {
 
 // 删除键
 async function delKey(redisKey) {
-  commonDeleteKey(share.conn.id, redisKey, () => {
+  meDeleteKey(share.conn.id, redisKey, () => {
     dataList.value = dataList.value.filter(rk => rk.bytes !== redisKey.bytes)
   })
 }

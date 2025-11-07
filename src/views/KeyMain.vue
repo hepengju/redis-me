@@ -2,7 +2,7 @@
 import ListKey from './key/ListKey.vue'
 import TreeKey from './key/TreeKey.vue'
 import {computed, ref} from 'vue'
-import {bus, commonDeleteKey, CONN_REFRESH, meCopy, KEY_DELETE, meInvoke, KEY_REFRESH, meOk} from '@/utils/util.js'
+import {bus, meDeleteKey, CONN_REFRESH, meCopy, KEY_DELETE, meInvoke, KEY_REFRESH, meOk} from '@/utils/util.js'
 import FieldAdd from '@/views/ext/FieldAdd.vue'
 import KeyBatchDel from './key/KeyBatchDel.vue'
 import KeyMemory from './key/KeyMemory.vue'
@@ -144,7 +144,7 @@ function contextKey(command, redisKey) {
   } else if (command == 'copyKey') {
     meCopy(redisKey.key)
   } else if (command == 'deleteKey') {
-    commonDeleteKey(share.conn.id, redisKey)
+    meDeleteKey(share.conn.id, redisKey)
   } else {
     meOk(`TODO: 键右键 ${command}`)
   }

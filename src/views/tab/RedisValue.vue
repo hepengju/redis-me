@@ -1,6 +1,6 @@
 <script setup>
 import {capitalize} from 'lodash'
-import {bus, commonDeleteKey, KEY_DELETE, KEY_REFRESH, meCopy, meHumanSize, meInvoke, meOk} from '@/utils/util.js'
+import {bus, meDeleteKey, KEY_DELETE, KEY_REFRESH, meCopy, meHumanSize, meInvoke, meOk} from '@/utils/util.js'
 import FieldAdd from '../ext/FieldAdd.vue'
 import FieldSet from '../ext/FieldSet.vue'
 
@@ -135,7 +135,7 @@ function deleteKey() {
 }
 
 function delKey() {
-  commonDeleteKey(share.conn.id, share.redisKey)
+  meDeleteKey(share.conn.id, share.redisKey)
 }
 
 // 保存值
