@@ -17,7 +17,7 @@ const canEdit = computed(() => true)
 </script>
 
 <template>
-  <el-tabs class="redis-tag" v-model="share.tabName" type="border-card">
+  <el-tabs class="redis-tag" v-model="share.tabName">
     <!--
     <el-tab-pane name="tauri" lazy>
       <template #label>
@@ -74,14 +74,20 @@ const canEdit = computed(() => true)
 <style scoped lang="scss">
 .redis-tag {
   //border: 2px solid red;
+  border: 1px solid var(--el-border-color);
+  padding: 0 10px 10px 10px;
   height: 100%;
+
+  //:deep(.el-tabs--border-card) {
+  //  border: 1px solid var(--el-border-color);
+  //}
 
   :deep(.el-tab-pane) {
     height: 100%;
   }
 
-  :deep(.el-tabs__new-tab) {
-    border: none;
-  }
+  //:deep(.el-tabs__new-tab) {
+  //  border: none;
+  //}
 }
 </style>
