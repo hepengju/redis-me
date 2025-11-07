@@ -1,9 +1,9 @@
 <script setup>
-import { invoke } from '@tauri-apps/api/core';
-import {mockApiCommands} from "@/utils/api-mock.js";
+import {invoke} from '@tauri-apps/api/core'
+import {mockApiCommands} from '@/utils/mock.js'
 
 // 测试集群或单机
-let testClient = "single"
+let testClient = 'single'
 let apiCommands = mockApiCommands.map(c => {
   c.param.id = testClient
   return c
@@ -19,21 +19,21 @@ const param = ref('{"name": "RedisME"}')
 
 function selectChange(item) {
   param.value = JSON.stringify(item.param, null, 2)
-  apiCommand.value =  item
+  apiCommand.value = item
 }
 
 const result = ref('')
 const hint = ref('')
 const loading = ref(false)
 
-function invokeCommand(){
+function invokeCommand() {
   let paramJson = {}
   if (param.value) {
     try {
       paramJson = JSON.parse(param.value)
     } catch (e) {
-      hint.value = "参数解析错误（确认是否Json格式）"
-      result.value = "" + e
+      hint.value = '参数解析错误（确认是否Json格式）'
+      result.value = '' + e
       return
     }
   }
@@ -42,12 +42,12 @@ function invokeCommand(){
   invoke(apiCommand.value.command, paramJson)
       .then(data => {
         loading.value = false
-        hint.value = "命令执行成功"
+        hint.value = '命令执行成功'
         result.value = data ? JSON.stringify(data, null, 2) : ''
       })
       .catch(error => {
         loading.value = false
-        hint.value = "命令执行报错"
+        hint.value = '命令执行报错'
         result.value = error
       })
 }
@@ -74,7 +74,7 @@ function invokeCommand(){
 
         <el-form-item label="提示">
           <div class="me-flex" style="width: 100%">
-            <el-text type="success">{{hint}}</el-text>
+            <el-text type="success">{{ hint }}</el-text>
             <el-button type="primary" @click="invokeCommand">验证</el-button>
           </div>
         </el-form-item>
