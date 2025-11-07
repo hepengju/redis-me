@@ -83,20 +83,22 @@ macro_rules! implement_common_commands {
                     let value: String = vec8_to_display_string(&value);
                     serde_json::to_value(value)
                 }
-                // TODO 无效UTF8字符串的显示与处理
+                // 注意: 原始返回的信息用Vec<u8>接收，再手动转换为String，避免无效UTF8字符串时直接报错
                 ValueType::List => {
-                    let value: Vec<String> = conn.lrange(&key, 0, -1)?;
+                    let value: Vec<Vec<u8>> = conn.lrange(&key, 0, -1)?;
+                    let value: Vec<String> = value.iter().map(|v| vec8_to_display_string(v)).collect();
                     serde_json::to_value(value)
                 }
                 ValueType::Set => {
-                    let value: HashSet<String> = conn.smembers(&key)?;
+                    let value: HashSet<Vec<u8>> = conn.smembers(&key)?;
+                    let value: Vec<String> = value.iter().map(|v| vec8_to_display_string(v)).collect();
                     serde_json::to_value(value)
                 }
                 ValueType::ZSet => {
-                    let value: Vec<(String, f64)> = conn.zrange_withscores(&key, 0, -1)?;
+                    let value: Vec<(Vec<u8>, f64)> = conn.zrange_withscores(&key, 0, -1)?;
                     let list: Vec<RedisZetItem> = value
                         .into_iter()
-                        .map(|(value, score)| RedisZetItem { value, score })
+                        .map(|(value, score)| RedisZetItem { value: vec8_to_display_string(&value), score })
                         .collect();
                     serde_json::to_value(list)
                 }
@@ -104,14 +106,20 @@ macro_rules! implement_common_commands {
                     if let Some(hash_key) = hash_key
                         && !hash_key.is_empty()
                     {
-                        let value: Option<String> = conn.hget(&key, &hash_key)?;
+                        let value: Option<Vec<u8>> = conn.hget(&key, &hash_key)?;
                         if let Some(str) = value {
-                            serde_json::to_value(str)
+                            let value: String = vec8_to_display_string(&str);
+                            serde_json::to_value(value)
                         } else {
                             bail!("哈希键不存在: {}", hash_key)
                         }
                     } else {
-                        let value: HashMap<String, String> = conn.hgetall(&key)?;
+                        let value: HashMap<Vec<u8>, Vec<u8>> = conn.hgetall(&key)?;
+                        let value = value.into_iter().map(|(key, value)| {
+                            let key: String = vec8_to_display_string(&key);
+                            let value: String = vec8_to_display_string(&value);
+                            (key, value)
+                        }).collect::<HashMap<String, String>>();
                         serde_json::to_value(value)
                     }
                 }
