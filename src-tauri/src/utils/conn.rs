@@ -27,7 +27,7 @@ pub fn get_client_single(conn: &RedisConn) -> AnyResult<Client> {
         Client::open(redis_url)?
     };
     // 测试连接是否可以成功，注意超时时间比较短，用户可以快速感知到。此连接使用后丢弃即可
-    let mut conn = client.get_connection_with_timeout(Duration::from_secs(1))?;
+    let mut conn = client.get_connection_with_timeout(Duration::from_secs(3))?;
     let _ = conn.ping()?;
     info!("Redis单机连接成功");
     Ok(client)
@@ -56,7 +56,7 @@ pub fn get_client_cluster(conn: &RedisConn) -> AnyResult<ClusterClient> {
         };
     }
     let client = builder.build()?;
-    let cc = ClusterConfig::new().set_connection_timeout(Duration::from_secs(1));
+    let cc = ClusterConfig::new().set_connection_timeout(Duration::from_secs(3));
     let mut conn = client.get_connection_with_config(cc)?;
     let _ = conn.ping()?;
     info!("测试集群连接成功");
