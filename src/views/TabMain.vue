@@ -19,14 +19,6 @@ const canEdit = computed(() => true)
 <template>
   <el-tabs class="redis-tag" v-model="share.tabName" type="border-card">
     <!--
-    <el-tab-pane name="demo">
-      <template #label>
-        <me-icon name="测试" icon="el-icon-calendar"/>
-      </template>
-      <RedisDemo/>
-    </el-tab-pane>-->
-
-    <!--
     <el-tab-pane name="tauri" lazy>
       <template #label>
         <me-icon name="Tauri" icon="el-icon-data-line"/>
@@ -56,32 +48,11 @@ const canEdit = computed(() => true)
       <RedisTerminal/>
     </el-tab-pane>
 
-    <el-tab-pane name="config" lazy>
-      <template #label>
-        <me-icon name="配置" icon="el-icon-wallet"/>
-      </template>
-      <RedisConfig/>
-    </el-tab-pane>
-
-    <el-tab-pane name="memory" lazy v-if="canEdit">
-      <template #label>
-        <me-icon name="内存" icon="me-icon-memory"/>
-      </template>
-      <RedisMemory/>
-    </el-tab-pane>
-
     <el-tab-pane name="slow" lazy>
       <template #label>
         <me-icon name="慢日志" icon="me-icon-slow"/>
       </template>
       <RedisSlow/>
-    </el-tab-pane>
-
-    <el-tab-pane name="client" lazy>
-      <template #label>
-        <me-icon name="客户端" icon="el-icon-mic"/>
-      </template>
-      <RedisClient/>
     </el-tab-pane>
 
     <el-tab-pane name="monitor" lazy v-if="canEdit">

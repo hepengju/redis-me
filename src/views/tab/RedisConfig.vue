@@ -7,8 +7,11 @@ import {sortBy} from "lodash";
 
 // 共享数据
 const share = inject('share')
+const {initNode} = defineProps({
+  initNode: {type: String, default: ''}
+})
 
-const node = ref(share.nodeList && share.nodeList.length > 0 ? share.nodeList[0].node : '')
+const node = ref(initNode)
 const keyword = ref('')
 const loading = ref(false)
 const dataList = ref([])
@@ -102,9 +105,9 @@ function handleCommand(command){
       </el-table-column>
     </el-table>
 
-    <el-dialog :title="`默认配置：${configVersion}`" v-model="dialog.raw" width="60vw" center align-center draggable>
-      <me-code :value="configRaw" mode="properties" read-only height="60vh" />
-    </el-dialog>
+    <me-dialog icon="me-icon-redis" :title="`${configVersion} 默认配置`" v-model="dialog.raw" width="60vw">
+      <me-code :value="configRaw" mode="properties" read-only />
+    </me-dialog>
   </div>
 </template>
 

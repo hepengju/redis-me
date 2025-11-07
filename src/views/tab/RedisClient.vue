@@ -1,12 +1,15 @@
 <script setup>
-import {onMounted, onUnmounted} from 'vue'
+import {onMounted} from 'vue'
 import NodeList from '@/views/ext/NodeList.vue'
-import {bus, GO_CLIENT, humanSeconds, invoke_then} from '@/utils/util.js'
+import {humanSeconds, invoke_then} from '@/utils/util.js'
 
 // 共享数据
 const share = inject('share')
+const {initNode} = defineProps({
+  initNode: {type: String, default: ''}
+})
 
-const node = ref('')
+const node = ref(initNode)
 const clientType = ref('')
 const keyword = ref('')
 const loading = ref(false)
@@ -42,29 +45,22 @@ function sortChange({prop, order}) {
 async function refresh() {
   loading.value = true
   try {
-    const data = await invoke_then('client_list', {id: share.conn.id, node: node.value, clientType: clientType.value})
+    const params = {id: share.conn.id, node: node.value, clientType: clientType.value}
+    const data = await invoke_then('client_list', params)
     dataList.value = data
   } finally {
     loading.value = false
   }
 }
-
-onMounted(() => refresh())
-
-function eventGoClient(nodeValue) {
-  node.value = nodeValue
-  refresh()
-}
-
-onMounted(() => bus.on(GO_CLIENT, eventGoClient))
-onUnmounted(() => bus.off(GO_CLIENT, eventGoClient))
+refresh()
+// onUnmounted(() => console.log('销毁'))
 </script>
 
 <template>
   <div class="redis-client">
     <div class="me-flex header">
       <div>
-        <node-list v-model="node" style="margin-right: 10px" @change="refresh" init-node/>
+        <node-list v-model="node" style="margin-right: 10px" @change="refresh"/>
         <el-select v-model="clientType" style="width: 120px;margin-right: 10px;" placeholder="客户端类型" clearable>
           <el-option value="NORMAL"/>
           <el-option value="MASTER"/>

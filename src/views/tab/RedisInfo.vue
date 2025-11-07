@@ -2,7 +2,10 @@
 import {useTemplateRef} from 'vue'
 import {infoTip as tips} from '@/utils/tip.js'
 import NodeList from '../ext/NodeList.vue'
-import {bus, GO_CLIENT, invoke_then} from '@/utils/util.js'
+import {invoke_then} from '@/utils/util.js'
+import RedisClient from '@/views/tab/RedisClient.vue'
+import RedisConfig from '@/views/tab/RedisConfig.vue'
+import RedisMemory from '@/views/tab/RedisMemory.vue'
 
 // 共享数据
 const share = inject('share')
@@ -17,7 +20,10 @@ const keyCount = ref(0)      // 键数量
 const keyword = ref('')      // 关键字过滤
 const tagSelected = ref('')  // 选中的标签
 const dialog = reactive({
-  raw: false
+  raw: false,
+  client: false,
+  config: false,
+  memory: false
 })
 const loading = ref(false)
 const config = ref('')
@@ -102,15 +108,15 @@ async function refresh() {
 }
 refresh()
 
+// 客户端、配置、内存
 function goClient() {
-  share.tabName = 'client'
-  nextTick(() => {
-    bus.emit(GO_CLIENT, node.value || infoNode.value)
-  })
+  dialog.client = true
 }
-
+function goConfig() {
+  dialog.config = true
+}
 function goMemory() {
-  share.tabName = 'memory'
+  dialog.memory = true
 }
 </script>
 
@@ -180,7 +186,7 @@ function goMemory() {
         <div class="me-flex">
           {{dic['executable']}}
           <el-text type="info" style="margin-left: 10px">
-            [ 配置: {{dic['config_file']}} ]
+            [ <el-link :underline="false" @click="goConfig" type="primary">配置</el-link>: {{dic['config_file'] || '无'}} ]
           </el-text>
         </div>
       </el-descriptions-item>
@@ -232,8 +238,20 @@ function goMemory() {
     </el-card>
   </div>
 
-  <me-dialog v-model="dialog.raw" title="Info 原始信息"  width="60vw">
+  <me-dialog v-model="dialog.raw"  icon="me-icon-raw" title="Info"  width="60vw">
     <me-code :value="raw" mode="properties" read-only/>
+  </me-dialog>
+
+  <me-dialog v-model="dialog.client" icon="el-icon-mic" title="客户端" width="80vw" >
+    <RedisClient :init-node="node || infoNode"/>
+  </me-dialog>
+
+  <me-dialog v-model="dialog.memory" icon="me-icon-memory" title="内存" width="80vw" >
+    <RedisMemory/>
+  </me-dialog>
+
+  <me-dialog v-model="dialog.config" icon="el-icon-wallet" title="运行配置" width="80vw" >
+    <RedisConfig :init-node="node || infoNode"/>
   </me-dialog>
 </template>
 

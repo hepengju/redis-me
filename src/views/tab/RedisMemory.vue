@@ -16,7 +16,7 @@ const hint = computed(() => {
 `.trim()
 })
 
-const sizeLimitKb = ref(0)
+const sizeLimitKb = ref(100)
 const countLimit = ref(500)
 const scanCount = ref(1000)
 const scanTotal = ref(10000)
@@ -70,6 +70,7 @@ async function refresh() {
     loading.value = false
   }
 }
+refresh()
 
 function memoryUsage() {
   if (scanTotal.value > 10_0000 || scanTotal.value <= 0 || sleepMillis.value > 100) {
@@ -189,6 +190,13 @@ async function batchDelKey() {
                    :disabled="selection.length === 0"
                    @click="batchDelKey" style="margin-left: 10px">批量删除
         </el-button>
+
+        <el-input v-model.number="sizeLimitKb" style="width: 120px; margin-left: 10px">
+          <template #prefix>
+            <div style="margin-right: 10px">&gE;</div>
+          </template>
+          <template #append>Kb</template>
+        </el-input>
       </div>
 
       <div>
