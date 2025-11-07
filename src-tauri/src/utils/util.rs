@@ -28,45 +28,9 @@ pub fn to_api_result<T>(result: anyhow::Result<T>) -> ApiResult<T> {
 }
 
 // 字节数组转字符串: 无效的 UTF-8 字节显示为十六进制转义（如 \xFF） [DeepSeek]
+// 实测十六进制转义并不好用，还是先采用比较简单的方法处理
 pub fn vec8_to_display_string(bytes: &[u8]) -> String {
-    //unsafe { String::from_utf8_unchecked(v) }
-    let mut result = String::new();
-    let mut pos = 0;
-    while pos < bytes.len() {
-        // 尝试将剩余字节解码为 UTF-8
-        match std::str::from_utf8(&bytes[pos..]) {
-            Ok(s) => {
-                // 全部有效，直接追加字符串
-                result.push_str(s);
-                pos = bytes.len();
-            }
-            Err(e) => {
-                // 存在无效字节
-                let valid_up_to = e.valid_up_to();
-                // 处理有效部分
-                if valid_up_to > 0 {
-                    if let Ok(s) = std::str::from_utf8(&bytes[pos..(pos + valid_up_to)]) {
-                        result.push_str(s);
-                    }
-                    pos += valid_up_to;
-                }
-                // 处理无效部分
-                if let Some(error_len) = e.error_len() {
-                    // 逐个转义错误字节（最多处理剩余的字节长度）
-                    let end = std::cmp::min(pos + error_len, bytes.len());
-                    for byte in &bytes[pos..end] {
-                        result.push_str(&format!("\\x{:02x}", byte));
-                    }
-                    pos = end;
-                } else {
-                    // 无法确定错误长度，转义当前字节
-                    result.push_str(&format!("\\x{:02x}", bytes[pos]));
-                    pos += 1;
-                }
-            }
-        }
-    }
-    result
+    String::from_utf8_lossy(bytes).to_string()
 }
 
 // 辅助函数
