@@ -1,8 +1,7 @@
 <script setup>
 import {useVirtualList} from '@vueuse/core'
-import {ElMessage} from 'element-plus'
 import {cloneDeep} from 'lodash'
-import {invoke_then} from "@/utils/util.js";
+import {meInvoke, meOk} from '@/utils/util.js'
 
 const emit = defineEmits(['success', 'closed'])
 defineExpose({open})
@@ -43,8 +42,8 @@ function submit() {
 
     loading.value = true
     try {
-      await invoke_then('batch_del', {id: share.conn.id, param: form.value})
-      ElMessage.success("删除成功")
+      await meInvoke('batch_del', {id: share.conn.id, param: form.value})
+      meOk("删除成功")
       emit('success')
       visible.value = false
     } finally {
@@ -65,7 +64,7 @@ async function scanKey() {
       loadAll: true,
       cursor: null,
     }
-    const data = await invoke_then('scan', {id: share.conn.id, param: params})
+    const data = await meInvoke('scan', {id: share.conn.id, param: params})
     form.value.keyList = data.keyList
     showScan.value = false
   } finally {

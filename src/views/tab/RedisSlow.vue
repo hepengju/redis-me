@@ -1,6 +1,6 @@
 <script setup>
 // 官网参考: https://redis.ac.cn/docs/latest/commands/slowlog-get/
-import {invoke_then} from "@/utils/util.js";
+import {meInvoke} from "@/utils/util.js";
 
 // 共享数据
 const share = inject('share')
@@ -51,13 +51,13 @@ function sortChange({prop, order}) {
 // })
 
 async function apiConfigGet() {
-  const data = await invoke_then('config_get', {id: share.conn.id, pattern: 'slowlog*'})
+  const data = await meInvoke('config_get', {id: share.conn.id, pattern: 'slowlog*'})
   slowerThan.value = data['slowlog-log-slower-than']
   slowerMaxLen.value = data['slowlog-max-len']
 }
 
 async function apiSlowLog() {
-  const data = await invoke_then('slow_log', {id: share.conn.id, count: slowerGetCount.value})
+  const data = await meInvoke('slow_log', {id: share.conn.id, count: slowerGetCount.value})
   dataList.value = data || []
 }
 

@@ -1,8 +1,7 @@
 <script setup>
-import {ElMessage} from 'element-plus'
-import {copy, invoke_then} from '@/utils/util.js'
+import {meConfirm, meCopy, meInvoke, meOk} from '@/utils/util.js'
 import {debounce} from 'lodash'
-import { listen } from '@tauri-apps/api/event';
+import {listen} from '@tauri-apps/api/event'
 
 // 共享数据
 const share = inject('share')
@@ -22,13 +21,13 @@ const filterDataList = computed(() => {
 // 订阅按钮防抖
 const subscribe = debounce(async () => {
   if (subscribing.value) {
-    await invoke_then('subscribe_stop', {id: share.conn.id})
+    await meInvoke('subscribe_stop', {id: share.conn.id})
     subscribing.value = false
-    ElMessage.success('订阅已停止')
+    meOk('订阅已停止')
   } else {
-    await invoke_then('subscribe', {id: share.conn.id, channel: channel.value})
+    await meInvoke('subscribe', {id: share.conn.id, channel: channel.value})
     subscribing.value = true
-    ElMessage.success('订阅已开始')
+    meOk('订阅已开始')
   }
 }, 200)
 
@@ -39,11 +38,15 @@ const sendLoading = ref(false)
 async function publish() {
   sendLoading.value = true
   try {
-    await invoke_then('publish', {id: share.conn.id, channel: sendChannel.value, message: sendMessage.value})
-    ElMessage.success("发布消息成功")
+    await meInvoke('publish', {id: share.conn.id, channel: sendChannel.value, message: sendMessage.value})
+    meOk("发布消息成功")
   } finally {
     sendLoading.value = false
   }
+}
+
+function clearData() {
+  meConfirm('确定清空消息吗？', () => dataList.value = [])
 }
 
 // 监听消息
@@ -66,10 +69,13 @@ onUnmounted(() => {
   <div class="redis-pubsub">
     <div class="me-flex header">
       <div>
-        <el-input v-model="channel" style="width: 200px; margin-right: 10px" placeholder="可选订阅频道"/>
+        <el-input v-model="channel" style="width: 160px; margin-right: 10px"
+                  placeholder="订阅频道" :disabled="subscribing" clearable/>
       </div>
       <div>
         <el-input  v-model="keyword" placeholder="模糊筛选（频道、消息）" style="width: 280px; margin-right: 10px" clearable/>
+        <me-button icon="el-icon-bottom" info="滚动到最新" placement="top"/>
+        <me-button icon="el-icon-delete" info="清空消息" @click="clearData" :disabled="dataList.length === 0" placement="top"/>
         <el-button :icon="subscribing ? 'el-icon-video-pause' : 'el-icon-video-play'"
                    @click="subscribe" type="primary">
           {{subscribing ? '停止订阅' : '开启订阅'}}
@@ -83,7 +89,7 @@ onUnmounted(() => {
         <el-table-column label="消息" prop="message"  show-overflow-tooltip/>
         <el-table-column label="操作" width="60" align="center">
           <template #default="scope">
-            <me-icon info="复制" icon="el-icon-document-copy" class="icon-btn" @click="copy(scope.row.message)"
+            <me-icon info="复制" icon="el-icon-document-copy" class="icon-btn" @click="meCopy(scope.row.message)"
                      style="justify-content: center"/>
           </template>
         </el-table-column>

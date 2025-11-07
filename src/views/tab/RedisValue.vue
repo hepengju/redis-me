@@ -1,10 +1,8 @@
 <script setup>
 import {capitalize} from 'lodash'
-import {bus, copy, KEY_DELETE, humanSize, KEY_REFRESH, commonDeleteKey} from '@/utils/util.js'
-import {ElMessage} from 'element-plus'
+import {bus, commonDeleteKey, KEY_DELETE, KEY_REFRESH, meCopy, meHumanSize, meInvoke, meOk} from '@/utils/util.js'
 import FieldAdd from '../ext/FieldAdd.vue'
 import FieldSet from '../ext/FieldSet.vue'
-import {invoke_then} from "@/utils/util.js";
 
 // 刷新键
 onMounted(() => bus.on(KEY_REFRESH, refreshKey))
@@ -53,7 +51,7 @@ const showValue = computed(() => {
 const showSize = computed(() => {
   const textEncoder = new TextEncoder();
   const length = textEncoder.encode(showValue.value).length
-  return humanSize(length)
+  return meHumanSize(length)
 })
 
 // 表格数据
@@ -94,12 +92,12 @@ watchEffect(() => {
 async function setTTL(){
   const seconds = redisValue.value.ttl
   if (seconds <=0 & seconds != -1) {
-    ElMessage.success("TTL必须为正整数（秒）或 -1（永久） ")
+    meOk("TTL必须为正整数（秒）或 -1（永久） ")
     return
   }
 
-  await invoke_then('ttl', {id: share.conn.id, ttl: seconds, key: share.redisKey})
-  ElMessage.success("设置TTL成功")
+  await meInvoke('ttl', {id: share.conn.id, ttl: seconds, key: share.redisKey})
+  meOk("设置TTL成功")
 }
 
 function resetParam(){
@@ -116,7 +114,7 @@ async function refreshKey(reset = true) {
 
   loading.value = true
   try {
-    const data = await invoke_then('get', {id: share.conn.id, key: share.redisKey, hashKey: hashKey.value})
+    const data = await meInvoke('get', {id: share.conn.id, key: share.redisKey, hashKey: hashKey.value})
     redisValue.value = data
     if (hashKey.value) {
       withHashKey.value = true
@@ -147,8 +145,8 @@ async function setValue() {
     value: redisValue.value.newValue || redisValue.value.value,
     ttl: redisValue.value.ttl
   }
-  await invoke_then('set', {id: share.conn.id, ...params});
-  ElMessage.success('保存成功')
+  await meInvoke('set', {id: share.conn.id, ...params});
+  meOk('保存成功')
 }
 
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -216,8 +214,8 @@ async function fieldDel(row) {
   } else {
     param.fieldIndex = -1  // 其他类型使用不到，但接口需传递
   }
-  await invoke_then('field_del',{id: share.conn.id, param});
-  ElMessage.success('删除成功')
+  await meInvoke('field_del',{id: share.conn.id, param});
+  meOk('删除成功')
   await refreshKey()
 }
 </script>
@@ -231,7 +229,7 @@ async function fieldDel(row) {
             {{capitalize(redisValue.type)}}
           </template>
           <template #append>
-            <me-button info="复制" icon="el-icon-document-copy" @click="copy(share.redisKey.key)" placement="top"/>
+            <me-button info="复制" icon="el-icon-document-copy" @click="meCopy(share.redisKey.key)" placement="top"/>
           </template>
         </el-input>
 
@@ -275,7 +273,7 @@ async function fieldDel(row) {
 
           <el-button-group class="btn-rt" >
             <el-button>Size: {{ showSize }}</el-button>
-            <me-button info="复制" icon="el-icon-document-copy" @click="copy(showValue)"/>
+            <me-button info="复制" icon="el-icon-document-copy" @click="meCopy(showValue)"/>
             <me-button info="默认开启美化，开启后针对hash/list/set/json等进行格式化，关闭后显示原始值toString"
                        placement="bottom-end"
                        icon="el-icon-magic-stick"
@@ -307,7 +305,7 @@ async function fieldDel(row) {
               <el-table-column label="操作" :width="canEdit ? 100 : 60" fixed="right" align="center">
                 <template #default="scope">
                   <div class="me-flex" :style="{justifyContent: canEdit ? 'space-between' : 'center'}">
-                    <me-icon info="复制" icon="el-icon-document-copy" class="icon-btn"  @click.stop="copy(scope.row.value) "/>
+                    <me-icon info="复制" icon="el-icon-document-copy" class="icon-btn"  @click.stop="meCopy(scope.row.value) "/>
                     <me-icon info="编辑" icon="el-icon-edit" class="icon-btn"  @click.stop="fieldSet(scope.row, scope.$index)" v-if="canEdit"/>
                     <el-popconfirm :hide-after="0" title="确定删除吗？" @confirm.stop="fieldDel(scope.row)" v-if="canEdit">
                       <template #reference>

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import {inject, onMounted} from 'vue'
+import {inject} from 'vue'
 
 const share = inject('share')
 const node = defineModel()

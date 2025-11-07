@@ -1,6 +1,6 @@
 <script setup>
 import NodeList from '../ext/NodeList.vue'
-import {invoke_then} from '@/utils/util.js'
+import {meInvoke} from '@/utils/util.js'
 import MeIcon from '@/components/MeIcon.vue'
 
 // 共享数据
@@ -23,7 +23,7 @@ async function execCommand(command) {
     const param = {
       command, node: node.value, autoBroadcast: autoBroadcast.value
     }
-    const data = await invoke_then('execute_command', {id: share.conn.id, param}, false)
+    const data = await meInvoke('execute_command', {id: share.conn.id, param}, false)
     const result = replaceEnter(data)
     return `\x1b[35;1m${result}\x1b[0m`
   } catch (e) {

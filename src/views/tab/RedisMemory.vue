@@ -1,7 +1,16 @@
 <script setup>
 // 官网参考: https://redis.ac.cn/docs/latest/commands/slowlog-get/
-import {bus, commonDeleteKey, copy, filterHandler, humanSize, invoke_then, KEY_REFRESH} from '@/utils/util.js'
-import {ElMessage, ElMessageBox} from 'element-plus'
+import {
+  bus,
+  commonDeleteKey,
+  meFilterHandler,
+  KEY_REFRESH,
+  meConfirm,
+  meCopy,
+  meHumanSize,
+  meInvoke,
+  meOk
+} from '@/utils/util.js'
 import {capitalize} from 'lodash'
 
 // 共享数据
@@ -41,7 +50,7 @@ const filterTypes = computed(() => {
 
 // 避免表格自动调整列宽时闪烁一下
 function humanTotalSize(list) {
-  return humanSize(list.value.map(d => d.size).reduce((sum, cur) => sum + cur, 0) ?? 0)
+  return meHumanSize(list.value.map(d => d.size).reduce((sum, cur) => sum + cur, 0) ?? 0)
 }
 
 // 合计列
@@ -64,7 +73,7 @@ async function refresh() {
       sleepMillis: sleepMillis.value,
       needKeyType: true
     }
-    const data = await invoke_then('memory_usage', {id: share.conn.id, param})
+    const data = await meInvoke('memory_usage', {id: share.conn.id, param})
     dataList.value = data
   } finally {
     loading.value = false
@@ -74,14 +83,7 @@ refresh()
 
 function memoryUsage() {
   if (scanTotal.value > 10_0000 || scanTotal.value <= 0 || sleepMillis.value > 100) {
-    ElMessageBox.confirm(
-      `确定开始内存分析吗？耗时可能较长，请耐心等待！`,
-      '提示',
-      {type: 'warning'},
-    ).then(async () => {
-      await refresh()
-    }).catch(() => {
-    })
+    meConfirm('确定开始内存分析吗？耗时可能较长，请耐心等待！', () => refresh())
   } else {
     refresh()
   }
@@ -108,21 +110,16 @@ function selectionChange(newSelection) {
   selection.value = newSelection
 }
 
-async function batchDelKey() {
-  ElMessageBox.confirm(
-    `确定批量删除【${selection.value.length}】个键吗？`,
-    '提示',
-    {type: 'warning'},
-  ).then(async () => {
+function batchDelKey() {
+  meConfirm(`确定批量删除【${selection.value.length}】个键吗？`, async () => {
     const param = {
       match: '',
       keyList: selection.value.map(row => ({key: row.key, bytes: row.bytes})),
     }
-    await invoke_then('batch_del', {id: share.conn.id, param})
-    ElMessage.success('删除成功')
+    await meInvoke('batch_del', {id: share.conn.id, param})
+    meOk('删除成功')
     const keyBytesArr = param.keyList.map(rk => rk.bytes)
     dataList.value = dataList.value.filter(rk => keyBytesArr.indexOf(rk.bytes) < 0)
-  }).catch(() => {
   })
 }
 </script>
@@ -213,7 +210,7 @@ async function batchDelKey() {
               border stripe height="100%">
       <el-table-column type="selection" width="50" align="center"/>
       <el-table-column label="类型" prop="type" width="100" show-overflow-tooltip sortable :filters="filterTypes"
-                       :filter-method="filterHandler">
+                       :filter-method="meFilterHandler">
         <template #default="scope">
           {{ capitalize(scope.row.type) }}
         </template>
@@ -225,13 +222,13 @@ async function batchDelKey() {
       </el-table-column>
       <el-table-column label="大小" prop="size" width="120" sortable show-overflow-tooltip>
         <template #default="scope">
-          {{ humanSize(scope.row.size) }}
+          {{ meHumanSize(scope.row.size) }}
         </template>
       </el-table-column>
       <el-table-column label="操作" :width="canEdit ? 100 : 80" fixed="right" align="center">
         <template #default="scope">
           <div class="me-flex">
-            <me-icon info="复制" icon="el-icon-document-copy" class="icon-btn" @click="copy(scope.row.key) "/>
+            <me-icon info="复制" icon="el-icon-document-copy" class="icon-btn" @click="meCopy(scope.row.key) "/>
             <me-icon info="详情" icon="el-icon-view" class="icon-btn" @click="chooseKey(scope.row)"/>
             <me-icon info="删除" icon="el-icon-delete" class="icon-btn" @click="delKey(scope.row)" v-if="canEdit"/>
           </div>

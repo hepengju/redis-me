@@ -2,8 +2,7 @@
 import ListKey from './key/ListKey.vue'
 import TreeKey from './key/TreeKey.vue'
 import {computed, ref} from 'vue'
-import {bus, commonDeleteKey, CONN_REFRESH, copy, KEY_DELETE, invoke_then, KEY_REFRESH} from '@/utils/util.js'
-import {ElMessage} from 'element-plus'
+import {bus, commonDeleteKey, CONN_REFRESH, meCopy, KEY_DELETE, meInvoke, KEY_REFRESH, meOk} from '@/utils/util.js'
 import FieldAdd from '@/views/ext/FieldAdd.vue'
 import KeyBatchDel from './key/KeyBatchDel.vue'
 import KeyMemory from './key/KeyMemory.vue'
@@ -87,7 +86,7 @@ async function scanKey(useCursor = false, loadAll = false) {
       loadAll: loadAll,
       cursor: cursor.value,
     }
-    const data = await invoke_then('scan', {id: share.conn.id, param: params})
+    const data = await meInvoke('scan', {id: share.conn.id, param: params})
     cursor.value = data.cursor
     keyList.value.push(...data.keyList)
     // 排序下, 虽然后端排序更快，但多次扫描的结果还是需要前端排序
@@ -114,13 +113,13 @@ const keyShowType = ref('tree')
 const db = ref(0)
 const dbList = ref([])
 async function refreshDbList() {
-  const data = await invoke_then('db_list', {id: share.conn.id})
+  const data = await meInvoke('db_list', {id: share.conn.id})
   dbList.value = data
 }
 refreshDbList()
 
 async function selectDB(){
-  await invoke_then('select_db', {id: share.conn.id, db: db.value})
+  await meInvoke('select_db', {id: share.conn.id, db: db.value})
   await refresh() // RedisInfo的键数量需要更新下
 }
 
@@ -143,11 +142,11 @@ function contextKey(command, redisKey) {
   if (command == 'refreshKey') {
     chooseKey(redisKey)
   } else if (command == 'copyKey') {
-    copy(redisKey.key)
+    meCopy(redisKey.key)
   } else if (command == 'deleteKey') {
     commonDeleteKey(share.conn.id, redisKey)
   } else {
-    ElMessage.warning(`TODO: 键右键 ${command}`)
+    meOk(`TODO: 键右键 ${command}`)
   }
 }
 
@@ -157,7 +156,7 @@ function contextFolder(command, folder){
     keyPrefix.value = folder
     addKey()
   } else if (command === 'copyFolder') {
-    copy(folder)
+    meCopy(folder)
   } else if (command === 'loadFolder') {
     loadFolder.value = true
     try {
@@ -172,7 +171,7 @@ function contextFolder(command, folder){
   } else if (command === 'deleteFolder') {
     deleteFolder(folder)
   } else {
-    ElMessage.warning(`TODO: 文件夹右键 ${command}`)
+    meOk(`TODO: 文件夹右键 ${command}`)
   }
 }
 

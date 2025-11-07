@@ -1,7 +1,6 @@
 <script setup>
-import {onMounted} from 'vue'
 import NodeList from '@/views/ext/NodeList.vue'
-import {humanSeconds, invoke_then} from '@/utils/util.js'
+import {meHumanSeconds, meInvoke} from '@/utils/util.js'
 
 // 共享数据
 const share = inject('share')
@@ -46,7 +45,7 @@ async function refresh() {
   loading.value = true
   try {
     const params = {id: share.conn.id, node: node.value, clientType: clientType.value}
-    const data = await invoke_then('client_list', params)
+    const data = await meInvoke('client_list', params)
     dataList.value = data
   } finally {
     loading.value = false
@@ -84,9 +83,9 @@ refresh()
         <el-table-column label="客户端" prop="addr" show-overflow-tooltip width="160"/>
         <el-table-column label="客户端名称" prop="name" show-overflow-tooltip width="160"/>
         <el-table-column label="持续时间" prop="age" show-overflow-tooltip sortable width="120" align="right"
-                         :formatter="row => humanSeconds(row.age)"/>
+                         :formatter="row => meHumanSeconds(row.age)"/>
         <el-table-column label="空闲时间" prop="idle" show-overflow-tooltip sortable width="120" align="right"
-                         :formatter="row => humanSeconds(row.idle)"/>
+                         :formatter="row => meHumanSeconds(row.idle)"/>
         <el-table-column label="最后命令" prop="cmd" show-overflow-tooltip sortable min-width="200"/>
         <el-table-column label="user" prop="user" show-overflow-tooltip sortable width="100"/>
         <el-table-column label="db" prop="db" show-overflow-tooltip sortable width="80" align="center"/>

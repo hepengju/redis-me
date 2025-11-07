@@ -1,6 +1,6 @@
-<script setup lang="ts">
-import {ref} from "vue";
-import {getVersion} from "@tauri-apps/api/app";
+<script setup>
+import {ref} from 'vue'
+import {getVersion} from '@tauri-apps/api/app'
 
 const appVersion = ref('')
 getVersion().then(res => appVersion.value = res).catch(_ => {})

@@ -1,6 +1,5 @@
 <script setup>
-import {bus, CONN_REFRESH, invoke_then} from '@/utils/util.js'
-import {ElMessage} from 'element-plus'
+import {bus, CONN_REFRESH, meInvoke, meOk} from '@/utils/util.js'
 import Setting from '@/views/ext/Setting.vue'
 import AppInfo from '@/views/ext/AppInfo.vue'
 
@@ -9,8 +8,8 @@ const share = inject('share')
 
 // 新增模拟数据
 async function mockData() {
-  await invoke_then('mock_data', {id: share.conn.id, count: 10})
-  ElMessage.success('模拟数据插入完成')
+  await meInvoke('mock_data', {id: share.conn.id, count: 10})
+  meOk('模拟数据插入完成')
   bus.emit(CONN_REFRESH)
 }
 
@@ -23,7 +22,7 @@ const dialog = reactive({
 // 处理额外命令
 async function handleCommand(command) {
   if (command === 'refreshConn') {
-    await invoke_then('connect', {id: share.conn.id})
+    await meInvoke('connect', {id: share.conn.id})
     bus.emit(CONN_REFRESH)
   } else if (command === 'closeConn') {
     share.conn = null

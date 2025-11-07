@@ -1,5 +1,4 @@
 <script setup>
-import {computed, ref} from 'vue'
 
 // 共享数据
 const share = inject('share')

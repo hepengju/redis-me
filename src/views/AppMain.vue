@@ -2,7 +2,7 @@
 import {load} from '@tauri-apps/plugin-store'
 import TabMain from './TabMain.vue'
 import {sortBy} from 'lodash'
-import {bus, CONN_REFRESH, invoke_then, STORE_CONN_LIST, STORE_FILE_NAME} from '@/utils/util.js'
+import {bus, CONN_REFRESH, meInvoke, STORE_CONN_LIST, STORE_FILE_NAME} from '@/utils/util.js'
 import TabConn from '@/views/TabConn.vue'
 import KeyHeader from '@/views/KeyHeader.vue'
 import KeyMain from '@/views/KeyMain.vue'
@@ -55,16 +55,16 @@ watch(() => share.conn, async (newConn, oldConn) => {
   connPrepared.value = false
   // 关闭旧连接
   if (oldConn) {
-    await invoke_then('disconnect', {id: oldConn.id})
+    await meInvoke('disconnect', {id: oldConn.id})
   }
 
   // 打开新连接，获取节点列表和数据库列表（TODO）
   if (newConn) {
     share.color = newConn.color
     share.tabName = 'info'
-    await invoke_then('connect', {id: newConn.id})
+    await meInvoke('connect', {id: newConn.id})
     connPrepared.value = true
-    const data = await invoke_then('node_list', {id: share.conn.id})
+    const data = await meInvoke('node_list', {id: share.conn.id})
     // 节点列表排序: 主节点在前面，相同类型节点按照node升序
     const nodeList = sortBy(data, 'node').reverse()
     share.nodeList = sortBy(nodeList, 'isMaster').reverse()
@@ -75,7 +75,7 @@ watch(() => share.conn, async (newConn, oldConn) => {
 const connListToString = computed(() => JSON.stringify(share.connList))
 watch(connListToString, async (newConnList) => {
   // 应用启动读取到所有连接信息发送给后端
-  await invoke_then('conn_list', {connList: JSON.parse(newConnList)})
+  await meInvoke('conn_list', {connList: JSON.parse(newConnList)})
   if (initConnListReady) {
     // 首次读取无需写入，后续有变化时才需写入
     await share.store?.set(STORE_CONN_LIST, share.connList)

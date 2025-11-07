@@ -1,10 +1,9 @@
 <script setup>
-import {invoke_then, PREDEFINE_COLORS} from '@/utils/util.js'
+import {meInvoke, meConfirm, meErr, meOk, PREDEFINE_COLORS} from '@/utils/util.js'
 import ConnSave from '@/views/ext/ConnSave.vue'
 import {nextTick, useTemplateRef} from 'vue'
 import {debounce} from 'lodash'
 import {Sortable} from 'sortablejs'
-import {ElMessage, ElMessageBox} from 'element-plus'
 import {open, save} from '@tauri-apps/plugin-dialog'
 import {readTextFile, writeTextFile} from '@tauri-apps/plugin-fs'
 import dayjs from 'dayjs'
@@ -44,22 +43,18 @@ function editConn(conn) {
 
 // 删除连接
 function deleteConn(conn) {
-  ElMessageBox.confirm(
-      `确定删除连接【${conn.name}】吗？`,
-      '提示',
-      {type: 'warning'},
-  ).then(async () => {
+  meConfirm(`确定删除连接【${conn.name}】吗？`, () => {
     const index = share.connList.indexOf(conn)
     if (index > -1) {
       share.connList.splice(index, 1)
     }
-  }).catch(() => {})
+  })
 }
 
 // 选中连接: 添加防抖函数，避免连接不可用时多次点击导致的多次报错
 const selectConn = debounce(async (conn) => {
   // 测试连接成功后再发送所有连接信息到后端，AppMain中监控连接变化自动处理
-  await invoke_then('test_conn', {redisConn: conn})
+  await meInvoke('test_conn', {redisConn: conn})
   share.conn = conn
 }, 200)
 
@@ -88,11 +83,13 @@ function rowDrag() {
       }
   )
 }
+
 onMounted(() => rowDrag())
 // rowDrag()
 
 // 扩展功能
 const filters = [{name: '', extensions: ['json']}]
+
 function handleCommand(command) {
   if (command === 'export') {
     exportConn()
@@ -108,9 +105,9 @@ async function exportConn() {
   if (path) {
     try {
       await writeTextFile(path, JSON.stringify(share.connList, null, 2))
-      ElMessage.success('导出成功')
+      meOk('导出成功')
     } catch (e) {
-      ElMessageBox.alert(e, '导出失败', {type: 'error'})
+      meErr(e, '导出失败')
     }
   }
 }
@@ -129,9 +126,9 @@ async function importConn() {
       newConnList.push(...share.connList.filter(conn => !impIds.includes(conn.id)))
       newConnList.push(...impConnList)
       share.connList = newConnList
-      ElMessage.success('导入成功')
+      meOk('导入成功')
     } catch (e) {
-      ElMessageBox.alert(e.message, '导入失败', {type: 'error'})
+      meErr(e, '导入失败')
     }
   }
 }
@@ -181,7 +178,8 @@ function checkImportContent(content) {
             </el-dropdown-menu>
           </template>
         </el-dropdown>
-        <el-input v-model="keyword" placeholder="模糊筛选（名称、主机）" style="width: 300px; margin-right: 10px" clearable/>
+        <el-input v-model="keyword" placeholder="模糊筛选（名称、主机）" style="width: 300px; margin-right: 10px"
+                  clearable/>
       </div>
     </div>
     <el-table ref="table"
@@ -222,8 +220,8 @@ function checkImportContent(content) {
         <template #default="scope">
           <div class="me-flex">
             <me-icon info="复制" icon="el-icon-document-copy" class="icon-btn" @click="copyConn(scope.row) "/>
-            <me-icon info="编辑" icon="el-icon-edit"          class="icon-btn" @click="editConn(scope.row)"/>
-            <me-icon info="删除" icon="el-icon-delete"        class="icon-btn" @click="deleteConn(scope.row)"/>
+            <me-icon info="编辑" icon="el-icon-edit" class="icon-btn" @click="editConn(scope.row)"/>
+            <me-icon info="删除" icon="el-icon-delete" class="icon-btn" @click="deleteConn(scope.row)"/>
           </div>
         </template>
       </el-table-column>

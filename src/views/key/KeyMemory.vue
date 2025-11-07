@@ -1,9 +1,8 @@
 <script setup>
 import {useVirtualList} from '@vueuse/core'
-import {humanSize, invoke_then} from '@/utils/util.js'
+import {meHumanSize, meInvoke} from '@/utils/util.js'
 
 defineExpose({open})
-
 function open(data) {
   keyList.value = []
   visible.value = true
@@ -32,7 +31,7 @@ const keyList = ref([])
 async function keyMemory() {
   loading.value = true
   try {
-    const data = await invoke_then('memory_usage', {id: share.conn.id, param: form.value})
+    const data = await meInvoke('memory_usage', {id: share.conn.id, param: form.value})
     keyList.value = data
   } finally {
     loading.value = false
@@ -57,12 +56,12 @@ const {list, containerProps, wrapperProps} = useVirtualList(
         <el-input type="text" v-model="form.match" disabled/>
       </el-form-item>
 
-      <el-form-item :label="`总数：${keyList.length}，大小：${humanSize(totalSize)}` + (keyList.length >= form.countLimit ? `（数据量达到扫描限制：${form.countLimit}）` : '')" :loading="loading">
+      <el-form-item :label="`总数：${keyList.length}，大小：${meHumanSize(totalSize)}` + (keyList.length >= form.countLimit ? `（数据量达到扫描限制：${form.countLimit}）` : '')" :loading="loading">
         <div v-bind="containerProps" :style="{height: '300px', width: '100%'}">
           <div v-bind="wrapperProps">
             <div v-for="item in list" :key="item.index" class="key me-flex">
               <div class="single-line-ellipsis">{{ item.data.key }}</div>
-              <div>{{ humanSize(item.data.size)}}</div>
+              <div>{{ meHumanSize(item.data.size) }}</div>
             </div>
           </div>
         </div>

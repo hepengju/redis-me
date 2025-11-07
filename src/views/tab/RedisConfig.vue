@@ -1,9 +1,8 @@
 <script setup>
-import {ElMessage} from 'element-plus'
 import {configTip as tips, redisConfList} from '@/utils/tip.js'
 import NodeList from '../ext/NodeList.vue'
-import {invoke_then} from "@/utils/util.js";
-import {sortBy} from "lodash";
+import {meInvoke, meOk} from '@/utils/util.js'
+import {sortBy} from 'lodash'
 
 // 共享数据
 const share = inject('share')
@@ -30,7 +29,7 @@ function getSummaries() {
 }
 
 async function apiConfigGet() {
-  const data = await invoke_then('config_get', {id: share.conn.id, pattern: '*', node: node.value})
+  const data = await meInvoke('config_get', {id: share.conn.id, pattern: '*', node: node.value})
   const tableData = []
   const configMap = data
   Object.entries(configMap).forEach(([key, value]) => tableData.push({param: key, value}))
@@ -48,7 +47,7 @@ async function refresh() {
 refresh()
 
 function editParam(row) {
-  ElMessage({message: 'TODO编辑配置', type: 'success'})
+  meOk('TODO编辑配置')
 }
 
 // 官网默认配置参考

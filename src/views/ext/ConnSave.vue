@@ -1,9 +1,8 @@
 <script setup>
-import {ElMessage} from 'element-plus'
 import {cloneDeep} from 'lodash'
 import {nanoid} from 'nanoid'
 import {ref, useTemplateRef} from 'vue'
-import {invoke_then, PREDEFINE_COLORS, randomString} from '@/utils/util.js'
+import {meInvoke, PREDEFINE_COLORS, meRandomString, meOk} from '@/utils/util.js'
 
 const emit = defineEmits(['success', 'closed'])
 
@@ -63,13 +62,13 @@ function submit() {
       form.id = nanoid()
       autoGenName()
       share.connList.push(form)
-      ElMessage.success('新增成功')
+      meOk('新增成功')
       emit('success', form, mode.value)
     } else if (mode.value === 'edit') {
       autoGenName()
       const conn = share.connList.filter(c => c.id === form.id)[0]
       Object.assign(conn, cloneDeep(form))
-      ElMessage.success('保存成功')
+      meOk('保存成功')
       emit('success', form, mode.value)
     }
     visible.value = false
@@ -83,7 +82,7 @@ function autoGenName() {
   }
 
   if (share.connList.find(c => c.name === form.name && c.id !== form.id)) {
-    form.name += ' (' + randomString(3) + ')'
+    form.name += ' (' + meRandomString(3) + ')'
   }
 }
 
@@ -94,8 +93,8 @@ function testConn() {
     if (!valid) return
     loading.value = true
     try {
-      await invoke_then('test_conn', {redisConn: form})
-      ElMessage.success('测试连接成功')
+      await meInvoke('test_conn', {redisConn: form})
+      meOk('测试连接成功')
     } finally {
       loading.value = false
     }

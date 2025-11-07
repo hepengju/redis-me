@@ -1,7 +1,6 @@
 <script setup>
-import {ElMessage} from 'element-plus'
 import {capitalize, cloneDeep} from 'lodash'
-import {invoke_then} from "@/utils/util.js";
+import {meInvoke, meOk} from '@/utils/util.js'
 
 const emit = defineEmits(['success', 'closed'])
 defineExpose({open})
@@ -93,10 +92,10 @@ function submit(){
 
     isSaving.value = true
     try {
-      await invoke_then('field_add',{id: share.conn.id, param: form.value})
+      await meInvoke('field_add',{id: share.conn.id, param: form.value})
       visible.value = false
       emit('success', {key: form.value.key, bytes: ''})
-      ElMessage.success('新增成功')
+      meOk('新增成功')
     } finally {
       isSaving.value = false
     }

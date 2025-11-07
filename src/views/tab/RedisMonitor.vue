@@ -1,7 +1,6 @@
 <script setup>
 import NodeList from '@/views/ext/NodeList.vue'
-import {invoke_then} from '@/utils/util.js'
-import {ElMessage, ElMessageBox} from 'element-plus'
+import {meConfirm, meInvoke, meOk} from '@/utils/util.js'
 import {debounce} from 'lodash'
 
 // 共享数据
@@ -19,19 +18,14 @@ const filterDataList = computed(() => {
 // 监控函数防抖
 const monitor = debounce(async () => {
   if (monitoring.value) {
-    await invoke_then('monitor_stop', {id: share.conn.id})
+    await meInvoke('monitor_stop', {id: share.conn.id})
     monitoring.value = false
-    ElMessage.success('监控已停止')
+    meOk('监控已停止')
   } else {
-    ElMessageBox.confirm(
-      '命令监控可能造成服务端阻塞，请谨慎在生产环境中使用！',
-      '提示',
-      {type: 'warning'},
-    ).then(async () => {
-      await invoke_then('monitor', {id: share.conn.id, node: node.value})
+    meConfirm('命令监控可能造成服务端阻塞，请谨慎在生产环境中使用！', async () => {
+      await meInvoke('monitor', {id: share.conn.id, node: node.value})
       monitoring.value = true
-      ElMessage.success('监控已开始')
-    }).catch(() => {
+      meOk('监控已开始')
     })
   }
 }, 200)

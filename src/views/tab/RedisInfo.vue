@@ -2,7 +2,7 @@
 import {useTemplateRef} from 'vue'
 import {infoTip as tips} from '@/utils/tip.js'
 import NodeList from '../ext/NodeList.vue'
-import {invoke_then} from '@/utils/util.js'
+import {meInvoke} from '@/utils/util.js'
 import RedisClient from '@/views/tab/RedisClient.vue'
 import RedisConfig from '@/views/tab/RedisConfig.vue'
 import RedisMemory from '@/views/tab/RedisMemory.vue'
@@ -97,10 +97,10 @@ const infoNode = ref('')
 async function refresh() {
   loading.value = true
   try {
-    const data = await invoke_then('info', {id: share.conn.id, node: node.value})
+    const data = await meInvoke('info', {id: share.conn.id, node: node.value})
     raw.value = data.info || ''
     infoNode.value = data.node || (share.conn.host + ':' + share.conn.port)
-    const data2 = await invoke_then('config_get', {id: share.conn.id, pattern: 'save', node: node.value})
+    const data2 = await meInvoke('config_get', {id: share.conn.id, pattern: 'save', node: node.value})
     config.value = data2 || ''
   } finally {
     loading.value = false

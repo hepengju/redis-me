@@ -1,5 +1,5 @@
 import {useClipboard} from '@vueuse/core'
-import {ElMessage} from 'element-plus'
+import {meOk} from '@/utils/util.js'
 
 export default function (app) {
   app.directive('copy', copy)
@@ -11,7 +11,7 @@ const copy = {
     el.$value = binding.value
     el.handler = () => {
       useClipboard({legacy: true}).copy(el.$value)
-      ElMessage({message: '复制成功', type: 'success'})
+      meOk('复制成功')
     }
     el.addEventListener('click', el.handler)
   },
