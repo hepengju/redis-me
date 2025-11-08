@@ -46,7 +46,8 @@ pub fn run() {
             subscribe_stop,
             monitor,
             monitor_stop,
-            mock_data
+            mock_data,
+            check_import_conn_list,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

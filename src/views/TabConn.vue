@@ -119,7 +119,7 @@ async function importConn() {
     // 读取文件并检查文件内容是否符合要求
     try {
       const content = await readTextFile(file)
-      const impConnList = checkImportContent(content)
+      const impConnList = await checkImportContent(content)
       const impIds = impConnList.map(conn => conn.id)
 
       const newConnList = []
@@ -134,7 +134,7 @@ async function importConn() {
 }
 
 // 导入连接检查
-function checkImportContent(content) {
+async function checkImportContent(content) {
   let connList
   try {
     connList = JSON.parse(content)
@@ -154,6 +154,12 @@ function checkImportContent(content) {
     }
   })
 
+  // 其他属性检查并且去掉无效属性（利用tauri的command参数检查） ==> 颜色、只读等仅前端属性会丢失，暂注释掉
+  // try {
+  //   connList = await meInvoke('check_import_conn_list', {connList}, false)
+  // } catch (e) {
+  //   throw new Error('文件连接格式错误')
+  // }
   return connList
 }
 </script>

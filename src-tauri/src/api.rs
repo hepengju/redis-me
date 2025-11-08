@@ -85,3 +85,9 @@ pub fn subscribe(app_handle: AppHandle, id: &str, channel: Option<String>) -> Ap
             .and_then(|client| client.subscribe(app_handle, channel)),
     )
 }
+
+// 导入连接（检查导入的JSON属性是否满足及去除多余属性）
+#[command]
+pub fn check_import_conn_list(conn_list: Vec<RedisConn>) -> Vec<RedisConn> {
+    conn_list
+}
