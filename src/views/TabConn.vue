@@ -1,5 +1,5 @@
 <script setup>
-import {meInvoke, meConfirm, meErr, meOk, PREDEFINE_COLORS} from '@/utils/util.js'
+import {meConfirm, meErr, meOk, PREDEFINE_COLORS} from '@/utils/util.js'
 import ConnSave from '@/views/ext/ConnSave.vue'
 import {nextTick, useTemplateRef} from 'vue'
 import {debounce} from 'lodash'
@@ -54,7 +54,7 @@ function deleteConn(conn) {
 // 选中连接: 添加防抖函数，避免连接不可用时多次点击导致的多次报错
 const selectConn = debounce(async (conn) => {
   // 测试连接成功后再发送所有连接信息到后端，AppMain中监控连接变化自动处理
-  await meInvoke('test_conn', {redisConn: conn})
+  // await meInvoke('test_conn', {redisConn: conn})
   share.conn = conn
 }, 200)
 
