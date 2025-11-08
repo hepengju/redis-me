@@ -197,7 +197,7 @@ function checkImportContent(content) {
       <el-table-column label="名称" prop="name" show-overflow-tooltip>
         <template #default="scope">
           <div style="display: flex">
-            <el-link :underline="'never'" type="primary"
+            <el-link underline="never" type="primary"
                      @click="selectConn(scope.row)"
                      :style="{'--el-link-text-color': scope.row.color}">
               <me-icon icon="el-icon-connection" :name="scope.row.name"/>

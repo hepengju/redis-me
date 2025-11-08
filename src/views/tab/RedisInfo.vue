@@ -154,7 +154,7 @@ function goMemory() {
       <el-descriptions-item>
         <template #label><me-icon name="连接数" icon="me-icon-conn"/></template>
         <div class="me-flex">
-          <el-link @click="goClient" :underline="false" type="primary">{{dic['connected_clients']}}</el-link>
+          <el-link @click="goClient" underline="never" type="primary">{{dic['connected_clients']}}</el-link>
           <el-text type="info" style="margin-left: 10px">
             [ 限制: {{dic['maxclients']}} ]
           </el-text>
@@ -173,7 +173,7 @@ function goMemory() {
       <el-descriptions-item :span="2">
         <template #label><me-icon name="内存" icon="me-icon-memory"/></template>
         <div class="me-flex">
-          <el-link :underline="false" @click="goMemory" type="primary">{{dic['used_memory_human']}}</el-link>
+          <el-link underline="never" @click="goMemory" type="primary">{{dic['used_memory_human']}}</el-link>
           <el-text type="info" style="margin-left: 10px">
             [
             <span style="margin-left:  0px">峰值: {{dic['used_memory_peak_human']}}</span>
@@ -189,7 +189,7 @@ function goMemory() {
         <div class="me-flex">
           {{dic['executable']}}
           <el-text type="info" style="margin-left: 10px">
-            [ <el-link :underline="false" @click="goConfig" type="primary">配置</el-link>: {{dic['config_file'] || '无'}} ]
+            [ <el-link underline="never" @click="goConfig" type="primary">配置</el-link>: {{dic['config_file'] || '--'}} ]
           </el-text>
         </div>
       </el-descriptions-item>
