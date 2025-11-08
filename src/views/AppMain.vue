@@ -16,7 +16,8 @@ const share = reactive({
   color: 'var(--el-color-primary)', // 即 share.conn.color（便于使用和移植）
   redisKey: null,
   tabName: 'info',
-  store: null    // 共享存储对象
+  dbSizeMap: {}, // 数据库大小显示
+  store: null    // 共享存储对象（连接和设置都需要使用）
 })
 
 provide('share', share)

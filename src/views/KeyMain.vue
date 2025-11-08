@@ -260,25 +260,26 @@ function keyMemory(folder) {
             <me-icon name="键树形展示" icon="me-icon-tree" hint placement="top" v-else/>
           </template>
         </el-segmented>
-
-        <!-- 集群不显示数据库列表 -->
-        <el-select v-model="share.conn.db" @change="selectDB" style="width: 80px; margin-left: 10px" v-if="!share.conn.cluster">
-          <el-option v-for="item in dbList" :key="item.db" :value="item.db">
-            {{ `db${item.db}` }}
-          </el-option>
-          <template #label>
-            {{ `db${share.conn.db}` }}
-          </template>
-        </el-select>
       </div>
 
       <el-text class="tip" size="large" type="primary">{{ filterKeyList.length }} / {{ keyList.length }}</el-text>
 
-      <div class="btn-rb">
-        <template v-if="canEdit">
-          <me-icon v-if="!(cursor?.finished)" name="加载更多"       icon="me-icon-load-more" hint placement="top" class="icon-btn" @click="scanKey(true, false)"/>
-          <me-icon v-if="!(cursor?.finished)" name="加载剩余所有键" icon="me-icon-load-all"  hint placement="top" class="icon-btn" @click="scanKey(true, true)"/>
-        </template>
+      <div class="me-flex">
+        <div class="btn-rb" v-if="!(cursor?.finished)">
+          <me-icon name="加载更多"      icon="me-icon-load-more" hint placement="top" class="icon-btn" @click="scanKey(true, false)"/>
+          <me-icon name="加载剩余所有键" icon="me-icon-load-all"  hint placement="top" class="icon-btn" @click="scanKey(true, true)"/>
+        </div>
+
+        <!-- 集群不显示数据库列表 -->
+        <el-select v-model="share.conn.db" @change="selectDB"
+                   style="width: 120px;"   v-if="!share.conn.cluster">
+          <el-option v-for="item in dbList" :key="item.db" :value="item.db">
+            {{ `db${item.db} (${share.dbSizeMap['db' + item.db] || 0})` }}
+          </el-option>
+          <template #label>
+            {{ `db${share.conn.db} (${share.dbSizeMap['db' + share.conn.db] || 0})` }}
+          </template>
+        </el-select>
       </div>
     </div>
 

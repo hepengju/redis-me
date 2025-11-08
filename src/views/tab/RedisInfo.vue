@@ -37,6 +37,7 @@ watchEffect(() => {
   tagList.value = []
   tagTable.value = []
   keyCount.value = 0
+  share.dbSizeMap = {}
 
   const lines = raw.value.split('\n')
   let tagKey = ''
@@ -63,13 +64,15 @@ watchEffect(() => {
       // db1:keys=50,expires=0,avg_ttl=0,subexpiry=0
       if (/^db\d{1,2}$/.test(key)) {
         try {
-          keyCount.value += parseInt(value.split(',')[0].split('=')[1])
+          const size = parseInt(value.split(',')[0].split('=')[1])
+          share.dbSizeMap[key] = size
+          keyCount.value += size
         } catch (e) {
         }
       }
+
     }
   })
-
 })
 
 // 表格数据
