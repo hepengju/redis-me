@@ -1,5 +1,5 @@
 <script setup>
-import {bus, CONN_REFRESH, meInvoke, meOk} from '@/utils/util.js'
+import {bus, CONN_REFRESH, meInvoke, meOk, mePrompt} from '@/utils/util.js'
 import Setting from '@/views/ext/Setting.vue'
 import AppInfo from '@/views/ext/AppInfo.vue'
 
@@ -8,9 +8,15 @@ const share = inject('share')
 
 // 新增模拟数据
 async function mockData() {
-  await meInvoke('mock_data', {id: share.conn.id, count: 10})
-  meOk('模拟数据插入完成')
-  bus.emit(CONN_REFRESH)
+  mePrompt('请输入每种数据类型条数（N×5）', {
+        inputValue: 10,
+        inputType: 'number'
+      },
+      async ({value}) => {
+        await meInvoke('mock_data', {id: share.conn.id, count: parseInt(value)})
+        meOk('模拟数据插入完成')
+        bus.emit(CONN_REFRESH)
+      })
 }
 
 // 弹出框

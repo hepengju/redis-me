@@ -43,11 +43,6 @@ export async function meInvoke(command, params, alert = true) {
 
 // ~~~~~~~~~~~~~确认、提示、错误
 const DoNothing = () => {}
-export function meConfirm(message, thenFun) {
-  ElMessageBox.confirm(message, '提示', {type: 'warning'})
-    .then(thenFun)
-    .catch(DoNothing)
-}
 
 export function meOk(message) {
   ElMessage.success(message)
@@ -60,6 +55,17 @@ export function meErr(message, title = '错误') {
   ElMessageBox.alert(message, title, {type: 'error'}).then(DoNothing)
 }
 
+export function meConfirm(message, thenFun) {
+  ElMessageBox.confirm(message, '提示', {type: 'warning'})
+    .then(thenFun)
+    .catch(DoNothing)
+}
+
+export function mePrompt(message, options, thenFun) {
+  ElMessageBox.prompt(message, options)
+    .then(thenFun)
+    .catch(DoNothing)
+}
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 // 复制文本
