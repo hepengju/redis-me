@@ -330,13 +330,18 @@ impl RedisMeSingle {
         let client = get_client_single(redis_conn)?;
         let mut conn = client.get_connection()?;
         set_client_name(&mut conn)?;
+
+        // 单机初始化db
+        let _: () = redis::cmd("SELECT").arg(redis_conn.db).query(&mut conn)?;
+        info!("初始化select db: {}", redis_conn.db);
+
         info!("Redis单机连接初始化成功: {}", redis_conn.name);
         Ok(Box::new(RedisMeSingle {
             id: redis_conn.id.clone(),
             conf: redis_conn.clone(),
             client,
             conn: Mutex::new(conn),
-            db: Arc::new(AtomicU8::new(0)),
+            db: Arc::new(AtomicU8::new(redis_conn.db)),
             subscribe_running: Arc::new(AtomicBool::new(false)),
             monitor_running: Arc::new(AtomicBool::new(false)),
         }))

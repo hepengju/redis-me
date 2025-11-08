@@ -15,6 +15,7 @@ const form = reactive({
   port: 6379,
   username: '',
   password: '',
+  db: 0,
 
   readonly: false,
   cluster: false,

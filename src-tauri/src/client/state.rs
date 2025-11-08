@@ -60,6 +60,7 @@ impl ClientAccess for AppHandle {
         } else {
             RedisMeSingle::new(conn)?
         });
+
         clients.insert(id.to_string(), Arc::clone(&client));
         info!("连接成功: {}", id);
         Ok(client)

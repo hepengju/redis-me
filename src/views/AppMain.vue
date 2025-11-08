@@ -52,6 +52,9 @@ function toggleKeyTag() {
 }
 
 watch(() => share.conn, async (newConn, oldConn) => {
+  // 连接id未发生改变时，无需断开重连（比如颜色或db改变）
+  if (newConn?.id == oldConn?.id) return
+
   connPrepared.value = false
   // 关闭旧连接
   if (oldConn) {

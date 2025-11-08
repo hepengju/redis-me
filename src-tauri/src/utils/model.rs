@@ -7,7 +7,7 @@ use redis::{RedisWrite, ToRedisArgs, ToSingleRedisArg};
 use serde::{Deserialize, Serialize};
 
 // 数据库信息
-api_model!(RedisDB {
+api_model!( RedisDB {
     db: u8,
     name: String,
     size: u64,
@@ -22,6 +22,7 @@ api_model!( RedisConn {
     port: u16,
     username: String,
     password: String,
+    db: u8,
 
     cluster: bool,
     ssl: bool,
@@ -39,14 +40,14 @@ impl RedisConn {
     }
 }
 
-api_model!(SslOption {
+api_model!( SslOption {
     key: String,
     cert: String,
     ca: String,
 });
 
 // 信息 info命令
-api_model!(RedisInfo {
+api_model!( RedisInfo {
     node: String,
     info: String,
 });
@@ -166,7 +167,7 @@ impl ToRedisArgs for RedisKey {
 impl ToSingleRedisArg for RedisKey {}
 
 // Redis值
-api_model!(RedisValue {
+api_model!( RedisValue {
     #[serde(rename = "type")]
     key_type: String,
     ttl: i64,
@@ -181,7 +182,7 @@ api_model!( RedisBatchDelete {
 });
 
 // Zset条目
-api_model!(RedisZetItem {
+api_model!( RedisZetItem {
     value: String,
     score: f64,
 });
@@ -201,7 +202,7 @@ api_model!( RedisFieldAdd {
 });
 
 // 字段修改
-api_model!(RedisFieldSet {
+api_model!( RedisFieldSet {
     key: RedisKey,
     src_field_value: String,
     field_index: isize,
@@ -211,14 +212,14 @@ api_model!(RedisFieldSet {
 });
 
 // 字段值
-api_model!(RedisFieldValue {
+api_model!( RedisFieldValue {
     field_key: String,
     field_value: String,
     field_score: f64,
 });
 
 // 字段删除
-api_model!(RedisFieldDel {
+api_model!( RedisFieldDel {
     key: RedisKey,
     field_index: isize,
     field_key: String,
@@ -233,7 +234,7 @@ api_model!( RedisCommand {
 });
 
 // 慢日志
-api_model!(RedisSlowLog {
+api_model!( RedisSlowLog {
     node: String,
     id: u64,
     time: String,

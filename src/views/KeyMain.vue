@@ -110,7 +110,6 @@ const keyShowTypeList = ref(['tree', 'list'])
 const keyShowType = ref('tree')
 
 // 数据库列表
-const db = ref(0)
 const dbList = ref([])
 async function refreshDbList() {
   const data = await meInvoke('db_list', {id: share.conn.id})
@@ -119,7 +118,7 @@ async function refreshDbList() {
 refreshDbList()
 
 async function selectDB(){
-  await meInvoke('select_db', {id: share.conn.id, db: db.value})
+  await meInvoke('select_db', {id: share.conn.id, db: share.conn.db})
   await refresh() // RedisInfo的键数量需要更新下
 }
 
@@ -263,12 +262,12 @@ function keyMemory(folder) {
         </el-segmented>
 
         <!-- 集群不显示数据库列表 -->
-        <el-select v-model="db" @change="selectDB" style="width: 80px; margin-left: 10px" v-if="!share.conn.cluster">
+        <el-select v-model="share.conn.db" @change="selectDB" style="width: 80px; margin-left: 10px" v-if="!share.conn.cluster">
           <el-option v-for="item in dbList" :key="item.db" :value="item.db">
             {{ `db${item.db}` }}
           </el-option>
           <template #label>
-            {{ `db${db}` }}
+            {{ `db${share.conn.db}` }}
           </template>
         </el-select>
       </div>

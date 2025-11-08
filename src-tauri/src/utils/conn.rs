@@ -27,9 +27,9 @@ pub fn get_client_single(conn: &RedisConn) -> AnyResult<Client> {
         Client::open(redis_url)?
     };
     // 测试连接是否可以成功，注意超时时间比较短，用户可以快速感知到。此连接使用后丢弃即可
-    let mut conn = client.get_connection_with_timeout(Duration::from_secs(3))?;
+    let mut conn = client.get_connection_with_timeout(Duration::from_secs(1))?;
     let _ = conn.ping()?;
-    info!("Redis单机连接成功");
+    info!("Redis单机测试连接成功");
     Ok(client)
 }
 
@@ -56,10 +56,10 @@ pub fn get_client_cluster(conn: &RedisConn) -> AnyResult<ClusterClient> {
         };
     }
     let client = builder.build()?;
-    let cc = ClusterConfig::new().set_connection_timeout(Duration::from_secs(3));
+    let cc = ClusterConfig::new().set_connection_timeout(Duration::from_secs(1));
     let mut conn = client.get_connection_with_config(cc)?;
     let _ = conn.ping()?;
-    info!("测试集群连接成功");
+    info!("测试集群测试连接成功");
     Ok(client)
 }
 
@@ -95,6 +95,7 @@ pub fn set_client_name(conn: &mut dyn ConnectionLike) -> AnyResult<()> {
         .arg("SETNAME")
         .arg("RedisME")
         .query(conn)?;
+    info!("设置客户端名称RedisME成功");
     Ok(())
 }
 
@@ -141,6 +142,7 @@ mod tests {
             port: 6379,
             username: "".to_string(),
             password: "hepengju".to_string(),
+            db: 0,
             cluster: false,
             ssl: false,
             ssl_option: None,
@@ -167,6 +169,7 @@ mod tests {
             port: 7001,
             username: "".to_string(),
             password: "hepengju".to_string(),
+            db: 0,
             cluster: true,
             ssl: false,
             ssl_option: None,

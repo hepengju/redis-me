@@ -20,6 +20,7 @@ mod tests {
             port: 7001,
             username: "".into(),
             password: "hepengju".into(),
+            db: 0,
             cluster: true,
             ssl: false,
             ssl_option: None,
