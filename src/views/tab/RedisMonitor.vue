@@ -1,7 +1,8 @@
 <script setup>
 import NodeList from '@/views/ext/NodeList.vue'
-import {meConfirm, meInvoke, meOk} from '@/utils/util.js'
+import {meConfirm, meCopy, meInvoke, meOk} from '@/utils/util.js'
 import {debounce} from 'lodash'
+import {listen} from '@tauri-apps/api/event'
 
 // 共享数据
 const share = inject('share')
@@ -29,7 +30,26 @@ const monitor = debounce(async () => {
     })
   }
 }, 200)
-const tableTotal = computed(() => filterDataList.value.length)
+
+function clearData() {
+  dataList.value = []
+  //meConfirm('确定清空消息吗？', () => dataList.value = [])
+}
+
+// 监听消息
+let unlisten = null
+onMounted(async () => {
+  unlisten = await listen('monitor', (event) => {
+    const payload = event.payload
+    if (payload.id != share.conn.id) return
+    dataList.value.push(event.payload)
+  })
+})
+onUnmounted(() => {
+  if (unlisten) {
+    unlisten()
+  }
+})
 </script>
 
 <template>
@@ -39,16 +59,25 @@ const tableTotal = computed(() => filterDataList.value.length)
         <node-list v-model="node" style="margin-right: 10px" init-node/>
       </div>
       <div>
-        <el-text v-if="tableTotal > 0" type="info" style="margin-right: 10px">[ 总数: {{ tableTotal }} ]</el-text>
-        <el-input v-model="keyword" placeholder="模糊搜索" style="width: 280px; margin-right: 10px" clearable/>
+        <me-button icon="el-icon-delete" info="清空消息" @click="clearData" :disabled="dataList.length === 0" placement="top"/>
+        <el-input v-model="keyword" placeholder="模糊搜索" style="width: 280px; margin: 0 10px" clearable/>
         <el-button :icon="monitoring ? 'el-icon-video-pause' : 'el-icon-video-play'"
                    @click="monitor" type="primary">
-          {{monitoring ? '停止监控' : '开始监控'}}
+          {{ monitoring ? '停止监控' : '开始监控' }}
         </el-button>
       </div>
     </div>
-    <div class="command">
-      <div v-for="item in filterDataList" class="single-line-ellipsis">{{ item }}</div>
+    <div class="table">
+      <el-table :data="filterDataList" ref="table" border stripe height="100%">
+        <el-table-column label="时间" prop="datetime" sortable width="200"/>
+        <el-table-column label="命令" prop="command"  show-overflow-tooltip/>
+        <el-table-column label="操作" width="60" align="center">
+          <template #default="scope">
+            <me-icon info="复制" icon="el-icon-document-copy" class="icon-btn"
+                     @click="meCopy(scope.row.command)" style="justify-content: center"/>
+          </template>
+        </el-table-column>
+      </el-table>
     </div>
   </div>
 </template>
@@ -67,20 +96,10 @@ const tableTotal = computed(() => filterDataList.value.length)
     }
   }
 
-  .command {
-    margin-top: 10px;
-    overflow-y: auto;
+  .table {
     flex-grow: 1;
     height: 0;
-
-    font-size: 13px;
-    font-family: Consolas, "Helvetica Neue", Helvetica, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "微软雅黑", Arial, sans-serif !important;
-    background-color: var(--el-fill-color-lighter);
-    padding: 10px;
-
-    div {
-      color: #27aa5e;
-    }
+    margin: 10px 0;
   }
 }
 </style>

@@ -46,7 +46,8 @@ async function publish() {
 }
 
 function clearData() {
-  meConfirm('确定清空消息吗？', () => dataList.value = [])
+  dataList.value = []
+  //meConfirm('确定清空消息吗？', () => dataList.value = [])
 }
 
 // 监听消息
@@ -73,9 +74,8 @@ onUnmounted(() => {
                   placeholder="订阅频道" :disabled="subscribing" clearable/>
       </div>
       <div>
-        <el-input  v-model="keyword" placeholder="模糊筛选（频道、消息）" style="width: 280px; margin-right: 10px" clearable/>
-        <me-button icon="el-icon-bottom" info="滚动到最新" placement="top"/>
         <me-button icon="el-icon-delete" info="清空消息" @click="clearData" :disabled="dataList.length === 0" placement="top"/>
+        <el-input  v-model="keyword" placeholder="模糊筛选（频道、消息）" style="width: 280px; margin:0 10px" clearable/>
         <el-button :icon="subscribing ? 'el-icon-video-pause' : 'el-icon-video-play'"
                    @click="subscribe" type="primary">
           {{subscribing ? '停止订阅' : '开启订阅'}}
@@ -89,8 +89,8 @@ onUnmounted(() => {
         <el-table-column label="消息" prop="message"  show-overflow-tooltip/>
         <el-table-column label="操作" width="60" align="center">
           <template #default="scope">
-            <me-icon info="复制" icon="el-icon-document-copy" class="icon-btn" @click="meCopy(scope.row.message)"
-                     style="justify-content: center"/>
+            <me-icon info="复制" icon="el-icon-document-copy" class="icon-btn"
+                     @click="meCopy(scope.row.message)" style="justify-content: center"/>
           </template>
         </el-table-column>
       </el-table>

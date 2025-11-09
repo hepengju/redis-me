@@ -8,7 +8,7 @@ use std::thread::JoinHandle;
 use anyhow::bail;
 use chrono::Local;
 use log::info;
-use redis::{Commands, Connection, SetExpiry, SetOptions, ValueType};
+use redis::{from_redis_value, Commands, Connection, SetExpiry, SetOptions, ValueType};
 use tauri::{AppHandle, Emitter};
 use crate::utils::conn::set_client_name;
 
@@ -306,8 +306,8 @@ pub fn publish0(mut conn: MutexGuard<impl Commands>, channel: &str, message: &st
     Ok(())
 }
 
-pub fn subscribe0(mut conn: Connection, running: Arc<AtomicBool>, app_handle: AppHandle, channel: Option<String>,
-                  id: String, ) -> AnyResult<()> {
+pub fn subscribe0(mut conn: Connection, running: Arc<AtomicBool>, app_handle: AppHandle,
+                  channel: Option<String>, id: String) -> AnyResult<()> {
     set_client_name(&mut conn)?;
     running.store(true, Ordering::Relaxed);
 
@@ -340,6 +340,36 @@ pub fn subscribe0(mut conn: Connection, running: Arc<AtomicBool>, app_handle: Ap
 pub fn subscribe_stop0(mut conn: MutexGuard<impl Commands>, running: Arc<AtomicBool>) -> AnyResult<()> {
     running.store(false, Ordering::Relaxed);
     let _: () = conn.publish(REDIS_ME_SUBSCRIBE_STOP_CHANNEL, "")?;
+    Ok(())
+}
+
+pub fn monitor0(mut conn: Connection, running: Arc<AtomicBool>, app_handle: AppHandle, id: String) -> AnyResult<()>{
+    set_client_name(&mut conn)?;
+    running.store(true, Ordering::Relaxed);
+
+    let _: JoinHandle<AnyResult<()>> = thread::spawn(move || {
+        conn.send_packed_command(&redis::cmd("MONITOR").get_packed_command())?;
+        info!("monitor start");
+        while running.load(Ordering::Relaxed) {
+            let value = conn.recv_response()?;
+            let command: String = from_redis_value(value)?;
+            let event = MonitorEvent {
+                id: id.clone(),
+                datetime: Local::now().format("%Y-%m-%d %H:%M:%S%.3f").to_string(),
+                command,
+            };
+            let _ = &app_handle.emit("monitor", event);
+        }
+        info!("monitor end");
+        Ok(())
+    });
+
+    Ok(())
+}
+
+pub fn monitor_stop0(running: Arc<AtomicBool>) -> AnyResult<()>{
+    info!("monitor stop");
+    running.store(false, Ordering::Relaxed);
     Ok(())
 }
 

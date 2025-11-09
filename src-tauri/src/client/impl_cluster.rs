@@ -372,13 +372,20 @@ impl RedisMeClient for RedisMeCluster {
     }
 
     fn monitor(&self, app_handle: AppHandle, node: &str) -> AnyResult<()> {
-        info!("TODO 监控开始");
-        Ok(())
+        // 集群中的monitor命令是针对单个节点的，所以需要获取该节点的连接
+        let mut conf = self.conf.clone();
+        if let Some((host, port)) = node.split_once(":") {
+            conf.host = host.to_string();
+            conf.port = port.parse::<u16>()?;
+        }
+        let conn = get_client_single(&conf)?.get_connection()?;
+        let id = self.id.clone();
+        let running = self.monitor_running.clone();
+        monitor0(conn, running, app_handle, id)
     }
 
     fn monitor_stop(&self) -> AnyResult<()> {
-        info!("TODO 监控停止");
-        Ok(())
+        monitor_stop0(self.monitor_running.clone())
     }
 
     implement_pipeline_commands!(ClusterPipeline);

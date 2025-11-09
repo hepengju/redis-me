@@ -315,11 +315,17 @@ api_model!( RedisClientInfo {
     io_thread: Option<String>,       // 分配给客户端的 I/O 线程 ID。在 Redis 8.0 中添加
 });
 
-api_model!(SubscribeEvent {
+api_model!( SubscribeEvent {
     id: String,
     datetime: String,
     channel: String,
-    message: String
+    message: String,
+});
+
+api_model!( MonitorEvent {
+    id: String,
+    datetime: String,
+    command: String,
 });
 
 //~~~~~ 自定义Vec<u8>序列化为Base64字符串

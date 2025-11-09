@@ -309,13 +309,14 @@ impl RedisMeClient for RedisMeSingle {
     }
 
     fn monitor(&self, app_handle: AppHandle, _node: &str) -> AnyResult<()> {
-        info!("TODO 监控开始");
-        Ok(())
+        let conn = self.client.get_connection()?;
+        let id = self.id.clone();
+        let running = self.monitor_running.clone();
+        monitor0(conn, running, app_handle, id)
     }
 
     fn monitor_stop(&self) -> AnyResult<()> {
-        info!("TODO 监控停止");
-        Ok(())
+        monitor_stop0(self.monitor_running.clone())
     }
 
     implement_pipeline_commands!(Pipeline);
