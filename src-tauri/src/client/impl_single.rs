@@ -24,6 +24,13 @@ pub struct RedisMeSingle {
     monitor_running: Arc<AtomicBool>,
 }
 
+impl Drop for RedisMeSingle {
+    fn drop(&mut self) {
+        self.subscribe_stop().unwrap_or(());
+        self.monitor_stop().unwrap_or(());
+    }
+}
+
 impl RedisMeClient for RedisMeSingle {
     fn db_list(&self) -> AnyResult<Vec<RedisDB>> {
         let map = self.config_get("databases", None)?;
@@ -305,7 +312,7 @@ impl RedisMeClient for RedisMeSingle {
     }
 
     fn subscribe_stop(&self) -> AnyResult<()> {
-        subscribe_stop0(self.get_conn()?, self.subscribe_running.clone())
+        subscribe_stop0(self.subscribe_running.clone())
     }
 
     fn monitor(&self, app_handle: AppHandle, _node: &str) -> AnyResult<()> {

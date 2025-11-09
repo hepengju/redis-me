@@ -21,10 +21,12 @@ const filterDataList = computed(() => {
 // 订阅按钮防抖
 const subscribe = debounce(async () => {
   if (subscribing.value) {
+    await unlisten()
     await meInvoke('subscribe_stop', {id: share.conn.id})
     subscribing.value = false
     meOk('订阅已停止')
   } else {
+    await tauriListen()
     await meInvoke('subscribe', {id: share.conn.id, channel: channel.value})
     subscribing.value = true
     meOk('订阅已开始')
@@ -52,18 +54,20 @@ function clearData() {
 
 // 监听消息
 let unlisten = null
-onMounted(async () => {
+async function tauriListen() {
   unlisten = await listen('subscribe', (event) => {
     const payload = event.payload
     if (payload.id != share.conn.id) return
     dataList.value.push(event.payload)
   })
-})
-onUnmounted(() => {
+}
+
+async function tauriUnlisten() {
   if (unlisten) {
     unlisten()
   }
-})
+}
+onUnmounted(() => tauriUnlisten())
 </script>
 
 <template>

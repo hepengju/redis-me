@@ -1,5 +1,5 @@
 use crate::utils::model::*;
-use crate::utils::util::{assert_is_true, vec8_to_display_string, AnyResult, REDIS_ME_FIELD_TO_DELETE_TMP_VALUE, REDIS_ME_SUBSCRIBE_STOP_CHANNEL};
+use crate::utils::util::{assert_is_true, vec8_to_display_string, AnyResult, REDIS_ME_FIELD_TO_DELETE_TMP_VALUE};
 use std::collections::{HashMap, HashSet};
 use std::sync::{Arc, MutexGuard};
 use std::sync::atomic::{AtomicBool, Ordering};
@@ -8,7 +8,7 @@ use std::thread::JoinHandle;
 use anyhow::bail;
 use chrono::Local;
 use log::info;
-use redis::{from_redis_value, Commands, Connection, SetExpiry, SetOptions, ValueType};
+use redis::{from_redis_value, Commands, Connection, Msg, SetExpiry, SetOptions, ValueType};
 use tauri::{AppHandle, Emitter};
 use crate::utils::conn::set_client_name;
 
@@ -316,20 +316,20 @@ pub fn subscribe0(mut conn: Connection, running: Arc<AtomicBool>, app_handle: Ap
         .unwrap_or_else(|| "*".into());
 
     let _: JoinHandle<AnyResult<()>> = thread::spawn(move || {
-        let mut pubsub = conn.as_pubsub();
-        pubsub.psubscribe(&channel)?;
+        conn.send_packed_command(&redis::cmd("PSUBSCRIBE").arg(&channel).get_packed_command())?;
         info!("subscribe start: {}", &channel);
         while running.load(Ordering::Relaxed) {
-            // TODO 这里的方法时阻塞的, 需要最后发送1条消息才能结束任务
-            let msg = pubsub.get_message()?;
-            let payload: String = msg.get_payload()?;
-            let event = SubscribeEvent {
-                id: id.clone(),
-                datetime: Local::now().format("%Y-%m-%d %H:%M:%S%.3f").to_string(),
-                channel: msg.get_channel_name().to_string(),
-                message: payload,
-            };
-            let _ = &app_handle.emit("subscribe", event);
+            let response = conn.recv_response()?;
+            if let Some(msg) = Msg::from_value(&response) {
+                let payload: String = msg.get_payload()?;
+                let event = SubscribeEvent {
+                    id: id.clone(),
+                    datetime: Local::now().format("%Y-%m-%d %H:%M:%S%.3f").to_string(),
+                    channel: msg.get_channel_name().to_string(),
+                    message: payload,
+                };
+                let _ = &app_handle.emit("subscribe", event);
+            }
         }
         info!("subscribe end: {}", &channel);
         Ok(())
@@ -337,9 +337,8 @@ pub fn subscribe0(mut conn: Connection, running: Arc<AtomicBool>, app_handle: Ap
     Ok(())
 }
 
-pub fn subscribe_stop0(mut conn: MutexGuard<impl Commands>, running: Arc<AtomicBool>) -> AnyResult<()> {
+pub fn subscribe_stop0(running: Arc<AtomicBool>) -> AnyResult<()> {
     running.store(false, Ordering::Relaxed);
-    let _: () = conn.publish(REDIS_ME_SUBSCRIBE_STOP_CHANNEL, "")?;
     Ok(())
 }
 
@@ -351,8 +350,8 @@ pub fn monitor0(mut conn: Connection, running: Arc<AtomicBool>, app_handle: AppH
         conn.send_packed_command(&redis::cmd("MONITOR").get_packed_command())?;
         info!("monitor start");
         while running.load(Ordering::Relaxed) {
-            let value = conn.recv_response()?;
-            let command: String = from_redis_value(value)?;
+            let response = conn.recv_response()?;
+            let command: String = from_redis_value(response)?;
             let event = MonitorEvent {
                 id: id.clone(),
                 datetime: Local::now().format("%Y-%m-%d %H:%M:%S%.3f").to_string(),

@@ -29,6 +29,13 @@ pub struct RedisMeCluster {
     monitor_running: Arc<AtomicBool>,
 }
 
+impl Drop for RedisMeCluster {
+    fn drop(&mut self) {
+        self.subscribe_stop().unwrap_or(());
+        self.monitor_stop().unwrap_or(());
+    }
+}
+
 impl RedisMeClient for RedisMeCluster {
     fn db_list(&self) -> AnyResult<Vec<RedisDB>> {
         Ok(vec![])
@@ -368,7 +375,7 @@ impl RedisMeClient for RedisMeCluster {
     }
 
     fn subscribe_stop(&self) -> AnyResult<()> {
-        subscribe_stop0(self.get_conn()?, self.subscribe_running.clone())
+        subscribe_stop0(self.subscribe_running.clone())
     }
 
     fn monitor(&self, app_handle: AppHandle, node: &str) -> AnyResult<()> {

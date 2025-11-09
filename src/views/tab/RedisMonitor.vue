@@ -19,11 +19,13 @@ const filterDataList = computed(() => {
 // 监控函数防抖
 const monitor = debounce(async () => {
   if (monitoring.value) {
+    await unlisten()
     await meInvoke('monitor_stop', {id: share.conn.id})
     monitoring.value = false
     meOk('监控已停止')
   } else {
-    meConfirm('命令监控可能造成服务端阻塞，请谨慎在生产环境中使用！', async () => {
+    meConfirm('命令监控可能造成服务端阻塞，生产环境谨慎使用！', async () => {
+      await tauriListen()
       await meInvoke('monitor', {id: share.conn.id, node: node.value})
       monitoring.value = true
       meOk('监控已开始')
@@ -38,18 +40,20 @@ function clearData() {
 
 // 监听消息
 let unlisten = null
-onMounted(async () => {
+async function tauriListen() {
   unlisten = await listen('monitor', (event) => {
     const payload = event.payload
     if (payload.id != share.conn.id) return
     dataList.value.push(event.payload)
   })
-})
-onUnmounted(() => {
+}
+
+async function tauriUnlisten() {
   if (unlisten) {
     unlisten()
   }
-})
+}
+onUnmounted(() => tauriUnlisten())
 </script>
 
 <template>
