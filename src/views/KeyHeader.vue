@@ -68,16 +68,13 @@ async function handleCommand(command) {
           <el-dropdown-item command="closeConn" :disabled="!share.conn">
             <me-icon name="关闭连接" icon="el-icon-circle-close"/>
           </el-dropdown-item>
-          <el-dropdown-item command="mockData" divided :disabled="!share.conn">
+          <el-dropdown-item command="mockData" :disabled="!share.conn">
             <me-icon name="模拟数据" icon="el-icon-coffee-cup"/>
           </el-dropdown-item>
-          <el-dropdown-item command="appLog" divided>
-            <me-icon name="命令日志" icon="el-icon-stopwatch"/>
+          <el-dropdown-item command="setting" divided>
+            <me-icon name="设置" icon="el-icon-setting"/>
           </el-dropdown-item>
-          <el-dropdown-item command="setting">
-            <me-icon name="基础设置" icon="el-icon-setting"/>
-          </el-dropdown-item>
-          <el-dropdown-item command="info" divided>
+          <el-dropdown-item command="info">
             <me-icon name="关于" icon="me-icon-info"/>
           </el-dropdown-item>
         </el-dropdown-menu>

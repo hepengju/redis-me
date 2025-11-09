@@ -2,6 +2,7 @@
 import {useDark, usePreferredDark, useStorage} from '@vueuse/core'
 import {ref} from 'vue'
 import {getVersion} from '@tauri-apps/api/app'
+import {meOk} from '@/utils/util.js'
 
 // 主题
 const theme = ref('system')
@@ -40,12 +41,9 @@ const languageList = [
 
 // 切换语言
 function changeLanguage() {
-  // TODO i18n 多语言支持
+  meOk('TODO 多语言支持')
 }
 
-// 应用程序版本
-const appVersion = ref('')
-getVersion().then(res => appVersion.value = res).catch(_ => {})
 </script>
 
 <template>
@@ -57,19 +55,11 @@ getVersion().then(res => appVersion.value = res).catch(_ => {})
         </el-select>
       </el-form-item>
       <el-form-item label="语言">
-        <el-select v-model="language" style="width: 120px" @change="changeLanguage">
+        <el-select v-model="language" style="width: 120px" @change="changeLanguage" disabled>
           <el-option v-for="item in languageList" :label="item.label" :value="item.value" :key="item.value"/>
         </el-select>
       </el-form-item>
     </el-form>
-  </el-card>
-  <el-card :header="'版本: v' + appVersion" header-class="me-card" style="margin-top: 10px">
-    <el-link underline="always" class="me-link">快捷键</el-link>
-    <el-link underline="always" class="me-link">清除缓存</el-link>
-    <el-link underline="always" class="me-link">检查更新</el-link>
-    <el-link underline="always" class="me-link">手动下载</el-link>
-    <el-link underline="always" class="me-link" href="https://gitee.com/hepengju/redis-app" target="_blank">项目主页
-    </el-link>
   </el-card>
 </template>
 
