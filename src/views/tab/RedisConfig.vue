@@ -1,8 +1,9 @@
 <script setup>
 import {configTip as tips, redisConfList} from '@/utils/tip.js'
 import NodeList from '../ext/NodeList.vue'
-import {meInvoke, meOk} from '@/utils/util.js'
+import {meInvoke} from '@/utils/util.js'
 import {sortBy} from 'lodash'
+import {BaseDirectory, readTextFile} from '@tauri-apps/plugin-fs'
 
 // 共享数据
 const share = inject('share')
@@ -46,25 +47,25 @@ async function refresh() {
 }
 refresh()
 
-function editParam(row) {
-  meOk('TODO编辑配置')
-}
-
 // 官网默认配置参考
 const dialog = reactive({
   raw: false
 })
-const configVersion = ref('')  // 版本
-const configList = computed(() => {
-  const list = Object.entries(redisConfList).map(([key, value]) => ({key, value}))
-  return sortBy(list, ['key']).reverse()
+const configVersion = ref(redisConfList[0])  // 版本
+const configRaw = ref('')
+
+watchEffect(async () => {
+  try {
+    const content = await readTextFile(`resources/conf/${configVersion.value}.conf`, {baseDir: BaseDirectory.Resource})
+    configRaw.value = content
+  } catch (e) {
+    configRaw.value = '暂无配置文件'
+  }
 })
-const configRaw = computed(() => {
-  return redisConfList[configVersion.value] || '暂不支持'
-})
+
 function handleCommand(command){
-  dialog.raw = true
   configVersion.value = command
+  nextTick(() => dialog.raw = true)
 }
 </script>
 
@@ -78,7 +79,7 @@ function handleCommand(command){
             <el-button plain icon="el-icon-notebook" type="info">参考</el-button>
             <template #dropdown>
               <el-dropdown-menu>
-                <el-dropdown-item :command="item.key" v-for="item in configList">{{item.key}}</el-dropdown-item>
+                <el-dropdown-item :command="item" v-for="item in redisConfList">{{item}}</el-dropdown-item>
               </el-dropdown-menu>
             </template>
           </el-dropdown>
