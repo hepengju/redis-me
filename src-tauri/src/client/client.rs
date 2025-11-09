@@ -1,5 +1,5 @@
 use crate::utils::model::*;
-use crate::utils::util::{assert_is_true, vec8_to_display_string, AnyResult, REDIS_ME_FIELD_TO_DELETE_TMP_VALUE};
+use crate::utils::util::{assert_is_true, vec8_to_display_string, AnyResult, REDIS_ME_FIELD_TO_DELETE_TMP_VALUE, REDIS_ME_SUBSCRIBE_STOP_CHANNEL};
 use std::collections::{HashMap, HashSet};
 use std::sync::{Arc, MutexGuard};
 use std::sync::atomic::{AtomicBool, Ordering};
@@ -34,8 +34,6 @@ pub trait RedisMeClient: Send + Sync {
 
     fn del(&self, key: RedisKey) -> AnyResult<()>;
 
-    fn batch_del(&self, param: RedisBatchDelete) -> AnyResult<()>;
-
     fn field_add(&self, param: RedisFieldAdd) -> AnyResult<()>;
 
     fn field_set(&self, param: RedisFieldSet) -> AnyResult<()>;
@@ -67,40 +65,11 @@ pub trait RedisMeClient: Send + Sync {
     fn monitor(&self, app_handle: AppHandle, node: &str) -> AnyResult<()>;
     fn monitor_stop(&self) -> AnyResult<()>;
 
+    fn batch_del(&self, param: RedisBatchDelete) -> AnyResult<()>;
     fn mock_data(&self, count: u64) -> AnyResult<()>;
 }
 
 // 通用实现: 由于Connection动态兼容问题，无法写在接口里面，因此写在方法中
-pub fn subscribe0(mut conn: Connection, app_handle: AppHandle, channel: Option<String>,
-                  id: String, running: Arc<AtomicBool>) -> AnyResult<()> {
-    set_client_name(&mut conn)?;
-    running.store(true, Ordering::Relaxed);
-
-    let channel = channel
-        .filter(|c| !c.is_empty())
-        .unwrap_or_else(|| "*".into());
-
-    let _: JoinHandle<AnyResult<()>> = thread::spawn(move || {
-        let mut pubsub = conn.as_pubsub();
-        pubsub.psubscribe(&channel)?;
-        info!("subscribe start: {}", &channel);
-        while running.load(Ordering::Relaxed) {
-            // TODO 这里的方法时阻塞的, 需要最后发送1条消息才能结束任务
-            let msg = pubsub.get_message()?;
-            let payload: String = msg.get_payload()?;
-            let event = SubscribeEvent {
-                id: id.clone(),
-                datetime: Local::now().format("%Y-%m-%d %H:%M:%S%.3f").to_string(),
-                channel: msg.get_channel_name().to_string(),
-                message: payload,
-            };
-            let _ = &app_handle.emit("subscribe", event);
-        }
-        info!("subscribe end: {}", &channel);
-        Ok(())
-    });
-    Ok(())
-}
 
 pub fn get0(mut conn: MutexGuard<impl Commands>, key: RedisKey, hash_key: Option<String>) -> AnyResult<RedisValue> {
     let ttl: i64 = conn.ttl(&key)?;
@@ -337,6 +306,42 @@ pub fn publish0(mut conn: MutexGuard<impl Commands>, channel: &str, message: &st
     Ok(())
 }
 
+pub fn subscribe0(mut conn: Connection, running: Arc<AtomicBool>, app_handle: AppHandle, channel: Option<String>,
+                  id: String, ) -> AnyResult<()> {
+    set_client_name(&mut conn)?;
+    running.store(true, Ordering::Relaxed);
+
+    let channel = channel
+        .filter(|c| !c.is_empty())
+        .unwrap_or_else(|| "*".into());
+
+    let _: JoinHandle<AnyResult<()>> = thread::spawn(move || {
+        let mut pubsub = conn.as_pubsub();
+        pubsub.psubscribe(&channel)?;
+        info!("subscribe start: {}", &channel);
+        while running.load(Ordering::Relaxed) {
+            // TODO 这里的方法时阻塞的, 需要最后发送1条消息才能结束任务
+            let msg = pubsub.get_message()?;
+            let payload: String = msg.get_payload()?;
+            let event = SubscribeEvent {
+                id: id.clone(),
+                datetime: Local::now().format("%Y-%m-%d %H:%M:%S%.3f").to_string(),
+                channel: msg.get_channel_name().to_string(),
+                message: payload,
+            };
+            let _ = &app_handle.emit("subscribe", event);
+        }
+        info!("subscribe end: {}", &channel);
+        Ok(())
+    });
+    Ok(())
+}
+
+pub fn subscribe_stop0(mut conn: MutexGuard<impl Commands>, running: Arc<AtomicBool>) -> AnyResult<()> {
+    running.store(false, Ordering::Relaxed);
+    let _: () = conn.publish(REDIS_ME_SUBSCRIBE_STOP_CHANNEL, "")?;
+    Ok(())
+}
 
 // 集群和单机共享的方法, 由于Commands不是dyn 兼容的, 无法直接写在父类中(也许有其他办法?)
 #[macro_export]

@@ -1,8 +1,8 @@
 use crate::client::client::*;
+use crate::implement_pipeline_commands;
 use crate::utils::conn::{get_client_single, set_client_name};
 use crate::utils::model::*;
 use crate::utils::util::*;
-use crate::{implement_pipeline_commands};
 use anyhow::bail;
 use log::info;
 use redis::{Client, Connection, Pipeline, Value, ValueType};
@@ -93,7 +93,9 @@ impl RedisMeClient for RedisMeSingle {
                 .arg("count")
                 .arg(batch_count);
 
-            if let Some(ref scan_type) = param.scan_type && !scan_type.is_empty() {
+            if let Some(ref scan_type) = param.scan_type
+                && !scan_type.is_empty()
+            {
                 cmd.arg("type").arg(scan_type);
             }
 
@@ -187,8 +189,6 @@ impl RedisMeClient for RedisMeSingle {
             .query(&mut conn)?;
         Ok(())
     }
-
-    implement_pipeline_commands!(Pipeline);
 
     fn slow_log(&self, count: Option<u64>, _node: Option<String>) -> AnyResult<Vec<RedisSlowLog>> {
         let mut conn = self.get_conn()?;
@@ -301,13 +301,11 @@ impl RedisMeClient for RedisMeSingle {
         let conn = self.client.get_connection()?;
         let id = self.id.clone();
         let running = self.subscribe_running.clone();
-        subscribe0(conn, app_handle, channel, id, running)
+        subscribe0(conn, running, app_handle, channel, id)
     }
 
     fn subscribe_stop(&self) -> AnyResult<()> {
-        self.subscribe_running.store(false, Ordering::Relaxed);
-        self.publish(REDIS_ME_SUBSCRIBE_STOP_CHANNEL, "")?;
-        Ok(())
+        subscribe_stop0(self.get_conn()?, self.subscribe_running.clone())
     }
 
     fn monitor(&self, app_handle: AppHandle, _node: &str) -> AnyResult<()> {
@@ -319,6 +317,8 @@ impl RedisMeClient for RedisMeSingle {
         info!("TODO 监控停止");
         Ok(())
     }
+
+    implement_pipeline_commands!(Pipeline);
 }
 
 // 个性化方法

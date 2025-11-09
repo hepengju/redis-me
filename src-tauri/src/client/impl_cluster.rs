@@ -9,7 +9,7 @@ use redis::cluster::{ClusterClient, ClusterConnection, ClusterPipeline};
 use redis::cluster_routing::RoutingInfo;
 use redis::cluster_routing::RoutingInfo::SingleNode;
 use redis::cluster_routing::SingleNodeRoutingInfo::ByAddress;
-use redis::{FromRedisValue, Value, ValueType};
+use redis::{FromRedisValue, Value};
 use std::collections::HashMap;
 use std::sync::atomic::{AtomicBool, AtomicU8, Ordering};
 use std::sync::{Arc, Mutex, MutexGuard};
@@ -218,8 +218,6 @@ impl RedisMeClient for RedisMeCluster {
         Ok(())
     }
 
-    implement_pipeline_commands!(ClusterPipeline);
-
     fn slow_log(&self, count: Option<u64>, node: Option<String>) -> AnyResult<Vec<RedisSlowLog>> {
         let mut conn = self.get_conn()?;
         let mut logs = vec![];
@@ -366,13 +364,11 @@ impl RedisMeClient for RedisMeCluster {
         let conn = get_client_single(&self.conf)?.get_connection()?;
         let id = self.id.clone();
         let running = self.subscribe_running.clone();
-        subscribe0(conn, app_handle, channel, id, running)
+        subscribe0(conn, running, app_handle, channel, id)
     }
 
     fn subscribe_stop(&self) -> AnyResult<()> {
-        self.subscribe_running.store(false, Ordering::Relaxed);
-        self.publish(REDIS_ME_SUBSCRIBE_STOP_CHANNEL, "")?;
-        Ok(())
+        subscribe_stop0(self.get_conn()?, self.subscribe_running.clone())
     }
 
     fn monitor(&self, app_handle: AppHandle, node: &str) -> AnyResult<()> {
@@ -384,6 +380,8 @@ impl RedisMeClient for RedisMeCluster {
         info!("TODO 监控停止");
         Ok(())
     }
+
+    implement_pipeline_commands!(ClusterPipeline);
 }
 
 // 个性化方法
