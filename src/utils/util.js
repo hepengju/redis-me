@@ -2,7 +2,9 @@ import mitt from 'mitt'
 import {sampleSize} from 'lodash'
 import {useClipboard} from '@vueuse/core'
 import {ElMessage, ElMessageBox} from 'element-plus'
-import {invoke} from "@tauri-apps/api/core";
+import {invoke} from '@tauri-apps/api/core'
+import {check} from '@tauri-apps/plugin-updater'
+import {relaunch} from '@tauri-apps/plugin-process'
 
 // 全局事件总线: setup直接导入，app全局属性也添加
 export const bus = mitt()
@@ -143,4 +145,23 @@ export function meDeleteKey(id, redisKey, thenFn) {
       thenFn()
     }
   })
+}
+
+
+// 检查更新
+export async function meCheckUpdate() {
+  console.log('检查更新')
+  const update = await check().catch(DoNothing)
+  if (update) {
+    meConfirm(`有新版本${update.version}，是否更新？`,
+      async () => {
+        try {
+          await update.downloadAndInstall(DoNothing)
+          meConfirm('更新完成，是否立刻重启', async () => await relaunch())
+        } catch (e) {
+          meOk(`更新失败: ${e.message}`)
+        }
+      }
+    )
+  }
 }

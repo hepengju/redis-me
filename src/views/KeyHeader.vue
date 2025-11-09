@@ -72,7 +72,7 @@ async function handleCommand(command) {
             <me-icon name="模拟数据" icon="el-icon-coffee-cup"/>
           </el-dropdown-item>
           <el-dropdown-item command="setting" divided>
-            <me-icon name="设置" icon="el-icon-setting"/>
+            <me-icon name="基础设置" icon="el-icon-setting"/>
           </el-dropdown-item>
           <el-dropdown-item command="info">
             <me-icon name="关于" icon="me-icon-info"/>

@@ -3,6 +3,9 @@ import 'dayjs/locale/zh-cn'
 import zhCn from 'element-plus/es/locale/lang/zh-cn'
 import AppMain from '@/views/AppMain.vue'
 import AppTitle from '@/views/ext/AppTitle.vue'
+import {meCheckUpdate} from '@/utils/util.js'
+
+onMounted(() => meCheckUpdate())
 </script>
 
 <template>
