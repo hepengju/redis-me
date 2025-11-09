@@ -60,7 +60,7 @@ onUnmounted(() => tauriUnlisten())
   <div class="redis-monitor">
     <div class="me-flex header">
       <div>
-        <node-list v-model="node" style="margin-right: 10px" init-node/>
+        <node-list v-model="node" style="margin-right: 10px" init-node :disabled="monitoring"/>
       </div>
       <div>
         <me-button icon="el-icon-delete" info="清空消息" @click="clearData" :disabled="dataList.length === 0" placement="top"/>
