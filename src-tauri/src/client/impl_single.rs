@@ -1,10 +1,9 @@
-use crate::client::client::RedisMeClient;
+use crate::client::client::{subscribe0, RedisMeClient};
 use crate::implement_common_commands;
 use crate::utils::conn::{get_client_single, set_client_name};
 use crate::utils::model::*;
 use crate::utils::util::*;
 use anyhow::bail;
-use chrono::Local;
 use log::info;
 use redis::{Client, Commands, Connection, Pipeline, SetExpiry, SetOptions, Value, ValueType};
 use std::collections::HashMap;
@@ -12,9 +11,8 @@ use std::collections::HashSet;
 use std::sync::atomic::{AtomicBool, AtomicU8, Ordering};
 use std::sync::{Arc, Mutex, MutexGuard};
 use std::thread;
-use std::thread::JoinHandle;
 use std::time::Duration;
-use tauri::{AppHandle, Emitter};
+use tauri::{AppHandle};
 
 pub struct RedisMeSingle {
     id: String,
@@ -267,46 +265,14 @@ impl RedisMeClient for RedisMeSingle {
     }
 
     fn subscribe(&self, app_handle: AppHandle, channel: Option<String>) -> AnyResult<()> {
-        let mut conn = self.client.get_connection()?;
-        set_client_name(&mut conn)?;
-        self.subscribe_running.store(true, Ordering::Relaxed);
-        let r = self.subscribe_running.clone();
-
+        let conn = self.client.get_connection()?;
         let id = self.id.clone();
-        let _: JoinHandle<AnyResult<()>> = thread::spawn(move || {
-            let mut pubsub = conn.as_pubsub();
-            let channel = channel
-                .filter(|c| !c.is_empty())
-                .unwrap_or_else(|| "*".into());
-            pubsub.psubscribe(&channel)?;
-
-            info!("subscribe start: {}", &channel);
-            while r.load(Ordering::Relaxed) {
-                let msg = pubsub.get_message()?;
-                let payload: String = msg.get_payload()?;
-                info!(
-                    "subscribe channel '{}': {}",
-                    msg.get_channel_name(),
-                    payload
-                );
-                let event = SubscribeEvent {
-                    id: id.clone(),
-                    datetime: Local::now().format("%Y-%m-%d %H:%M:%S%.3f").to_string(),
-                    channel: msg.get_channel_name().to_string(),
-                    message: payload,
-                };
-                let _ = &app_handle.emit("subscribe", event);
-            }
-            info!("subscribe end: {}", &channel);
-            Ok(())
-        });
-        Ok(())
+        let running = self.subscribe_running.clone();
+        subscribe0(app_handle, channel, conn, id, running)
     }
 
     fn subscribe_stop(&self) -> AnyResult<()> {
         self.subscribe_running.store(false, Ordering::Relaxed);
-        // 由于pubsub.get_message()是阻塞的, 所以此处需要再发送一个消息才能结束
-        // 如果订阅的频道不是*, 需要发送到指定频道才能结束
         self.publish(REDIS_ME_SUBSCRIBE_STOP_CHANNEL, "")?;
         Ok(())
     }
