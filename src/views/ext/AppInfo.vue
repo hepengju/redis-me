@@ -17,7 +17,7 @@ getVersion().then(res => appVersion.value = res).catch(_ => {})
       <el-link href="https://gitee.com/hepengju/redis-me" target="_blank">官方网站</el-link>
     </div>
     <div class="app-copyright">
-      Copyright © 2025 hepengju.cn All Rights Reserved.
+      Copyright © 2025 hepengju.com All Rights Reserved.
     </div>
   </div>
 </template>
