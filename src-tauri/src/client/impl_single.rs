@@ -5,7 +5,7 @@ use crate::utils::model::*;
 use crate::utils::util::*;
 use anyhow::bail;
 use log::info;
-use redis::{Client, Connection, Pipeline, Value, ValueType};
+use redis::{Client, Connection, Pipeline, Value};
 use std::collections::HashMap;
 use std::sync::atomic::{AtomicBool, AtomicU8, Ordering};
 use std::sync::{Arc, Mutex, MutexGuard};
@@ -15,7 +15,7 @@ use tauri::AppHandle;
 
 pub struct RedisMeSingle {
     id: String,
-    conf: RedisConn,
+    //conf: RedisConn,
     client: Client,
     conn: Mutex<Connection>,
 
@@ -343,7 +343,7 @@ impl RedisMeSingle {
         info!("Redis单机连接初始化成功: {}", redis_conn.name);
         Ok(Box::new(RedisMeSingle {
             id: redis_conn.id.clone(),
-            conf: redis_conn.clone(),
+            //conf: redis_conn.clone(),
             client,
             conn: Mutex::new(conn),
             db: Arc::new(AtomicU8::new(redis_conn.db)),

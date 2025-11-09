@@ -10,9 +10,11 @@ use std::time::Duration;
 // 获取单机连接
 pub fn get_client_single(conn: &RedisConn) -> AnyResult<Client> {
     let prefix = if conn.ssl { "rediss" } else { "redis" };
+    let suffix = if conn.ssl { "/#insecure" } else { "" };
+
     let redis_url = format!(
-        "{}://{}:{}@{}:{}/#insecure",
-        prefix, conn.username, conn.password, conn.host, conn.port
+        "{}://{}:{}@{}:{}{}",
+        prefix, conn.username, conn.password, conn.host, conn.port, suffix
     );
     info!("redis_url: {redis_url}");
 

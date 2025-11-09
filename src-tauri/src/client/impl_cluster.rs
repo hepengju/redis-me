@@ -5,7 +5,7 @@ use crate::utils::util::*;
 use crate::implement_pipeline_commands;
 use anyhow::bail;
 use log::info;
-use redis::cluster::{ClusterClient, ClusterConnection, ClusterPipeline};
+use redis::cluster::{ClusterConnection, ClusterPipeline};
 use redis::cluster_routing::RoutingInfo;
 use redis::cluster_routing::RoutingInfo::SingleNode;
 use redis::cluster_routing::SingleNodeRoutingInfo::ByAddress;
@@ -20,7 +20,7 @@ use tauri::AppHandle;
 pub struct RedisMeCluster {
     id: String,
     conf: RedisConn,
-    client: ClusterClient,
+    //client: ClusterClient,
     conn: Mutex<ClusterConnection>,
     node_list: Vec<RedisNode>,
 
@@ -413,7 +413,7 @@ impl RedisMeCluster {
         Ok(Box::new(RedisMeCluster {
             id: redis_conn.id.clone(),
             conf: redis_conn.clone(),
-            client,
+            //client,
             conn: Mutex::new(conn),
             node_list,
             db: Arc::new(AtomicU8::new(0)),
