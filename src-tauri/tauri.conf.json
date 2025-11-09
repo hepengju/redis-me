@@ -42,7 +42,7 @@
   },
   "plugins": {
     "updater": {
-      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IEZEOUEwQjM0QkRCRjUxQjQKUldTMFViKzlOQXVhL2NZVEpaWlVqazNQNkVFaytuOUZnUmFWa2FBbE1tWFgyYWZWajd6cDlKMk4K",
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDgzQjIxQ0MxREE3QTJFMjUKUldRbExucmF3Unl5ZzJ3a05xTE5tK3VwQlViOW5Xb0MzeVNobGdZQnFlbzF0bkw2YmxqQmNzckgK",
       "endpoints": [
         "https://github.com/hepengju/redis-me/releases/latest/download/latest.json"
       ]
