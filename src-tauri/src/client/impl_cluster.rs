@@ -1,21 +1,21 @@
-use crate::client::client::{subscribe0, RedisMeClient};
-use crate::implement_common_commands;
+use crate::client::client::*;
 use crate::utils::conn::{get_client_cluster, get_client_single, set_client_name};
 use crate::utils::model::*;
 use crate::utils::util::*;
+use crate::implement_pipeline_commands;
 use anyhow::bail;
 use log::info;
 use redis::cluster::{ClusterClient, ClusterConnection, ClusterPipeline};
 use redis::cluster_routing::RoutingInfo;
 use redis::cluster_routing::RoutingInfo::SingleNode;
 use redis::cluster_routing::SingleNodeRoutingInfo::ByAddress;
-use redis::{Commands, FromRedisValue, SetExpiry, SetOptions, Value, ValueType};
-use std::collections::{HashMap, HashSet};
+use redis::{FromRedisValue, Value, ValueType};
+use std::collections::HashMap;
 use std::sync::atomic::{AtomicBool, AtomicU8, Ordering};
 use std::sync::{Arc, Mutex, MutexGuard};
 use std::thread;
 use std::time::Duration;
-use tauri::{AppHandle};
+use tauri::AppHandle;
 
 pub struct RedisMeCluster {
     id: String,
@@ -159,6 +159,34 @@ impl RedisMeClient for RedisMeCluster {
         })
     }
 
+    fn get(&self, key: RedisKey, hash_key: Option<String>) -> AnyResult<RedisValue> {
+        get0(self.get_conn()?, key, hash_key)
+    }
+
+    fn ttl(&self, key: RedisKey, ttl: i64) -> AnyResult<()> {
+        ttl0(self.get_conn()?, key, ttl)
+    }
+
+    fn set(&self, key: RedisKey, value: String, ttl: i64) -> AnyResult<()> {
+        set0(self.get_conn()?, key, value, ttl)
+    }
+
+    fn del(&self, key: RedisKey) -> AnyResult<()> {
+        del0(self.get_conn()?, key)
+    }
+
+    fn field_add(&self, param: RedisFieldAdd) -> AnyResult<()> {
+        field_add0(self.get_conn()?, param)
+    }
+
+    fn field_set(&self, param: RedisFieldSet) -> AnyResult<()> {
+        field_set0(self.get_conn()?, param)
+    }
+
+    fn field_del(&self, param: RedisFieldDel) -> AnyResult<()> {
+        field_del0(self.get_conn()?, param)
+    }
+
     fn execute_command(&self, param: RedisCommand) -> AnyResult<String> {
         let (cmd, args) = parse_command(param.command.as_str())?;
         if cmd == "" {
@@ -189,6 +217,8 @@ impl RedisMeClient for RedisMeCluster {
         let _ = conn.route_command(redis::cmd("config").arg("set").arg(key).arg(value), route)?;
         Ok(())
     }
+
+    implement_pipeline_commands!(ClusterPipeline);
 
     fn slow_log(&self, count: Option<u64>, node: Option<String>) -> AnyResult<Vec<RedisSlowLog>> {
         let mut conn = self.get_conn()?;
@@ -328,13 +358,15 @@ impl RedisMeClient for RedisMeCluster {
         Ok(clients)
     }
 
-    implement_common_commands!(ClusterPipeline);
+    fn publish(&self, channel: &str, message: &str) -> AnyResult<()> {
+        publish0(self.get_conn()?, channel, message)
+    }
 
     fn subscribe(&self, app_handle: AppHandle, channel: Option<String>) -> AnyResult<()> {
         let conn = get_client_single(&self.conf)?.get_connection()?;
         let id = self.id.clone();
         let running = self.subscribe_running.clone();
-        subscribe0(app_handle, channel, conn, id, running)
+        subscribe0(conn, app_handle, channel, id, running)
     }
 
     fn subscribe_stop(&self) -> AnyResult<()> {
