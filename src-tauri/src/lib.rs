@@ -8,6 +8,10 @@ use client::state::AppState;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
+    rustls::crypto::aws_lc_rs::default_provider()
+        .install_default()
+        .expect("Failed to install rustls crypto provider");
+
     tauri::Builder::default()
         .plugin(tauri_plugin_process::init())
         .plugin(tauri_plugin_updater::Builder::new().build())
