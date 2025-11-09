@@ -1,8 +1,8 @@
 use crate::client::client::*;
+use crate::implement_pipeline_commands;
 use crate::utils::conn::{get_client_cluster, get_client_single, set_client_name};
 use crate::utils::model::*;
 use crate::utils::util::*;
-use crate::implement_pipeline_commands;
 use anyhow::bail;
 use log::info;
 use redis::cluster::{ClusterConnection, ClusterPipeline};
@@ -123,7 +123,9 @@ impl RedisMeClient for RedisMeCluster {
                     .arg("count")
                     .arg(batch_count);
 
-                if let Some(ref scan_type) = param.scan_type && !scan_type.is_empty() {
+                if let Some(ref scan_type) = param.scan_type
+                    && !scan_type.is_empty()
+                {
                     cmd.arg("type").arg(scan_type);
                 }
 

@@ -1,16 +1,18 @@
+use crate::utils::conn::set_client_name;
 use crate::utils::model::*;
-use crate::utils::util::{assert_is_true, vec8_to_display_string, AnyResult, REDIS_ME_FIELD_TO_DELETE_TMP_VALUE};
-use std::collections::{HashMap, HashSet};
-use std::sync::{Arc, MutexGuard};
-use std::sync::atomic::{AtomicBool, Ordering};
-use std::thread;
-use std::thread::JoinHandle;
+use crate::utils::util::{
+    AnyResult, REDIS_ME_FIELD_TO_DELETE_TMP_VALUE, assert_is_true, vec8_to_display_string,
+};
 use anyhow::bail;
 use chrono::Local;
 use log::info;
-use redis::{from_redis_value, Commands, Connection, Msg, SetExpiry, SetOptions, ValueType};
+use redis::{Commands, Connection, Msg, SetExpiry, SetOptions, ValueType, from_redis_value};
+use std::collections::{HashMap, HashSet};
+use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::{Arc, MutexGuard};
+use std::thread;
+use std::thread::JoinHandle;
 use tauri::{AppHandle, Emitter};
-use crate::utils::conn::set_client_name;
 
 /// RedisME服务接口
 pub trait RedisMeClient: Send + Sync {
@@ -71,7 +73,11 @@ pub trait RedisMeClient: Send + Sync {
 
 // 通用实现: 由于Connection动态兼容问题，无法写在接口里面，因此写在方法中
 
-pub fn get0(mut conn: MutexGuard<impl Commands>, key: RedisKey, hash_key: Option<String>) -> AnyResult<RedisValue> {
+pub fn get0(
+    mut conn: MutexGuard<impl Commands>,
+    key: RedisKey,
+    hash_key: Option<String>,
+) -> AnyResult<RedisValue> {
     let ttl: i64 = conn.ttl(&key)?;
     let key_type: ValueType = conn.key_type(&key)?;
 
@@ -103,7 +109,10 @@ pub fn get0(mut conn: MutexGuard<impl Commands>, key: RedisKey, hash_key: Option
             let value: Vec<(Vec<u8>, f64)> = conn.zrange_withscores(&key, 0, -1)?;
             let list: Vec<RedisZetItem> = value
                 .into_iter()
-                .map(|(value, score)| RedisZetItem { value: vec8_to_display_string(&value), score })
+                .map(|(value, score)| RedisZetItem {
+                    value: vec8_to_display_string(&value),
+                    score,
+                })
                 .collect();
             serde_json::to_value(list)
         }
@@ -120,11 +129,14 @@ pub fn get0(mut conn: MutexGuard<impl Commands>, key: RedisKey, hash_key: Option
                 }
             } else {
                 let value: HashMap<Vec<u8>, Vec<u8>> = conn.hgetall(&key)?;
-                let value = value.into_iter().map(|(key, value)| {
-                    let key: String = vec8_to_display_string(&key);
-                    let value: String = vec8_to_display_string(&value);
-                    (key, value)
-                }).collect::<HashMap<String, String>>();
+                let value = value
+                    .into_iter()
+                    .map(|(key, value)| {
+                        let key: String = vec8_to_display_string(&key);
+                        let value: String = vec8_to_display_string(&value);
+                        (key, value)
+                    })
+                    .collect::<HashMap<String, String>>();
                 serde_json::to_value(value)
             }
         }
@@ -156,7 +168,12 @@ pub fn ttl0(mut conn: MutexGuard<impl Commands>, key: RedisKey, ttl: i64) -> Any
     Ok(())
 }
 
-pub fn set0(mut conn: MutexGuard<impl Commands>, key: RedisKey, value: String, ttl: i64) -> AnyResult<()> {
+pub fn set0(
+    mut conn: MutexGuard<impl Commands>,
+    key: RedisKey,
+    value: String,
+    ttl: i64,
+) -> AnyResult<()> {
     if ttl < 0 {
         let _: () = conn.set(&key, value)?;
     } else {
@@ -277,8 +294,7 @@ pub fn field_del0(mut conn: MutexGuard<impl Commands>, param: RedisFieldDel) -> 
             let _: () = conn.hdel(&key, param.field_key)?;
         }
         ValueType::List => {
-            let _: () =
-                conn.lset(&key, param.field_index, REDIS_ME_FIELD_TO_DELETE_TMP_VALUE)?;
+            let _: () = conn.lset(&key, param.field_index, REDIS_ME_FIELD_TO_DELETE_TMP_VALUE)?;
             let _: () = conn.lrem(&key, 1, REDIS_ME_FIELD_TO_DELETE_TMP_VALUE)?;
         }
         ValueType::Set => {
@@ -301,13 +317,22 @@ pub fn field_del0(mut conn: MutexGuard<impl Commands>, param: RedisFieldDel) -> 
     Ok(())
 }
 
-pub fn publish0(mut conn: MutexGuard<impl Commands>, channel: &str, message: &str) -> AnyResult<()> {
+pub fn publish0(
+    mut conn: MutexGuard<impl Commands>,
+    channel: &str,
+    message: &str,
+) -> AnyResult<()> {
     let _: () = conn.publish(channel, message)?;
     Ok(())
 }
 
-pub fn subscribe0(mut conn: Connection, running: Arc<AtomicBool>, app_handle: AppHandle,
-                  channel: Option<String>, id: String) -> AnyResult<()> {
+pub fn subscribe0(
+    mut conn: Connection,
+    running: Arc<AtomicBool>,
+    app_handle: AppHandle,
+    channel: Option<String>,
+    id: String,
+) -> AnyResult<()> {
     set_client_name(&mut conn)?;
     running.store(true, Ordering::Relaxed);
 
@@ -342,7 +367,12 @@ pub fn subscribe_stop0(running: Arc<AtomicBool>) -> AnyResult<()> {
     Ok(())
 }
 
-pub fn monitor0(mut conn: Connection, running: Arc<AtomicBool>, app_handle: AppHandle, id: String) -> AnyResult<()>{
+pub fn monitor0(
+    mut conn: Connection,
+    running: Arc<AtomicBool>,
+    app_handle: AppHandle,
+    id: String,
+) -> AnyResult<()> {
     set_client_name(&mut conn)?;
     running.store(true, Ordering::Relaxed);
 
@@ -366,7 +396,7 @@ pub fn monitor0(mut conn: Connection, running: Arc<AtomicBool>, app_handle: AppH
     Ok(())
 }
 
-pub fn monitor_stop0(running: Arc<AtomicBool>) -> AnyResult<()>{
+pub fn monitor_stop0(running: Arc<AtomicBool>) -> AnyResult<()> {
     info!("monitor stop");
     running.store(false, Ordering::Relaxed);
     Ok(())

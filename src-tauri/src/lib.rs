@@ -9,6 +9,7 @@ use client::state::AppState;
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
+        .plugin(tauri_plugin_updater::Builder::new().build())
         .plugin(tauri_plugin_fs::init()) // 文件系统插件(导入导出)
         .plugin(tauri_plugin_store::Builder::new().build()) // 状态存储插件(连接、设置的自动保存和读取)
         .plugin(init_logger().build()) // 日志插件

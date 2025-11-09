@@ -7,14 +7,14 @@ use redis::{RedisWrite, ToRedisArgs, ToSingleRedisArg};
 use serde::{Deserialize, Serialize};
 
 // 数据库信息
-api_model!( RedisDB {
+api_model!(RedisDB {
     db: u8,
     name: String,
     size: u64,
 });
 
 // 连接信息
-api_model!( RedisConn {
+api_model!(RedisConn {
     id: String,
     name: String,
 
@@ -40,20 +40,20 @@ impl RedisConn {
     }
 }
 
-api_model!( SslOption {
+api_model!(SslOption {
     key: String,
     cert: String,
     ca: String,
 });
 
 // 信息 info命令
-api_model!( RedisInfo {
+api_model!(RedisInfo {
     node: String,
     info: String,
 });
 
 // 集群节点
-api_model!( RedisNode {
+api_model!(RedisNode {
     id: String,
     node: String,
     is_master: bool,
@@ -61,7 +61,7 @@ api_model!( RedisNode {
 });
 
 // 扫描参数
-api_model!( ScanParam {
+api_model!(ScanParam {
     #[serde(rename = "match")]
     pattern: String,
     count: u64,
@@ -86,7 +86,7 @@ impl ScanParam {
 }
 
 // 扫描游标
-api_model!( ScanCursor {
+api_model!(ScanCursor {
     ready_nodes: Vec<String>,
     now_node: String,
     now_cursor: u64,
@@ -105,7 +105,7 @@ impl Default for ScanCursor {
 }
 
 // 扫描结果
-api_model!( ScanResult {
+api_model!(ScanResult {
     key_list: Vec<RedisKey>,
     cursor: ScanCursor,
 });
@@ -113,7 +113,7 @@ api_model!( ScanResult {
 // Redis键: 由于键是字节存储的，考虑转换为utf-8字符串显示后可能会丢失信息，因此封装为对象
 // 备注: 为了方便传输与前端对比是否相等，将bytes序列化为base64字符串。
 //     （jackson针对bytes序列化, 默认会进行base64编码, 返回是字符串）
-api_model!( RedisKey {
+api_model!(RedisKey {
     key: String,    // 显示
 
     #[serde(with = "v8_base64")]
@@ -167,7 +167,7 @@ impl ToRedisArgs for RedisKey {
 impl ToSingleRedisArg for RedisKey {}
 
 // Redis值
-api_model!( RedisValue {
+api_model!(RedisValue {
     #[serde(rename = "type")]
     key_type: String,
     ttl: i64,
@@ -175,20 +175,20 @@ api_model!( RedisValue {
 });
 
 // 批量删除
-api_model!( RedisBatchDelete {
+api_model!(RedisBatchDelete {
     #[serde(rename = "match")]
     pattern: String,
     key_list: Vec<RedisKey>,
 });
 
 // Zset条目
-api_model!( RedisZetItem {
+api_model!(RedisZetItem {
     value: String,
     score: f64,
 });
 
 // 字段新增
-api_model!( RedisFieldAdd {
+api_model!(RedisFieldAdd {
     key: String,
     mode: String,    // key-新增键, field-新增字段
 
@@ -202,7 +202,7 @@ api_model!( RedisFieldAdd {
 });
 
 // 字段修改
-api_model!( RedisFieldSet {
+api_model!(RedisFieldSet {
     key: RedisKey,
     src_field_value: String,
     field_index: isize,
@@ -212,14 +212,14 @@ api_model!( RedisFieldSet {
 });
 
 // 字段值
-api_model!( RedisFieldValue {
+api_model!(RedisFieldValue {
     field_key: String,
     field_value: String,
     field_score: f64,
 });
 
 // 字段删除
-api_model!( RedisFieldDel {
+api_model!(RedisFieldDel {
     key: RedisKey,
     field_index: isize,
     field_key: String,
@@ -227,14 +227,14 @@ api_model!( RedisFieldDel {
 });
 
 // 执行命令
-api_model!( RedisCommand {
+api_model!(RedisCommand {
     command: String,
     node: Option<String>,
     auto_broadcast: bool,
 });
 
 // 慢日志
-api_model!( RedisSlowLog {
+api_model!(RedisSlowLog {
     node: String,
     id: u64,
     time: String,
@@ -245,7 +245,7 @@ api_model!( RedisSlowLog {
 });
 
 // 内存分析参数
-api_model!( RedisMemoryParam {
+api_model!(RedisMemoryParam {
     #[serde(rename = "match")]
     pattern: Option<String>, // 匹配模式
 
@@ -259,7 +259,7 @@ api_model!( RedisMemoryParam {
 });
 
 // 内存分析结果
-api_model!( RedisKeySize {
+api_model!(RedisKeySize {
     key: String,    // 显示
 
     #[serde(with = "v8_base64")]
@@ -282,7 +282,7 @@ impl From<(Vec<u8>, u64, String)> for RedisKeySize {
 }
 
 // 客户端
-api_model!( RedisClientInfo {
+api_model!(RedisClientInfo {
     id: Option<String>,             // 唯一的 64 位客户端 ID
     addr: Option<String>,           // 客户端的地址/端口
     laddr: Option<String>,          // 客户端连接到的本地地址/端口（绑定地址）
@@ -315,14 +315,14 @@ api_model!( RedisClientInfo {
     io_thread: Option<String>,       // 分配给客户端的 I/O 线程 ID。在 Redis 8.0 中添加
 });
 
-api_model!( SubscribeEvent {
+api_model!(SubscribeEvent {
     id: String,
     datetime: String,
     channel: String,
     message: String,
 });
 
-api_model!( MonitorEvent {
+api_model!(MonitorEvent {
     id: String,
     datetime: String,
     command: String,
