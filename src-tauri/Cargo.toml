@@ -36,7 +36,7 @@ redis = { version = "1", features = [
   "tls-rustls-insecure",
 ] }
 url = "2"
-rustls = { version = "0.23", default-features = false, features = [
+rustls = { version = "0.23.43", default-features = false, features = [
   "ring",
   "std",
   "tls12",
@@ -53,6 +53,9 @@ fern = { version = "0.7", features = ["colored"] }
 
 # 目录支持~和环境变量
 shellexpand = "3"
+
+# TLS：检测 X.509 v1 PEM（跳过 v1 CA 装入 rustls trust store）
+x509-parser = "0.16"
 
 # SSH 隧道支持（使用 russh 支持现代密钥格式）
 russh = { version = "0.63", default-features = false, features = ["flate2", "ring", "rsa"] }
@@ -81,3 +84,6 @@ tauri-plugin-window-state = "2"
 [[bin]]
 name = "RedisME"
 path = "src/main.rs"
+
+[patch.crates-io]
+redis = { path = "third-party/redis-rs" }

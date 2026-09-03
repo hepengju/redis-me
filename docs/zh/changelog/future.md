@@ -1,6 +1,5 @@
 ## Future
 
-- ZSet支持按分数范围过滤数据
 - Time Series 的支持
 - RedisSearch 的支持
 - 抖音/B站短视频的制作: 每个痛点解决1个小视频
@@ -9,9 +8,6 @@
 - 研究下怎么上线Linux的应用商店: deepin, snap, flathub
 - Redisson的键空间通知 模块 参考实现
 - 自定义编码也支持自动识别
-
-### 可逐步完善
-
 - Viewer 解压查看：Gzip / Deflate / Brotli（对标 TinyRDM / Another）
 - 网络代理：HTTP / SOCKS5
 - Unix Socket 支持
@@ -22,7 +18,6 @@
 - 图表显示优化
 - SSH 隧道支持集群和哨兵
 - 哨兵支持 SSL
-- 旧版 SSH 证书的支持
 - redis 的扩展模块命令支持
 - ACL 管理支持自定义角色
 - cli 功能支持
@@ -73,3 +68,5 @@
 - Redis单机/集群安装的UI支持, 快捷docker-compose.yaml生成 ✅️
 - 解析剪贴板 URL / redis:// 反向解析填表 ✅️
 - 连接，收藏等持久化到sqlite的DB中 ❌️
+- ZSet支持按分数范围过滤数据 ✅️
+- TLS：兼容 X.509 v1 证书（CentOS7 等旧 OpenSSL 自签）✅️
