@@ -160,7 +160,7 @@ api_commands!(
     config_get(pattern: &str, node: Option<String>) -> HashMap<String, String>; // 获取配置
     config_set(key: &str, value: &str, node: Option<String>) -> ();             // 设置配置
     slow_log(count: Option<u64>, node: Option<String>) -> Vec<RedisSlowLog>;    // 慢日志
-    memory_usage(param: RedisMemoryParam) -> Vec<RedisKeySize>;                 // 内存分析
+    memory_usage(param: RedisMemoryParam) -> RedisMemoryResult;                 // 内存分析（一轮）
     client_list(node: Option<String>, client_type: Option<String>) -> Vec<RedisClientInfo>; // 客户端列表
     publish(channel: &str, message: &str, msg_fmt: Option<BytesFormat>) -> (); // 发布消息
     subscribe_stop() -> ();                         // 订阅消息停止

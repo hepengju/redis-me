@@ -575,12 +575,7 @@ export default {
     confirm: '确认导入',
   },
 
-  keyMemory: {
-    title: '目录内存分析',
-    match: '键名表达式',
-    info: '总数：{total}，大小：{size}',
-    limit: '（数据量达到扫描限制：${limit}）',
-  },
+  keyMemory: { title: '目录内存分析', match: '键名表达式', info: '总数：{total}，大小：{size}' },
 
   keyList: { renameKey: '重命名键' },
 
@@ -766,12 +761,10 @@ export default {
   redisMemory: {
     hint: `
     <b>原理：scan / memory usage / pipeline / type</b> <br/>
-说明：使用scan方法扫描所有master节点，寻找匹配 {matchParam} 的键。每次扫描{scanCount}个键，然后pipeline批量发送memory usage命令获取占用内存大小，将>={sizeLimitKb}Kb的键记录下来。
-如果扫描键的总数已经到达{scanTotal}个（小于等于0表示扫描所有 或 结果数量已经满足{countLimit}个则返回，否则睡眠{sleepMillis}ms 再使用游标继续扫描。<br/>
-备注：memory usage 命令报告键及其值存储在内存中所需的字节数。报告的用量是一个键及其值所需的数据和管理开销的总内存分配量。
+说明：使用 scan 扫描所有 master 节点，寻找匹配 {matchParam} 的键。每轮扫描 {scanCount} 个键，再 pipeline 批量 MEMORY USAGE，将 >= {sizeLimitKb}Kb 的键记入表格。可随时暂停、继续或停止；轮间睡眠 {sleepMillis}ms。<br/>
+备注：MEMORY USAGE 报告键及其值存储所需的字节数，含数据与管理开销。
     `,
     total: '合计',
-    longTimeHint: '确定开始内存分析吗？耗时可能较长，请耐心等待！',
     batchDeleteHint: '确定批量删除【{count}】个键吗？',
     scanConfig: '扫描配置',
 
@@ -779,13 +772,11 @@ export default {
     matchParam: '匹配参数',
     scanEach: '每次扫描',
     sleepMillis: '每次睡眠',
-    scanTotal: '扫描总数',
-    sizeLimit: '大小限制',
-    countLimit: '数量限制',
     unit: '个',
     batchDelete: '批量删除',
     keyword: '键模糊筛选',
-    startScan: '开启分析',
+    startScan: '开始',
+    stopScan: '停止',
     type: '类型',
     key: '键',
     size: '大小',

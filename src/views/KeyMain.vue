@@ -1298,25 +1298,12 @@ function editDbName(db: number): void {
           </template>
           <template #suffix>
             <div class="keyword-suffix">
-              <el-tooltip
+              <me-scan-control
                 v-if="showScanControl"
-                :content="scanToggleTip"
-                placement="bottom"
-                :show-after="1000">
-                <div class="scan-control" @click.stop="onScanAction">
-                  <el-progress
-                    type="circle"
-                    :percentage="scanProgress"
-                    :width="22"
-                    :stroke-width="2"
-                    :show-text="false"
-                    color="var(--el-color-danger)"
-                    class="scan-ring" />
-                  <me-icon
-                    :icon="loading ? 'el-icon-video-pause' : 'el-icon-video-play'"
-                    class="scan-icon" />
-                </div>
-              </el-tooltip>
+                :percentage="scanProgress"
+                :loading="loading"
+                :tip="scanToggleTip"
+                @click="onScanAction" />
               <me-icon
                 icon="me-icon-search"
                 class="suffix-icon-btn"
@@ -1798,37 +1785,6 @@ function editDbName(db: number): void {
         &.is-checked .el-checkbox__inner {
           background-color: var(--el-color-primary);
           border-color: var(--el-color-primary);
-        }
-      }
-    }
-
-    .scan-control {
-      position: relative;
-      width: 24px;
-      height: 24px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      cursor: pointer;
-      flex-shrink: 0;
-
-      .scan-ring {
-        position: absolute;
-        top: 50%;
-        left: 50%;
-        transform: translate(-50%, -50%);
-        line-height: 1;
-      }
-
-      .scan-icon {
-        position: relative;
-        z-index: 1;
-        font-size: 16px;
-
-        :deep(.icon),
-        :deep(svg) {
-          width: 16px;
-          height: 16px;
         }
       }
     }

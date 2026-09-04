@@ -363,18 +363,23 @@ mod tests {
 
     #[test]
     fn test_memory_usage() {
-        let result = client()
-            .memory_usage(RedisMemoryParam {
-                pattern: None,
-                size_limit: 1,
-                count_limit: 100,
-                scan_count: 1000,
-                scan_total: 10000,
-                sleep_millis: 0,
-                need_key_type: Some(true),
-            })
-            .unwrap();
-        println!("{result:#?}");
+        let mut cursor = None;
+        loop {
+            let result = client()
+                .memory_usage(RedisMemoryParam {
+                    pattern: None,
+                    size_limit: 1,
+                    scan_count: 1000,
+                    cursor,
+                    need_key_type: Some(true),
+                })
+                .unwrap();
+            println!("{result:#?}");
+            if result.cursor.finished {
+                break;
+            }
+            cursor = Some(result.cursor);
+        }
     }
 
     // https://github.com/redis-rs/redis-rs/issues/1814

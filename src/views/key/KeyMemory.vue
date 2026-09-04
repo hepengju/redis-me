@@ -1,77 +1,76 @@
 <script setup lang="ts">
-// #region 导入
+// 键树文件夹右键：对该目录 MATCH 做内存分析（与内存页同一套扫描循环）
 import { useVirtualList } from '@vueuse/core'
 import { computed, inject, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { shareProvideKey } from '@/types/me-interface'
-import type { RedisKeySize_Serialize } from '@/types/tauri-specta'
-import { meHumanSize, meCommands } from '@/utils/util'
-// #endregion
+import { useMemoryScan } from '@/utils/memory-scan'
+import { meHumanSize } from '@/utils/util'
 
-// #region 核心状态
 const { t } = useI18n()
 defineExpose({ open })
-function open(data: { match: string }) {
-  keyList.value = []
-  visible.value = true
-  form.value.match = data.match
-  keyMemory()
-}
-
-// 共享数据
 const share = inject(shareProvideKey)!
-
-// 表单数据
 const visible = ref(false)
-const loading = ref(false)
-const form = ref({
-  match: '',
-  needKeyType: false,
-  sizeLimit: 0,
-  countLimit: 10000,
-  scanCount: 10000,
-  scanTotal: 0,
-  sleepMillis: 0,
-})
-// 内存分析
-const keyList = ref<RedisKeySize_Serialize[]>([])
-async function keyMemory() {
-  loading.value = true
-  try {
-    const data = await meCommands.memoryUsage(share.conn!.id, form.value)
-    keyList.value = data
-  } finally {
-    loading.value = false
-  }
-}
-// #endregion
+const match = ref('')
 
-// #region 计算属性
+const {
+  scanning,
+  paused,
+  dataList,
+  showScanControl,
+  scanProgress,
+  scanToggleTip,
+  start,
+  stop,
+  onRingClick,
+  onStartStop,
+} = useMemoryScan({
+  connId: () => share.conn?.id,
+  param: () => ({
+    match: match.value,
+    sizeLimit: 0,
+    scanCount: 1000,
+    sleepMillis: 0,
+    needKeyType: false,
+  }),
+  totalEstimate: () => 0,
+})
+
+async function open(data: { match: string }) {
+  match.value = data.match
+  visible.value = true
+  await stop()
+  await start()
+}
+
+async function onClosed() {
+  // 关闭动画中又打开时，本次 closed 不能停掉新扫描
+  if (visible.value) return
+  await stop()
+  if (!visible.value) dataList.value = []
+}
+
 const totalSize = computed(() =>
-  keyList.value.map(item => item.size).reduce((sum, cur) => sum + cur, 0),
+  dataList.value.map(item => item.size).reduce((sum, cur) => sum + cur, 0),
 )
-// 虚拟列表
-const items = computed(() => keyList.value)
+const items = computed(() => dataList.value)
 const { list, containerProps, wrapperProps } = useVirtualList(items, { itemHeight: 14 })
-// #endregion
 </script>
 
 <template>
-  <el-dialog :title="t('keyMemory.title')" v-model="visible" :width="600">
+  <el-dialog :title="t('keyMemory.title')" v-model="visible" :width="600" @closed="onClosed">
     <el-form label-position="top">
       <el-form-item :label="t('keyMemory.match')">
-        <!-- 此处保留可编辑，使用更加方便 -->
-        <el-input type="text" v-model="form.match" disabled />
+        <el-input type="text" v-model="match" disabled />
       </el-form-item>
 
       <el-form-item
-        :label="
-          t('keyMemory.info', { total: keyList.length, size: meHumanSize(totalSize) }) +
-          (keyList.length >= form.countLimit ? t('keyMemory.limit', { size: form.countLimit }) : '')
-        "
-        :loading="loading">
-        <div v-bind="containerProps" :style="{ height: '300px', width: '100%' }">
+        :label="t('keyMemory.info', { total: dataList.length, size: meHumanSize(totalSize) })">
+        <div
+          v-bind="containerProps"
+          v-loading="scanning && dataList.length === 0"
+          :style="{ height: '300px', width: '100%' }">
           <div v-bind="wrapperProps">
             <div v-for="item in list" :key="item.index" class="key me-flex">
               <div class="single-line-ellipsis">{{ item.data.key }}</div>
@@ -81,6 +80,22 @@ const { list, containerProps, wrapperProps } = useVirtualList(items, { itemHeigh
         </div>
       </el-form-item>
     </el-form>
+    <template #footer>
+      <div class="memory-footer">
+        <me-scan-control
+          v-if="showScanControl"
+          :percentage="scanProgress"
+          :loading="scanning"
+          :tip="scanToggleTip"
+          @click="onRingClick" />
+        <el-button v-if="!scanning && !paused" @click="visible = false">{{
+          t('cancel')
+        }}</el-button>
+        <el-button v-else type="danger" icon="el-icon-video-pause" @click="onStartStop">{{
+          t('redisMemory.stopScan')
+        }}</el-button>
+      </div>
+    </template>
   </el-dialog>
 </template>
 
@@ -90,5 +105,12 @@ const { list, containerProps, wrapperProps } = useVirtualList(items, { itemHeigh
   line-height: 14px;
   padding: 3px 4px;
   color: var(--el-color-info);
+}
+
+.memory-footer {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
 }
 </style>
