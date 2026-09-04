@@ -1,6 +1,5 @@
 <script setup lang="ts">
 // #region 导入
-import { minimatch } from 'minimatch'
 import {
   computed,
   inject,
@@ -55,8 +54,8 @@ import { toKeyTypeLabel } from '@/utils/redis-display'
 import {
   buildScanPattern,
   buildLocalFilterPattern,
+  compileRedisGlobFilter,
   computeScanProgress,
-  MINIMATCH_SCAN_OPTS,
 } from '@/utils/redis-glob'
 import { defaultSettings } from '@/utils/settings-defaults'
 import {
@@ -596,30 +595,28 @@ const filterDataList = computed(() => {
   })
 })
 
-// Hash/Set/ZSet：本地 minimatch（未 Enter 时不依赖服务端 MATCH）
+// Hash/Set/ZSet：本地 Redis glob（未 Enter 时不依赖服务端 MATCH）
 const filterFieldPattern = computed(() =>
   buildLocalFilterPattern(fieldKeyword.value, fieldExact.value, fieldMatch.value),
 )
+const filterFieldMatch = computed(() => compileRedisGlobFilter(filterFieldPattern.value))
 const filterFieldList = computed(() => {
-  if (!filterFieldPattern.value) return dataList.value
-  const pattern = filterFieldPattern.value
+  const matchFn = filterFieldMatch.value
+  if (!matchFn) return dataList.value
   // Vector Set：按元素名（row.value）本地过滤（向量浮点无检索意义；相似度走 VSIM）
   if (vectorsetType.value) {
     return dataList.value.filter(
-      row =>
-        row.value != null &&
-        row.value !== '' &&
-        minimatch(formatTableCell(row.value), pattern, MINIMATCH_SCAN_OPTS),
+      row => row.value != null && row.value !== '' && matchFn(formatTableCell(row.value)),
     )
   }
   return dataList.value.filter(row => {
     if (row.key != null && row.key !== '') {
-      if (minimatch(formatTableCell(row.key), pattern, MINIMATCH_SCAN_OPTS)) return true
+      if (matchFn(formatTableCell(row.key))) return true
     }
     if (row.value != null && row.value !== '') {
-      if (minimatch(formatTableCell(row.value), pattern, MINIMATCH_SCAN_OPTS)) return true
+      if (matchFn(formatTableCell(row.value))) return true
     }
-    if (row.score != null && minimatch(String(row.score), pattern, MINIMATCH_SCAN_OPTS)) {
+    if (row.score != null && matchFn(String(row.score))) {
       return true
     }
     return false
