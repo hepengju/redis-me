@@ -361,6 +361,7 @@ export default {
     javaSerialReadonly: 'JdkSerial is view-only; saving back is not supported',
     pickleReadonly: 'Pickle is view-only; saving back is not supported',
     phpSerialReadonly: 'PhpSerial is view-only; saving back is not supported',
+    gzipReadonly: 'Gzip-decompressed view is read-only; saving back is not supported',
     saveNoChange: 'No changes to save',
     saveDecodeFailed: 'Decode failed; cannot save',
   },

@@ -1,7 +1,13 @@
 import { encode } from '@msgpack/msgpack'
+import { gzipSync } from 'fflate'
 import { describe, expect, it } from 'vite-plus/test'
 
-import { detectViewFormat } from '@/utils/detect-view-format'
+import {
+  detectViewFormat,
+  detectViewFormatAuto,
+  detectedViewLabel,
+  peelGzipWire,
+} from '@/utils/detect-view-format'
 
 function utf8ToBase64(text: string): string {
   const bytes = new TextEncoder().encode(text)
@@ -120,5 +126,96 @@ describe('detectViewFormat', () => {
     expect(
       detectViewFormat(bytesToBase64(new Uint8Array([0xff, 0xfe, 0xfd])), { truncated: true }),
     ).toBe('hex')
+  })
+})
+
+function gzipBase64(bytes: Uint8Array): string {
+  return bytesToBase64(gzipSync(bytes))
+}
+
+describe('peelGzipWire / detectViewFormatAuto', () => {
+  it('非 Gzip 原样返回', () => {
+    const wire = utf8ToBase64('hello')
+    expect(peelGzipWire(wire)).toEqual({ gzip: false, wire })
+    expect(detectViewFormatAuto(wire)).toEqual({ view: 'utf8', gzip: false, wire })
+  })
+
+  it('Gzip + UTF8', () => {
+    const inner = new TextEncoder().encode('hello gzip 你好')
+    const auto = detectViewFormatAuto(gzipBase64(inner))
+    expect(auto.gzip).toBe(true)
+    expect(auto.view).toBe('utf8')
+    expect(auto.wire).toBe(bytesToBase64(inner))
+    expect(detectedViewLabel(auto.view, auto.gzip)).toBe('Gzip · UTF8')
+  })
+
+  it('Gzip + 普通 JSON → UTF8（不是 StrJson）', () => {
+    const inner = new TextEncoder().encode('{"a":1}')
+    const auto = detectViewFormatAuto(gzipBase64(inner))
+    expect(auto).toMatchObject({ gzip: true, view: 'utf8' })
+  })
+
+  it('Gzip + 双层 StrJson', () => {
+    const inner = new TextEncoder().encode(JSON.stringify(JSON.stringify({ a: 1 })))
+    expect(detectViewFormatAuto(gzipBase64(inner))).toMatchObject({ gzip: true, view: 'strjson' })
+  })
+
+  it('Gzip + JdkSerial', () => {
+    const innerB64 = 'rO0ABXNyABFqYXZhLnV0aWwuVHJlZVNldN2YUJOV7YdbAwAAeHBwdwQAAAACdAABYXQAAWJ4'
+    const inner = Uint8Array.from(atob(innerB64), c => c.charCodeAt(0))
+    const auto = detectViewFormatAuto(gzipBase64(inner))
+    expect(auto.gzip).toBe(true)
+    expect(auto.view).toBe('javaserial')
+    expect(auto.wire).toBe(innerB64)
+    expect(detectedViewLabel(auto.view, auto.gzip)).toBe('Gzip · JdkSerial')
+  })
+
+  it('Gzip + Pickle', () => {
+    const innerB64 = 'gASVFwAAAAAAAAB9lCiMAWGUSwGMAWKUXZQoSwFLAmV1Lg=='
+    const inner = Uint8Array.from(atob(innerB64), c => c.charCodeAt(0))
+    expect(detectViewFormatAuto(gzipBase64(inner))).toMatchObject({ gzip: true, view: 'pickle' })
+  })
+
+  it('Gzip + PhpSerial', () => {
+    const inner = new TextEncoder().encode('a:1:{s:1:"a";i:1;}')
+    expect(detectViewFormatAuto(gzipBase64(inner))).toMatchObject({ gzip: true, view: 'phpserial' })
+  })
+
+  it('Gzip + MsgPack', () => {
+    const inner = encode({ a: 1, b: 'x' })
+    expect(detectViewFormatAuto(gzipBase64(inner))).toMatchObject({ gzip: true, view: 'msgpack' })
+  })
+
+  it('Gzip + 非法 UTF-8 → Hex', () => {
+    const inner = new Uint8Array([0xff, 0xfe, 0xfd])
+    expect(detectViewFormatAuto(gzipBase64(inner))).toMatchObject({ gzip: true, view: 'hex' })
+  })
+
+  it('只剥一层：Gzip(Gzip(utf8)) 内层仍是 Gzip → Hex', () => {
+    const utf8 = new TextEncoder().encode('nested')
+    const innerGz = gzipSync(utf8)
+    const auto = detectViewFormatAuto(gzipBase64(innerGz))
+    expect(auto.gzip).toBe(true)
+    expect(auto.view).toBe('hex')
+    expect(auto.wire).toBe(bytesToBase64(innerGz))
+  })
+
+  it('魔数对但解压失败 → 不当壳', () => {
+    const junk = new Uint8Array([0x1f, 0x8b, 0x08, 0, 0, 0, 0, 0, 0, 0, 0, 1, 2, 3])
+    const wire = bytesToBase64(junk)
+    expect(peelGzipWire(wire)).toEqual({ gzip: false, wire })
+    expect(detectViewFormatAuto(wire).gzip).toBe(false)
+  })
+
+  it('截断 Gzip 跳过剥壳', () => {
+    const gz = gzipSync(new TextEncoder().encode('hello-truncated'))
+    const cut = gz.subarray(0, Math.max(10, gz.length - 8))
+    const auto = detectViewFormatAuto(bytesToBase64(cut), { truncated: true })
+    expect(auto.gzip).toBe(false)
+  })
+
+  it('不经 Auto 的 detectViewFormat 不剥壳（Gzip 原始字节 → hex）', () => {
+    const gz = gzipSync(new TextEncoder().encode('hello'))
+    expect(detectViewFormat(bytesToBase64(gz))).toBe('hex')
   })
 })

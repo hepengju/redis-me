@@ -25,8 +25,9 @@ import type {
   ScanCursor,
 } from '@/types/tauri-specta'
 import {
-  detectViewFormat,
+  detectViewFormatAuto,
   detectedViewLabel,
+  type DetectedViewAuto,
   type DetectedViewFormat,
 } from '@/utils/detect-view-format'
 import type { TableExportMatrix } from '@/utils/export'
@@ -279,11 +280,18 @@ watchEffect(() => {
 const bytesFormat = ref<ViewBytesFormat>('auto')
 const pendingAutoDetect = ref(false) // KEY_REFRESH 置位，开跑时领到局部变量
 const detectedView = ref<DetectedViewFormat>('utf8')
+const detectedGzip = ref(false) // Auto 剥过一层 Gzip → 只读，标签为 Gzip · 内层
+const detectedInnerWire = ref('') // 剥壳后的 base64；无壳为空串
 const effectiveViewFormat = computed<ViewBytesFormat>(() =>
   bytesFormat.value === 'auto' ? detectedView.value : bytesFormat.value,
 )
+const gzipReadonly = computed(
+  () => bytesFormat.value === 'auto' && stringType.value && detectedGzip.value,
+)
 const detectedViewText = computed(() =>
-  bytesFormat.value === 'auto' && stringType.value ? detectedViewLabel(detectedView.value) : '',
+  bytesFormat.value === 'auto' && stringType.value
+    ? detectedViewLabel(detectedView.value, detectedGzip.value)
+    : '',
 )
 const formatOptions = computed(() => {
   // Auto / string-only 项仅 STRING 可用；顺序由 VIEW_FORMAT_OPTIONS 固定
@@ -308,6 +316,12 @@ function commitBytesFormat(next: ViewBytesFormat) {
 function commitDetectedView(next: DetectedViewFormat) {
   if (detectedView.value !== next) detectedView.value = next
 }
+function commitDetectedAuto(next: DetectedViewAuto) {
+  commitDetectedView(next.view)
+  if (detectedGzip.value !== next.gzip) detectedGzip.value = next.gzip
+  const inner = next.gzip ? next.wire : ''
+  if (detectedInnerWire.value !== inner) detectedInnerWire.value = inner
+}
 
 // 展示层快照（STRING 编辑器 / 表格单元格共用）
 const displayWire = ref('') // 权威 base64
@@ -315,12 +329,16 @@ const displayBytesFormat = ref<ViewBytesFormat>('utf8') // Auto 时=探测结果
 const resolvedWireView = ref('') // custom 异步 decode 文本
 const customCodecFailed = ref(false)
 const customCodecVisible = ref(false)
+/** Auto 剥壳后用内层展示；手动选编码仍看原始 wire */
+const viewSourceWire = computed(() =>
+  bytesFormat.value === 'auto' && detectedGzip.value ? detectedInnerWire.value : displayWire.value,
+)
 
 const viewDecodeFailed = computed(() => {
   if (!stringType.value) return false
   const fmt = displayBytesFormat.value
   if (fmt === 'utf8' || fmt === 'hex' || fmt === 'binary' || fmt === 'base64') return false
-  const wire = displayWire.value
+  const wire = viewSourceWire.value
   if (!wire) return false
   if (isCustomView(fmt)) return customCodecFailed.value
   return isViewDecodeError(meFormatViewValue(wire, fmt))
@@ -336,14 +354,20 @@ const showSave = computed(
 const editorReadOnly = computed(
   () =>
     !canEdit.value ||
+    gzipReadonly.value ||
     isReadonlyView(effectiveViewFormat.value) ||
     viewDecodeFailed.value ||
     (valueTruncated.value && !forceFullValue.value),
 )
 const saveDisabled = computed(
-  () => viewDecodeFailed.value || !valueDirty.value || isReadonlyView(effectiveViewFormat.value),
+  () =>
+    viewDecodeFailed.value ||
+    !valueDirty.value ||
+    gzipReadonly.value ||
+    isReadonlyView(effectiveViewFormat.value),
 )
 const saveTip = computed(() => {
+  if (gzipReadonly.value) return t('util.gzipReadonly')
   if (isReadonlyView(effectiveViewFormat.value)) return readonlyViewTip(effectiveViewFormat.value)
   if (viewDecodeFailed.value) return t('util.saveDecodeFailed')
   if (!valueDirty.value) return t('util.saveNoChange')
@@ -361,7 +385,7 @@ function syncDisplaySnapshot() {
   if (!rv || rv.value === null || rv.value === undefined) {
     displayWire.value = ''
     if (bytesFormat.value === 'auto' && stringType.value) {
-      commitDetectedView('utf8')
+      commitDetectedAuto({ view: 'utf8', gzip: false, wire: '' })
       displayBytesFormat.value = 'utf8'
     } else if (stringType.value) {
       // STRING：下拉即展示格式（勿经 viewFmtForField，避免 JdkSerial 被降成 utf8）
@@ -381,9 +405,9 @@ function syncDisplaySnapshot() {
   displayWire.value = wire
 
   if (bytesFormat.value === 'auto' && stringType.value) {
-    const nextDetected = detectViewFormat(wire, { truncated: valueTruncated.value })
-    commitDetectedView(nextDetected)
-    displayBytesFormat.value = nextDetected
+    const nextDetected = detectViewFormatAuto(wire, { truncated: valueTruncated.value })
+    commitDetectedAuto(nextDetected)
+    displayBytesFormat.value = nextDetected.view
     return
   }
 
@@ -521,7 +545,7 @@ const showValue = computed(() => {
   if (obj === null || obj === undefined || !rv) return ''
 
   if (stringType.value) {
-    const str = stringWireDisplayText(displayWire.value)
+    const str = stringWireDisplayText(viewSourceWire.value)
     return isPretty.value ? meFormatDisplayValue(str, true) : str
   }
 
@@ -1467,7 +1491,7 @@ async function onKeyMoreCommand(command: string) {
 async function setValue() {
   const rv = redisValue.value
   if (!rv || rv.newValue === null) return
-  if (isReadonlyView(effectiveViewFormat.value)) return
+  if (gzipReadonly.value || isReadonlyView(effectiveViewFormat.value)) return
   let value = rv.newValue
 
   try {
