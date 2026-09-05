@@ -372,7 +372,7 @@ const saveTip = computed(() => {
   if (isReadonlyView(effectiveViewFormat.value)) return readonlyViewTip(effectiveViewFormat.value)
   if (viewDecodeFailed.value) return t('util.saveDecodeFailed')
   if (!valueDirty.value) return t('util.saveNoChange')
-  return t('save')
+  return ''
 })
 
 // 同步快照 / 切换编码 / custom 解码
@@ -2341,7 +2341,12 @@ onUnmounted(() => {
           </div>
 
           <!-- 连接只读：隐藏；禁用时 tooltip 说明原因 -->
-          <el-tooltip v-if="showSave" :content="saveTip" placement="top" :show-after="300">
+          <el-tooltip
+            v-if="showSave"
+            :content="saveTip"
+            placement="top"
+            :show-after="300"
+            :disabled="!saveTip">
             <span style="margin-left: 10px; display: inline-flex">
               <me-button
                 :disabled="saveDisabled"

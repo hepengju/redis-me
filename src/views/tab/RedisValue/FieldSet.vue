@@ -100,6 +100,8 @@ const isRefreshing = ref(false)
 const decodeFailed = ref(false)
 const codeRemountKey = ref(0)
 const initialFieldDisplay = ref('') // 编辑器同步后的展示快照，用于脏检查
+const initialFieldTtl = ref(-1) // Hash 字段 TTL 快照；仅 hashFieldTtlEnabled 时参与脏检查
+const initialFieldScore = ref(0) // ZSet 分数快照
 // #endregion
 
 // #region 计算属性
@@ -133,9 +135,22 @@ const vectorDirty = computed(() => form.value.fieldValue !== initialFieldDisplay
 const attrsDirty = computed(
   () => vectorsetType.value && !attrsNormalizedEqual(attrsText.value, initialAttrsDisplay.value),
 )
-const fieldDirty = computed(() =>
-  vectorsetType.value ? vectorDirty.value || attrsDirty.value : vectorDirty.value,
+const ttlDirty = computed(
+  () =>
+    form.value.type === 'hash' &&
+    props.hashFieldTtlEnabled &&
+    form.value.fieldTtl !== initialFieldTtl.value,
 )
+const scoreDirty = computed(
+  () => form.value.type === 'zset' && form.value.fieldScore !== initialFieldScore.value,
+)
+const fieldDirty = computed(
+  () => vectorDirty.value || attrsDirty.value || ttlDirty.value || scoreDirty.value,
+)
+function snapshotFieldMeta() {
+  initialFieldTtl.value = form.value.fieldTtl ?? -1
+  initialFieldScore.value = form.value.fieldScore ?? 0
+}
 const canSaveField = computed(
   () =>
     !readonly.value &&
@@ -144,14 +159,14 @@ const canSaveField = computed(
     fieldDirty.value,
 )
 const saveFieldTip = computed(() => {
-  // 禁用原因提示；可保存时与按钮文案一致
+  // 仅禁用时提示原因；可保存时按钮已有文案，不再 tooltip
   if (!vectorsetType.value && gzipReadonly.value) return t('util.gzipReadonly')
   if (!vectorsetType.value && isReadonlyView(effectiveFieldViewFmt.value)) {
     return readonlyViewTip(effectiveFieldViewFmt.value)
   }
   if (!vectorsetType.value && decodeFailed.value) return t('util.saveDecodeFailed')
   if (!fieldDirty.value) return t('util.saveNoChange')
-  return t('save')
+  return ''
 })
 const showSaveField = computed(() => !readonly.value && !share.readonly) // 连接只读 / 查看模式 → 隐藏保存钮
 const supportsFieldRefresh = computed(() => {
@@ -236,6 +251,7 @@ function open(data: FieldSetOpen) {
   }
   fieldViewFmt.value = 'auto'
   fieldPretty.value = props.pretty
+  snapshotFieldMeta()
   void syncFieldEditor()
 }
 
@@ -411,6 +427,7 @@ function applyFieldGetToForm(data: RedisFieldValue) {
   } else if (type === 'zset' && data.fieldScore != null) {
     form.value.fieldScore = data.fieldScore
   }
+  snapshotFieldMeta()
 }
 
 async function refreshField() {
@@ -557,7 +574,11 @@ onUnmounted(() => window.removeEventListener('keydown', onEscapeKey, true))
         <div>
           <el-button @click="cancel">{{ t('cancel') }}</el-button>
           <!-- 连接只读/查看模式：隐藏；禁用时 tooltip 说明原因 -->
-          <el-tooltip v-if="showSaveField" :content="saveFieldTip" placement="top">
+          <el-tooltip
+            v-if="showSaveField"
+            :content="saveFieldTip"
+            placement="top"
+            :disabled="!saveFieldTip">
             <span style="margin-left: 12px; display: inline-block">
               <el-button
                 type="primary"
