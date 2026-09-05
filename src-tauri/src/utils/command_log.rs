@@ -60,21 +60,29 @@ impl CommandLogger {
     pub fn query(&self, limit: Option<u64>) -> Vec<CommandLogEntry> {
         let limit = limit.unwrap_or(1000) as usize;
         let entries = self.entries.read();
-        entries
-            .iter()
-            .rev()
-            .take(limit)
-            .cloned()
-            .collect()
+        entries.iter().rev().take(limit).cloned().collect()
     }
 
-    pub fn log_from_cmd(&self, db_index: u16, cmd: &Cmd, result: &RedisResult<Value>, duration_ms: u64) {
+    pub fn log_from_cmd(
+        &self,
+        db_index: u16,
+        cmd: &Cmd,
+        result: &RedisResult<Value>,
+        duration_ms: u64,
+    ) {
         let (command, args) = parse_cmd(cmd);
         let error = command_log_error(result);
         self.push_entry(db_index, &command, &args, error, duration_ms);
     }
 
-    pub fn log_raw(&self, db_index: u16, command: &str, args: &[String], error: Option<String>, duration_ms: u64) {
+    pub fn log_raw(
+        &self,
+        db_index: u16,
+        command: &str,
+        args: &[String],
+        error: Option<String>,
+        duration_ms: u64,
+    ) {
         self.push_entry(db_index, command, args, error, duration_ms);
     }
 
@@ -103,7 +111,10 @@ impl CommandLogger {
             error,
         };
 
-        debug!("[{}] db={} {}", self.conn_name, db_index, entry.full_command);
+        debug!(
+            "[{}] db={} {}",
+            self.conn_name, db_index, entry.full_command
+        );
         self.emit_entry(&entry);
 
         let mut entries = self.entries.write();
@@ -467,7 +478,10 @@ mod tests {
             Some(format!("VEMB vec2word {}...", "x".repeat(32)))
         );
         // offset 0 返回首条命令
-        assert_eq!(parse_pipeline_first(&packed, 0).as_deref(), Some("SELECT 0"));
+        assert_eq!(
+            parse_pipeline_first(&packed, 0).as_deref(),
+            Some("SELECT 0")
+        );
         // 二进制参数按 redis-cli 风格转义，不再出现乱码
         let bin = b"*2\r\n$4\r\nVEMB\r\n$3\r\n\x00\x01\xff\r\n";
         assert_eq!(

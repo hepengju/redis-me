@@ -229,15 +229,27 @@ impl MeClient for MeCluster {
     }
 
     fn field_add(&self, param: RedisFieldAdd) -> AnyResult<RedisKey> {
-        field_add0(self.get_conn()?, param, self.base().capabilities.httl_supported)
+        field_add0(
+            self.get_conn()?,
+            param,
+            self.base().capabilities.httl_supported,
+        )
     }
 
     fn field_set(&self, param: RedisFieldSet) -> AnyResult<()> {
-        field_set0(self.get_conn()?, param, self.base().capabilities.httl_supported)
+        field_set0(
+            self.get_conn()?,
+            param,
+            self.base().capabilities.httl_supported,
+        )
     }
 
     fn field_get(&self, param: RedisFieldGet) -> AnyResult<RedisFieldValue> {
-        field_get0(self.get_conn()?, param, self.base().capabilities.httl_supported)
+        field_get0(
+            self.get_conn()?,
+            param,
+            self.base().capabilities.httl_supported,
+        )
     }
 
     fn hash_keys(&self, param: RedisHashKeys) -> AnyResult<Vec<String>> {
@@ -590,7 +602,9 @@ impl MeClient for MeCluster {
         let id = self.id.clone();
         let app_handle = self.base().get_app_handle()?;
         export_import_check_running(running.clone())?;
-        thread::spawn(move || import_csv_0_thread(&mut logging_conn, param, running, app_handle, id));
+        thread::spawn(move || {
+            import_csv_0_thread(&mut logging_conn, param, running, app_handle, id)
+        });
         Ok(())
     }
 
@@ -603,7 +617,9 @@ impl MeClient for MeCluster {
         let id = self.id.clone();
         let app_handle = self.base().get_app_handle()?;
         export_import_check_running(running.clone())?;
-        thread::spawn(move || import_cmd_0_thread(&mut logging_conn, file, running, app_handle, id));
+        thread::spawn(move || {
+            import_cmd_0_thread(&mut logging_conn, file, running, app_handle, id)
+        });
         Ok(())
     }
 
@@ -855,7 +871,8 @@ impl MeCluster {
 
     // 重新连接
     fn reconnect(&self) -> AnyResult<()> {
-        let raw_conn = Self::new_raw_conn(&self.client, self.connection_timeout, self.command_timeout)?;
+        let raw_conn =
+            Self::new_raw_conn(&self.client, self.connection_timeout, self.command_timeout)?;
         let mut conn_guard = self.conn.lock();
         *conn_guard = LoggingClusterConnection::new(
             raw_conn,
@@ -917,7 +934,8 @@ impl MeCluster {
 
     // 获取一个新的连接（导出/导入等独立线程，不记命令日志）
     fn get_new_conn(&self) -> AnyResult<ClusterConnection> {
-        let mut conn = Self::new_raw_conn(&self.client, self.connection_timeout, self.command_timeout)?;
+        let mut conn =
+            Self::new_raw_conn(&self.client, self.connection_timeout, self.command_timeout)?;
         set_client_name_unless_minimal(&mut conn, &self.conf);
         Ok(conn)
     }

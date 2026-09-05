@@ -8,6 +8,7 @@ use crate::utils::util::{
     AnyResult, CONNECTION_CONNECT_TIMEOUT, CONNECTION_NORMAL_TIMEOUT, vec8_to_display_string,
 };
 use chrono::Utc;
+use parking_lot::RwLock;
 use redis::{ProtocolVersion, RedisWrite, ToRedisArgs, ToSingleRedisArg};
 use serde::{Deserialize, Serialize};
 use specta::Type;
@@ -15,7 +16,6 @@ use std::collections::HashMap;
 use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, AtomicI64, AtomicU16};
 use std::time::Duration;
-use parking_lot::RwLock;
 use tauri::AppHandle;
 
 /// 终端输出格式，对应 redis-cli `--raw` / `--csv` / `--json`；默认 TTY
@@ -165,13 +165,11 @@ fn default_connection_timeout_secs() -> u64 {
 }
 
 // 全局应用设置：由前端 settings 同步，新连接/重连时快照 connection_timeout / command_timeout
-api_model!(
-    AppSettings {
-        #[serde(default = "default_connection_timeout_secs")]
-        connection_timeout_secs: u64,
-        command_timeout_secs: u64,
-    }
-);
+api_model!(AppSettings {
+    #[serde(default = "default_connection_timeout_secs")]
+    connection_timeout_secs: u64,
+    command_timeout_secs: u64,
+});
 
 impl Default for AppSettings {
     fn default() -> Self {
@@ -211,12 +209,15 @@ impl ConnConfig {
         Ok(())
     }
 
-    pub fn masters(&self, connect_timeout: Duration, command_timeout: Duration) -> AnyResult<Vec<HashMap<String, String>>> {
+    pub fn masters(
+        &self,
+        connect_timeout: Duration,
+        command_timeout: Duration,
+    ) -> AnyResult<Vec<HashMap<String, String>>> {
         let mut conf = self.clone();
         conf.sentinel = false;
         let (client, _) = get_client_single(&conf, connect_timeout, false)?;
-        let mut conn =
-            init_single_connection(&client, conf.db, connect_timeout, command_timeout)?;
+        let mut conn = init_single_connection(&client, conf.db, connect_timeout, command_timeout)?;
         let masters: Vec<HashMap<String, String>> =
             redis::cmd("sentinel").arg("masters").query(&mut conn)?;
         Ok(masters)
@@ -279,8 +280,6 @@ impl MeBase {
             .into()
         })
     }
-
-
 }
 
 // 数据库信息

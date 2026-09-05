@@ -168,15 +168,27 @@ impl MeClient for MeSingle {
     }
 
     fn field_add(&self, param: RedisFieldAdd) -> AnyResult<RedisKey> {
-        field_add0(self.get_conn()?, param, self.base().capabilities.httl_supported)
+        field_add0(
+            self.get_conn()?,
+            param,
+            self.base().capabilities.httl_supported,
+        )
     }
 
     fn field_set(&self, param: RedisFieldSet) -> AnyResult<()> {
-        field_set0(self.get_conn()?, param, self.base().capabilities.httl_supported)
+        field_set0(
+            self.get_conn()?,
+            param,
+            self.base().capabilities.httl_supported,
+        )
     }
 
     fn field_get(&self, param: RedisFieldGet) -> AnyResult<RedisFieldValue> {
-        field_get0(self.get_conn()?, param, self.base().capabilities.httl_supported)
+        field_get0(
+            self.get_conn()?,
+            param,
+            self.base().capabilities.httl_supported,
+        )
     }
 
     fn hash_keys(&self, param: RedisHashKeys) -> AnyResult<Vec<String>> {
@@ -239,7 +251,12 @@ impl MeClient for MeSingle {
 
         let mut conn = self.get_conn()?;
         let value = redis::cmd(cmd.as_str()).arg(&args).query(&mut conn)?;
-        Ok(redis_value_to_cli_display(value, param.output_mode, &cmd, &args))
+        Ok(redis_value_to_cli_display(
+            value,
+            param.output_mode,
+            &cmd,
+            &args,
+        ))
     }
 
     fn config_get(
@@ -249,10 +266,8 @@ impl MeClient for MeSingle {
     ) -> AnyResult<HashMap<String, String>> {
         let cmd = resolve_command_name(&self.conf, "config");
         let mut conn = self.get_conn()?;
-        let result: HashMap<String, String> = redis::cmd(&cmd)
-            .arg("get")
-            .arg(pattern)
-            .query(&mut conn)?;
+        let result: HashMap<String, String> =
+            redis::cmd(&cmd).arg("get").arg(pattern).query(&mut conn)?;
         Ok(result)
     }
 
@@ -346,7 +361,9 @@ impl MeClient for MeSingle {
     }
 
     fn subscribe(&self, channel: Option<String>) -> AnyResult<()> {
-        let conn = self.client.get_connection_with_timeout(self.connection_timeout)?;
+        let conn = self
+            .client
+            .get_connection_with_timeout(self.connection_timeout)?;
         let running = self.subscribe_running.clone();
         let app_handle = self.base().get_app_handle()?;
         let logger = self.base().command_logger.clone();
@@ -358,7 +375,9 @@ impl MeClient for MeSingle {
     }
 
     fn monitor(&self, _node: &str) -> AnyResult<()> {
-        let conn = self.client.get_connection_with_timeout(self.connection_timeout)?;
+        let conn = self
+            .client
+            .get_connection_with_timeout(self.connection_timeout)?;
         let running = self.monitor_running.clone();
         let app_handle = self.base().get_app_handle()?;
         let logger = self.base().command_logger.clone();
@@ -454,7 +473,9 @@ impl MeClient for MeSingle {
         let id = self.id.clone();
         let app_handle = self.base().get_app_handle()?;
         export_import_check_running(running.clone())?;
-        thread::spawn(move || import_csv_0_thread(&mut logging_conn, param, running, app_handle, id));
+        thread::spawn(move || {
+            import_csv_0_thread(&mut logging_conn, param, running, app_handle, id)
+        });
         Ok(())
     }
 
@@ -467,7 +488,9 @@ impl MeClient for MeSingle {
         let id = self.id.clone();
         let app_handle = self.base().get_app_handle()?;
         export_import_check_running(running.clone())?;
-        thread::spawn(move || import_cmd_0_thread(&mut logging_conn, file, running, app_handle, id));
+        thread::spawn(move || {
+            import_cmd_0_thread(&mut logging_conn, file, running, app_handle, id)
+        });
         Ok(())
     }
 
@@ -525,7 +548,9 @@ impl MeClient for MeSingle {
 
     fn acl_setuser(&self, param: AclSetuserParam) -> AnyResult<()> {
         let rules = acl_build_rules(&param)?;
-        let _: () = self.get_conn()?.acl_setuser_rules(&param.username, &rules)?;
+        let _: () = self
+            .get_conn()?
+            .acl_setuser_rules(&param.username, &rules)?;
         Ok(())
     }
 
@@ -629,11 +654,8 @@ impl MeSingle {
             self.command_timeout,
         )?;
         let mut conn_guard = self.conn.lock();
-        *conn_guard = LoggingConnection::new(
-            raw_conn,
-            self.command_logger.clone(),
-            self.db.load(Relaxed),
-        );
+        *conn_guard =
+            LoggingConnection::new(raw_conn, self.command_logger.clone(), self.db.load(Relaxed));
         set_client_name_unless_minimal(&mut *conn_guard, &self.conf);
         self.last_check_time.store(Utc::now().timestamp(), Relaxed);
         info!("Redis单机连接重连成功: {}", self.conf.name);

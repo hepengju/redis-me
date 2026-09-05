@@ -45,9 +45,7 @@ pub fn resolve_command_name(conf: &ConnConfig, cmd: &str) -> String {
         return cmd.to_string();
     }
     let key = cmd.to_ascii_lowercase();
-    map.get(&key)
-        .cloned()
-        .unwrap_or_else(|| cmd.to_string())
+    map.get(&key).cloned().unwrap_or_else(|| cmd.to_string())
 }
 
 // tauri 的错误处理中需要返回的错误实现序列化，anyhow 的错误并没有实现，因此简单返回字符串错误
@@ -387,8 +385,7 @@ pub fn split_redis_args(line: &str) -> AnyResult<Vec<Vec<u8>>> {
                     && is_hex_digit(bytes[p + 2])
                     && is_hex_digit(bytes[p + 3])
                 {
-                    let byte =
-                        hex_digit_to_int(bytes[p + 2]) * 16 + hex_digit_to_int(bytes[p + 3]);
+                    let byte = hex_digit_to_int(bytes[p + 2]) * 16 + hex_digit_to_int(bytes[p + 3]);
                     current.push(byte);
                     p += 3;
                 } else if bytes[p] == b'\\' && p + 1 < bytes.len() {
@@ -867,8 +864,7 @@ mod tests {
         assert_eq!(cmd, "set");
         assert_eq!(args, vec![b"name".to_vec(), b"hepengju".to_vec()]);
 
-        let (cmd, args) =
-            parse_command(r#"config set save "3600 1 300 100 60 10000" "#).unwrap();
+        let (cmd, args) = parse_command(r#"config set save "3600 1 300 100 60 10000" "#).unwrap();
         assert_eq!(cmd, "config");
         assert_eq!(
             args,
@@ -879,8 +875,7 @@ mod tests {
             ]
         );
 
-        let (cmd, args) =
-            parse_command(r#"config set save '3600 1 300 100 60 10000' "#).unwrap();
+        let (cmd, args) = parse_command(r#"config set save '3600 1 300 100 60 10000' "#).unwrap();
         assert_eq!(cmd, "config");
         assert_eq!(
             args,
@@ -991,7 +986,10 @@ mod tests {
         // RESP3：SLOWLOG GET 单条为 Map
         let entry = Value::Map(vec![
             (Value::SimpleString("id".into()), Value::Int(14)),
-            (Value::SimpleString("timestamp".into()), Value::Int(1759409274)),
+            (
+                Value::SimpleString("timestamp".into()),
+                Value::Int(1759409274),
+            ),
             (Value::SimpleString("duration".into()), Value::Int(1500)),
             (
                 Value::SimpleString("command".into()),
