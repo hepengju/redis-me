@@ -9,7 +9,9 @@ mod tests {
     use crate::client::client_trait::MeClient;
     use crate::client::impl_cluster::MeCluster;
     use crate::client::impl_single::MeSingle;
-    use crate::utils::conn::{get_client_cluster, get_client_single, init_cluster_connection, init_single_connection};
+    use crate::utils::conn::{
+        get_client_cluster, get_client_single, init_cluster_connection, init_single_connection,
+    };
     use crate::utils::model::*;
     use crate::utils::util::{AnyResult, CONNECTION_CONNECT_TIMEOUT, CONNECTION_NORMAL_TIMEOUT};
     use redis::TlsMode;
@@ -190,7 +192,11 @@ mod tests {
 
         let conn_cluster = conf_cluster();
         let client = get_client_cluster(&conn_cluster, None)?;
-        let mut conn = init_cluster_connection(&client, CONNECTION_CONNECT_TIMEOUT, CONNECTION_NORMAL_TIMEOUT)?;
+        let mut conn = init_cluster_connection(
+            &client,
+            CONNECTION_CONNECT_TIMEOUT,
+            CONNECTION_NORMAL_TIMEOUT,
+        )?;
 
         let mut pipe = ClusterPipeline::new();
         pipe.del("field-scan:string").ignore();
@@ -428,9 +434,7 @@ mod tests {
 
     #[test]
     fn test_publish() {
-        let result = client()
-            .publish("channel", "message", None)
-            .unwrap();
+        let result = client().publish("channel", "message", None).unwrap();
         println!("{result:?}");
     }
 

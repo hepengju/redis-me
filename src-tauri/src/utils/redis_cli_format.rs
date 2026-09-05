@@ -201,11 +201,7 @@ pub fn format_zadd_command(key: &[u8], pairs: &[(Vec<u8>, f64)]) -> Option<Strin
 }
 
 pub fn format_xadd_command(key: &[u8], id: &[u8], fields: &[(Vec<u8>, Vec<u8>)]) -> String {
-    let mut parts = vec![
-        "XADD".to_string(),
-        format_quoted(key),
-        format_quoted(id),
-    ];
+    let mut parts = vec!["XADD".to_string(), format_quoted(key), format_quoted(id)];
     for (f, v) in fields {
         parts.push(format_quoted(f));
         parts.push(format_quoted(v));
@@ -214,11 +210,7 @@ pub fn format_xadd_command(key: &[u8], id: &[u8], fields: &[(Vec<u8>, Vec<u8>)])
 }
 
 pub fn format_json_set_command(key: &[u8], json: &[u8]) -> String {
-    format!(
-        "JSON.SET {} $ {}",
-        format_quoted(key),
-        format_quoted(json)
-    )
+    format!("JSON.SET {} $ {}", format_quoted(key), format_quoted(json))
 }
 
 #[cfg(test)]

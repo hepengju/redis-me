@@ -77,7 +77,7 @@ function buildMinimalConn(): ConnConfig {
 const emptyScanCursor: ScanCursor = {
   readyNodes: [],
   nowNode: '',
-  nowCursor: 0,
+  nowCursor: '0',
   streamCursor: '',
   finished: false,
 }

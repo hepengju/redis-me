@@ -267,7 +267,10 @@ impl SshTunnel {
     }
 
     /// 检查认证结果
-    fn check_auth_result(result: Result<AuthResult, russh::Error>, username: &str) -> AnyResult<()> {
+    fn check_auth_result(
+        result: Result<AuthResult, russh::Error>,
+        username: &str,
+    ) -> AnyResult<()> {
         match result {
             Ok(AuthResult::Success) => Ok(()),
             Ok(AuthResult::Failure {

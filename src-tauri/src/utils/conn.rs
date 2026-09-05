@@ -8,8 +8,8 @@ use log::{info, warn};
 use redis::cluster::{ClusterClient, ClusterConfig, ClusterConnection};
 use redis::sentinel::{SentinelClientBuilder, SentinelServerType};
 use redis::{
-    Client, ClientTlsConfig, Commands, Connection, ConnectionAddr, ConnectionLike,
-    ProtocolVersion, TlsCertificates, TlsMode,
+    Client, ClientTlsConfig, Commands, Connection, ConnectionAddr, ConnectionLike, ProtocolVersion,
+    TlsCertificates, TlsMode,
 };
 use std::fs;
 use std::time::Duration;
@@ -66,9 +66,7 @@ pub fn get_client_single(
         conf.username,
         target_host,
         target_port,
-        url.query()
-            .map(|q| format!("?{}", q))
-            .unwrap_or_default(),
+        url.query().map(|q| format!("?{}", q)).unwrap_or_default(),
         url.fragment()
             .map(|f| format!("#{}", f))
             .unwrap_or_default()
@@ -242,7 +240,11 @@ pub fn get_client_cluster(conf: &ConnConfig, verify: Option<Duration>) -> AnyRes
         conf.username,
         conf.host,
         conf.port,
-        if conf.is_resp3() { "?protocol=resp3" } else { "" },
+        if conf.is_resp3() {
+            "?protocol=resp3"
+        } else {
+            ""
+        },
         url.fragment()
             .map(|f| format!("#{}", f))
             .unwrap_or_default()

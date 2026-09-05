@@ -23,7 +23,7 @@ export const commands = {
 	chart: (id: string, node: string | null) => typedError<RedisChart, string>(__TAURI_INVOKE("chart", { id, node })),
 	chartList: (id: string) => typedError<RedisChart[], string>(__TAURI_INVOKE("chart_list", { id })),
 	nodeList: (id: string) => typedError<RedisNode[], string>(__TAURI_INVOKE("node_list", { id })),
-	scan: (id: string, param: ScanParam) => typedError<ScanResult_Serialize, string>(__TAURI_INVOKE("scan", { id, param })),
+	scan: (id: string, param: ScanParam_Deserialize) => typedError<ScanResult_Serialize, string>(__TAURI_INVOKE("scan", { id, param })),
 	fieldScan: (id: string, param: FieldScanParam_Deserialize) => typedError<FieldScanResult_Serialize, string>(__TAURI_INVOKE("field_scan", { id, param })),
 	ttl: (id: string, key: RedisKey_Deserialize, ttl: number) => typedError<null, string>(__TAURI_INVOKE("ttl", { id, key, ttl })),
 	set: (id: string, param: RedisSetParam_Deserialize) => typedError<null, string>(__TAURI_INVOKE("set", { id, param })),
@@ -61,7 +61,7 @@ export const commands = {
 	aclLogReset: (id: string) => typedError<null, string>(__TAURI_INVOKE("acl_log_reset", { id })),
 	aclDryrun: (id: string, username: string, command: string) => typedError<string, string>(__TAURI_INVOKE("acl_dryrun", { id, username, command })),
 	slowLog: (id: string, count: number | null, node: string | null) => typedError<RedisSlowLog[], string>(__TAURI_INVOKE("slow_log", { id, count, node })),
-	memoryUsage: (id: string, param: RedisMemoryParam) => typedError<RedisMemoryResult_Serialize, string>(__TAURI_INVOKE("memory_usage", { id, param })),
+	memoryUsage: (id: string, param: RedisMemoryParam_Deserialize) => typedError<RedisMemoryResult_Serialize, string>(__TAURI_INVOKE("memory_usage", { id, param })),
 	configGet: (id: string, pattern: string, node: string | null) => typedError<{ [key in string]: string }, string>(__TAURI_INVOKE("config_get", { id, pattern, node })),
 	configSet: (id: string, key: string, value: string, node: string | null) => typedError<null, string>(__TAURI_INVOKE("config_set", { id, key, value, node })),
 	clientList: (id: string, node: string | null, clientType: string | null) => typedError<RedisClientInfo[], string>(__TAURI_INVOKE("client_list", { id, node, clientType })),
@@ -198,7 +198,7 @@ export type FieldScanParam = FieldScanParam_Serialize | FieldScanParam_Deseriali
 export type FieldScanParam_Deserialize = {
 	key: RedisKey_Deserialize,
 	count: number,
-	cursor: ScanCursor | null,
+	cursor: ScanCursor_Deserialize | null,
 	/**  HSCAN/SSCAN/ZSCAN 的 MATCH pattern（前端字段名 match） */
 	match: string,
 	/**  完全匹配：true 时走 HGET / SISMEMBER / ZSCORE */
@@ -216,7 +216,7 @@ export type FieldScanParam_Deserialize = {
 export type FieldScanParam_Serialize = {
 	key: RedisKey_Serialize,
 	count: number,
-	cursor: ScanCursor | null,
+	cursor: ScanCursor_Serialize | null,
 	/**  HSCAN/SSCAN/ZSCAN 的 MATCH pattern（前端字段名 match） */
 	match: string,
 	/**  完全匹配：true 时走 HGET / SISMEMBER / ZSCORE */
@@ -238,7 +238,7 @@ export type FieldScanResult_Deserialize = {
 	ttl: number,
 	size: number,
 	value: any,
-	cursor: ScanCursor,
+	cursor: ScanCursor_Deserialize,
 	length: number,
 	/**  STRING 因超过 value_byte_limit 仅返回预览片段时为 true */
 	valueTruncated: boolean,
@@ -253,7 +253,7 @@ export type FieldScanResult_Serialize = {
 	ttl: number,
 	size: number,
 	value: any,
-	cursor: ScanCursor,
+	cursor: ScanCursor_Serialize,
 	length: number,
 	/**  STRING 因超过 value_byte_limit 仅返回预览片段时为 true */
 	valueTruncated: boolean,
@@ -623,11 +623,21 @@ export type RedisKey_Serialize = {
 	bytes: string,
 };
 
-export type RedisMemoryParam = {
+export type RedisMemoryParam = RedisMemoryParam_Serialize | RedisMemoryParam_Deserialize;
+
+export type RedisMemoryParam_Deserialize = {
 	match: string | null,
 	sizeLimit: number,
 	scanCount: number,
-	cursor: ScanCursor | null,
+	cursor: ScanCursor_Deserialize | null,
+	needKeyType: boolean | null,
+};
+
+export type RedisMemoryParam_Serialize = {
+	match: string | null,
+	sizeLimit: number,
+	scanCount: number,
+	cursor: ScanCursor_Serialize | null,
 	needKeyType: boolean | null,
 };
 
@@ -635,14 +645,14 @@ export type RedisMemoryResult = RedisMemoryResult_Serialize | RedisMemoryResult_
 
 export type RedisMemoryResult_Deserialize = {
 	keyList: RedisKeySize_Deserialize[],
-	cursor: ScanCursor,
+	cursor: ScanCursor_Deserialize,
 	/**  本轮 SCAN 拿到的键数（过滤 size_limit 之前，供进度估算） */
 	scanned: number,
 };
 
 export type RedisMemoryResult_Serialize = {
 	keyList: RedisKeySize_Serialize[],
-	cursor: ScanCursor,
+	cursor: ScanCursor_Serialize,
 	/**  本轮 SCAN 拿到的键数（过滤 size_limit 之前，供进度估算） */
 	scanned: number,
 };
@@ -831,18 +841,42 @@ export type RedisZsetRank_Serialize = {
 	valFmt: BytesFormat | null,
 };
 
-export type ScanCursor = {
+export type ScanCursor = ScanCursor_Serialize | ScanCursor_Deserialize;
+
+export type ScanCursor_Deserialize = {
 	readyNodes: string[],
 	nowNode: string,
-	nowCursor: number,
+	/**  SCAN 游标 IPC 用字符串，避免 JS Number 超过 2^53 丢精度导致续扫卡死 */
+	nowCursor: string,
 	streamCursor: string,
 	finished: boolean,
 };
 
-export type ScanParam = {
+export type ScanCursor_Serialize = {
+	readyNodes: string[],
+	nowNode: string,
+	/**  SCAN 游标 IPC 用字符串，避免 JS Number 超过 2^53 丢精度导致续扫卡死 */
+	nowCursor: string,
+	streamCursor: string,
+	finished: boolean,
+};
+
+export type ScanParam = ScanParam_Serialize | ScanParam_Deserialize;
+
+export type ScanParam_Deserialize = {
 	match: string,
 	type: string | null,
-	cursor: ScanCursor | null,
+	cursor: ScanCursor_Deserialize | null,
+	/**  完全匹配：true 时后端 EXISTS；false 时 SCAN */
+	exact: boolean,
+	/**  Redis SCAN COUNT（来自前端 keyScanCount）；0 时后端兜底 */
+	count: number,
+};
+
+export type ScanParam_Serialize = {
+	match: string,
+	type: string | null,
+	cursor: ScanCursor_Serialize | null,
 	/**  完全匹配：true 时后端 EXISTS；false 时 SCAN */
 	exact: boolean,
 	/**  Redis SCAN COUNT（来自前端 keyScanCount）；0 时后端兜底 */
@@ -853,12 +887,12 @@ export type ScanResult = ScanResult_Serialize | ScanResult_Deserialize;
 
 export type ScanResult_Deserialize = {
 	keyList: RedisKey_Deserialize[],
-	cursor: ScanCursor,
+	cursor: ScanCursor_Deserialize,
 };
 
 export type ScanResult_Serialize = {
 	keyList: RedisKey_Serialize[],
-	cursor: ScanCursor,
+	cursor: ScanCursor_Serialize,
 };
 
 export type SentinelOption = {

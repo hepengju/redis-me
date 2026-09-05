@@ -138,7 +138,12 @@ fn strip_trailing_newline(s: &mut String) {
 }
 
 fn format_index_line(entry_prefix: &str, human_idx: usize, numsep: char, idxlen: usize) -> String {
-    format!("{}{:>idxlen$}{numsep} ", entry_prefix, human_idx, idxlen = idxlen)
+    format!(
+        "{}{:>idxlen$}{numsep} ",
+        entry_prefix,
+        human_idx,
+        idxlen = idxlen
+    )
 }
 
 fn cli_format_tty(value: Value, prefix: &str) -> String {
@@ -264,7 +269,13 @@ fn format_raw_sequence(items: &[Value]) -> String {
 fn format_raw_map(pairs: &[(Value, Value)]) -> String {
     pairs
         .iter()
-        .map(|(k, v)| format!("{} {}", cli_format_raw(k.clone()), cli_format_raw(v.clone())))
+        .map(|(k, v)| {
+            format!(
+                "{} {}",
+                cli_format_raw(k.clone()),
+                cli_format_raw(v.clone())
+            )
+        })
         .collect::<Vec<_>>()
         .join(RAW_MB_DELIM)
 }
@@ -396,7 +407,10 @@ mod tests {
     #[test]
     fn test_tty_scalars() {
         assert_eq!(display(Value::Nil, Standard), "(nil)");
-        assert_eq!(display(Value::BulkString(b"hello".to_vec()), Standard), "\"hello\"");
+        assert_eq!(
+            display(Value::BulkString(b"hello".to_vec()), Standard),
+            "\"hello\""
+        );
         assert_eq!(display(Value::Int(42), Standard), "(integer) 42");
         assert_eq!(display(Value::Boolean(true), Standard), "(true)");
     }
@@ -405,10 +419,7 @@ mod tests {
     fn test_tty_array_numbered() {
         assert_eq!(
             display(
-                Value::Array(vec![
-                    Value::Nil,
-                    Value::BulkString(b"a".to_vec()),
-                ]),
+                Value::Array(vec![Value::Nil, Value::BulkString(b"a".to_vec()),]),
                 Standard
             ),
             "1) (nil)\n2) \"a\""
@@ -438,10 +449,7 @@ mod tests {
         assert_eq!(display(Value::Nil, Csv), "NULL");
         assert_eq!(display(Value::BulkString(b"hi".to_vec()), Csv), "\"hi\"");
         assert_eq!(
-            display(
-                Value::Array(vec![Value::Nil, Value::Int(1)]),
-                Csv
-            ),
+            display(Value::Array(vec![Value::Nil, Value::Int(1)]), Csv),
             "NULL,1"
         );
     }
@@ -453,10 +461,7 @@ mod tests {
         assert_eq!(display(Value::Int(3), Json), "3");
         assert_eq!(display(Value::Boolean(false), Json), "false");
         assert_eq!(
-            display(
-                Value::Array(vec![Value::Nil, Value::Int(1)]),
-                Json
-            ),
+            display(Value::Array(vec![Value::Nil, Value::Int(1)]), Json),
             "[null,1]"
         );
         assert_eq!(
@@ -479,7 +484,12 @@ mod tests {
             "# Server\r\nredis_version:7.0.0\r\n"
         );
         assert_eq!(
-            display_cmd(Value::BulkString(b"line1\nline2".to_vec()), Standard, "get", &[b"key"]),
+            display_cmd(
+                Value::BulkString(b"line1\nline2".to_vec()),
+                Standard,
+                "get",
+                &[b"key"]
+            ),
             "\"line1\\nline2\""
         );
         assert_eq!(

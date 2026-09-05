@@ -2,12 +2,12 @@ use chrono::Local;
 use log::{LevelFilter, Record};
 use std::fmt::Arguments;
 use tauri::{Manager, TitleBarStyle};
-use tauri_plugin_window_state::{StateFlags, WindowExt};
 use tauri_plugin_log::fern::{
     FormatCallback,
     colors::{Color, ColoredLevelConfig},
 };
 use tauri_plugin_log::{Target, TargetKind};
+use tauri_plugin_window_state::{StateFlags, WindowExt};
 
 // 参考其他Tauri项目的日志配置: https://github.com/invm/noir
 fn format(out: FormatCallback, message: &Arguments, record: &Record) {

@@ -1,14 +1,14 @@
+use crate::api_commands;
 use crate::client::state::{ClientAccess, app_timeouts};
 use crate::utils::app_store;
 use crate::utils::capabilities::ServerCapabilities;
 use crate::utils::model::*;
 use crate::utils::util::*;
-use crate::{api_commands};
 use specta::specta;
 use std::collections::HashMap;
-use tauri::utils::platform::current_exe;
 #[cfg(target_os = "macos")]
 use tauri::Manager;
+use tauri::utils::platform::current_exe;
 use tauri::{AppHandle, command};
 
 // 默认示例
@@ -43,7 +43,8 @@ pub fn restart_after_update(app: AppHandle) -> ApiResult<()> {
     #[cfg(target_os = "macos")]
     {
         let exe = tauri::process::current_binary(&app.env()).map_err(|e| e.to_string())?;
-        let app_bundle = macos_app_bundle_path(&exe).ok_or_else(|| "无法定位应用 bundle".to_string())?;
+        let app_bundle =
+            macos_app_bundle_path(&exe).ok_or_else(|| "无法定位应用 bundle".to_string())?;
         let bundle = shell_escape(&app_bundle.to_string_lossy());
         std::process::Command::new("sh")
             .args(["-c", &format!("sleep 0.8; open {bundle}")])
@@ -110,7 +111,9 @@ pub fn app_settings(app_handle: AppHandle, app_settings: AppSettings) -> ApiResu
 #[command]
 #[specta]
 pub fn connect(app_handle: AppHandle, id: &str) -> ApiResult<ServerCapabilities> {
-    let client = app_handle.connect(app_handle.clone(), id).map_err(|e| e.to_string())?;
+    let client = app_handle
+        .connect(app_handle.clone(), id)
+        .map_err(|e| e.to_string())?;
     let capabilities = client.base().capabilities.clone();
     Ok(capabilities)
 }

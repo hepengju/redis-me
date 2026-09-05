@@ -7,18 +7,19 @@ use specta::Type;
 
 // 服务器能力（connect 时检测并返回）
 api_model!(
-#[derive(Default)]
-ServerCapabilities {
-    version: String,
-    is_valkey: bool,
-    info_supported: bool,
-    acl_supported: bool,
-    acl_dryrun_supported: bool,
-    acl_selector_supported: bool,
-    httl_supported: bool,
-    /// 集群模式是否支持编号数据库（Valkey 9+）
-    cluster_db_supported: bool,
-});
+    #[derive(Default)]
+    ServerCapabilities {
+        version: String,
+        is_valkey: bool,
+        info_supported: bool,
+        acl_supported: bool,
+        acl_dryrun_supported: bool,
+        acl_selector_supported: bool,
+        httl_supported: bool,
+        /// 集群模式是否支持编号数据库（Valkey 9+）
+        cluster_db_supported: bool,
+    }
+);
 
 /// 从 INFO 输出中解析服务器版本
 /// 返回 (版本号, 是否为 Valkey)
@@ -61,8 +62,14 @@ pub fn detect_server_capabilities(
 /// 根据版本号检测服务能力
 pub fn detect_capabilities(version: &str, is_valkey: bool, is_cluster: bool) -> ServerCapabilities {
     let mut parts = version.split('.');
-    let major = parts.next().and_then(|s| s.parse::<u32>().ok()).unwrap_or(0);
-    let minor = parts.next().and_then(|s| s.parse::<u32>().ok()).unwrap_or(0);
+    let major = parts
+        .next()
+        .and_then(|s| s.parse::<u32>().ok())
+        .unwrap_or(0);
+    let minor = parts
+        .next()
+        .and_then(|s| s.parse::<u32>().ok())
+        .unwrap_or(0);
 
     ServerCapabilities {
         version: version.to_string(),

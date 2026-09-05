@@ -1,5 +1,11 @@
 # 5.x Changelog
 
+## v5.1.1 (2026-09-05)
+
+### 🐞 Bug Fixes
+
+- Fixed SCAN search hanging when the cursor exceeds the JS safe integer range #163
+
 ## [v5.1.0](https://mp.weixin.qq.com/s/1IS91XFgCn4nBvs6M06V7g) (2026-09-05)
 
 ### ✨ New Features
