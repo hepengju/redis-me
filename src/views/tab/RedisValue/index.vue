@@ -139,8 +139,13 @@ const vectorsetType = computed(() => 'vectorset' === redisValue.value?.type)
 const setType = computed(() => 'set' === redisValue.value?.type)
 const zsetType = computed(() => 'zset' === redisValue.value?.type)
 
-// Hash 字段 TTL（HTTL）
-const scanHashFieldTtl = ref(false)
+// Hash 字段 TTL（HTTL）：与 settings.hashFieldTtl 同步，换键/刷新不重置
+const scanHashFieldTtl = computed({
+  get: () => !!meTauri.settings.hashFieldTtl,
+  set: v => {
+    meTauri.settings.hashFieldTtl = v
+  },
+})
 const showHashFieldTtlOption = computed(() => hashType.value && share.capabilities.httlSupported)
 
 // 表格工具栏：关键词（Hash/Set/ZSet 兼扫描+本地过滤；List/Stream 仅本地过滤）
@@ -739,7 +744,6 @@ function manualRefreshKey() {
 function resetParam() {
   fieldKeyword.value = ''
   fieldExact.value = false
-  scanHashFieldTtl.value = false
   listIndexMin.value = ''
   listIndexMax.value = ''
   listDescAsc.value = true

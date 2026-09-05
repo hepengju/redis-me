@@ -16,6 +16,8 @@ declare global {
       fieldShow?: 'auto' | 'table'
       /** auto 模式下上次手动选择的 json/table，切换连接/键时沿用 */
       fieldShowView?: 'json' | 'table'
+      /** Hash 字段 TTL 列上次开关，换键/刷新沿用 */
+      hashFieldTtl?: boolean
       /** 首页连接列表：平铺 / 分组 */
       connShow?: 'flat' | 'group'
       /** 分组名顺序（与 conn.meta.group 配合） */

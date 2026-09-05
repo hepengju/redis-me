@@ -128,6 +128,7 @@ const moreDefaultSettings = {
   keyHeight: defaultSettings.keyHeight,
   fieldShow: defaultSettings.fieldShow,
   fieldShowView: defaultSettings.fieldShowView,
+  hashFieldTtl: defaultSettings.hashFieldTtl,
   commandTimeout: defaultSettings.commandTimeout,
   connectTimeout: defaultSettings.connectTimeout,
   codecExecTimeoutSec: defaultSettings.codecExecTimeoutSec,
