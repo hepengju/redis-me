@@ -1,7 +1,10 @@
 // RedisValue 域内共享：类型、键类型能力、扫描/表格纯函数（有状态编排在 index.vue）
 import dayjs from 'dayjs'
 
+import i18n from '@/locales'
 import type { FieldScanResult } from '@/types/tauri-specta'
+
+const t = i18n.global.t
 
 // 类型与行工具
 
@@ -49,6 +52,41 @@ export function streamIdToDate(id: string): string {
   } catch {
     return ''
   }
+}
+
+const DATETIME_FMT = 'YYYY-MM-DD HH:mm:ss'
+
+function pad2(n: number): string {
+  return String(n).padStart(2, '0')
+}
+
+/** 本地时区偏移，如 UTC+8 / UTC-5:30 */
+function formatUtcOffset(ms: number): string {
+  const minutes = dayjs(ms).utcOffset()
+  const sign = minutes >= 0 ? '+' : '-'
+  const abs = Math.abs(minutes)
+  const h = Math.floor(abs / 60)
+  const m = abs % 60
+  return m === 0 ? `UTC${sign}${h}` : `UTC${sign}${h}:${pad2(m)}`
+}
+
+function formatUtcDateTime(ms: number): string {
+  const d = new Date(ms)
+  return `${d.getUTCFullYear()}-${pad2(d.getUTCMonth() + 1)}-${pad2(d.getUTCDate())} ${pad2(d.getUTCHours())}:${pad2(d.getUTCMinutes())}:${pad2(d.getUTCSeconds())}`
+}
+
+/** TTL 悬停 HTML：过期时刻（本地+偏移）/ UTC / 剩余秒；永久或无效则空串（不展示 tooltip）。 */
+export function formatTtlExpireTooltip(ttl: number | undefined | null): string {
+  if (ttl === undefined || ttl === null || ttl < 0) return ''
+  const ms = Date.now() + ttl * 1000
+  return [
+    t('redisValue.ttlExpireAt', {
+      time: dayjs(ms).format(DATETIME_FMT),
+      offset: formatUtcOffset(ms),
+    }),
+    t('redisValue.ttlUtc', { time: formatUtcDateTime(ms) }),
+    t('redisValue.ttlSeconds', { n: ttl, unit: t('timeUnit.second', ttl) }),
+  ].join('<br/>')
 }
 
 // 键类型能力

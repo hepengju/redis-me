@@ -87,6 +87,7 @@ import FieldSet from './FieldSet.vue'
 import {
   KEY_TYPE_TO_GROUP,
   fieldValueRows,
+  formatTtlExpireTooltip,
   isAppErrorCode,
   isStringLikeType,
   listRowRedisIndex,
@@ -703,9 +704,11 @@ const ttlDisplayText = computed(() => {
   if (!rv) return ''
   return rv.ttl === -1 ? t('redisValue.ttlForever') : meHumanSeconds(rv.ttl)
 })
-const ttlIconHint = computed(() =>
-  canEdit.value ? t('redisValue.ttlHint') : t('redisValue.ttlHintReadonly'),
-)
+const ttlIconHint = computed(() => {
+  const rv = redisValue.value
+  if (!rv) return ''
+  return formatTtlExpireTooltip(rv.ttl)
+})
 // #endregion
 
 // #region 键刷新（fieldScan）
@@ -1684,14 +1687,16 @@ onUnmounted(() => {
             </template>
             <template #suffix>
               <span class="ttl-suffix-separator">|</span>
-              <me-icon
-                icon="el-icon-timer"
-                class="suffix-ttl icon-btn"
-                icon-left
-                :name="ttlDisplayText"
-                :info="ttlIconHint"
+              <el-tooltip
+                :content="ttlIconHint"
                 placement="top"
-                @click.stop="updateTTL" />
+                raw-content
+                :show-after="300"
+                :disabled="!ttlIconHint">
+                <span class="suffix-ttl icon-btn" @click.stop="updateTTL">
+                  <me-icon icon="el-icon-timer" icon-left :name="ttlDisplayText" />
+                </span>
+              </el-tooltip>
             </template>
           </el-input>
         </div>
@@ -2069,7 +2074,14 @@ onUnmounted(() => {
                 prop="ttl"
                 v-if="showHashFieldTtlOption && scanHashFieldTtl">
                 <template #default="scope">
-                  {{ formatFieldTtl(scope.row.ttl) }}
+                  <el-tooltip
+                    :content="formatTtlExpireTooltip(scope.row.ttl)"
+                    placement="top"
+                    raw-content
+                    :show-after="300"
+                    :disabled="!formatTtlExpireTooltip(scope.row.ttl)">
+                    <span>{{ formatFieldTtl(scope.row.ttl) }}</span>
+                  </el-tooltip>
                 </template>
               </el-table-column>
 
@@ -2429,6 +2441,7 @@ onUnmounted(() => {
     }
 
     .suffix-ttl {
+      display: inline-flex;
       cursor: pointer;
       font-size: 13px;
       color: var(--el-text-color-secondary);

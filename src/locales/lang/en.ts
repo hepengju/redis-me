@@ -903,9 +903,10 @@ export default {
     optional: 'Optional',
     hashKey: 'HashKey',
     streamId: 'ID',
-    ttlHint: 'Click to modify the key expiration time',
-    ttlHintReadonly: 'Key expiration time',
     ttlForever: 'Forever',
+    ttlExpireAt: 'Expires at: {time} ({offset})',
+    ttlUtc: 'UTC: {time}',
+    ttlSeconds: 'TTL: {n} {unit}',
     deleteKey: 'Delete',
     prettyHint:
       'Pretty is enabled by default. When enabled, it formats hash/list/set/json, etc. When disabled, it displays the raw value toString.',
