@@ -419,6 +419,9 @@ api_model!(
 ScanCursor {
     ready_nodes: Vec<String>,
     now_node: String,
+    /// SCAN 游标 IPC 用字符串，避免 JS Number 超过 2^53 丢精度导致续扫卡死
+    #[serde(with = "u64_as_string")]
+    #[specta(type = String)]
     now_cursor: u64,
     stream_cursor: String,
     finished: bool,
@@ -1040,6 +1043,21 @@ api_model!(
         timestamp_last_updated: u64,
     }
 );
+
+/// u64 ↔ 十进制字符串（SCAN 游标会超过 JS 安全整数）
+mod u64_as_string {
+    use serde::{Deserialize, Deserializer, Serializer};
+
+    pub fn serialize<S: Serializer>(v: &u64, s: S) -> Result<S::Ok, S::Error> {
+        s.serialize_str(&v.to_string())
+    }
+
+    pub fn deserialize<'de, D: Deserializer<'de>>(d: D) -> Result<u64, D::Error> {
+        String::deserialize(d)?
+            .parse()
+            .map_err(serde::de::Error::custom)
+    }
+}
 
 //~~~~~ 自定义Vec<u8>序列化为Base64字符串
 mod v8_base64 {
