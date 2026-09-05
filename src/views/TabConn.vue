@@ -359,10 +359,16 @@ function clickNew(): void {
   :deep(.drag-handle),
   :deep(.conn-host) {
     user-select: none;
+    cursor: grab;
 
-    &:hover {
-      cursor: move;
+    &:active {
+      cursor: grabbing;
     }
+  }
+
+  :deep(.sortable-chosen .drag-handle),
+  :deep(.sortable-chosen .conn-host) {
+    cursor: grabbing;
   }
 
   :deep(.sortable-ghost) {

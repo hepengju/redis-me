@@ -1,6 +1,7 @@
 use crate::utils::error::AppError;
 use crate::utils::model::{ConnConfig, SslOption};
 use crate::utils::ssh_tunnel::SshTunnel;
+use crate::utils::tls_cert;
 use crate::utils::util::{AnyResult, parse_path};
 use anyhow::{Context, bail};
 use log::{info, warn};
@@ -164,12 +165,11 @@ fn get_client_sentinel(conf: &ConnConfig) -> AnyResult<Client> {
             SentinelServerType::Master,
         )?
         .set_client_to_redis_db(conf.db as i64)
-        .set_client_to_redis_tls_mode(TlsMode::Secure)
+        .set_client_to_redis_tls_mode(TlsMode::Insecure)
         .set_client_to_redis_certificates(tls.clone())
-        .set_client_to_sentinel_tls_mode(TlsMode::Secure)
+        .set_client_to_sentinel_tls_mode(TlsMode::Insecure)
         .set_client_to_sentinel_certificates(tls);
-        // TODO ==> danger_accept_invalid_hostnames 改为 true（目前没有这个属性）
-        // https://github.com/redis-rs/redis-rs/issues/1931
+        // 同上：Insecure 才跳过服务端 webpki（含 v1 证）
 
         if !conf.username.is_empty() {
             builder = builder.set_client_to_sentinel_username(conf.username);
@@ -259,7 +259,8 @@ pub fn get_client_cluster(conf: &ConnConfig, verify: Option<Duration>) -> AnyRes
         builder = builder.password(conf.password.clone());
     }
     if conf.ssl {
-        builder = builder.danger_accept_invalid_hostnames(true);
+        // 须 Insecure：Secure + danger_accept_invalid_hostnames 仍会 webpki 验服务端证，v1 报 UnsupportedCertVersion
+        builder = builder.tls(TlsMode::Insecure);
         let certs = get_tls_certs(conf.ssl_option.clone())?;
         if let Some(certs) = certs {
             builder = builder.certs(certs);
@@ -317,7 +318,7 @@ pub fn init_cluster_connection(
     apply_cluster_command_timeout(conn, command_timeout)
 }
 
-// 获取证书
+// 获取证书；v1 CA 不装入 trust store（已 #insecure，见 22_tls-x509-v1-compat.md）
 fn get_tls_certs(ssl_option: SslOption) -> AnyResult<Option<TlsCertificates>> {
     if ssl_option.key.is_empty() && ssl_option.cert.is_empty() && ssl_option.ca.is_empty() {
         return Ok(None);
@@ -327,7 +328,13 @@ fn get_tls_certs(ssl_option: SslOption) -> AnyResult<Option<TlsCertificates>> {
     let root_cert = if ssl_option.ca.is_empty() {
         None
     } else {
-        Some(fs::read(parse_path(&ssl_option.ca)).context("授权文件读取失败")?)
+        let ca_bytes = fs::read(parse_path(&ssl_option.ca)).context("授权文件读取失败")?;
+        if tls_cert::is_x509_v1_pem(&ca_bytes) {
+            info!("TLS CA 为 X.509 v1，已跳过 trust store（连接已启用 insecure）");
+            None
+        } else {
+            Some(ca_bytes)
+        }
     };
     let certs = TlsCertificates {
         client_tls: Some(ClientTlsConfig {

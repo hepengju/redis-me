@@ -281,72 +281,40 @@ impl MeClient for MeSingle {
         Ok(logs)
     }
 
-    fn memory_usage(&self, param: RedisMemoryParam) -> AnyResult<Vec<RedisKeySize>> {
+    fn memory_usage_keys(
+        &self,
+        keys: &[RedisKey],
+        size_limit: u64,
+        need_key_type: bool,
+    ) -> AnyResult<Vec<RedisKeySize>> {
+        if keys.is_empty() {
+            return Ok(vec![]);
+        }
         let mut conn = self.get_conn()?;
-        let mut keys: Vec<(Vec<u8>, u64, String)> = vec![];
-
-        let mut scan_times = 0;
-        let mut cursor = 0;
-        loop {
-            let mut cmd = redis::cmd("scan");
-            cmd.arg(cursor)
-                .arg("match")
-                .arg(param.pattern.clone().unwrap_or("*".into()))
-                .arg("count")
-                .arg(param.scan_count);
-            let (next_cursor, new_keys): (u64, Vec<Vec<u8>>) = cmd.query(&mut conn)?;
-            cursor = next_cursor;
-
-            // 计算键大小
-            if !new_keys.is_empty() {
-                let mut pipe = Pipeline::with_capacity(new_keys.len());
-                for key in new_keys.iter() {
-                    pipe.cmd("memory").arg("usage").arg(key);
-                }
-
-                let sizes: Vec<Option<u64>> = pipe.query(&mut conn)?;
-                for (index, size) in sizes.into_iter().enumerate() {
-                    if let Some(size) = size
-                        && size >= param.size_limit
-                    {
-                        keys.push((new_keys[index].clone(), size, "unknown".into()));
-                    }
-                }
-            }
-
-            scan_times += 1;
-
-            if param.count_limit > 0 && keys.len() >= param.count_limit as usize {
-                info!("扫描结果>={}个, 返回", param.count_limit);
-                break;
-            }
-
-            if param.scan_total > 0 && scan_times * param.scan_count >= param.scan_total {
-                info!("已扫描键>={}个, 返回", param.scan_total);
-                break;
-            }
-
-            thread::sleep(Duration::from_millis(param.sleep_millis));
-
-            if cursor == 0 {
-                break;
+        let mut pipe = Pipeline::with_capacity(keys.len());
+        for key in keys {
+            pipe.cmd("memory").arg("usage").arg(key.to_bytes());
+        }
+        let sizes: Vec<Option<u64>> = pipe.query(&mut conn)?;
+        let mut out: Vec<(Vec<u8>, u64, String)> = vec![];
+        for (index, size) in sizes.into_iter().enumerate() {
+            if let Some(size) = size
+                && size >= size_limit
+            {
+                out.push((keys[index].to_bytes().to_vec(), size, "unknown".into()));
             }
         }
-
-        // 计算键类型
-        if param.need_key_type.unwrap_or(false) && !keys.is_empty() {
-            let mut pipe = Pipeline::with_capacity(keys.len());
-            for key in keys.iter() {
+        if need_key_type && !out.is_empty() {
+            let mut pipe = Pipeline::with_capacity(out.len());
+            for key in out.iter() {
                 pipe.cmd("type").arg(&key.0);
             }
             let types: Vec<Option<String>> = pipe.query(&mut conn)?;
             for (index, key_type) in types.into_iter().enumerate() {
-                keys[index].2 = key_type.unwrap_or("deleted".into());
+                out[index].2 = key_type.unwrap_or("deleted".into());
             }
         }
-
-        // 映射为返回值
-        Ok(tuple_to_key_size(keys))
+        Ok(tuple_to_key_size(out))
     }
 
     fn client_list(

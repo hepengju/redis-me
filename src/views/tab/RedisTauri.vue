@@ -184,10 +184,8 @@ const minimalRedisCmd: RedisCommand = {
 const minimalMemoryParam: RedisMemoryParam = {
   match: null,
   sizeLimit: 100,
-  countLimit: 100,
   scanCount: 100,
-  scanTotal: 1000,
-  sleepMillis: 0,
+  cursor: null,
   needKeyType: null,
 }
 

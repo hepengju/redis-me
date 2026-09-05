@@ -109,7 +109,35 @@ pub trait MeClient: Send + Sync {
 
     fn slow_log(&self, count: Option<u64>, node: Option<String>) -> AnyResult<Vec<RedisSlowLog>>;
 
-    fn memory_usage(&self, param: RedisMemoryParam) -> AnyResult<Vec<RedisKeySize>>;
+    /// 对一批键 pipeline MEMORY USAGE（及可选 TYPE），只保留 >= size_limit 的。
+    fn memory_usage_keys(
+        &self,
+        keys: &[RedisKey],
+        size_limit: u64,
+        need_key_type: bool,
+    ) -> AnyResult<Vec<RedisKeySize>>;
+
+    /// 一轮：复用 `scan()` 游标（含集群主节点），再测这批键的内存。
+    fn memory_usage(&self, param: RedisMemoryParam) -> AnyResult<RedisMemoryResult> {
+        let scan = self.scan(ScanParam {
+            pattern: param.pattern.clone().unwrap_or_else(|| "*".into()),
+            scan_type: None,
+            cursor: param.cursor.clone(),
+            exact: false,
+            count: param.scan_count,
+        })?;
+        let scanned = scan.key_list.len() as u64;
+        let key_list = self.memory_usage_keys(
+            &scan.key_list,
+            param.size_limit,
+            param.need_key_type.unwrap_or(false),
+        )?;
+        Ok(RedisMemoryResult {
+            key_list,
+            cursor: scan.cursor,
+            scanned,
+        })
+    }
 
     fn client_list(
         &self,

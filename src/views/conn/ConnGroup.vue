@@ -254,7 +254,11 @@ onBeforeUnmount(() => destroySortables())
             :name="conn.name"
             class="conn-name"
             @click="emit('select', conn)" />
-          <span class="conn-host">{{ conn.host }}:{{ conn.port }}</span>
+          <me-icon
+            class="conn-host"
+            :icon-left="false"
+            icon="el-icon-rank"
+            :name="conn.host + ':' + conn.port" />
           <span class="conn-actions row-actions" @click.stop>
             <el-color-picker
               size="small"
@@ -365,7 +369,7 @@ onBeforeUnmount(() => destroySortables())
       background: var(--el-fill-color-light);
 
       .conn-host {
-        cursor: move;
+        cursor: grabbing;
       }
     }
   }
@@ -382,18 +386,28 @@ onBeforeUnmount(() => destroySortables())
 
   .conn-host {
     flex-shrink: 0;
+    min-width: 0;
     margin-left: auto;
     margin-right: 12px;
     max-width: 45%;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-    text-align: right;
     color: var(--el-color-info);
     user-select: none;
+    cursor: grab;
 
-    &:hover {
-      cursor: move;
+    &:active {
+      cursor: grabbing;
+    }
+
+    > span:first-child {
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    :deep(.el-icon) {
+      flex-shrink: 0;
+      color: var(--el-text-color-placeholder);
     }
   }
 

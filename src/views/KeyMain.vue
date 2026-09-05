@@ -3,7 +3,6 @@
 import { listen, type UnlistenFn } from '@tauri-apps/api/event'
 import { useStorage } from '@vueuse/core'
 import { sortBy } from 'lodash'
-import { minimatch } from 'minimatch'
 import {
   computed,
   inject,
@@ -38,8 +37,8 @@ import { KEY_TYPE_LIST, meKeyShort, toRedisTypeName } from '@/utils/redis-displa
 import {
   buildScanPattern,
   buildLocalFilterPattern,
+  compileRedisGlobFilter,
   computeScanProgress,
-  MINIMATCH_SCAN_OPTS,
 } from '@/utils/redis-glob'
 import { redisKeyId, sameRedisKey } from '@/utils/redis-key'
 import { setTerminalKeyHints } from '@/utils/terminal-key-hints'
@@ -360,10 +359,11 @@ const showLoadMoreButtons = computed(
   () => !loading.value && cursor.value != null && !cursor.value.finished,
 )
 
-// 本地过滤模式：精确转义字面，扫描用 match（切换勾选仅更新过滤，回车/查询才重新扫描）
+// 本地过滤：精确转义字面，扫描用 match（切换勾选仅更新过滤，回车/查询才重新扫描）
 const filterPattern = computed(() =>
   buildLocalFilterPattern(keyword.value, exact.value && !loadFolder.value, match.value),
 )
+const filterMatch = computed(() => compileRedisGlobFilter(filterPattern.value))
 
 // 扫描工作缓冲：每轮 SCAN 结束后 push → 排序 → flush 到 keyList（边扫边看）。
 let scanBuffer: RedisKey_Deserialize[] = []
@@ -395,15 +395,16 @@ const filterKeyList = computed(() => {
   // 收藏模式下，只显示当前连接的收藏键
   let source: RedisKey_Deserialize[] = favoriteMode.value ? currentFavorites.value : keyList.value
 
-  // 收藏模式与上区一致：子串 includes，不受 exact / minimatch 影响
+  // 收藏模式与上区一致：子串 includes，不受 exact / glob 影响
   if (favoriteMode.value) {
     const q = keyword.value.trim().toLowerCase()
     if (!q) return source
     return source.filter(k => k.key.toLowerCase().includes(q))
   }
 
-  if (!filterPattern.value) return source
-  return source.filter(k => minimatch(k.key, filterPattern.value, MINIMATCH_SCAN_OPTS))
+  const matchFn = filterMatch.value
+  if (!matchFn) return source
+  return source.filter(k => matchFn(k.key))
 })
 
 // 若正在扫描则取消并等到 loading 结束（refresh / scanKey restart 共用）
@@ -1297,25 +1298,12 @@ function editDbName(db: number): void {
           </template>
           <template #suffix>
             <div class="keyword-suffix">
-              <el-tooltip
+              <me-scan-control
                 v-if="showScanControl"
-                :content="scanToggleTip"
-                placement="bottom"
-                :show-after="1000">
-                <div class="scan-control" @click.stop="onScanAction">
-                  <el-progress
-                    type="circle"
-                    :percentage="scanProgress"
-                    :width="22"
-                    :stroke-width="2"
-                    :show-text="false"
-                    color="var(--el-color-danger)"
-                    class="scan-ring" />
-                  <me-icon
-                    :icon="loading ? 'el-icon-video-pause' : 'el-icon-video-play'"
-                    class="scan-icon" />
-                </div>
-              </el-tooltip>
+                :percentage="scanProgress"
+                :loading="loading"
+                :tip="scanToggleTip"
+                @click="onScanAction" />
               <me-icon
                 icon="me-icon-search"
                 class="suffix-icon-btn"
@@ -1797,37 +1785,6 @@ function editDbName(db: number): void {
         &.is-checked .el-checkbox__inner {
           background-color: var(--el-color-primary);
           border-color: var(--el-color-primary);
-        }
-      }
-    }
-
-    .scan-control {
-      position: relative;
-      width: 24px;
-      height: 24px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      cursor: pointer;
-      flex-shrink: 0;
-
-      .scan-ring {
-        position: absolute;
-        top: 50%;
-        left: 50%;
-        transform: translate(-50%, -50%);
-        line-height: 1;
-      }
-
-      .scan-icon {
-        position: relative;
-        z-index: 1;
-        font-size: 16px;
-
-        :deep(.icon),
-        :deep(svg) {
-          width: 16px;
-          height: 16px;
         }
       }
     }

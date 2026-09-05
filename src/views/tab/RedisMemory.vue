@@ -1,13 +1,13 @@
 <script setup lang="ts">
-// #region 导入
-import { computed, inject, ref, watchEffect } from 'vue'
+// 内存分析：找大键。扫描循环与键列表同构（一轮 memoryUsage + 前端暂停/停止）。
+import { computed, inject, onUnmounted, ref, watchEffect } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { shareProvideKey } from '@/types/me-interface'
 import type { RedisKey_Deserialize, RedisKeySize_Serialize } from '@/types/tauri-specta'
 import type { TableExportMatrix } from '@/utils/export'
 import { clearKeyTypeCacheForConn } from '@/utils/key-type-cache'
-// 官网参考: https://redis.ac.cn/docs/latest/commands/slowlog-get/
+import { useMemoryScan } from '@/utils/memory-scan'
 import { meType, toKeyTypeLabel } from '@/utils/redis-display'
 import { sameRedisKey } from '@/utils/redis-key'
 import {
@@ -21,11 +21,9 @@ import {
   meCommands,
   meOk,
 } from '@/utils/util'
-// #endregion
 
 // #region 核心状态
 const { t } = useI18n()
-// 共享数据
 const share = inject(shareProvideKey)!
 const canEdit = computed(() => !share.readonly)
 const hint = computed(() => {
@@ -33,17 +31,13 @@ const hint = computed(() => {
     matchParam: matchParam.value,
     scanCount: scanCount.value,
     sizeLimitKb: sizeLimitKb.value,
-    scanTotal: scanTotal.value,
-    countLimit: countLimit.value,
     sleepMillis: sleepMillis.value,
   }
   return t('redisMemory.hint', params)
 })
 
 const sizeLimitKb = ref(100)
-const countLimit = ref(100)
 const scanCount = ref(1000)
-const scanTotal = ref(0)
 const sleepMillis = ref(0)
 const match = ref('')
 const matchParam = computed(() => {
@@ -51,18 +45,45 @@ const matchParam = computed(() => {
   return '*' + match.value + '*'
 })
 
-// 要求为正整数, 避免调用Rust时转换为u64报错
 watchEffect(() => {
   if (sizeLimitKb.value < 0) sizeLimitKb.value = 0
-  if (countLimit.value < 0) countLimit.value = 0
   if (scanCount.value < 0) scanCount.value = 0
-  if (scanTotal.value < 0) scanTotal.value = 0
   if (sleepMillis.value < 0) sleepMillis.value = 0
 })
 
 const keyword = ref('')
-const loading = ref(false)
-const dataList = ref<RedisKeySize_Serialize[]>([])
+
+const {
+  scanning,
+  paused,
+  dataList,
+  showScanControl,
+  scanProgress,
+  scanToggleTip,
+  onRingClick,
+  onStartStop,
+  stop,
+} = useMemoryScan({
+  connId: () => share.conn?.id,
+  param: () => ({
+    match: matchParam.value,
+    sizeLimit: sizeLimitKb.value * 1024,
+    scanCount: scanCount.value,
+    sleepMillis: sleepMillis.value,
+    needKeyType: true,
+  }),
+  totalEstimate: () => {
+    if (!share.conn) return 0
+    const perDb = Number(share.dbSizeMap['db' + share.conn.db] ?? 0)
+    if (!share.conn.cluster) return perDb
+    const masterCount = share.nodeList.filter(n => n.isMaster).length
+    return masterCount > 0 ? perDb * masterCount : perDb
+  },
+})
+
+onUnmounted(() => {
+  void stop()
+})
 
 const filterDataList = computed(() => {
   const key = keyword.value.toLowerCase()
@@ -87,48 +108,18 @@ function exportRows(data: unknown[]): TableExportMatrix {
   }
 }
 
-// 避免表格自动调整列宽时闪烁一下
-function humanTotalSize(list: { value: RedisKeySize_Serialize[] }) {
-  return meHumanSize(list.value.map(d => d.size).reduce((sum, cur) => sum + cur, 0) ?? 0)
-}
-
-async function refresh() {
-  loading.value = true
-  try {
-    const param = {
-      match: matchParam.value,
-      sizeLimit: sizeLimitKb.value * 1024,
-      countLimit: countLimit.value,
-      scanCount: scanCount.value,
-      scanTotal: scanTotal.value,
-      sleepMillis: sleepMillis.value,
-      needKeyType: true,
-    }
-    dataList.value = await meCommands.memoryUsage(share.conn!.id, param)
-  } finally {
-    loading.value = false
-  }
-}
-
-function memoryUsage() {
-  refresh()
-}
-
-// 选中键
 function chooseKey(redisKey: RedisKey_Deserialize) {
   share.redisKey = redisKey
   share.tabName = 'value'
   bus.emit(KEY_REFRESH)
 }
 
-// 删除键
 async function delKey(redisKey: RedisKey_Deserialize) {
   meDeleteKey(share.conn!.id, redisKey, () => {
     dataList.value = dataList.value.filter(rk => !sameRedisKey(rk, redisKey))
   })
 }
 
-// 批量删除键
 const selection = ref<RedisKeySize_Serialize[]>([])
 
 function selectionChange(newSelection: RedisKeySize_Serialize[]) {
@@ -191,28 +182,6 @@ function batchDelKey() {
                   <template #append>ms</template>
                 </el-input>
               </el-dropdown-item>
-              <el-dropdown-item>
-                <el-input v-model.number="scanTotal" style="width: 220px">
-                  <template #prepend>{{ t('redisMemory.scanTotal') }}</template>
-                  <template #append>{{ t('redisMemory.unit') }}</template>
-                </el-input>
-              </el-dropdown-item>
-
-              <el-dropdown-item divided>
-                <el-input v-model.number="sizeLimitKb" style="width: 220px">
-                  <template #prepend>{{ t('redisMemory.sizeLimit') }}</template>
-                  <template #prefix>
-                    <div style="margin-right: 10px">&gE;</div>
-                  </template>
-                  <template #append>Kb</template>
-                </el-input>
-              </el-dropdown-item>
-              <el-dropdown-item>
-                <el-input v-model.number="countLimit" style="width: 220px">
-                  <template #prepend>{{ t('redisMemory.countLimit') }}</template>
-                  <template #append>{{ t('redisMemory.unit') }}</template>
-                </el-input>
-              </el-dropdown-item>
             </el-dropdown-menu>
           </template>
         </el-dropdown>
@@ -235,14 +204,27 @@ function batchDelKey() {
         </el-button>
       </div>
 
-      <div>
+      <div class="header-right">
+        <me-scan-control
+          v-if="showScanControl"
+          :percentage="scanProgress"
+          :loading="scanning"
+          :tip="scanToggleTip"
+          @click="onRingClick" />
         <el-input
           v-model="keyword"
           :placeholder="t('redisMemory.keyword')"
-          style="width: 240px; margin: 0 10px"
+          style="width: 240px"
           clearable />
-        <el-button icon="el-icon-search" @click="memoryUsage" type="primary" :loading="loading">{{
-          t('redisMemory.startScan')
+        <el-button
+          v-if="!scanning && !paused"
+          icon="el-icon-search"
+          type="primary"
+          @click="onStartStop"
+          >{{ t('redisMemory.startScan') }}</el-button
+        >
+        <el-button v-else type="danger" icon="el-icon-video-pause" @click="onStartStop">{{
+          t('redisMemory.stopScan')
         }}</el-button>
       </div>
     </div>
@@ -251,7 +233,6 @@ function batchDelKey() {
         :data="filterDataList"
         ref="table"
         :default-sort="{ prop: 'size', order: 'descending' }"
-        v-loading="loading"
         export-name="memory"
         :export-rows="exportRows"
         @selection-change="selectionChange">
@@ -324,13 +305,18 @@ function batchDelKey() {
 
   .header {
     :deep(.el-input-group__prepend) {
-      //padding: 0 14px;
-      width: 100px; // 适配中英文宽度
+      width: 100px;
     }
 
     :deep(.el-input-group__append) {
       width: 42px;
     }
+  }
+
+  .header-right {
+    display: flex;
+    align-items: center;
+    gap: 10px;
   }
 
   .table {

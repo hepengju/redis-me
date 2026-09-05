@@ -12,7 +12,7 @@ import type {
   RedisFieldSet_Deserialize,
   RedisFieldValue,
 } from '@/types/tauri-specta'
-import { detectViewFormat, detectedViewLabel } from '@/utils/detect-view-format'
+import { detectViewFormatAuto, detectedViewLabel } from '@/utils/detect-view-format'
 import {
   IPC_WIRE_FORMAT,
   base64WireToUtf8Display,
@@ -106,13 +106,17 @@ const initialFieldDisplay = ref('') // 编辑器同步后的展示快照，用�
 // 编码选项 / 生效视图 / 脏检查 / 保存按钮
 const customNames = computed(() => (window.meTauri.settings.customCodecs ?? []).map(f => f.name))
 const fieldViewOptionList = computed(() => fieldViewOptions(customNames.value))
-const detectedView = computed(() => detectViewFormat(srcFieldWire.value)) // Auto 识别结果；非 Auto 时不展示旁侧标签
+const detectedAuto = computed(() => detectViewFormatAuto(srcFieldWire.value)) // Auto 识别（含 Gzip 剥壳）
+const detectedView = computed(() => detectedAuto.value.view)
+const gzipReadonly = computed(() => fieldViewFmt.value === 'auto' && detectedAuto.value.gzip)
 const effectiveFieldViewFmt = computed<ViewBytesFormat>(() =>
   // Auto 时为识别结果，否则等于下拉选中项；驱动展示 / 保存 / 只读
   fieldViewFmt.value === 'auto' ? detectedView.value : fieldViewFmt.value,
 )
 const detectedViewText = computed(() =>
-  fieldViewFmt.value === 'auto' ? detectedViewLabel(detectedView.value) : '',
+  fieldViewFmt.value === 'auto'
+    ? detectedViewLabel(detectedView.value, detectedAuto.value.gzip)
+    : '',
 )
 const vectorsetType = computed(() => form.value.type === 'vectorset')
 const prettyEnabled = computed(
@@ -122,7 +126,9 @@ const prettyEnabled = computed(
     effectiveFieldViewFmt.value === 'utf8' ||
     effectiveFieldViewFmt.value === 'strjson',
 )
-const isViewReadonlyFmt = computed(() => isReadonlyView(effectiveFieldViewFmt.value)) // JdkSerial / Pickle / PhpSerial 不支持写回 → 按钮禁用 + tooltip（连接只读则整钮隐藏）
+const isViewReadonlyFmt = computed(
+  () => isReadonlyView(effectiveFieldViewFmt.value) || gzipReadonly.value,
+) // JdkSerial / Pickle / PhpSerial / Gzip 剥壳不支持写回 → 按钮禁用 + tooltip
 const vectorDirty = computed(() => form.value.fieldValue !== initialFieldDisplay.value)
 const attrsDirty = computed(
   () => vectorsetType.value && !attrsNormalizedEqual(attrsText.value, initialAttrsDisplay.value),
@@ -139,7 +145,8 @@ const canSaveField = computed(
 )
 const saveFieldTip = computed(() => {
   // 禁用原因提示；可保存时与按钮文案一致
-  if (!vectorsetType.value && isViewReadonlyFmt.value) {
+  if (!vectorsetType.value && gzipReadonly.value) return t('util.gzipReadonly')
+  if (!vectorsetType.value && isReadonlyView(effectiveFieldViewFmt.value)) {
     return readonlyViewTip(effectiveFieldViewFmt.value)
   }
   if (!vectorsetType.value && decodeFailed.value) return t('util.saveDecodeFailed')
@@ -164,7 +171,10 @@ async function syncFieldEditor() {
     decodeFailed.value = false
     return
   }
-  const wire = srcFieldWire.value
+  const wire =
+    fieldViewFmt.value === 'auto' && detectedAuto.value.gzip
+      ? detectedAuto.value.wire
+      : srcFieldWire.value
   const fmt = effectiveFieldViewFmt.value
   if (!wire) {
     form.value.fieldValue = ''

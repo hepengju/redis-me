@@ -380,82 +380,41 @@ impl MeClient for MeCluster {
         Ok(logs)
     }
 
-    fn memory_usage(&self, param: RedisMemoryParam) -> AnyResult<Vec<RedisKeySize>> {
+    fn memory_usage_keys(
+        &self,
+        keys: &[RedisKey],
+        size_limit: u64,
+        need_key_type: bool,
+    ) -> AnyResult<Vec<RedisKeySize>> {
+        if keys.is_empty() {
+            return Ok(vec![]);
+        }
         let mut conn = self.get_conn()?;
-        let mut keys: Vec<(Vec<u8>, u64, String)> = vec![];
-
-        // 遍历集群节点: 仅扫描主节点
-        let nodes: Vec<String> = self.get_node_list_master();
-
-        let mut scan_times = 0;
-        'outer: for node in nodes {
-            let (route, _) = self.get_node_route(Some(node.clone()))?;
-            let mut cursor = 0;
-            'inner: loop {
-                let mut cmd = redis::cmd("scan");
-                cmd.arg(cursor)
-                    .arg("match")
-                    .arg(param.pattern.clone().unwrap_or("*".into()))
-                    .arg("count")
-                    .arg(param.scan_count);
-
-                let value = conn.route_command(&cmd, route.clone())?;
-                let (next_cursor, new_keys): (u64, Vec<Vec<u8>>) =
-                    FromRedisValue::from_redis_value(value)?;
-                cursor = next_cursor;
-
-                // 计算键大小
-                if !new_keys.is_empty() {
-                    let mut pipe = ClusterPipeline::with_capacity(new_keys.len());
-                    for key in new_keys.iter() {
-                        pipe.cmd("memory").arg("usage").arg(key);
-                    }
-                    // 此处用Option接收,避免键被删除或过期
-                    let sizes: Vec<Option<u64>> =
-                        conn.cluster_pipe_query(&pipe, new_keys.len())?;
-                    for (index, size) in sizes.into_iter().enumerate() {
-                        if let Some(size) = size
-                            && size >= param.size_limit
-                        {
-                            keys.push((new_keys[index].clone(), size, "unknown".into()));
-                        }
-                    }
-                }
-
-                scan_times += 1;
-
-                if param.count_limit > 0 && keys.len() >= param.count_limit as usize {
-                    info!("扫描结果>={}个, 返回", param.count_limit);
-                    break 'outer;
-                }
-
-                if param.scan_total > 0 && scan_times * param.scan_count >= param.scan_total {
-                    info!("已扫描键>={}个, 返回", param.scan_total);
-                    break 'outer;
-                }
-
-                thread::sleep(Duration::from_millis(param.sleep_millis));
-
-                if cursor == 0 {
-                    break 'inner;
-                }
+        let mut pipe = ClusterPipeline::with_capacity(keys.len());
+        for key in keys {
+            pipe.cmd("memory").arg("usage").arg(key.to_bytes());
+        }
+        // Option：键可能已删除或过期
+        let sizes: Vec<Option<u64>> = conn.cluster_pipe_query(&pipe, keys.len())?;
+        let mut out: Vec<(Vec<u8>, u64, String)> = vec![];
+        for (index, size) in sizes.into_iter().enumerate() {
+            if let Some(size) = size
+                && size >= size_limit
+            {
+                out.push((keys[index].to_bytes().to_vec(), size, "unknown".into()));
             }
         }
-
-        // 计算键类型
-        if param.need_key_type.unwrap_or(false) && !keys.is_empty() {
-            let mut pipe = ClusterPipeline::with_capacity(keys.len());
-            for key in keys.iter() {
+        if need_key_type && !out.is_empty() {
+            let mut pipe = ClusterPipeline::with_capacity(out.len());
+            for key in out.iter() {
                 pipe.cmd("type").arg(&key.0);
             }
-            let types: Vec<Option<String>> = conn.cluster_pipe_query(&pipe, keys.len())?;
+            let types: Vec<Option<String>> = conn.cluster_pipe_query(&pipe, out.len())?;
             for (index, key_type) in types.into_iter().enumerate() {
-                keys[index].2 = key_type.unwrap_or("deleted".into());
+                out[index].2 = key_type.unwrap_or("deleted".into());
             }
         }
-
-        // 映射为返回值
-        Ok(tuple_to_key_size(keys))
+        Ok(tuple_to_key_size(out))
     }
 
     fn client_list(

@@ -887,18 +887,22 @@ api_model!(RedisSlowLog {
     client_name: String
 });
 
-// 内存分析参数
+// 内存分析：一轮 SCAN + MEMORY USAGE，循环/暂停由前端控制（与键列表 SCAN 同构）
 api_model!(RedisMemoryParam {
     #[serde(rename = "match")]
     pattern: Option<String>, // 匹配模式
 
-    size_limit: u64,   // 大小限制, 推荐: 100kb 即102400
-    count_limit: u64,  // 数量限制, 推荐: 1000
-    scan_count: u64,   // 每次扫描, 推荐: 1000
-    scan_total: u64,   // 扫描数量限制, 推荐: 10000
-    sleep_millis: u64, // 扫描间隔, 推荐: 1000
+    size_limit: u64,  // 只收 >= 此字节的键
+    scan_count: u64,  // SCAN COUNT
+    cursor: Option<ScanCursor>,
+    need_key_type: Option<bool>,
+});
 
-    need_key_type: Option<bool>, // 是否需要返回键类型
+api_model!(RedisMemoryResult {
+    key_list: Vec<RedisKeySize>,
+    cursor: ScanCursor,
+    /// 本轮 SCAN 拿到的键数（过滤 size_limit 之前，供进度估算）
+    scanned: u64,
 });
 
 // 内存分析结果

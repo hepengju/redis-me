@@ -1,6 +1,5 @@
 <script setup lang="ts">
 // #region 导入
-import { minimatch } from 'minimatch'
 import {
   computed,
   inject,
@@ -26,8 +25,9 @@ import type {
   ScanCursor,
 } from '@/types/tauri-specta'
 import {
-  detectViewFormat,
+  detectViewFormatAuto,
   detectedViewLabel,
+  type DetectedViewAuto,
   type DetectedViewFormat,
 } from '@/utils/detect-view-format'
 import type { TableExportMatrix } from '@/utils/export'
@@ -55,8 +55,8 @@ import { toKeyTypeLabel } from '@/utils/redis-display'
 import {
   buildScanPattern,
   buildLocalFilterPattern,
+  compileRedisGlobFilter,
   computeScanProgress,
-  MINIMATCH_SCAN_OPTS,
 } from '@/utils/redis-glob'
 import { defaultSettings } from '@/utils/settings-defaults'
 import {
@@ -280,11 +280,18 @@ watchEffect(() => {
 const bytesFormat = ref<ViewBytesFormat>('auto')
 const pendingAutoDetect = ref(false) // KEY_REFRESH 置位，开跑时领到局部变量
 const detectedView = ref<DetectedViewFormat>('utf8')
+const detectedGzip = ref(false) // Auto 剥过一层 Gzip → 只读，标签为 Gzip · 内层
+const detectedInnerWire = ref('') // 剥壳后的 base64；无壳为空串
 const effectiveViewFormat = computed<ViewBytesFormat>(() =>
   bytesFormat.value === 'auto' ? detectedView.value : bytesFormat.value,
 )
+const gzipReadonly = computed(
+  () => bytesFormat.value === 'auto' && stringType.value && detectedGzip.value,
+)
 const detectedViewText = computed(() =>
-  bytesFormat.value === 'auto' && stringType.value ? detectedViewLabel(detectedView.value) : '',
+  bytesFormat.value === 'auto' && stringType.value
+    ? detectedViewLabel(detectedView.value, detectedGzip.value)
+    : '',
 )
 const formatOptions = computed(() => {
   // Auto / string-only 项仅 STRING 可用；顺序由 VIEW_FORMAT_OPTIONS 固定
@@ -309,6 +316,12 @@ function commitBytesFormat(next: ViewBytesFormat) {
 function commitDetectedView(next: DetectedViewFormat) {
   if (detectedView.value !== next) detectedView.value = next
 }
+function commitDetectedAuto(next: DetectedViewAuto) {
+  commitDetectedView(next.view)
+  if (detectedGzip.value !== next.gzip) detectedGzip.value = next.gzip
+  const inner = next.gzip ? next.wire : ''
+  if (detectedInnerWire.value !== inner) detectedInnerWire.value = inner
+}
 
 // 展示层快照（STRING 编辑器 / 表格单元格共用）
 const displayWire = ref('') // 权威 base64
@@ -316,12 +329,16 @@ const displayBytesFormat = ref<ViewBytesFormat>('utf8') // Auto 时=探测结果
 const resolvedWireView = ref('') // custom 异步 decode 文本
 const customCodecFailed = ref(false)
 const customCodecVisible = ref(false)
+/** Auto 剥壳后用内层展示；手动选编码仍看原始 wire */
+const viewSourceWire = computed(() =>
+  bytesFormat.value === 'auto' && detectedGzip.value ? detectedInnerWire.value : displayWire.value,
+)
 
 const viewDecodeFailed = computed(() => {
   if (!stringType.value) return false
   const fmt = displayBytesFormat.value
   if (fmt === 'utf8' || fmt === 'hex' || fmt === 'binary' || fmt === 'base64') return false
-  const wire = displayWire.value
+  const wire = viewSourceWire.value
   if (!wire) return false
   if (isCustomView(fmt)) return customCodecFailed.value
   return isViewDecodeError(meFormatViewValue(wire, fmt))
@@ -337,14 +354,20 @@ const showSave = computed(
 const editorReadOnly = computed(
   () =>
     !canEdit.value ||
+    gzipReadonly.value ||
     isReadonlyView(effectiveViewFormat.value) ||
     viewDecodeFailed.value ||
     (valueTruncated.value && !forceFullValue.value),
 )
 const saveDisabled = computed(
-  () => viewDecodeFailed.value || !valueDirty.value || isReadonlyView(effectiveViewFormat.value),
+  () =>
+    viewDecodeFailed.value ||
+    !valueDirty.value ||
+    gzipReadonly.value ||
+    isReadonlyView(effectiveViewFormat.value),
 )
 const saveTip = computed(() => {
+  if (gzipReadonly.value) return t('util.gzipReadonly')
   if (isReadonlyView(effectiveViewFormat.value)) return readonlyViewTip(effectiveViewFormat.value)
   if (viewDecodeFailed.value) return t('util.saveDecodeFailed')
   if (!valueDirty.value) return t('util.saveNoChange')
@@ -362,7 +385,7 @@ function syncDisplaySnapshot() {
   if (!rv || rv.value === null || rv.value === undefined) {
     displayWire.value = ''
     if (bytesFormat.value === 'auto' && stringType.value) {
-      commitDetectedView('utf8')
+      commitDetectedAuto({ view: 'utf8', gzip: false, wire: '' })
       displayBytesFormat.value = 'utf8'
     } else if (stringType.value) {
       // STRING：下拉即展示格式（勿经 viewFmtForField，避免 JdkSerial 被降成 utf8）
@@ -382,9 +405,9 @@ function syncDisplaySnapshot() {
   displayWire.value = wire
 
   if (bytesFormat.value === 'auto' && stringType.value) {
-    const nextDetected = detectViewFormat(wire, { truncated: valueTruncated.value })
-    commitDetectedView(nextDetected)
-    displayBytesFormat.value = nextDetected
+    const nextDetected = detectViewFormatAuto(wire, { truncated: valueTruncated.value })
+    commitDetectedAuto(nextDetected)
+    displayBytesFormat.value = nextDetected.view
     return
   }
 
@@ -522,7 +545,7 @@ const showValue = computed(() => {
   if (obj === null || obj === undefined || !rv) return ''
 
   if (stringType.value) {
-    const str = stringWireDisplayText(displayWire.value)
+    const str = stringWireDisplayText(viewSourceWire.value)
     return isPretty.value ? meFormatDisplayValue(str, true) : str
   }
 
@@ -596,30 +619,28 @@ const filterDataList = computed(() => {
   })
 })
 
-// Hash/Set/ZSet：本地 minimatch（未 Enter 时不依赖服务端 MATCH）
+// Hash/Set/ZSet：本地 Redis glob（未 Enter 时不依赖服务端 MATCH）
 const filterFieldPattern = computed(() =>
   buildLocalFilterPattern(fieldKeyword.value, fieldExact.value, fieldMatch.value),
 )
+const filterFieldMatch = computed(() => compileRedisGlobFilter(filterFieldPattern.value))
 const filterFieldList = computed(() => {
-  if (!filterFieldPattern.value) return dataList.value
-  const pattern = filterFieldPattern.value
+  const matchFn = filterFieldMatch.value
+  if (!matchFn) return dataList.value
   // Vector Set：按元素名（row.value）本地过滤（向量浮点无检索意义；相似度走 VSIM）
   if (vectorsetType.value) {
     return dataList.value.filter(
-      row =>
-        row.value != null &&
-        row.value !== '' &&
-        minimatch(formatTableCell(row.value), pattern, MINIMATCH_SCAN_OPTS),
+      row => row.value != null && row.value !== '' && matchFn(formatTableCell(row.value)),
     )
   }
   return dataList.value.filter(row => {
     if (row.key != null && row.key !== '') {
-      if (minimatch(formatTableCell(row.key), pattern, MINIMATCH_SCAN_OPTS)) return true
+      if (matchFn(formatTableCell(row.key))) return true
     }
     if (row.value != null && row.value !== '') {
-      if (minimatch(formatTableCell(row.value), pattern, MINIMATCH_SCAN_OPTS)) return true
+      if (matchFn(formatTableCell(row.value))) return true
     }
-    if (row.score != null && minimatch(String(row.score), pattern, MINIMATCH_SCAN_OPTS)) {
+    if (row.score != null && matchFn(String(row.score))) {
       return true
     }
     return false
@@ -1470,7 +1491,7 @@ async function onKeyMoreCommand(command: string) {
 async function setValue() {
   const rv = redisValue.value
   if (!rv || rv.newValue === null) return
-  if (isReadonlyView(effectiveViewFormat.value)) return
+  if (gzipReadonly.value || isReadonlyView(effectiveViewFormat.value)) return
   let value = rv.newValue
 
   try {
@@ -1782,25 +1803,12 @@ onUnmounted(() => {
               @keyup.enter="onFieldSearch">
               <template #suffix>
                 <div class="keyword-suffix">
-                  <el-tooltip
+                  <me-scan-control
                     v-if="showScanControl"
-                    :content="scanToggleTip"
-                    placement="bottom"
-                    :show-after="1000">
-                    <div class="scan-control" @click.stop="onFieldScanAction">
-                      <el-progress
-                        type="circle"
-                        :percentage="scanProgress"
-                        :width="22"
-                        :stroke-width="2"
-                        :show-text="false"
-                        color="var(--el-color-danger)"
-                        class="scan-ring" />
-                      <me-icon
-                        :icon="loading ? 'el-icon-video-pause' : 'el-icon-video-play'"
-                        class="scan-icon" />
-                    </div>
-                  </el-tooltip>
+                    :percentage="scanProgress"
+                    :loading="loading"
+                    :tip="scanToggleTip"
+                    @click="onFieldScanAction" />
                   <el-tooltip
                     v-if="showFieldExactCheckbox"
                     :content="fieldExactSearchTip"
@@ -2546,37 +2554,6 @@ onUnmounted(() => {
             &.is-checked .el-checkbox__inner {
               background-color: var(--el-color-primary);
               border-color: var(--el-color-primary);
-            }
-          }
-        }
-
-        .scan-control {
-          position: relative;
-          width: 24px;
-          height: 24px;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          cursor: pointer;
-          flex-shrink: 0;
-
-          .scan-ring {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            line-height: 1;
-          }
-
-          .scan-icon {
-            position: relative;
-            z-index: 1;
-            font-size: 16px;
-
-            :deep(.icon),
-            :deep(svg) {
-              width: 16px;
-              height: 16px;
             }
           }
         }

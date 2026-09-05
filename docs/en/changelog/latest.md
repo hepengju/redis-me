@@ -1,5 +1,18 @@
 # 5.x Changelog
 
+## [v5.1.0](https://mp.weixin.qq.com/s/1IS91XFgCn4nBvs6M06V7g) (2026-09-05)
+
+### ✨ New Features
+
+- Connection: TLS compatible with **X.509 v1** certificates (CentOS 7 and other old OpenSSL self-signed certs)
+- Codec: Auto supports **Gzip read-only unwrap**
+- Memory: scan shows **live progress**, with pause/resume and stop
+- Connection: added a drag-hint icon after the host in grouped view #162
+
+### 🐞 Bug Fixes
+
+- Fixed local key/field filtering missing keys with slashes (aligned with Redis MATCH semantics)
+
 ## v5.0.3 (2026-09-03)
 
 ### ✨ New Features
@@ -11,7 +24,7 @@
 
 ### 🐞 Bug Fixes
 
-- Fixed Auto sometimes misdetecting truncated large string previews as Hex; default preview is now 4KB
+- Fixed **Auto sometimes misdetecting truncated large string previews as Hex**; default preview is now 4KB
 - Fixed AnotherRDM 1.7.2+ grouped `.ano` import failing #160
 - Fixed the fullscreen row in the empty-state shortcut list not responding to clicks
 
@@ -19,9 +32,9 @@
 
 ### ✨ New Features
 
-- Settings: new **connection timeout** #157
+- Value area: **ZSet filter by score range**
+- Settings: new configurable **connection timeout** #157
 - Settings: renamed Command Timeout to I/O Timeout
-- Value area: ZSet filter by score range
 
 ## v5.0.1 (2026-09-01)
 

@@ -61,7 +61,7 @@ export const commands = {
 	aclLogReset: (id: string) => typedError<null, string>(__TAURI_INVOKE("acl_log_reset", { id })),
 	aclDryrun: (id: string, username: string, command: string) => typedError<string, string>(__TAURI_INVOKE("acl_dryrun", { id, username, command })),
 	slowLog: (id: string, count: number | null, node: string | null) => typedError<RedisSlowLog[], string>(__TAURI_INVOKE("slow_log", { id, count, node })),
-	memoryUsage: (id: string, param: RedisMemoryParam) => typedError<RedisKeySize_Serialize[], string>(__TAURI_INVOKE("memory_usage", { id, param })),
+	memoryUsage: (id: string, param: RedisMemoryParam) => typedError<RedisMemoryResult_Serialize, string>(__TAURI_INVOKE("memory_usage", { id, param })),
 	configGet: (id: string, pattern: string, node: string | null) => typedError<{ [key in string]: string }, string>(__TAURI_INVOKE("config_get", { id, pattern, node })),
 	configSet: (id: string, key: string, value: string, node: string | null) => typedError<null, string>(__TAURI_INVOKE("config_set", { id, key, value, node })),
 	clientList: (id: string, node: string | null, clientType: string | null) => typedError<RedisClientInfo[], string>(__TAURI_INVOKE("client_list", { id, node, clientType })),
@@ -626,11 +626,25 @@ export type RedisKey_Serialize = {
 export type RedisMemoryParam = {
 	match: string | null,
 	sizeLimit: number,
-	countLimit: number,
 	scanCount: number,
-	scanTotal: number,
-	sleepMillis: number,
+	cursor: ScanCursor | null,
 	needKeyType: boolean | null,
+};
+
+export type RedisMemoryResult = RedisMemoryResult_Serialize | RedisMemoryResult_Deserialize;
+
+export type RedisMemoryResult_Deserialize = {
+	keyList: RedisKeySize_Deserialize[],
+	cursor: ScanCursor,
+	/**  本轮 SCAN 拿到的键数（过滤 size_limit 之前，供进度估算） */
+	scanned: number,
+};
+
+export type RedisMemoryResult_Serialize = {
+	keyList: RedisKeySize_Serialize[],
+	cursor: ScanCursor,
+	/**  本轮 SCAN 拿到的键数（过滤 size_limit 之前，供进度估算） */
+	scanned: number,
 };
 
 export type RedisNode = {
