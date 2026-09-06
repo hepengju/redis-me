@@ -124,6 +124,14 @@ const maxmemorySummary = computed(() => {
   const policy = dic.value['maxmemory_policy'] || '--'
   return `${human} · ${policy}`
 })
+
+/** used_memory / total_system_memory；缺字段或系统内存为 0 时不展示 */
+const usedMemOfSystemPerc = computed(() => {
+  const used = parseInt(dic.value['used_memory'] ?? '', 10)
+  const total = parseInt(dic.value['total_system_memory'] ?? '', 10)
+  if (!Number.isFinite(used) || !Number.isFinite(total) || total <= 0) return ''
+  return ((used / total) * 100).toFixed(2) + '%'
+})
 // #endregion
 
 // #region INFO 解析与表格筛选
@@ -380,6 +388,7 @@ const nodeGroups = computed(() => {
         <div class="me-flex">
           <el-link underline="never" @click="goMemory" type="primary">
             {{ dic['used_memory_human'] }}
+            <span v-if="usedMemOfSystemPerc">&nbsp;({{ usedMemOfSystemPerc }})</span>
           </el-link>
           <el-text type="info" style="margin-left: 10px">
             [
