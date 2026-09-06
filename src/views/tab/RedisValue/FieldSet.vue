@@ -481,10 +481,13 @@ onUnmounted(() => window.removeEventListener('keydown', onEscapeKey, true))
 
 <template>
   <!-- 字段编辑面板：查看/编辑字段值，支持编码切换、美化、单行刷新 -->
-  <el-card
-    :header="readonly ? t('fieldSet.viewField') : t('fieldSet.editField')"
-    v-show="visible"
-    class="field-set">
+  <el-card v-show="visible" class="field-set">
+    <template #header>
+      <div class="me-flex" style="align-items: center">
+        <span>{{ readonly ? t('fieldSet.viewField') : t('fieldSet.editField') }}</span>
+        <me-icon icon="el-icon-close" class="icon-btn" :info="t('close')" @click="cancel" />
+      </div>
+    </template>
     <el-form ref="formRef" class="field-set-form" :model="form" :rules="rules" label-position="top">
       <el-form-item :label="t('fieldSet.fieldKey')" v-if="form.type === 'hash'">
         <el-input v-model="form.fieldKey" disabled />
