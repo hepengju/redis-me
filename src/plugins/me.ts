@@ -10,6 +10,7 @@ import MeIcon from '../components/MeIcon.vue'
 import MeScanControl from '../components/MeScanControl.vue'
 import MeTable from '../components/MeTable.vue'
 import MeTabPane from '../components/MeTabPane.vue'
+import MeTTL from '../components/MeTTL.vue'
 import MeWebsite from '../components/MeWebsite.vue'
 import MeXterm from '../components/MeXterm.vue'
 
@@ -24,5 +25,6 @@ export default function setupMe(app: App): void {
   app.component('me-table', MeTable)
   app.component('me-dialog', MeDialog)
   app.component('me-tab-pane', MeTabPane)
+  app.component('me-ttl', MeTTL)
   app.component('me-website', MeWebsite)
 }

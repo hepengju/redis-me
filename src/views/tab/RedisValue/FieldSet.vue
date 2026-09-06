@@ -1,7 +1,7 @@
 <script setup lang="ts">
 // #region 导入
 import { cloneDeep } from 'lodash'
-import { computed, inject, onUnmounted, ref, useTemplateRef, watch } from 'vue'
+import { computed, inject, nextTick, onUnmounted, ref, useTemplateRef, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import MeSelectUpDownIcon from '@/components/MeSelectUpDownIcon.vue'
@@ -51,6 +51,7 @@ type FieldSetOpen = Partial<FieldSetForm> & {
   readonly?: boolean // 查看模式：表单只读，隐藏保存
   vectorDim?: number | null // Vector Set：键的 VDIM（用于维度预检）
   srcFieldAttrs?: string // Vector Set：field_get 已拿到的 attrs（跳过 VGETATTR）
+  fieldExpireAt?: Date // 表格扫描时钉死的字段过期时刻
 }
 
 const props = withDefaults(
@@ -233,7 +234,8 @@ function open(data: FieldSetOpen) {
   visible.value = true
   readonly.value = !!data.readonly
   expectedVectorDim.value = data.vectorDim ?? null
-  Object.assign(form.value, cloneDeep(initForm), data)
+  const { fieldExpireAt, ...rest } = data
+  Object.assign(form.value, cloneDeep(initForm), rest)
   srcFieldWire.value = String(data.srcFieldValue ?? '')
   attrsText.value = ''
   initialAttrsDisplay.value = ''
@@ -253,6 +255,12 @@ function open(data: FieldSetOpen) {
   fieldPretty.value = props.pretty
   snapshotFieldMeta()
   void syncFieldEditor()
+  void nextTick(() => {
+    if (form.value.type === 'hash' && props.hashFieldTtlEnabled) {
+      if (fieldExpireAt) fieldTtlRef.value?.syncFromAt(fieldExpireAt)
+      else fieldTtlRef.value?.syncFromSeconds(form.value.fieldTtl ?? -1)
+    }
+  })
 }
 
 function onFieldViewFmtChange() {
@@ -317,6 +325,11 @@ const rules = computed(() => ({
 }))
 
 const formRef = useTemplateRef('formRef')
+const fieldTtlRef = useTemplateRef<{
+  toSeconds: () => number
+  syncFromSeconds: (sec: number) => void
+  syncFromAt: (at: Date) => void
+}>('fieldTtlRef')
 function submit() {
   if (!canSaveField.value) return
   formRef.value.validate(async (valid: boolean) => {
@@ -377,6 +390,15 @@ function submit() {
 
     const useWireKey = (form.value.type === 'hash' || vectorsetType.value) && !!wireFieldKey
 
+    let fieldTtl = form.value.fieldTtl
+    if (form.value.type === 'hash' && props.hashFieldTtlEnabled) {
+      fieldTtl = fieldTtlRef.value?.toSeconds() ?? form.value.fieldTtl
+      if (!(fieldTtl === -1 || fieldTtl > 0)) {
+        meErr(t('fieldAdd.ttlValidator'))
+        return
+      }
+    }
+
     isSaving.value = true
     try {
       await meCommands.fieldSet(share.conn!.id, {
@@ -388,6 +410,7 @@ function submit() {
         attrs: vectorsetType.value ? attrsJson : '',
         valFmt: IPC_WIRE_FORMAT,
         includeFieldTtl: form.value.type === 'hash' ? props.hashFieldTtlEnabled : null,
+        fieldTtl,
       })
       visible.value = false
       emit('success')
@@ -423,6 +446,7 @@ function applyFieldGetToForm(data: RedisFieldValue) {
     form.value.fieldKey = meFormatViewValue(data.fieldKey, 'utf8')
     if (props.hashFieldTtlEnabled) {
       form.value.fieldTtl = data.fieldTtl
+      fieldTtlRef.value?.syncFromSeconds(data.fieldTtl)
     }
   } else if (type === 'zset' && data.fieldScore != null) {
     form.value.fieldScore = data.fieldScore
@@ -474,13 +498,7 @@ onUnmounted(() => window.removeEventListener('keydown', onEscapeKey, true))
       <el-form-item
         :label="t('fieldSet.fieldTtl')"
         v-if="form.type === 'hash' && share.capabilities.httlSupported && hashFieldTtlEnabled">
-        <el-input-number
-          v-model="form.fieldTtl"
-          :min="-1"
-          :controls="false"
-          :disabled="readonly"
-          style="width: 100%"
-          align="left" />
+        <me-ttl ref="fieldTtlRef" v-model="form.fieldTtl" :disabled="readonly" />
       </el-form-item>
       <el-form-item
         :label="t('fieldSet.index')"

@@ -24,7 +24,19 @@ export default {
   deleteOk: '删除成功',
   actionOk: '操作成功',
 
-  timeUnit: { width: '80', second: '秒', minute: '分', hour: '小时', day: '天' },
+  timeUnit: { second: '秒', minute: '分', hour: '时', day: '天' },
+
+  meTtl: {
+    duration: '时长',
+    at: '时刻',
+    modeWidth: '74',
+    unitWidth: '60',
+    previewAt: '过期时刻：{time} ({offset})',
+    previewRemain: '剩余：{text}',
+    forever: '永久',
+    past: '过期时刻必须晚于当前时间',
+    pickAt: '选择过期时刻',
+  },
 
   appMain: {
     readonly: '只读',
@@ -464,7 +476,7 @@ export default {
     ttlValidator: '只允许-1(永久) 或 正整数',
     jsonValidator: '值必须为有效的JSON格式',
     hashHint: '(哈希键：值)',
-    hashHintTtl: '(哈希键：值：过期秒)',
+    hashHintTtl: '(哈希键：值：TTL)',
     zsetHint: '(值：分数)',
     streamHint: '(字段：值)',
     arrayHint: '(索引：值)',
@@ -499,7 +511,7 @@ export default {
     hashKey: '哈希键',
     streamId: 'ID (*表示服务器自动生成)',
     streamIdRequired: '请输入ID',
-    fieldTtl: '超时秒数',
+    fieldTtl: 'TTL',
   },
 
   fieldSet: {
@@ -512,7 +524,7 @@ export default {
     element: '元素',
     vector: '向量',
     attrs: '属性',
-    fieldTtl: '字段过期 (秒)',
+    fieldTtl: '字段过期',
     index: '索引',
     score: '分数',
     value: '值',
@@ -887,6 +899,8 @@ export default {
     hashKey: '哈希键',
     streamId: 'ID',
     ttlForever: '永久',
+    ttlExpired: '键已过期',
+    ttlFieldExpired: '字段已过期',
     ttlExpireAt: '过期时刻：{time} ({offset})',
     ttlUtc: 'UTC：{time}',
     ttlSeconds: 'TTL：{n} {unit}',
@@ -1150,7 +1164,7 @@ export default {
     quick01: '永久',
     quick02: '10秒',
     quick03: '1分',
-    quick04: '1小时',
+    quick04: '1时',
     quick05: '1天',
     ttlOk: '设置TTL成功',
     ttlOkBatch: '批量设置TTL成功',

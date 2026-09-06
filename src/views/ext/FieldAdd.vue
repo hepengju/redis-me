@@ -10,7 +10,7 @@ import type { RedisFieldAdd_Deserialize, RedisKey_Deserialize } from '@/types/ta
 import { BYTES_FORMAT, IPC_WIRE_FORMAT, meViewToWire, type ViewBytesFormat } from '@/utils/format'
 import { KEY_TYPE_LIST, meType, toKeyTypeLabel, toRedisTypeName } from '@/utils/redis-display'
 import { redisKeyWireBase64 } from '@/utils/redis-key'
-import { meCommands, meErr, meOk, meJsonParse, meJsonNormal, meTtlSeconds } from '@/utils/util'
+import { meCommands, meErr, meOk, meJsonParse, meJsonNormal } from '@/utils/util'
 import { parseAttrsInput, parseVectorInput } from '@/utils/vector'
 // #endregion
 
@@ -69,6 +69,7 @@ const initForm = computed(() => ({
   valFmt: 'utf8' as ViewBytesFormat,
 }))
 const form = ref(cloneDeep(toRaw(initForm.value)))
+const keyTtlRef = useTemplateRef<{ toSeconds: () => number }>('keyTtlRef')
 
 const stringOrJsonType = computed(() => form.value.type === 'string' || form.value.type === 'json')
 const jsonType = computed(() => form.value.type === 'json')
@@ -90,7 +91,8 @@ const rules = computed(() => ({
         value: unknown,
         callback: (error?: string | Error) => void,
       ) => {
-        if (!(form.value.ttl === -1 || form.value.ttl > 0)) {
+        const n = keyTtlRef.value?.toSeconds() ?? form.value.ttl
+        if (!(n === -1 || n > 0)) {
           callback(new Error(t('fieldAdd.ttlValidator')))
           return
         }
@@ -153,8 +155,17 @@ function newElement(index: number) {
 
 // #region 提交处理
 // 提交数据
-const ttlUnit = ref('second')
 const formRef = useTemplateRef('formRef')
+const fieldTtlRefs = new Map<object, { toSeconds: () => number }>()
+function bindFieldTtlRef(item: object) {
+  return (el: unknown) => {
+    if (el && typeof el === 'object' && 'toSeconds' in el) {
+      fieldTtlRefs.set(item, el as { toSeconds: () => number })
+    } else {
+      fieldTtlRefs.delete(item)
+    }
+  }
+}
 function submit() {
   formRef.value.validate(async (valid: boolean) => {
     if (!valid) return
@@ -226,8 +237,17 @@ function submit() {
         fieldValue: vectorsetType.value ? '' : meViewToWire(item.fieldValue, valViewFmt),
       }))
       fieldValueList.forEach(item => {
-        if (item.fieldTtl === null) item.fieldTtl = -1
+        const sec = fieldTtlRefs.get(item)?.toSeconds()
+        if (sec != null) item.fieldTtl = sec
+        else if (item.fieldTtl === null) item.fieldTtl = -1
       })
+      const badFieldTtl = fieldValueList.find(
+        item => !(item.fieldTtl === -1 || (typeof item.fieldTtl === 'number' && item.fieldTtl > 0)),
+      )
+      if (badFieldTtl) {
+        meErr(t('fieldAdd.ttlValidator'))
+        return
+      }
       // 新建键按 keyFmt；加字段在 SCAN 省略 bytes 时用展示名转 wire
       if (!form.value.key.bytes) {
         key =
@@ -249,7 +269,7 @@ function submit() {
         value,
         vector,
         attrs,
-        ttl: meTtlSeconds(form.value.ttl, ttlUnit.value),
+        ttl: keyTtlRef.value?.toSeconds() ?? form.value.ttl,
         fieldValueList,
         keyFmt: IPC_WIRE_FORMAT,
         valFmt: isJson ? 'utf8' : IPC_WIRE_FORMAT,
@@ -324,23 +344,18 @@ function handleKeyTypeChange() {
 
         <el-col :span="12">
           <el-form-item :label="t('fieldAdd.ttl')" prop="ttl">
-            <el-input v-model.number="form.ttl" style="flex: 1">
-              <template #append>
-                <el-select v-model="ttlUnit" :style="{ width: t('timeUnit.width') + 'px' }">
-                  <el-option :label="t('timeUnit.second', form.ttl)" value="second" />
-                  <el-option :label="t('timeUnit.minute', form.ttl)" value="minute" />
-                  <el-option :label="t('timeUnit.hour', form.ttl)" value="hour" />
-                  <el-option :label="t('timeUnit.day', form.ttl)" value="day" />
-                </el-select>
-              </template>
-            </el-input>
+            <me-ttl ref="keyTtlRef" v-model="form.ttl" />
           </el-form-item>
         </el-col>
       </el-row>
 
       <!-- 键：新建键可编辑，新增字段时禁止编辑且前缀补充类型 -->
       <el-form-item :label="t('fieldAdd.key')" prop="key.key">
-        <el-input type="text" v-model="form.key.key" :disabled="form.mode === 'field'">
+        <el-input
+          class="field-add-key"
+          type="text"
+          v-model="form.key.key"
+          :disabled="form.mode === 'field'">
           <template #prepend v-if="form.mode === 'field'">
             <el-text :type="meType(form.type)">{{ toKeyTypeLabel(form.type) }}</el-text>
           </template>
@@ -446,14 +461,11 @@ function handleKeyTypeChange() {
             style="margin-right: 10px"
             v-if="form.type === 'zset'"
             :validate-event="false" />
-          <el-input-number
+          <me-ttl
             v-if="form.type === 'hash' && share.capabilities.httlSupported"
+            :ref="bindFieldTtlRef(item)"
             v-model="item.fieldTtl"
-            :min="-1"
-            :controls="false"
-            :placeholder="t('fieldAdd.fieldTtl')"
-            style="margin-right: 10px; width: 250px"
-            :validate-event="false" />
+            compact />
           <el-button
             icon="el-icon-delete"
             circle
@@ -501,7 +513,7 @@ function handleKeyTypeChange() {
 </template>
 
 <style scoped lang="scss">
-:deep(.el-input-group__prepend) {
+:deep(.field-add-key .el-input-group__prepend) {
   padding: 0 16px;
 }
 .array-write-hint {

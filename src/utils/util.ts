@@ -341,14 +341,7 @@ export function meHumanSeconds(seconds: number | undefined | null): string | num
   return result
 }
 
-export function meTtlSeconds(intValue: number, unit: string): number {
-  if (intValue === -1) return -1
-  if (unit === 'second') return intValue
-  if (unit === 'minute') return intValue * 60
-  if (unit === 'hour') return intValue * 60 * 60
-  if (unit === 'day') return intValue * 60 * 60 * 24
-  return intValue
-}
+export { meTtlSeconds } from './ttl'
 
 export function meFilterHandler<T extends Record<string, unknown>>(
   value: unknown,

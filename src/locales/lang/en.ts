@@ -25,11 +25,22 @@ export default {
   actionOk: 'Success',
 
   timeUnit: {
-    width: '120',
     second: 'Second | Seconds',
     minute: 'Minute | Minutes',
     hour: 'Hour | Hours',
     day: 'Day | Days',
+  },
+
+  meTtl: {
+    duration: 'Duration',
+    at: 'Expire at',
+    modeWidth: '110',
+    unitWidth: '100',
+    previewAt: 'Expires at: {time} ({offset})',
+    previewRemain: 'Remaining: {text}',
+    forever: 'Forever',
+    past: 'Expire time must be in the future',
+    pickAt: 'Pick expire time',
   },
 
   appMain: {
@@ -473,7 +484,7 @@ export default {
     ttlValidator: '-1 (Forever) or positive integer',
     jsonValidator: 'Value must be in a valid JSON format',
     hashHint: '(HashKey: HashValue)',
-    hashHintTtl: '(HashKey: HashValue: TTL Seconds)',
+    hashHintTtl: '(HashKey: HashValue: TTL)',
     zsetHint: '(Value: Score)',
     streamHint: '(Field: Value)',
     arrayHint: '(Index: Value)',
@@ -522,7 +533,7 @@ export default {
     element: 'Element',
     vector: 'Vector',
     attrs: 'Attributes',
-    fieldTtl: 'Field TTL (Second)',
+    fieldTtl: 'Field TTL',
     index: 'Index',
     score: 'Score',
     value: 'Value',
@@ -904,6 +915,8 @@ export default {
     hashKey: 'HashKey',
     streamId: 'ID',
     ttlForever: 'Forever',
+    ttlExpired: 'Key expired',
+    ttlFieldExpired: 'Field expired',
     ttlExpireAt: 'Expires at: {time} ({offset})',
     ttlUtc: 'UTC: {time}',
     ttlSeconds: 'TTL: {n} {unit}',

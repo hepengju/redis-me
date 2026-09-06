@@ -1,5 +1,6 @@
 <script setup lang="ts">
 // #region 导入
+import { useNow } from '@vueuse/core'
 import {
   computed,
   inject,
@@ -59,6 +60,7 @@ import {
   computeScanProgress,
 } from '@/utils/redis-glob'
 import { defaultSettings } from '@/utils/settings-defaults'
+import { meTtlFromAt, meTtlToAt } from '@/utils/ttl'
 import {
   bus,
   KEY_DELETE,
@@ -93,6 +95,7 @@ import {
   listRowRedisIndex,
   mergeFieldScanPage,
   parseListIndexInput,
+  pinFieldExpireAt,
   shouldFieldScanAuto,
   streamIdToDate,
   supportsFieldRowRefresh,
@@ -679,40 +682,60 @@ const tableDefaultSort = computed(
 // #endregion
 
 // #region TTL
-// 倒计时
-let timer: ReturnType<typeof setInterval> | null = null
+// 过期时刻钉死为唯一数据源；展示/写回用计算属性从墙上时钟推导，不再每秒改 rv.ttl
+const expireAtMs = ref<number | null>(null)
+const {
+  now,
+  pause: pauseTtlClock,
+  resume: resumeTtlClock,
+} = useNow({ interval: 1000, controls: true })
 
-async function setTimer(seconds: number) {
+function applyTtl(seconds: number) {
   const rv = redisValue.value
   if (!rv) return
   rv.ttl = seconds
-  if (timer !== null) clearInterval(timer)
-  timer = null
-  if (rv.ttl > 0) {
-    timer = setInterval(() => {
-      const cur = redisValue.value
-      if (cur && cur.ttl > 0) cur.ttl--
-    }, 1000)
-  }
+  expireAtMs.value = seconds > 0 ? meTtlToAt(seconds).getTime() : null
 }
 
-// 顶栏展示 / 弹窗
+const ttlRemain = computed(() => {
+  const exp = expireAtMs.value
+  if (exp == null) return redisValue.value?.ttl ?? -1
+  return meTtlFromAt(exp, now.value.getTime())
+})
+
+watch(
+  expireAtMs,
+  exp => {
+    if (exp != null && meTtlFromAt(exp) > 0) resumeTtlClock()
+    else pauseTtlClock()
+  },
+  { immediate: true },
+)
+watch(ttlRemain, n => {
+  if (expireAtMs.value != null && n <= 0) pauseTtlClock()
+})
+
 const ttlSetRef = useTemplateRef('ttlSetRef')
 function updateTTL() {
-  if (!canEdit.value) return
-  const rv = redisValue.value
-  if (!rv) return
-  ttlSetRef.value?.open({ ttl: rv.ttl })
+  if (!canEdit.value || ttlExpired.value) return
+  if (!redisValue.value) return
+  const at = expireAtMs.value != null ? new Date(expireAtMs.value) : undefined
+  ttlSetRef.value?.open({ ttl: ttlRemain.value, at })
 }
+const ttlExpired = computed(() => {
+  const n = ttlRemain.value
+  return n !== -1 && n <= 0
+})
 const ttlDisplayText = computed(() => {
-  const rv = redisValue.value
-  if (!rv) return ''
-  return rv.ttl === -1 ? t('redisValue.ttlForever') : meHumanSeconds(rv.ttl)
+  if (!redisValue.value) return ''
+  const n = ttlRemain.value
+  if (n === -1) return t('redisValue.ttlForever')
+  if (n <= 0) return '00:00:00'
+  return meHumanSeconds(n)
 })
 const ttlIconHint = computed(() => {
-  const rv = redisValue.value
-  if (!rv) return ''
-  return formatTtlExpireTooltip(rv.ttl)
+  if (!redisValue.value) return ''
+  return formatTtlExpireTooltip(ttlRemain.value, expireAtMs.value)
 })
 // #endregion
 
@@ -949,7 +972,7 @@ async function refreshKey(
 
     showMore.value = !cursor.value?.finished
     const rvDone = redisValue.value
-    if (rvDone) await setTimer(rvDone.ttl)
+    if (rvDone) applyTtl(rvDone.ttl)
   } catch (e) {
     // 整键刷新且键已不存在：清掉过期快照；续扫失败保留已加载页；其它错误也保留旧值
     if (!useCursor && isAppErrorCode(e, 'key_not_found')) {
@@ -970,10 +993,7 @@ function clearValueAfterKeyGone() {
   redisValue.value = null
   cursor.value = null
   showMore.value = false
-  if (timer !== null) {
-    clearInterval(timer)
-    timer = null
-  }
+  expireAtMs.value = null
 }
 
 // 自动刷新：仅当前组件状态，不持久化；配置入口为底栏刷新图标 hover 菜单
@@ -1053,7 +1073,11 @@ function pageRowIndexFromEvent(event: MouseEvent): number {
 function formatFieldTtl(ttl: number | undefined): string {
   if (ttl === undefined || ttl === null) return '-'
   if (ttl === -1) return t('redisValue.ttlForever')
+  if (ttl <= 0) return '00:00:00'
   return String(meHumanSeconds(ttl))
+}
+function fieldTtlHint(ttl?: number, expireAtMs?: number | null) {
+  return formatTtlExpireTooltip(ttl, expireAtMs, t('redisValue.ttlFieldExpired'))
 }
 function fieldRowDisplayValue(row: ValueTableRow): string {
   if (streamType.value) return JSON.stringify(row.value)
@@ -1149,6 +1173,8 @@ async function openFieldPanel(row: ValueTableRow, index: number, readonly: boole
     fieldKey: vectorsetType.value ? String(row.value ?? '') : row.key || '',
     fieldScore: row.score || 0,
     fieldTtl: row.ttl ?? -1,
+    fieldExpireAt:
+      row.expireAtMs != null && (row.ttl ?? 0) > 0 ? new Date(row.expireAtMs) : undefined,
     srcFieldValue: rowValWire,
     wireFieldKey: vectorsetType.value ? String(row.value ?? '') : row.key || '',
     keyWireFmt: IPC_WIRE_FORMAT,
@@ -1202,11 +1228,14 @@ function applyFieldGetResult(rv: FieldScanViewState, data: RedisFieldValue, row:
     const rows = fieldValueRows(rv.value) as ValueTableRow[]
     const idx = rows.findIndex(r => r.key === (row.key || fieldEditKey.value))
     if (idx >= 0) {
-      rows[idx] = {
+      const next: ValueTableRow = {
         key: data.fieldKey,
         value: data.fieldValue,
         ttl: scanHashFieldTtl.value ? data.fieldTtl : (rows[idx].ttl ?? row.ttl),
       }
+      if (scanHashFieldTtl.value) pinFieldExpireAt(next)
+      else next.expireAtMs = rows[idx].expireAtMs ?? row.expireAtMs
+      rows[idx] = next
     }
   } else if (listType.value || arrayType.value) {
     const rows = fieldValueRows(rv.value) as ValueTableRow[]
@@ -1396,6 +1425,7 @@ async function showLocation() {
 // 删除 / 重命名 / 复制
 function deleteKey(_payload?: RedisKey_Deserialize) {
   redisValue.value = null
+  expireAtMs.value = null
 }
 function delKey() {
   meDeleteKey(share.conn!.id, share.redisKey!)
@@ -1531,7 +1561,7 @@ async function setValue() {
   await meCommands.set(share.conn!.id, {
     key: share.redisKey!,
     value,
-    ttl: rv.ttl,
+    ttl: expireAtMs.value == null ? rv.ttl : ttlRemain.value > 0 ? ttlRemain.value : -1,
     keyType: rv.type,
     inputFormat: jsonType.value ? 'utf8' : IPC_WIRE_FORMAT, // JSON=utf8；STRING=base64 wire
   })
@@ -1665,7 +1695,7 @@ onMounted(() => {
 onUnmounted(() => {
   bus.off(KEY_REFRESH, onKeyRefreshBus)
   bus.off(KEY_DELETE, deleteKey)
-  if (timer) clearInterval(timer)
+  expireAtMs.value = null
   if (autoRefreshTimer) clearInterval(autoRefreshTimer)
 })
 // #endregion
@@ -1697,7 +1727,10 @@ onUnmounted(() => {
                 raw-content
                 :show-after="300"
                 :disabled="!ttlIconHint">
-                <span class="suffix-ttl icon-btn" @click.stop="updateTTL">
+                <span
+                  class="suffix-ttl"
+                  :class="{ 'icon-btn': !ttlExpired, 'is-expired': ttlExpired }"
+                  @click.stop="updateTTL">
                   <me-icon icon="el-icon-timer" icon-left :name="ttlDisplayText" />
                 </span>
               </el-tooltip>
@@ -2079,11 +2112,11 @@ onUnmounted(() => {
                 v-if="showHashFieldTtlOption && scanHashFieldTtl">
                 <template #default="scope">
                   <el-tooltip
-                    :content="formatTtlExpireTooltip(scope.row.ttl)"
+                    :content="fieldTtlHint(scope.row.ttl, scope.row.expireAtMs)"
                     placement="top"
                     raw-content
                     :show-after="300"
-                    :disabled="!formatTtlExpireTooltip(scope.row.ttl)">
+                    :disabled="!fieldTtlHint(scope.row.ttl, scope.row.expireAtMs)">
                     <span>{{ formatFieldTtl(scope.row.ttl) }}</span>
                   </el-tooltip>
                 </template>
@@ -2391,7 +2424,7 @@ onUnmounted(() => {
       :description="share.redisKey ? t('redisValue.keyGone') : t('redisValue.noKeySelected')" />
 
     <!-- 共享弹窗（KeyMain / Terminal 也用）：TTL / 字段新增 / 重命名 / 命令帮助 -->
-    <TTLSet ref="ttlSetRef" @success="setTimer" />
+    <TTLSet ref="ttlSetRef" @success="applyTtl" />
     <FieldAdd ref="fieldAddRef" @success="refreshKey" />
     <KeyRename ref="keyRenameRef" />
     <CommandHelp ref="commandHelpRef" />
@@ -2457,6 +2490,14 @@ onUnmounted(() => {
 
       &:hover {
         color: var(--el-color-primary);
+      }
+
+      &.is-expired {
+        cursor: default;
+
+        &:hover {
+          color: var(--el-text-color-secondary);
+        }
       }
     }
 
