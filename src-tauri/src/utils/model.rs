@@ -766,6 +766,15 @@ api_model!(RedisPop {
     val_fmt: Option<BytesFormat>,
 });
 
+// 仅更新 Hash 字段过期：HEXPIRE / HPERSIST，不改字段值
+api_model!(RedisFieldTtl {
+    key: RedisKey,
+    field_key: String,
+    field_ttl: i64, // >0 秒；-1 永久（HPERSIST）
+    /// 字段名编码，与 field_set 的 val_fmt 一致
+    val_fmt: Option<BytesFormat>,
+});
+
 api_model!(RedisFieldGet {
     key: RedisKey,
     field_index: isize,

@@ -72,6 +72,8 @@ pub trait MeClient: Send + Sync {
 
     fn field_set(&self, param: RedisFieldSet) -> AnyResult<()>;
 
+    fn field_ttl(&self, param: RedisFieldTtl) -> AnyResult<()>;
+
     fn field_get(&self, param: RedisFieldGet) -> AnyResult<RedisFieldValue>;
 
     fn hash_keys(&self, param: RedisHashKeys) -> AnyResult<Vec<String>>;
@@ -1439,6 +1441,36 @@ pub fn field_set0(
             handle_other_value_type(&key_type, &key)?;
         }
     };
+    Ok(())
+}
+
+/// Hash 字段过期：不改字段值。>0 → HEXPIRE；否则 HPERSIST。
+pub fn field_ttl0(
+    mut conn: MutexGuard<impl Commands>,
+    param: RedisFieldTtl,
+    httl_supported: bool,
+) -> AnyResult<()> {
+    if !httl_supported {
+        bail!(AppError::HttlNotSupported);
+    }
+    let key: RedisKey = param.key;
+    let key_type: ValueType = conn.key_type(&key)?;
+    if key_type != ValueType::Hash {
+        handle_other_value_type(&key_type, &key)?;
+        return Ok(());
+    }
+    let val_fmt = param.val_fmt.as_ref().cloned().unwrap_or_default();
+    let field_bytes = parse_bytes(&param.field_key, &val_fmt)?;
+    let replies: Vec<IntegerReplyOrNoOp> = if param.field_ttl > 0 {
+        conn.hexpire(&key, param.field_ttl, ExpireOption::NONE, &field_bytes)?
+    } else {
+        conn.hpersist(&key, &field_bytes)?
+    };
+    if matches!(replies.first(), Some(IntegerReplyOrNoOp::NotExists)) {
+        bail!(AppError::FieldNotFound {
+            hash_key: param.field_key,
+        });
+    }
     Ok(())
 }
 

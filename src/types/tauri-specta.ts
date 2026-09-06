@@ -32,6 +32,7 @@ export const commands = {
 	copy: (id: string, param: RedisCopyParam_Deserialize) => typedError<RedisKey_Serialize, string>(__TAURI_INVOKE("copy", { id, param })),
 	fieldAdd: (id: string, param: RedisFieldAdd_Deserialize) => typedError<RedisKey_Serialize, string>(__TAURI_INVOKE("field_add", { id, param })),
 	fieldSet: (id: string, param: RedisFieldSet_Deserialize) => typedError<null, string>(__TAURI_INVOKE("field_set", { id, param })),
+	fieldTtl: (id: string, param: RedisFieldTtl_Deserialize) => typedError<null, string>(__TAURI_INVOKE("field_ttl", { id, param })),
 	fieldGet: (id: string, param: RedisFieldGet_Deserialize) => typedError<RedisFieldValue, string>(__TAURI_INVOKE("field_get", { id, param })),
 	hashKeys: (id: string, param: RedisHashKeys_Deserialize) => typedError<string[], string>(__TAURI_INVOKE("hash_keys", { id, param })),
 	hashValues: (id: string, param: RedisHashKeys_Deserialize) => typedError<string[], string>(__TAURI_INVOKE("hash_values", { id, param })),
@@ -558,6 +559,24 @@ export type RedisFieldSet_Serialize = {
 	vector: (number | null)[],
 	/**  Vector Set：前端恒提交当前全量 attrs JSON（空串=清除属性，官方约定） */
 	attrs: string,
+};
+
+export type RedisFieldTtl = RedisFieldTtl_Serialize | RedisFieldTtl_Deserialize;
+
+export type RedisFieldTtl_Deserialize = {
+	key: RedisKey_Deserialize,
+	fieldKey: string,
+	fieldTtl: number,
+	/**  字段名编码，与 field_set 的 val_fmt 一致 */
+	valFmt: BytesFormat | null,
+};
+
+export type RedisFieldTtl_Serialize = {
+	key: RedisKey_Serialize,
+	fieldKey: string,
+	fieldTtl: number,
+	/**  字段名编码，与 field_set 的 val_fmt 一致 */
+	valFmt: BytesFormat | null,
 };
 
 export type RedisFieldValue = {

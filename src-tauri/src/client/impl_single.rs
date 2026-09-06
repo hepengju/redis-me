@@ -183,6 +183,14 @@ impl MeClient for MeSingle {
         )
     }
 
+    fn field_ttl(&self, param: RedisFieldTtl) -> AnyResult<()> {
+        field_ttl0(
+            self.get_conn()?,
+            param,
+            self.base().capabilities.httl_supported,
+        )
+    }
+
     fn field_get(&self, param: RedisFieldGet) -> AnyResult<RedisFieldValue> {
         field_get0(
             self.get_conn()?,

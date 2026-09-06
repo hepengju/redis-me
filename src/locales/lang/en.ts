@@ -534,6 +534,8 @@ export default {
     vector: 'Vector',
     attrs: 'Attributes',
     fieldTtl: 'Field TTL',
+    saveTtl: 'Save TTL',
+    saveTtlOk: 'Field TTL updated',
     index: 'Index',
     score: 'Score',
     value: 'Value',
@@ -1220,6 +1222,8 @@ Once an operation prevents Redis from keeping the space-saving encoding, special
     field_not_found: 'Hash key "{hash_key}" not found',
     field_not_found_stream: 'Stream ID "{stream_id}" not found',
     field_operation_not_supported: 'Unsupported operation mode: {mode}',
+    httl_not_supported:
+      'This Redis/Valkey version does not support hash field TTL (requires >= 7.4)',
     field_scan_not_supported: 'Field scan does not support type: {value_type}',
     invalid_zset_score_bound: 'Invalid ZSet score: {bound}',
     invalid_node_format: 'Invalid node format: {node}',

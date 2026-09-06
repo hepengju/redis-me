@@ -145,6 +145,7 @@ api_commands!(
     copy(param: RedisCopyParam) -> RedisKey;                      // 复制键
     field_add(param: RedisFieldAdd) -> RedisKey;                  // 新增字段
     field_set(param: RedisFieldSet) -> ();                        // 编辑字段
+    field_ttl(param: RedisFieldTtl) -> ();                        // Hash 字段过期（HEXPIRE/HPERSIST）
     field_get(param: RedisFieldGet) -> RedisFieldValue;           // 读取单条字段
     hash_keys(param: RedisHashKeys) -> Vec<String>;               // Hash 全量字段名（HKEYS）
     hash_values(param: RedisHashKeys) -> Vec<String>;             // Hash 全量字段值（HVALS）

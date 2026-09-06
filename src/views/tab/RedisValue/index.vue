@@ -1349,6 +1349,21 @@ function onFieldSetRefreshed(data: RedisFieldValue) {
   applyFieldGetResult(rv, data, row)
 }
 
+function onFieldTtlSaved(ttl: number) {
+  // 只改过期：刷表格行，不关面板、不回写编辑器（避免冲掉未保存的值）
+  const rv = redisValue.value
+  const row = fieldSetRow.value
+  if (!rv || !row || !hashType.value) return
+  const rows = fieldValueRows(rv.value) as ValueTableRow[]
+  const idx = rows.findIndex(r => r.key === (row.key || fieldEditKey.value))
+  if (idx < 0) return
+  const next: ValueTableRow = { ...rows[idx], ttl }
+  if (scanHashFieldTtl.value) pinFieldExpireAt(next)
+  else next.expireAtMs = null
+  rows[idx] = next
+  fieldSetRow.value = next
+}
+
 // 字段保存成功 / 删除
 async function onFieldSetSuccess() {
   // 优先 field_get 刷单行；不支持或失败回退整表
@@ -2231,6 +2246,7 @@ onUnmounted(() => {
               :hash-field-ttl-enabled="scanHashFieldTtl"
               @success="onFieldSetSuccess"
               @refreshed="onFieldSetRefreshed"
+              @ttl-saved="onFieldTtlSaved"
               @closed="fieldSetInit"
               class="field-set" />
           </div>

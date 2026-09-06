@@ -41,6 +41,7 @@ fn tauri_specta_commands() -> Commands<tauri::Wry> {
         copy,
         field_add,
         field_set,
+        field_ttl,
         field_get,
         hash_keys,
         hash_values,

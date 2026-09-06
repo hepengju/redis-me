@@ -63,7 +63,12 @@ const props = withDefaults(
 )
 
 const { t } = useI18n()
-const emit = defineEmits<{ success: []; closed: []; refreshed: [data: RedisFieldValue] }>()
+const emit = defineEmits<{
+  success: []
+  closed: []
+  refreshed: [data: RedisFieldValue]
+  ttlSaved: [ttl: number]
+}>()
 defineExpose({ open, close })
 
 const share = inject(shareProvideKey)!
@@ -74,6 +79,7 @@ const share = inject(shareProvideKey)!
 const visible = ref(false)
 const readonly = ref(false)
 const isSaving = ref(false)
+const isSavingTtl = ref(false)
 const initForm: FieldSetForm = {
   key: { key: '', bytes: '' },
   type: 'string',
@@ -385,6 +391,36 @@ function submit() {
     }
   })
 }
+
+/** 只改 Hash 字段过期，不写值；只读编码也可点 */
+async function saveFieldTtl() {
+  if (readonly.value || share.readonly || isSavingTtl.value) return
+  if (form.value.type !== 'hash' || !props.hashFieldTtlEnabled) return
+  const conn = share.conn
+  if (!conn) return
+  const fieldTtl = fieldTtlRef.value?.toSeconds() ?? form.value.fieldTtl
+  if (!(fieldTtl === -1 || fieldTtl > 0)) {
+    meErr(t('fieldAdd.ttlValidator'))
+    return
+  }
+  const wireFieldKey = form.value.wireFieldKey
+  isSavingTtl.value = true
+  try {
+    await meCommands.fieldTtl(conn.id, {
+      key: form.value.key,
+      fieldKey: wireFieldKey || form.value.fieldKey,
+      fieldTtl,
+      valFmt: IPC_WIRE_FORMAT,
+    })
+    form.value.fieldTtl = fieldTtl
+    emit('ttlSaved', fieldTtl)
+    meOk(t('fieldSet.saveTtlOk'))
+  } catch {
+    // meCommands 已弹错
+  } finally {
+    isSavingTtl.value = false
+  }
+}
 // #endregion
 
 // #region 字段刷新
@@ -462,7 +498,16 @@ onUnmounted(() => window.removeEventListener('keydown', onEscapeKey, true))
       <el-form-item
         :label="t('fieldSet.fieldTtl')"
         v-if="form.type === 'hash' && share.capabilities.httlSupported && hashFieldTtlEnabled">
-        <me-ttl ref="fieldTtlRef" v-model="form.fieldTtl" :disabled="readonly" />
+        <div class="field-ttl-row">
+          <me-ttl ref="fieldTtlRef" v-model="form.fieldTtl" :disabled="readonly" />
+          <el-button
+            v-if="showSaveField"
+            type="primary"
+            :loading="isSavingTtl"
+            @click="saveFieldTtl"
+            >{{ t('fieldSet.saveTtl') }}</el-button
+          >
+        </div>
       </el-form-item>
       <el-form-item
         :label="t('fieldSet.index')"
@@ -608,6 +653,22 @@ onUnmounted(() => window.removeEventListener('keydown', onEscapeKey, true))
     flex: 1;
     height: 100%;
     min-height: 0;
+  }
+
+  .field-ttl-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+
+    :deep(.me-ttl) {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .el-button {
+      flex-shrink: 0;
+    }
   }
 
   // 底栏
