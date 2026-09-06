@@ -1,6 +1,6 @@
 # redis-rs 本地 patch（RedisME）
 
-- **上游版本**：crates.io `redis` 1.6.0
+- **上游版本**：crates.io `redis` 1.7.0
 - **原因**：兼容 X.509 v1 客户端证书（CentOS 7 / OpenSSL 1.0.2 等），见 `zzz/00_plans/22_tls-x509-v1-compat.md`
 - **相对上游仅改 1 个源码文件**（另加本说明）：
   - `src/connection.rs` → `create_rustls_config`：客户端证改用 `CertifiedKey::new` + `with_client_cert_resolver`，避免 `with_client_auth_cert` 经 webpki 拒绝 v1
@@ -12,13 +12,13 @@
 在仓库根目录执行（Windows Git Bash / Linux 均可）：
 
 ```bash
-# 与 crates.io 已下载的 redis 1.6.0 对比（需本地 cargo 曾拉过 redis）
+# 与 crates.io 已下载的 redis 1.7.0 对比（需本地 cargo 曾拉过 redis）
 diff -u \
-  ~/.cargo/registry/src/*/redis-1.6.0/src/connection.rs \
+  ~/.cargo/registry/src/*/redis-1.7.0/src/connection.rs \
   src-tauri/third-party/redis-rs/src/connection.rs
 
 # 或只看 patch 目录相对上游的差异文件列表
-diff -rq ~/.cargo/registry/src/*/redis-1.6.0 src-tauri/third-party/redis-rs \
+diff -rq ~/.cargo/registry/src/*/redis-1.7.0 src-tauri/third-party/redis-rs \
   | grep -v target
 ```
 

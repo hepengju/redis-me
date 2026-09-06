@@ -55,7 +55,7 @@ fern = { version = "0.7", features = ["colored"] }
 shellexpand = "3"
 
 # TLS：检测 X.509 v1 PEM（跳过 v1 CA 装入 rustls trust store）
-x509-parser = "0.16"
+x509-parser = "0.18"
 
 # SSH 隧道支持（使用 russh 支持现代密钥格式）
 russh = { version = "0.63", default-features = false, features = ["flate2", "ring", "rsa"] }

@@ -13,7 +13,7 @@
 edition = "2024"
 rust-version = "1.88"
 name = "redis"
-version = "1.6.0"
+version = "1.7.0"
 build = false
 autolib = false
 autobins = false
@@ -21,7 +21,6 @@ autoexamples = false
 autotests = false
 autobenches = false
 description = "Redis driver for Rust."
-homepage = "https://github.com/redis-rs/redis-rs"
 documentation = "https://docs.rs/redis"
 readme = "README.md"
 keywords = ["redis", "valkey", "cluster", "sentinel", "pubsub"]
@@ -293,7 +292,7 @@ version = "3"
 optional = true
 
 [dependencies.async-native-tls]
-version = "0.5"
+version = "0.6"
 optional = true
 
 [dependencies.backon]
@@ -318,7 +317,7 @@ version = "1"
 optional = true
 
 [dependencies.combine]
-version = "4.6"
+version = "4.6.8"
 features = ["std"]
 default-features = false
 
