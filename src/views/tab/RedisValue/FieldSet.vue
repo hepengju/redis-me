@@ -30,7 +30,7 @@ import {
   type ViewBytesFormat,
 } from '@/utils/format'
 import { meCommands, meCopy, meErr, meFormatDisplayValue, meJsonNormal, meOk } from '@/utils/util'
-import { attrsNormalizedEqual, parseAttrsInput, parseVectorInput } from '@/utils/vector'
+import { parseAttrsInput, parseVectorInput } from '@/utils/vector'
 // #endregion
 
 // 字段编辑面板：fieldScan 返回的 wire（恒 base64）→ 前端按编码展示/编辑 → field_set 写回。
@@ -93,20 +93,16 @@ const form = ref<FieldSetForm>(cloneDeep(initForm))
 const srcFieldWire = ref('') // fieldScan 返回的原始 base64；切换编码时以此为源，不被展示覆盖
 const expectedVectorDim = ref<number | null>(null) // Vector Set：键的 VDIM，打开时传入，提交前预检维度
 const attrsText = ref('') // Vector Set：attrs 展示文本，打开时由 field_get 提供，保存时全量提交
-const initialAttrsDisplay = ref('')
 const fieldViewFmt = ref<ViewBytesFormat>('auto') // 编码下拉；默认 Auto，与 STRING 键级一致
 const fieldPretty = ref(true)
 const editorLoading = ref(false)
 const isRefreshing = ref(false)
 const decodeFailed = ref(false)
 const codeRemountKey = ref(0)
-const initialFieldDisplay = ref('') // 编辑器同步后的展示快照，用于脏检查
-const initialFieldTtl = ref(-1) // Hash 字段 TTL 快照；仅 hashFieldTtlEnabled 时参与脏检查
-const initialFieldScore = ref(0) // ZSet 分数快照
 // #endregion
 
 // #region 计算属性
-// 编码选项 / 生效视图 / 脏检查 / 保存按钮
+// 编码选项 / 生效视图 / 保存按钮
 const customNames = computed(() => (window.meTauri.settings.customCodecs ?? []).map(f => f.name))
 const fieldViewOptionList = computed(() => fieldViewOptions(customNames.value))
 const detectedAuto = computed(() => detectViewFormatAuto(srcFieldWire.value)) // Auto 识别（含 Gzip 剥壳）
@@ -132,41 +128,19 @@ const prettyEnabled = computed(
 const isViewReadonlyFmt = computed(
   () => isReadonlyView(effectiveFieldViewFmt.value) || gzipReadonly.value,
 ) // JdkSerial / Pickle / PhpSerial / Gzip 剥壳不支持写回 → 按钮禁用 + tooltip
-const vectorDirty = computed(() => form.value.fieldValue !== initialFieldDisplay.value)
-const attrsDirty = computed(
-  () => vectorsetType.value && !attrsNormalizedEqual(attrsText.value, initialAttrsDisplay.value),
-)
-const ttlDirty = computed(
-  () =>
-    form.value.type === 'hash' &&
-    props.hashFieldTtlEnabled &&
-    form.value.fieldTtl !== initialFieldTtl.value,
-)
-const scoreDirty = computed(
-  () => form.value.type === 'zset' && form.value.fieldScore !== initialFieldScore.value,
-)
-const fieldDirty = computed(
-  () => vectorDirty.value || attrsDirty.value || ttlDirty.value || scoreDirty.value,
-)
-function snapshotFieldMeta() {
-  initialFieldTtl.value = form.value.fieldTtl ?? -1
-  initialFieldScore.value = form.value.fieldScore ?? 0
-}
 const canSaveField = computed(
   () =>
     !readonly.value &&
     !share.readonly &&
-    (vectorsetType.value || (!isViewReadonlyFmt.value && !decodeFailed.value)) &&
-    fieldDirty.value,
+    !editorLoading.value &&
+    (vectorsetType.value || (!isViewReadonlyFmt.value && !decodeFailed.value)),
 )
 const saveFieldTip = computed(() => {
-  // 仅禁用时提示原因；可保存时按钮已有文案，不再 tooltip
   if (!vectorsetType.value && gzipReadonly.value) return t('util.gzipReadonly')
   if (!vectorsetType.value && isReadonlyView(effectiveFieldViewFmt.value)) {
     return readonlyViewTip(effectiveFieldViewFmt.value)
   }
   if (!vectorsetType.value && decodeFailed.value) return t('util.saveDecodeFailed')
-  if (!fieldDirty.value) return t('util.saveNoChange')
   return ''
 })
 const showSaveField = computed(() => !readonly.value && !share.readonly) // 连接只读 / 查看模式 → 隐藏保存钮
@@ -183,7 +157,6 @@ async function syncFieldEditor() {
   // Vector Set：向量为 JSON 明文，attrs 由 open 中一并设置
   if (vectorsetType.value) {
     form.value.fieldValue = meFormatDisplayValue(srcFieldWire.value, fieldPretty.value)
-    initialFieldDisplay.value = form.value.fieldValue
     decodeFailed.value = false
     return
   }
@@ -194,13 +167,11 @@ async function syncFieldEditor() {
   const fmt = effectiveFieldViewFmt.value
   if (!wire) {
     form.value.fieldValue = ''
-    initialFieldDisplay.value = ''
     decodeFailed.value = false
     return
   }
   if (!fieldPretty.value && fmt === 'strjson') {
     form.value.fieldValue = base64WireToUtf8Display(wire)
-    initialFieldDisplay.value = form.value.fieldValue
     decodeFailed.value = false
     return
   }
@@ -217,10 +188,8 @@ async function syncFieldEditor() {
       form.value.fieldValue = meFormatViewValue(wire, fmt)
     }
     decodeFailed.value = isViewDecodeError(form.value.fieldValue)
-    initialFieldDisplay.value = form.value.fieldValue
   } catch (e) {
     form.value.fieldValue = e instanceof Error ? e.message : String(e)
-    initialFieldDisplay.value = form.value.fieldValue
     decodeFailed.value = true
   } finally {
     editorLoading.value = false
@@ -238,12 +207,9 @@ function open(data: FieldSetOpen) {
   Object.assign(form.value, cloneDeep(initForm), rest)
   srcFieldWire.value = String(data.srcFieldValue ?? '')
   attrsText.value = ''
-  initialAttrsDisplay.value = ''
   // VectorSet：attrs 已由 field_get 一并返回，直接设置
   if (vectorsetType.value && data.srcFieldAttrs != null) {
-    const display = meFormatDisplayValue(data.srcFieldAttrs || '', fieldPretty.value)
-    attrsText.value = display
-    initialAttrsDisplay.value = display
+    attrsText.value = meFormatDisplayValue(data.srcFieldAttrs || '', fieldPretty.value)
   }
   // Hash / VectorSet 元素名：wireFieldKey 为 base64，fieldKey 为展示用 UTF-8
   const wireKey = String(data.wireFieldKey || data.fieldKey || '')
@@ -253,7 +219,6 @@ function open(data: FieldSetOpen) {
   }
   fieldViewFmt.value = 'auto'
   fieldPretty.value = props.pretty
-  snapshotFieldMeta()
   void syncFieldEditor()
   void nextTick(() => {
     if (form.value.type === 'hash' && props.hashFieldTtlEnabled) {
@@ -451,7 +416,6 @@ function applyFieldGetToForm(data: RedisFieldValue) {
   } else if (type === 'zset' && data.fieldScore != null) {
     form.value.fieldScore = data.fieldScore
   }
-  snapshotFieldMeta()
 }
 
 async function refreshField() {
