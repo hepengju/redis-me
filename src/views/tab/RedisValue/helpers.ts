@@ -3,7 +3,8 @@ import dayjs from 'dayjs'
 
 import i18n from '@/locales'
 import type { FieldScanResult } from '@/types/tauri-specta'
-import { formatUtcOffset, meTtlAlignAt, meTtlToAt } from '@/utils/ttl'
+import { formatUtcOffset, meTtlAlignAt, meTtlFromAt, meTtlToAt } from '@/utils/ttl'
+import { meHumanSeconds } from '@/utils/util'
 
 const t = i18n.global.t
 
@@ -112,6 +113,42 @@ export function formatTtlExpireTooltip(
     t('redisValue.ttlUtc', { time: formatUtcDateTime(ms) }),
     t('redisValue.ttlSeconds', { n: ttl, unit: t('timeUnit.second', ttl) }),
   ].join('<br/>')
+}
+
+function fieldExpireMs(ttl: number, expireAtMs?: number | null): number | null {
+  if (expireAtMs != null && expireAtMs > 0) return meTtlAlignAt(expireAtMs).getTime()
+  if (ttl > 0) return meTtlToAt(ttl).getTime()
+  return null
+}
+
+/** Hash 字段 TTL 单元格：钉死的过期时刻（不倒计时）；永久/无值/-到期无时刻则兜底 */
+export function formatFieldTtlCell(
+  ttl: number | undefined | null,
+  expireAtMs?: number | null,
+): string {
+  if (ttl == null) return '-'
+  if (ttl === -1) return t('redisValue.ttlForever')
+  const ms = fieldExpireMs(ttl, expireAtMs)
+  if (ms == null) return '00:00:00'
+  return dayjs(ms).format(DATETIME_FMT)
+}
+
+/** Hash 字段 TTL 悬停：打开时按墙上时钟算剩余（秒 + 时分秒）和 UTC；表格不必跑 timer */
+export function formatFieldTtlTooltip(
+  ttl: number | undefined | null,
+  expireAtMs?: number | null,
+  expiredText?: string,
+): string {
+  if (ttl == null || ttl < 0) return ''
+  const remain = expireAtMs != null && expireAtMs > 0 ? meTtlFromAt(expireAtMs) : ttl
+  if (!(remain > 0)) return expiredText ?? t('redisValue.ttlFieldExpired')
+  const ms = fieldExpireMs(ttl, expireAtMs)
+  const lines = [
+    t('meTtl.previewRemain', { text: meHumanSeconds(remain) }),
+    t('redisValue.ttlSeconds', { n: remain, unit: t('timeUnit.second', remain) }),
+  ]
+  if (ms != null) lines.push(t('redisValue.ttlUtc', { time: formatUtcDateTime(ms) }))
+  return lines.join('<br/>')
 }
 
 // 键类型能力

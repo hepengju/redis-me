@@ -90,6 +90,8 @@ import {
   KEY_TYPE_TO_GROUP,
   fieldValueRows,
   formatTtlExpireTooltip,
+  formatFieldTtlCell,
+  formatFieldTtlTooltip,
   isAppErrorCode,
   isStringLikeType,
   listRowRedisIndex,
@@ -1070,14 +1072,11 @@ function pageRowIndexFromEvent(event: MouseEvent): number {
 }
 
 // 展示与参数
-function formatFieldTtl(ttl: number | undefined): string {
-  if (ttl === undefined || ttl === null) return '-'
-  if (ttl === -1) return t('redisValue.ttlForever')
-  if (ttl <= 0) return '00:00:00'
-  return String(meHumanSeconds(ttl))
+function formatFieldTtl(ttl: number | undefined, expireAtMs?: number | null): string {
+  return formatFieldTtlCell(ttl, expireAtMs)
 }
 function fieldTtlHint(ttl?: number, expireAtMs?: number | null) {
-  return formatTtlExpireTooltip(ttl, expireAtMs, t('redisValue.ttlFieldExpired'))
+  return formatFieldTtlTooltip(ttl, expireAtMs, t('redisValue.ttlFieldExpired'))
 }
 function fieldRowDisplayValue(row: ValueTableRow): string {
   if (streamType.value) return JSON.stringify(row.value)
@@ -1126,7 +1125,7 @@ function exportValueTableRows(data: unknown[]): TableExportMatrix {
   }
   if (showHashFieldTtlOption.value && scanHashFieldTtl.value) {
     headers.push(t('redisValue.ttl'))
-    cells.push(row => formatFieldTtl(row.ttl))
+    cells.push(row => formatFieldTtl(row.ttl, row.expireAtMs))
   }
   return {
     headers,
@@ -2107,17 +2106,19 @@ onUnmounted(() => {
               <!-- TTL -->
               <el-table-column
                 :label="t('redisValue.ttl')"
-                width="140"
+                width="180"
                 prop="ttl"
                 v-if="showHashFieldTtlOption && scanHashFieldTtl">
                 <template #default="scope">
                   <el-tooltip
-                    :content="fieldTtlHint(scope.row.ttl, scope.row.expireAtMs)"
                     placement="top"
                     raw-content
                     :show-after="300"
-                    :disabled="!fieldTtlHint(scope.row.ttl, scope.row.expireAtMs)">
-                    <span>{{ formatFieldTtl(scope.row.ttl) }}</span>
+                    :disabled="scope.row.ttl == null || scope.row.ttl < 0">
+                    <template #content>
+                      <span v-html="fieldTtlHint(scope.row.ttl, scope.row.expireAtMs)" />
+                    </template>
+                    <span>{{ formatFieldTtl(scope.row.ttl, scope.row.expireAtMs) }}</span>
                   </el-tooltip>
                 </template>
               </el-table-column>

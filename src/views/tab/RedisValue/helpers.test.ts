@@ -2,7 +2,12 @@ import { afterEach, describe, expect, it } from 'vite-plus/test'
 
 import i18n from '@/locales'
 
-import { formatTtlExpireTooltip, pinFieldExpireAt } from './helpers'
+import {
+  formatFieldTtlCell,
+  formatFieldTtlTooltip,
+  formatTtlExpireTooltip,
+  pinFieldExpireAt,
+} from './helpers'
 
 describe('formatTtlExpireTooltip', () => {
   const realNow = Date.now
@@ -39,6 +44,45 @@ describe('formatTtlExpireTooltip', () => {
     const html = formatTtlExpireTooltip(10, Date.UTC(2026, 8, 6, 13, 39, 30))
     expect(html).toContain('UTC: 2026-09-06 13:39:30')
     expect(html).toContain('TTL: 10 Seconds')
+  })
+})
+
+describe('formatFieldTtlCell', () => {
+  it('永久或空值', () => {
+    i18n.global.locale.value = 'en'
+    expect(formatFieldTtlCell(-1)).toBe('Forever')
+    expect(formatFieldTtlCell(undefined)).toBe('-')
+    expect(formatFieldTtlCell(null)).toBe('-')
+  })
+
+  it('有过期时刻则显示本地时刻', () => {
+    const ms = Date.UTC(2026, 8, 6, 13, 39, 30)
+    expect(formatFieldTtlCell(10, ms)).toMatch(/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/)
+  })
+})
+
+describe('formatFieldTtlTooltip', () => {
+  const realNow = Date.now
+
+  afterEach(() => {
+    Date.now = realNow
+    i18n.global.locale.value = 'en'
+  })
+
+  it('永久无内容，到期提示字段已过期', () => {
+    expect(formatFieldTtlTooltip(-1)).toBe('')
+    i18n.global.locale.value = 'en'
+    expect(formatFieldTtlTooltip(0, null, 'Field expired')).toBe('Field expired')
+  })
+
+  it('悬停时按墙上时钟给出剩余时分秒、秒数和 UTC', () => {
+    i18n.global.locale.value = 'en'
+    Date.now = () => Date.UTC(2026, 8, 6, 13, 39, 20)
+    const html = formatFieldTtlTooltip(10, Date.UTC(2026, 8, 6, 13, 39, 30))
+    expect(html).toContain('Remaining: 00:00:10')
+    expect(html).toContain('TTL: 10 Seconds')
+    expect(html).toContain('UTC: 2026-09-06 13:39:30')
+    expect(html).not.toContain('Expires at:')
   })
 })
 
