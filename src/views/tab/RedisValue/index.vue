@@ -131,6 +131,7 @@ const canEdit = computed(() => !share.readonly)
 const redisValue = ref<FieldScanViewState | null>(null)
 const cursor = ref<ScanCursor | null>(null) // list/hash/set/zset/stream 分页游标
 const loading = ref(false)
+const isSavingValue = ref(false) // STRING/JSON 保存中，底栏保存钮转圈
 const isPretty = ref(true)
 
 // 键类型派生
@@ -375,7 +376,8 @@ const saveDisabled = computed(
     viewDecodeFailed.value ||
     !valueDirty.value ||
     gzipReadonly.value ||
-    isReadonlyView(effectiveViewFormat.value),
+    isReadonlyView(effectiveViewFormat.value) ||
+    isSavingValue.value,
 )
 const saveTip = computed(() => {
   if (gzipReadonly.value) return t('util.gzipReadonly')
@@ -1538,46 +1540,52 @@ async function onKeyMoreCommand(command: string) {
 // #region 保存整键（STRING / JSON）
 async function setValue() {
   const rv = redisValue.value
-  if (!rv || rv.newValue === null) return
+  if (!rv || rv.newValue === null || isSavingValue.value) return
   if (gzipReadonly.value || isReadonlyView(effectiveViewFormat.value)) return
   let value = rv.newValue
 
+  isSavingValue.value = true
+  await nextTick() // 先亮保存钮 loading，再同步编码
   try {
-    if (jsonType.value) {
-      if (value === '') {
-        meErr(t('fieldAdd.jsonValidator'))
+    try {
+      if (jsonType.value) {
+        if (value === '') {
+          meErr(t('fieldAdd.jsonValidator'))
+          return
+        }
+        value = meJsonNormal(value)
+      } else if (stringType.value && needsJsonNormalize(effectiveViewFormat.value)) {
+        value = value === '' ? '' : meJsonNormal(value)
+      }
+      if (stringType.value && isCustomView(effectiveViewFormat.value)) {
+        value = await meViewToWireAsync(value, effectiveViewFormat.value)
+      } else if (stringType.value) {
+        value = meViewToWire(value, effectiveViewFormat.value)
+      }
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : String(e)
+      if (stringType.value && isCustomView(effectiveViewFormat.value)) {
+        setCustomCodecError(msg)
+        rv.newValue = null
+        valueEditorRemountKey.value++
         return
       }
-      value = meJsonNormal(value)
-    } else if (stringType.value && needsJsonNormalize(effectiveViewFormat.value)) {
-      value = value === '' ? '' : meJsonNormal(value)
-    }
-    if (stringType.value && isCustomView(effectiveViewFormat.value)) {
-      value = await meViewToWireAsync(value, effectiveViewFormat.value)
-    } else if (stringType.value) {
-      value = meViewToWire(value, effectiveViewFormat.value)
-    }
-  } catch (e) {
-    const msg = e instanceof Error ? e.message : String(e)
-    if (stringType.value && isCustomView(effectiveViewFormat.value)) {
-      setCustomCodecError(msg)
-      rv.newValue = null
-      valueEditorRemountKey.value++
+      meErr(msg)
       return
     }
-    meErr(msg)
-    return
-  }
 
-  await meCommands.set(share.conn!.id, {
-    key: share.redisKey!,
-    value,
-    ttl: expireAtMs.value == null ? rv.ttl : ttlRemain.value > 0 ? ttlRemain.value : -1,
-    keyType: rv.type,
-    inputFormat: jsonType.value ? 'utf8' : IPC_WIRE_FORMAT, // JSON=utf8；STRING=base64 wire
-  })
-  meOk(t('saveOk'))
-  await refreshKey()
+    await meCommands.set(share.conn!.id, {
+      key: share.redisKey!,
+      value,
+      ttl: expireAtMs.value == null ? rv.ttl : ttlRemain.value > 0 ? ttlRemain.value : -1,
+      keyType: rv.type,
+      inputFormat: jsonType.value ? 'utf8' : IPC_WIRE_FORMAT, // JSON=utf8；STRING=base64 wire
+    })
+    meOk(t('saveOk'))
+    await refreshKey()
+  } finally {
+    isSavingValue.value = false
+  }
 }
 // #endregion
 
@@ -2401,6 +2409,7 @@ onUnmounted(() => {
             <span style="margin-left: 10px; display: inline-flex">
               <me-button
                 :disabled="saveDisabled"
+                :loading="isSavingValue"
                 type="primary"
                 icon="me-icon-save"
                 @click="setValue" />
