@@ -133,14 +133,15 @@ export function formatFieldTtlCell(
   return dayjs(ms).format(DATETIME_FMT)
 }
 
-/** Hash 字段 TTL 悬停：打开时按墙上时钟算剩余（秒 + 时分秒）和 UTC；表格不必跑 timer */
+/** Hash 字段 TTL 悬停：按 nowMs 算剩余（秒 + 时分秒）和 UTC；由 tooltip 内时钟传入，表格不跑 timer */
 export function formatFieldTtlTooltip(
   ttl: number | undefined | null,
   expireAtMs?: number | null,
   expiredText?: string,
+  nowMs = Date.now(),
 ): string {
   if (ttl == null || ttl < 0) return ''
-  const remain = expireAtMs != null && expireAtMs > 0 ? meTtlFromAt(expireAtMs) : ttl
+  const remain = expireAtMs != null && expireAtMs > 0 ? meTtlFromAt(expireAtMs, nowMs) : ttl
   if (!(remain > 0)) return expiredText ?? t('redisValue.ttlFieldExpired')
   const ms = fieldExpireMs(ttl, expireAtMs)
   const lines = [

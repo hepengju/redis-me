@@ -86,12 +86,12 @@ import KeyRename from '@/views/key/KeyRename.vue'
 
 import CustomCodec from './CustomCodec.vue'
 import FieldSet from './FieldSet.vue'
+import FieldTtlHint from './FieldTtlHint.vue'
 import {
   KEY_TYPE_TO_GROUP,
   fieldValueRows,
   formatTtlExpireTooltip,
   formatFieldTtlCell,
-  formatFieldTtlTooltip,
   isAppErrorCode,
   isStringLikeType,
   listRowRedisIndex,
@@ -1074,9 +1074,6 @@ function pageRowIndexFromEvent(event: MouseEvent): number {
 // 展示与参数
 function formatFieldTtl(ttl: number | undefined, expireAtMs?: number | null): string {
   return formatFieldTtlCell(ttl, expireAtMs)
-}
-function fieldTtlHint(ttl?: number, expireAtMs?: number | null) {
-  return formatFieldTtlTooltip(ttl, expireAtMs, t('redisValue.ttlFieldExpired'))
 }
 function fieldRowDisplayValue(row: ValueTableRow): string {
   if (streamType.value) return JSON.stringify(row.value)
@@ -2112,11 +2109,11 @@ onUnmounted(() => {
                 <template #default="scope">
                   <el-tooltip
                     placement="top"
-                    raw-content
+                    :persistent="false"
                     :show-after="300"
                     :disabled="scope.row.ttl == null || scope.row.ttl < 0">
                     <template #content>
-                      <span v-html="fieldTtlHint(scope.row.ttl, scope.row.expireAtMs)" />
+                      <FieldTtlHint :ttl="scope.row.ttl" :expire-at-ms="scope.row.expireAtMs" />
                     </template>
                     <span>{{ formatFieldTtl(scope.row.ttl, scope.row.expireAtMs) }}</span>
                   </el-tooltip>

@@ -77,8 +77,12 @@ describe('formatFieldTtlTooltip', () => {
 
   it('悬停时按墙上时钟给出剩余时分秒、秒数和 UTC', () => {
     i18n.global.locale.value = 'en'
-    Date.now = () => Date.UTC(2026, 8, 6, 13, 39, 20)
-    const html = formatFieldTtlTooltip(10, Date.UTC(2026, 8, 6, 13, 39, 30))
+    const html = formatFieldTtlTooltip(
+      10,
+      Date.UTC(2026, 8, 6, 13, 39, 30),
+      undefined,
+      Date.UTC(2026, 8, 6, 13, 39, 20),
+    )
     expect(html).toContain('Remaining: 00:00:10')
     expect(html).toContain('TTL: 10 Seconds')
     expect(html).toContain('UTC: 2026-09-06 13:39:30')
