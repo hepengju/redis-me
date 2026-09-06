@@ -3,18 +3,16 @@
  * Auto 入口（detectViewFormatAuto）先认 Gzip 魔数 1f 8b 并解一层（失败当无壳；只剥一层），
  * 再对内层走：JdkSerial(ACED) → Pickle(PROTO 0x80) → PhpSerial(a:/O:/C:) → MsgPack → StrJson → UTF-8 → Hex。
  * JdkSerial/Pickle/PhpSerial：特征前缀 + 全量试解，失败则继续下一种（展示层再解析一遍）。
- * MsgPack/StrJson/PhpSerial：仅 ≤ DETECT_TRY_MAX_BYTES 时试解。
+ * 各格式均全量试解：wire 已在内存，不再按体积跳过。
+ * StrJson：仅原生 JSON.parse（双层字符串包装）。JSON5.parse 对 ~1.5MB 约 260ms，
+ * 原生约 4ms，故不用 JSON5。
  */
 import { decode } from '@msgpack/msgpack'
 import { gunzipSync } from 'fflate'
-import JSON5 from 'json5'
 
 import { javaSerBase64ToValue } from '@/utils/javaserial'
 import { phpSerialBase64ToValue } from '@/utils/phpserial'
 import { pickleBase64ToValue } from '@/utils/pickle'
-
-/** 超过此字节数跳过 MsgPack / StrJson / PhpSerial 试解 */
-export const DETECT_TRY_MAX_BYTES = 512 * 1024
 
 /** Auto 识别结果（不含 auto / binary / base64 / custom） */
 export type DetectedViewFormat =
@@ -224,12 +222,14 @@ function looksLikeMsgpack(bytes: Uint8Array): boolean {
   }
 }
 
-/** 双层 JSON 字符串：wire parse → string → 再 parse 为 object/array */
+/** 双层 JSON 字符串：wire parse → string → 再 parse 为 object/array。只用 JSON.parse（~1.5MB 约 4ms；JSON5 约 260ms） */
 function looksLikeStrJson(utf8: string): boolean {
+  const trimmed = utf8.trim()
+  if (trimmed.length < 2 || trimmed[0] !== '"') return false
   try {
-    const outer = JSON5.parse(utf8.trim())
+    const outer = JSON.parse(trimmed)
     if (typeof outer !== 'string') return false
-    const inner = JSON5.parse(outer.trim())
+    const inner = JSON.parse(outer.trim())
     return inner !== null && typeof inner === 'object'
   } catch {
     return false
@@ -238,7 +238,7 @@ function looksLikeStrJson(utf8: string): boolean {
 
 /**
  * 从 base64 wire 识别展示格式。
- * 空值 → utf8；大 value 跳过 MsgPack/StrJson 试解。
+ * 空值 → utf8。
  */
 export function detectViewFormat(
   base64: string,
@@ -251,10 +251,8 @@ export function detectViewFormat(
 
   if (looksLikeJavaSerial(base64, bytes)) return 'javaserial'
   if (looksLikePickle(base64, bytes)) return 'pickle'
-
-  const allowTry = bytes.length <= DETECT_TRY_MAX_BYTES
-  if (allowTry && looksLikePhpSerial(base64, bytes)) return 'phpserial'
-  if (allowTry && looksLikeMsgpack(bytes)) return 'msgpack'
+  if (looksLikePhpSerial(base64, bytes)) return 'phpserial'
+  if (looksLikeMsgpack(bytes)) return 'msgpack'
 
   let utf8 = bytesToUtf8Text(bytes)
   // 预览截断可能切在多字节字符中间，严格解码会失败并落到 Hex
@@ -263,7 +261,7 @@ export function detectViewFormat(
     if (trimmed.length < bytes.length) utf8 = bytesToUtf8Text(trimmed)
   }
   if (utf8 !== null) {
-    if (allowTry && looksLikeStrJson(utf8)) return 'strjson'
+    if (looksLikeStrJson(utf8)) return 'strjson'
     if (isDisplayableUtf8(utf8)) return 'utf8'
   }
 

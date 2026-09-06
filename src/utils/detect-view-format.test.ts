@@ -88,6 +88,28 @@ describe('detectViewFormat', () => {
     expect(detectViewFormat(utf8ToBase64(wire))).toBe('strjson')
   })
 
+  it('较大双层 StrJson 仍识别', () => {
+    const wire = JSON.stringify(JSON.stringify({ a: 'x'.repeat(512 * 1024) }))
+    expect(detectViewFormat(utf8ToBase64(wire))).toBe('strjson')
+  })
+
+  it('较大 MsgPack map 仍识别', () => {
+    expect(detectViewFormat(bytesToBase64(encode({ a: 'x'.repeat(512 * 1024) })))).toBe('msgpack')
+  })
+
+  it('较大 PhpSerial 仍识别', () => {
+    const n = 6000
+    const v = 'x'.repeat(80)
+    const pairs = Array.from({ length: n }, (_, i) => `i:${i};s:80:"${v}";`).join('')
+    expect(detectViewFormat(utf8ToBase64(`a:${n}:{${pairs}}`))).toBe('phpserial')
+  })
+
+  it('JSON5 风格内层（尾逗号）不是 StrJson → utf8', () => {
+    const inner = '{ a: 1, }'
+    const wire = JSON.stringify(inner)
+    expect(detectViewFormat(utf8ToBase64(wire))).toBe('utf8')
+  })
+
   it('普通 UTF-8 文本', () => {
     expect(detectViewFormat(utf8ToBase64('hello 你好'))).toBe('utf8')
   })
