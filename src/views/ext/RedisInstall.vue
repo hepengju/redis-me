@@ -143,7 +143,7 @@ const timezoneOptions = [
     <div class="ri-body">
       <!-- 左侧表单 -->
       <div class="ri-form">
-        <el-form label-position="right" label-width="100">
+        <el-form label-position="right" label-width="110">
           <el-form-item :label="t('redisInstall.mode')">
             <el-radio-group v-model="form.mode">
               <el-radio-button value="single">{{ t('redisInstall.modeSingle') }}</el-radio-button>
@@ -268,10 +268,14 @@ const timezoneOptions = [
 
 .ri-form {
   margin-top: 10px;
-  width: 350px;
+  width: 360px;
   flex-shrink: 0;
   overflow-y: auto;
   padding-right: 8px;
+
+  :deep(.el-form-item__label) {
+    white-space: nowrap;
+  }
 
   .ri-image-row {
     display: flex;
