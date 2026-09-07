@@ -228,3 +228,49 @@ img[src='search.png'] {
   width: 100%;
   aspect-ratio: 1 / 1;
 }
+
+/* 官网交互工具：原生表单控件，跟站点 CSS 变量 */
+.me-tool input[type='text'],
+.me-tool input[type='password'],
+.me-tool input[type='number'],
+.me-tool textarea {
+  width: 100%;
+  box-sizing: border-box;
+  margin: 0;
+  border: 1px solid var(--vp-c-border);
+  background: var(--vp-c-bg);
+  color: var(--vp-c-text-1);
+  border-radius: 6px;
+  padding: 6px 8px;
+  font-size: 13px;
+  font-family: inherit;
+  line-height: 1.4;
+}
+
+.me-tool input:focus,
+.me-tool textarea:focus {
+  outline: 2px solid var(--vp-c-brand-soft);
+  border-color: var(--vp-c-brand-1);
+}
+
+.me-tool input[type='checkbox'] {
+  accent-color: var(--vp-c-brand-1);
+  width: 15px;
+  height: 15px;
+  margin: 0;
+  flex-shrink: 0;
+}
+
+.me-tool input[type='checkbox']:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.me-tool button {
+  font-family: inherit;
+}
+
+/* 工具内嵌代码块：取消文档页左右负边距，避免撑破表单布局 */
+.vp-doc .me-tool [class*='language-'] {
+  margin: 0;
+}

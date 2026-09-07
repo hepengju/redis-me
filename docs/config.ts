@@ -62,6 +62,8 @@ function sidebarGuide() {
     {
       text: 'Other',
       items: [
+        { text: 'Redis Docker Setup', link: '/other/redis-install' },
+        { text: 'TLS Certificate', link: '/other/tls-cert' },
         { text: 'RDM Compare', link: '/other/compare' },
         { text: 'Privacy Policy', link: '/other/privacy' },
       ],

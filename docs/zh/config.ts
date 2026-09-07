@@ -81,6 +81,8 @@ function sidebarGuide() {
     {
       text: '其他',
       items: [
+        { text: 'Redis Docker 安装', link: '/other/redis-install' },
+        { text: 'TLS 证书', link: '/other/tls-cert' },
         { text: '客户端对比', link: '/other/compare' },
         { text: '隐私政策', link: '/other/privacy' },
       ],
