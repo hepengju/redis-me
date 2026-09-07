@@ -274,3 +274,38 @@ img[src='search.png'] {
 .vp-doc .me-tool [class*='language-'] {
   margin: 0;
 }
+
+/* 滚动条：与客户端 App.css 一致（参考 vue-web-terminal） */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(157, 165, 183, 0.4) transparent;
+}
+
+*::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+*::-webkit-scrollbar-button {
+  width: 0;
+  height: 0;
+  display: none;
+}
+
+*::-webkit-scrollbar-thumb {
+  border-radius: 6px;
+  border-style: dashed;
+  border-color: transparent;
+  border-width: 2px;
+  background-color: rgba(157, 165, 183, 0.4);
+  background-clip: padding-box;
+}
+
+*::-webkit-scrollbar-thumb:hover {
+  background: rgba(157, 165, 183, 0.7);
+  cursor: pointer;
+}
+
+*::-webkit-scrollbar-track {
+  border-radius: 6px;
+}
