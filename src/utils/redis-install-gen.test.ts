@@ -143,7 +143,7 @@ describe('genInstallNodes / genRedisInstall', () => {
     const guideCode = sslOut.guide[0].code
     // cert 目录仅在环境准备步骤 mkdir 一次
     expect((guideCode.match(/mkdir -p [^\n]*\/cert/g) || []).length).toBe(1)
-    expect(guideCode).toContain('/data/redis-single/cert')
+    expect(guideCode).toContain('/data/redis-single-ssl/cert')
     expect(guideCode).not.toContain('chmod')
     expect(guideCode).not.toContain('openssl genrsa')
 
@@ -152,8 +152,8 @@ describe('genInstallNodes / genRedisInstall', () => {
     expect(guideCode).toContain('tls-cert-file /etc/redis/cert/redis.crt')
     expect(guideCode).toContain('tls-protocols "TLSv1.2 TLSv1.3"')
 
-    expect(sslOut.compose[0].code).toContain('/data/redis-single/cert:/etc/redis/cert:ro')
-    expect(sslOut.compose[0].code).toContain('/data/redis-single/conf:/etc/redis/conf')
+    expect(sslOut.compose[0].code).toContain('/data/redis-single-ssl/cert:/etc/redis/cert:ro')
+    expect(sslOut.compose[0].code).toContain('/data/redis-single-ssl/conf:/etc/redis/conf')
     expect(sslOut.compose[0].code).not.toContain('redis.conf:/etc/redis/conf/redis.conf')
     expect(sslOut.commands[0].code).toContain(':/etc/redis/cert:ro')
   })
@@ -209,6 +209,14 @@ describe('genInstallNodes / genRedisInstall', () => {
     const out = genRedisInstall(baseOptions({ mountConf: false, basePort: 6380 }), labels)
     const cmd = out.commands[0].code
     expect(cmd).toContain('--port 6380')
+  })
+
+  it('单机验证命令携带实际端口', () => {
+    const def = genRedisInstall(baseOptions(), labels)
+    expect(def.guide[0].code).toContain('docker exec redis-6379 redis-cli -p 6379 ping')
+    const custom = genRedisInstall(baseOptions({ basePort: 6380 }), labels)
+    expect(custom.guide[0].code).toContain('docker exec redis-6380 redis-cli -p 6380 ping')
+    expect(custom.guide[0].code).not.toContain('redis-cli ping')
   })
 
   it('不挂载数据但挂载配置：指南环境准备仍创建 conf 目录', () => {
@@ -290,6 +298,8 @@ describe('genInstallNodes / genRedisInstall', () => {
     expect(guideCode).toContain('--key /etc/redis/cert/redis.key')
     expect(guideCode).toContain('--cacert /etc/redis/cert/ca.crt')
     expect(guideCode).toContain('--cluster create')
+    expect(guideCode).toContain('/data/redis-cluster-ssl')
+    expect(guideCode).toContain('docker exec redis-7001-ssl')
   })
 
   it('TLS + 哨兵：配置含 tls-replication，哨兵配置含证书路径', () => {
@@ -303,5 +313,26 @@ describe('genInstallNodes / genRedisInstall', () => {
     // 哨兵验证步骤携带 --tls
     expect(guideCode).toContain('--tls')
     expect(guideCode).toContain('sentinel master mymaster')
+    expect(guideCode).toContain('/data/redis-sentinel-ssl')
+    expect(guideCode).toContain('docker exec redis-6379-ssl')
+    expect(guideCode).toContain('docker exec redis-26379-ssl')
+  })
+
+  it('TLS：根目录与容器名均加 -ssl 后缀', () => {
+    const single = genRedisInstall(baseOptions({ ssl: true }), labels)
+    expect(single.nodes[0].name).toBe('redis-6379-ssl')
+    expect(single.commands[0].code).toContain('--name redis-6379-ssl')
+    expect(single.compose[0].code).toContain('container_name: redis-6379-ssl')
+    expect(single.compose[0].code).toContain('  redis-6379-ssl:')
+    expect(single.guide[0].code).toContain('/data/redis-single-ssl')
+    expect(single.guide[0].code).not.toMatch(/\/data\/redis-single(?!-ssl)/)
+
+    const cluster = genRedisInstall(
+      baseOptions({ mode: 'cluster', ssl: true, basePort: 7001 }),
+      labels,
+    )
+    expect(cluster.nodes[0].name).toBe('redis-7001-ssl')
+    expect(cluster.compose[0].code).toContain('container_name: redis-7001-ssl')
+    expect(cluster.guide[0].code).toContain('/data/redis-cluster-ssl/redis-7001-ssl')
   })
 })
