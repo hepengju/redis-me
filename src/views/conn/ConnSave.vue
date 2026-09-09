@@ -70,7 +70,7 @@ const form = reactive({
     passphrase: '', // 私钥密码
   },
 
-  // 其他元信息补充: 复制连接时不保留
+  // 其他元信息补充（db 别名等）；复制时仅保留分组
   meta: {
     // 数据库别名
     // db0: '会话登录'
@@ -185,11 +185,13 @@ function open(modeValue: 'add' | 'edit', data?: UiConn) {
   mode.value = modeValue
   if (data) {
     const newData = cloneDeep(data)
-    // 新增时给了数据，则是复制连接。id和name需要重置, meta信息不复制
+    // 新增时给了数据，则是复制连接。id / name 重置；meta 仅保留分组（同组复制）
     if (modeValue === 'add') {
       newData.id = nanoid()
       newData.name = data.name + '-' + t('copy')
+      const group = getConnGroup(newData)
       newData.meta = {}
+      setConnGroup(newData, group)
     }
     Object.assign(form, newData)
   }
