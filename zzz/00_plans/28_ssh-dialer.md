@@ -1,6 +1,6 @@
 # 28. SshDialer：SSH 支持单机 / 集群 / 哨兵
 
-> **类型**：实施计划（待实施）  
+> **类型**：实施计划（已实施）  
 > **总设计**：[`26_custom-connection-dialer.md`](./26_custom-connection-dialer.md)（SSH 与代理同一套 Dialer，本阶段只落地 SSH）  
 > **前置**：[`27_connection-dialer-fork.md`](./27_connection-dialer-fork.md) 已合入  
 > **下一阶段**：[`29_proxy-http-socks5.md`](./29_proxy-http-socks5.md)

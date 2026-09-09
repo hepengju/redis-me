@@ -22,15 +22,7 @@ import {
   setConnUiMode,
   type ConnProtocol,
 } from '@/utils/conn'
-import {
-  meCommands,
-  PREDEFINE_COLORS,
-  meRandomString,
-  meOk,
-  meErr,
-  meWarn,
-  meCopy,
-} from '@/utils/util'
+import { meCommands, PREDEFINE_COLORS, meRandomString, meOk, meErr, meCopy } from '@/utils/util'
 const { t } = useI18n()
 // #endregion
 
@@ -83,7 +75,6 @@ const form = reactive({
     // 数据库别名
     // db0: '会话登录'
     // 未来的其他扩展
-
   },
 })
 
@@ -354,18 +345,11 @@ async function autoDiscover(alert: boolean = false) {
   }
 }
 
-// 哨兵模式自动发现 + 与SSH互斥
+// 哨兵模式自动发现
 watch(
   () => form.sentinel,
   (newValue: boolean, _oldValue: boolean) => {
     if (newValue) {
-      // 与SSH互斥
-      if (form.ssh) {
-        meWarn(t('conn.sshModeTip'))
-        form.sentinel = false
-        return
-      }
-
       autoDiscover()
     }
   },
@@ -376,29 +360,6 @@ watch(
   (newValue: string | undefined, _oldValue: string | undefined) => {
     if (newValue === undefined) {
       form.sentinelOption.masterName = ''
-    }
-  },
-)
-
-// SSH与集群/哨兵互斥
-watch(
-  () => form.ssh,
-  (newValue: boolean) => {
-    if (newValue) {
-      if (form.cluster || form.sentinel) {
-        meWarn(t('conn.sshModeTip'))
-        form.ssh = false
-      }
-    }
-  },
-)
-
-watch(
-  () => form.cluster,
-  (newValue: boolean) => {
-    if (newValue && form.ssh) {
-      meWarn(t('conn.sshModeTip'))
-      form.cluster = false
     }
   },
 )

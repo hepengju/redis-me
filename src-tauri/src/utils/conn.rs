@@ -1,98 +1,105 @@
-use crate::utils::error::AppError;
 use crate::utils::model::{ConnConfig, SslOption};
-use crate::utils::ssh_tunnel::SshTunnel;
+use crate::utils::ssh_dialer::SshDialer;
 use crate::utils::tls_cert;
 use crate::utils::util::{AnyResult, parse_path};
-use anyhow::{Context, bail};
+use anyhow::Context;
 use log::{info, warn};
 use redis::cluster::{ClusterClient, ClusterConfig, ClusterConnection};
 use redis::sentinel::{SentinelClientBuilder, SentinelServerType};
 use redis::{
-    Client, ClientTlsConfig, Commands, Connection, ConnectionAddr, ConnectionLike, ProtocolVersion,
-    TlsCertificates, TlsMode,
+    Client, ClientTlsConfig, Commands, Connection, ConnectionAddr, ConnectionDialer,
+    ConnectionLike, ProtocolVersion, TlsCertificates, TlsMode,
 };
 use std::fs;
+use std::sync::Arc;
 use std::time::Duration;
 use url::Url;
 
-// 获取单机 Client；verify 为 true 时按 connect_timeout ping 验证（测试连接），为 false 时仅构建 Client（init 复用 TCP）
-pub fn get_client_single(
+/// 无 `existing` 且勾了 SSH 时新建会话。29 在此加 proxy 分支（与 ssh 互斥）。
+fn resolve_dialer(
     conf: &ConnConfig,
     connect_timeout: Duration,
-    verify: bool,
-) -> AnyResult<(Client, Option<SshTunnel>)> {
-    // SSH 隧道不支持哨兵模式
-    if conf.ssh && conf.sentinel {
-        bail!(AppError::SentinelNotSupported);
+    existing: Option<Arc<dyn ConnectionDialer>>,
+) -> AnyResult<Option<Arc<dyn ConnectionDialer>>> {
+    if let Some(d) = existing {
+        return Ok(Some(d));
     }
-
-    // 如果启用 SSH 隧道，先建立隧道（TCP+认证使用同一建连超时）
-    let ssh_tunnel = if conf.ssh {
-        let tunnel = SshTunnel::start(&conf.ssh_option, &conf.host, conf.port, connect_timeout)?;
-        info!("SSH 隧道已建立，本地端口: {}", tunnel.local_port);
-        Some(tunnel)
+    if conf.ssh {
+        Ok(Some(SshDialer::connect(&conf.ssh_option, connect_timeout)?))
     } else {
-        None
-    };
+        Ok(None)
+    }
+}
 
-    // 决定连接目标
-    let (target_host, target_port) = if conf.ssh {
-        ("127.0.0.1", ssh_tunnel.as_ref().unwrap().local_port)
-    } else {
-        (conf.host.as_str(), conf.port)
-    };
-
-    // 使用 url crate 构建 URL，自动处理密码中的特殊字符（如 &、@、: 等）
+fn redis_url(conf: &ConnConfig) -> AnyResult<Url> {
     let mut url = Url::parse(&format!(
         "{}://{}:{}",
         if conf.ssl { "rediss" } else { "redis" },
-        target_host,
-        target_port
+        conf.host,
+        conf.port
     ))?;
     url.set_username(&conf.username).unwrap_or(());
     url.set_password(Some(&conf.password)).unwrap_or(());
     if conf.ssl {
         url.set_fragment(Some("insecure"));
     }
-    // RESP3 协议：redis-rs 约定通过 URL 查询参数启用（?protocol=resp3），默认 RESP2 不加
     if conf.is_resp3() {
         url.query_pairs_mut().append_pair("protocol", "resp3");
     }
+    Ok(url)
+}
 
-    // 日志脱敏：密码固定显示为 ******；查询串仅 protocol 一项，无敏感信息
-    let redis_url_log = format!(
-        "{}://{}:******@{}:{}{}{}",
+fn log_redis_url(conf: &ConnConfig, url: &Url) {
+    info!(
+        "redis_url: {}://{}:******@{}:{}{}{}",
         url.scheme(),
         conf.username,
-        target_host,
-        target_port,
+        conf.host,
+        conf.port,
         url.query().map(|q| format!("?{}", q)).unwrap_or_default(),
         url.fragment()
             .map(|f| format!("#{}", f))
             .unwrap_or_default()
     );
-    info!("redis_url: {redis_url_log}");
+}
 
-    let certs = get_tls_certs(conf.ssl_option.clone())?;
-    let client = if conf.ssl
-        && let Some(tls) = certs
-    {
-        Client::build_with_tls(url.to_string(), tls)?
-    } else {
-        Client::open(url.to_string())?
-    };
+fn apply_dialer(client: Client, dialer: Option<Arc<dyn ConnectionDialer>>) -> Client {
+    match dialer {
+        Some(d) => client.set_dialer(d),
+        None => client,
+    }
+}
 
-    // 哨兵模式：在哨兵 Client 上建连，避免直连地址与主节点不一致
+// 获取单机 Client；verify 为 true 时按 connect_timeout ping 验证（测试连接），为 false 时仅构建 Client（init 复用 TCP）
+// existing：集群 subscribe/monitor 旁路传入 ClusterClient 上的同一 SSH Dialer，避免新开会话
+pub fn get_client_single(
+    conf: &ConnConfig,
+    connect_timeout: Duration,
+    verify: bool,
+    existing: Option<Arc<dyn ConnectionDialer>>,
+) -> AnyResult<(Client, Option<Arc<dyn ConnectionDialer>>)> {
+    let dialer = resolve_dialer(conf, connect_timeout, existing)?;
+
     let client = if conf.sentinel {
-        get_client_sentinel(conf)?
+        get_client_sentinel(conf, dialer.clone())?
     } else {
-        client
+        let url = redis_url(conf)?;
+        log_redis_url(conf, &url);
+        let certs = get_tls_certs(conf.ssl_option.clone())?;
+        let client = if conf.ssl
+            && let Some(tls) = certs
+        {
+            Client::build_with_tls(url.to_string(), tls)?
+        } else {
+            Client::open(url.to_string())?
+        };
+        apply_dialer(client, dialer.clone())
     };
     // verify=true：仅测试连接（ConnConfig::test），按建连超时 ping 后丢弃，不再 init；verify=false：由 init_*_connection 验证并复用 TCP
     if verify {
         let _conn = verify_single_connection(&client, connect_timeout)?;
     }
-    Ok((client, ssh_tunnel))
+    Ok((client, dialer))
 }
 
 /// 阶段 1：按建连超时建连并 ping，连不上时失败。
@@ -142,15 +149,17 @@ pub fn init_single_connection(
     apply_single_command_timeout(conn, db, command_timeout)
 }
 
-fn get_client_sentinel(conf: &ConnConfig) -> AnyResult<Client> {
+fn get_client_sentinel(
+    conf: &ConnConfig,
+    dialer: Option<Arc<dyn ConnectionDialer>>,
+) -> AnyResult<Client> {
     let certs = get_tls_certs(conf.ssl_option.clone())?;
     let conf = conf.clone();
     // builder 会移走 conf 的字符串字段，协议标记提前取出
     let resp3 = conf.is_resp3();
     let sentinel_option = conf.sentinel_option.clone();
-    let client = if conf.ssl
-        && let Some(tls) = certs
-    {
+    // 勾了 SSL 就走 TcpTls（与单机 rediss URL 一致）；证书文件可选
+    let mut builder = if conf.ssl {
         let addr = ConnectionAddr::TcpTls {
             host: conf.host,
             port: conf.port,
@@ -164,91 +173,53 @@ fn get_client_sentinel(conf: &ConnConfig) -> AnyResult<Client> {
         )?
         .set_client_to_redis_db(conf.db as i64)
         .set_client_to_redis_tls_mode(TlsMode::Insecure)
-        .set_client_to_redis_certificates(tls.clone())
-        .set_client_to_sentinel_tls_mode(TlsMode::Insecure)
-        .set_client_to_sentinel_certificates(tls);
-        // 同上：Insecure 才跳过服务端 webpki（含 v1 证）
-
-        if !conf.username.is_empty() {
-            builder = builder.set_client_to_sentinel_username(conf.username);
-        };
-        if !conf.password.is_empty() {
-            builder = builder.set_client_to_sentinel_password(conf.password);
-        };
-        if !sentinel_option.master_username.is_empty() {
-            builder = builder.set_client_to_redis_username(sentinel_option.master_username);
+        .set_client_to_sentinel_tls_mode(TlsMode::Insecure);
+        // Insecure 才跳过服务端 webpki（含 v1 证）
+        if let Some(tls) = certs {
+            builder = builder
+                .set_client_to_redis_certificates(tls.clone())
+                .set_client_to_sentinel_certificates(tls);
         }
-        if !sentinel_option.master_password.is_empty() {
-            builder = builder.set_client_to_redis_password(sentinel_option.master_password);
-        }
-        if resp3 {
-            builder = builder.set_client_to_redis_protocol(ProtocolVersion::RESP3);
-        }
-        builder.build()?.get_client()?
+        builder
     } else {
         let addr = ConnectionAddr::Tcp(conf.host, conf.port);
-        let mut builder = SentinelClientBuilder::new(
+        SentinelClientBuilder::new(
             vec![addr],
             sentinel_option.master_name,
             SentinelServerType::Master,
         )?
-        .set_client_to_redis_db(conf.db as i64);
-        if !conf.username.is_empty() {
-            builder = builder.set_client_to_sentinel_username(conf.username);
-        };
-        if !conf.password.is_empty() {
-            builder = builder.set_client_to_sentinel_password(conf.password);
-        };
-        if !sentinel_option.master_username.is_empty() {
-            builder = builder.set_client_to_redis_username(sentinel_option.master_username);
-        }
-        if !sentinel_option.master_password.is_empty() {
-            builder = builder.set_client_to_redis_password(sentinel_option.master_password);
-        }
-        if resp3 {
-            builder = builder.set_client_to_redis_protocol(ProtocolVersion::RESP3);
-        }
-        builder.build()?.get_client()?
+        .set_client_to_redis_db(conf.db as i64)
     };
-    Ok(client)
+    if !conf.username.is_empty() {
+        builder = builder.set_client_to_sentinel_username(conf.username);
+    }
+    if !conf.password.is_empty() {
+        builder = builder.set_client_to_sentinel_password(conf.password);
+    }
+    if !sentinel_option.master_username.is_empty() {
+        builder = builder.set_client_to_redis_username(sentinel_option.master_username);
+    }
+    if !sentinel_option.master_password.is_empty() {
+        builder = builder.set_client_to_redis_password(sentinel_option.master_password);
+    }
+    if resp3 {
+        builder = builder.set_client_to_redis_protocol(ProtocolVersion::RESP3);
+    }
+    if let Some(d) = dialer {
+        builder = builder.set_dialer(d);
+    }
+    Ok(builder.build()?.get_client()?)
 }
 
-// 获取集群 Client；verify 为 Some 时按该超时 ping 验证（测试连接），为 None 时仅构建 Client（init 复用 TCP）
-pub fn get_client_cluster(conf: &ConnConfig, verify: Option<Duration>) -> AnyResult<ClusterClient> {
-    // SSH 隧道不支持集群模式
-    if conf.ssh {
-        bail!(AppError::ClusterNotSupported);
-    }
-
-    // 使用 url crate 构建 URL，自动处理密码中的特殊字符
-    let mut url = Url::parse(&format!(
-        "{}://{}:{}",
-        if conf.ssl { "rediss" } else { "redis" },
-        conf.host,
-        conf.port
-    ))?;
-    url.set_username(&conf.username).unwrap_or(());
-    url.set_password(Some(&conf.password)).unwrap_or(());
-    if conf.ssl {
-        url.set_fragment(Some("insecure"));
-    }
-
-    // 日志脱敏与单机一致：密码固定 ******；RESP3 经 use_protocol 生效，附加标记便于排查
-    info!(
-        "redis_url: {}://{}:******@{}:{}{}{}",
-        url.scheme(),
-        conf.username,
-        conf.host,
-        conf.port,
-        if conf.is_resp3() {
-            "?protocol=resp3"
-        } else {
-            ""
-        },
-        url.fragment()
-            .map(|f| format!("#{}", f))
-            .unwrap_or_default()
-    );
+// 获取集群 Client；verify 为 true 时按建连超时 ping 验证（测试连接），为 false 时仅构建 Client（init 复用 TCP）
+pub fn get_client_cluster(
+    conf: &ConnConfig,
+    connect_timeout: Duration,
+    verify: bool,
+) -> AnyResult<ClusterClient> {
+    let dialer = resolve_dialer(conf, connect_timeout, None)?;
+    let url = redis_url(conf)?;
+    log_redis_url(conf, &url);
 
     let mut builder = ClusterClient::builder(vec![url.to_string()]);
     if conf.is_resp3() {
@@ -269,10 +240,12 @@ pub fn get_client_cluster(conf: &ConnConfig, verify: Option<Duration>) -> AnyRes
         };
     }
     builder = builder.database_id(conf.db as i64);
+    if let Some(d) = dialer {
+        builder = builder.dialer(d);
+    }
     let client = builder.build()?;
-    // verify=Some：仅测试连接（ConnConfig::test），按建连超时 ping 后丢弃，不再 init；verify=None：由 init_*_connection 验证并复用 TCP
-    if let Some(timeout) = verify {
-        let _conn = verify_cluster_connection(&client, timeout)?;
+    if verify {
+        let _conn = verify_cluster_connection(&client, connect_timeout)?;
     }
     Ok(client)
 }

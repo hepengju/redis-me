@@ -1,5 +1,11 @@
 # 5.x Changelog
 
+## Unreleased
+
+### ✨ New Features
+
+- Connection: SSH tunnel supports **cluster** and **sentinel**
+
 ## v5.1.1 (2026-09-05)
 
 ### 🐞 Bug Fixes

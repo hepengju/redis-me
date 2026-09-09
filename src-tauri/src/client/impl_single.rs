@@ -7,7 +7,6 @@ use crate::utils::conn::{
 };
 use crate::utils::error::AppError;
 use crate::utils::model::*;
-use crate::utils::ssh_tunnel::SshTunnel;
 use crate::utils::util::*;
 use anyhow::bail;
 use chrono::Utc;
@@ -24,9 +23,6 @@ pub struct MeSingle {
     base: MeBase,
     client: Client,
     conn: Mutex<LoggingConnection>,
-    // SSH 隧道，在 Drop 时自动关闭
-    #[allow(dead_code)]
-    ssh_tunnel: Option<SshTunnel>,
 }
 
 impl Deref for MeSingle {
@@ -611,7 +607,7 @@ impl MeSingle {
         connect_timeout: Duration,
         command_timeout: Duration,
     ) -> AnyResult<Box<dyn MeClient>> {
-        let (client, ssh_tunnel) = get_client_single(redis_conn, connect_timeout, false)?;
+        let (client, _) = get_client_single(redis_conn, connect_timeout, false, None)?;
         let mut base = MeBase::from(redis_conn);
         base.connection_timeout = connect_timeout;
         base.command_timeout = command_timeout;
@@ -629,7 +625,6 @@ impl MeSingle {
             base,
             client,
             conn: Mutex::new(conn),
-            ssh_tunnel,
         }))
     }
 

@@ -14,7 +14,6 @@
 - 树形节点的内存占用显示
 - 图表：集群多节点折线同屏展示
 - 图表显示优化
-- SSH 隧道支持集群和哨兵
 - 哨兵支持 SSL
 - redis 的扩展模块命令支持
 - ACL 管理支持自定义角色
@@ -26,6 +25,7 @@
 
 ### 已完成
 
+- SSH 隧道支持集群和哨兵 ✅️
 - 数据编码魔数自动识别（Auto：ACED / Pickle PROTO / PhpSerial a:/O:/C: / MsgPack / StrJson / UTF-8 / Hex）✅️
 - String类型阈值保护 ✅️
 - Binary格式恢复支持（setbit等场景还是需要的）✅️

@@ -85,6 +85,6 @@ tauri-plugin-window-state = "2"
 name = "RedisME"
 path = "src/main.rs"
 
-# X.509 v1 客户端证：绕开 rustls webpki（fork: hepengju/redis-rs @ x509-v1-client-cert）
+# RedisME 的 redis-rs fork（X.509 v1、后续 ConnectionDialer 等都叠在这条分支）
 [patch.crates-io]
-redis = { git = "https://github.com/hepengju/redis-rs.git", branch = "x509-v1-client-cert" }
+redis = { git = "https://github.com/hepengju/redis-rs.git", branch = "redis-me" }

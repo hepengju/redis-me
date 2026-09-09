@@ -223,7 +223,6 @@ export default {
     autoDiscoverOk: 'Discover {count} Master | Discover {count} Masters',
 
     ssh: 'SSH Tunnel',
-    sshModeTip: 'SSH tunnel does not support cluster/sentinel mode now',
     loginType: 'Login',
     nameHint: '[Optional] Automatically generated',
     advancedTitle: 'Advanced',
@@ -272,7 +271,7 @@ export default {
     downloading: 'Downloading',
 
     sshTip:
-      'Connect to Redis server via SSH tunnel, applicable to the following scenarios<br/>• Redis server is on intranet and cannot be accessed directly<br/>• Need to access Redis through jump server/bastion host<br/>• Need encrypted transmission channel for security<br/><b>Note:</b> SSH tunnel currently only supports standalone mode',
+      'Connect to Redis server via SSH tunnel, applicable to the following scenarios<br/>• Redis server is on intranet and cannot be accessed directly<br/>• Need to access Redis through jump server/bastion host<br/>• Need encrypted transmission channel for security<br/>• Works with standalone, cluster, and sentinel',
     sslTip:
       'Used when Redis server has TLS/SSL port enabled<br/>• Need to set tls-port instead of port in Redis configuration<br/>• May need to provide client certificate and private key<br/>• Used to encrypt transmission channel and prevent data theft',
     readonlyTip:
@@ -1210,8 +1209,6 @@ Once an operation prevents Redis from keeping the space-saving encoding, special
   errors: {
     connection_not_found: 'Connection {id} not found',
     connection_lock_timeout: 'Connection lock timeout, please try again later',
-    sentinel_not_supported: 'SSH tunnel does not support sentinel mode',
-    cluster_not_supported: 'SSH tunnel does not support cluster mode',
     cluster_db_switch_not_supported:
       'Cluster mode does not support switching DB; change the initial DB in connection settings and reconnect',
     key_not_found: '"{key}" not found',

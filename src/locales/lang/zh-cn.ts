@@ -218,7 +218,6 @@ export default {
     autoDiscoverOk: '查询到{count}个主节点',
 
     ssh: 'SSH 隧道',
-    sshModeTip: 'SSH 隧道暂不支持集群/哨兵模式',
     loginType: '登录',
     sshOption: {
       host: '主机',
@@ -263,7 +262,7 @@ export default {
     testOk: '测试连接成功',
     downloading: '下载中...',
 
-    sshTip: `通过SSH隧道连接Redis服务器，适用于以下场景<br/>• Redis服务器在内网，无法直接访问<br/>• 需要通过跳板机/堡垒机访问Redis<br/>• 需要加密传输通道保障安全<br/><b>注意：</b>SSH隧道目前仅支持单机模式`,
+    sshTip: `通过SSH隧道连接Redis服务器，适用于以下场景<br/>• Redis服务器在内网，无法直接访问<br/>• 需要通过跳板机/堡垒机访问Redis<br/>• 需要加密传输通道保障安全<br/>• 支持单机、集群、哨兵`,
     sslTip:
       'Redis服务器开启了TLS/SSL端口时使用<br/>• 需要在Redis配置中设置 tls-port 而非 port<br/>• 可能需要提供客户端证书和私钥<br/>• 用于加密传输通道，防止数据被窃听',
     readonlyTip:
@@ -1191,8 +1190,6 @@ export default {
   errors: {
     connection_not_found: '连接 {id} 不存在',
     connection_lock_timeout: '获取连接超时，请稍后重试',
-    sentinel_not_supported: 'SSH 隧道暂不支持哨兵模式',
-    cluster_not_supported: 'SSH 隧道暂不支持集群模式',
     cluster_db_switch_not_supported: '集群模式不支持切换 DB，请在连接配置中修改初始库后重连',
     key_not_found: '"{key}" 键不存在',
     key_node_not_found: '未找到键 "{key}" 所在的节点',

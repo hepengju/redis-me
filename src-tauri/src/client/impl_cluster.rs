@@ -479,7 +479,13 @@ impl MeClient for MeCluster {
     }
 
     fn subscribe(&self, channel: Option<String>) -> AnyResult<()> {
-        let (client, _) = get_client_single(&self.conf, self.connection_timeout, false)?;
+        let (client, _) = get_client_single(
+            &self.conf,
+            self.connection_timeout,
+            false,
+            // 复用集群 Client 上的 SSH 会话，不要再 SshDialer::connect
+            self.client.dialer(),
+        )?;
         let conn = init_single_connection(
             &client,
             self.conf.db,
@@ -506,7 +512,9 @@ impl MeClient for MeCluster {
             conf.host = host.to_string();
             conf.port = port.parse::<u16>()?;
         }
-        let (client, _) = get_client_single(&conf, self.connection_timeout, false)?;
+        let (client, _) =
+            // 复用集群上的 SSH 会话
+            get_client_single(&conf, self.connection_timeout, false, self.client.dialer())?;
         let conn = init_single_connection(
             &client,
             conf.db,
@@ -836,7 +844,7 @@ impl MeCluster {
         connect_timeout: Duration,
         command_timeout: Duration,
     ) -> AnyResult<Box<dyn MeClient>> {
-        let client = get_client_cluster(redis_conn, None)?;
+        let client = get_client_cluster(redis_conn, connect_timeout, false)?;
         let mut base = MeBase::from(redis_conn);
         base.connection_timeout = connect_timeout;
         base.command_timeout = command_timeout;
