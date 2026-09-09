@@ -109,9 +109,9 @@ const form = reactive({
 })
 
 watch(
-  () => form.mode,
-  mode => {
-    form.basePort = genInstallDefaultPort(mode)
+  () => [form.mode, form.ssl] as const,
+  ([mode, ssl]) => {
+    form.basePort = genInstallDefaultPort(mode, ssl)
     // 哨兵必须挂载 sentinel.conf，禁用开关时保持勾选以免和实际产物不一致
     if (mode === 'sentinel') form.mountConf = true
   },
@@ -124,7 +124,7 @@ const options = computed<RedisInstallOptions>(() => ({
   image: form.image.trim() || 'redis:8',
   alpine: form.alpine,
   ips: form.mode === 'single' ? [] : ips.value,
-  basePort: Number(form.basePort) || genInstallDefaultPort(form.mode),
+  basePort: Number(form.basePort) || genInstallDefaultPort(form.mode, form.ssl),
   password: form.password,
   clusterMasters: Number(form.clusterMasters) || 1,
   clusterReplicasPerMaster: Math.max(0, Number(form.clusterReplicasPerMaster) || 0),
@@ -222,6 +222,11 @@ const timezoneOptions = [
           </button>
         </div>
 
+        <span class="ri-label">{{ t.ssl }}</span>
+        <label class="ri-check">
+          <input v-model="form.ssl" type="checkbox" />
+        </label>
+
         <span class="ri-label">{{ t.image }}</span>
         <div class="ri-image-row">
           <ComboInput v-model="form.image" :options="imageOptions" />
@@ -272,11 +277,6 @@ const timezoneOptions = [
         <span class="ri-label">{{ t.mountConf }}</span>
         <label class="ri-check">
           <input v-model="form.mountConf" type="checkbox" :disabled="form.mode === 'sentinel'" />
-        </label>
-
-        <span class="ri-label">{{ t.ssl }}</span>
-        <label class="ri-check">
-          <input v-model="form.ssl" type="checkbox" />
         </label>
 
         <span class="ri-label">{{ t.timezone }}</span>

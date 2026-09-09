@@ -86,9 +86,11 @@ const REDIS_UID = '999:999'
 // 容器内证书挂载点（与 /etc/redis/conf 同级）
 const CONTAINER_CERT_DIR = '/etc/redis/cert'
 
-// 各模式默认起始端口：集群惯例 7001 段（7001~7006）；单机/哨兵用经典 6379 段（哨兵组 +20000）
-export function genInstallDefaultPort(mode: RedisInstallMode): number {
-  return mode === 'cluster' ? 7001 : 6379
+// 各模式默认起始端口：明文 单机 6379 / 集群 7001 / 哨兵 7701；TLS 6380 / 8001 / 8801（哨兵进程仍 +20000）
+export function genInstallDefaultPort(mode: RedisInstallMode, ssl = false): number {
+  if (mode === 'cluster') return ssl ? 8001 : 7001
+  if (mode === 'sentinel') return ssl ? 8801 : 7701
+  return ssl ? 6380 : 6379
 }
 
 // 网络模式（内置约定）：单机用简单端口映射；集群/哨兵多端口 + 总线/通告需求，用宿主机网络更简单可靠
