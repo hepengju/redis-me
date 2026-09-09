@@ -3930,7 +3930,7 @@ checksum = "20675572f6f24e9e76ef639bc5552774ed45f1c30e2951e1e99c59888861c539"
 [[package]]
 name = "redis"
 version = "1.7.0"
-source = "git+https://github.com/hepengju/redis-rs.git?branch=redis-me#e63087868b569ba5d8b9b5256081f212139f6585"
+source = "git+https://github.com/hepengju/redis-rs.git?branch=redis-me#8242c452673746e8508adbdf098e64350aaa7ead"
 dependencies = [
  "arcstr",
  "combine",
