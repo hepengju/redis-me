@@ -28,6 +28,8 @@ import java.util.Set;
  * 与 Redisson 客户端写入的字节完全兼容；兼容任意 Redisson 3.16+ / 4.x 版本，JDK 8+ 即可运行。
  * codec 自动探测：依次尝试 Kryo5Codec（4.x 默认）、MarshallingCodec（3.x 默认），
  * 用环境变量 REDISSON_CODEC_CLASS 指定配置中实际使用的 codec 类名可跳过探测。
+ * Kryo 对非本 codec 的字节也可能“解成功”（例如把 Marshalling 的 List 读成 Float），
+ * 因此探测时会再 encode 一次，往返长度不一致则视为该 codec 不匹配，继续试下一个。
  *
  * 目录约定（启动脚本同级）：
  *   redisson-codec.jar  本编解码入口
@@ -50,6 +52,8 @@ import java.util.Set;
  * 3. JDK 不可变集合（List.of/Set.of/Map.of 产生的 ImmutableCollections$ListN 等）
  *    Jackson 无法实例化，encode 时替换为 ArrayList/LinkedHashSet/LinkedHashMap；
  *    Kryo 流中写的是具体类名，Redisson 端读取不受影响。
+ * 4. 每个候选 codec 使用独立 ByteBuf，避免上一个 codec（尤其 Kryo Input 预读）
+ *    把 readerIndex 推到末尾，导致下一个 codec 读到空缓冲。
  */
 public final class RedissonCodec {
 
@@ -223,35 +227,62 @@ public final class RedissonCodec {
     private static void decode(String wireBase64) throws Throwable {
         initByteBuf();
         byte[] bytes = Base64.getDecoder().decode(wireBase64);
-        Object buf = wrappedBufferMethod.invoke(null, bytes);
-        try {
-            Throwable lastError = null;
-            for (CodecRef ref : REFS) {
-                if (!ref.ready()) {
-                    lastError = ref.initError;
+        Throwable lastError = null;
+        for (CodecRef ref : REFS) {
+            if (!ref.ready()) {
+                lastError = ref.initError;
+                continue;
+            }
+            Object buf = wrappedBufferMethod.invoke(null, bytes);
+            try {
+                Object obj = ref.decodeMethod.invoke(ref.decoder, buf, null);
+                if (!roundtripMatches(ref, obj, bytes)) {
+                    lastError = ref.decodeError;
                     continue;
                 }
-                try {
-                    Object obj = ref.decodeMethod.invoke(ref.decoder, buf, null);
-                    active = ref;
-                    ArrayNode root = MAPPER.createArrayNode();
-                    root.add(obj == null ? "null" : obj.getClass().getName());
-                    root.add(stripRootWrapper(MAPPER.valueToTree(obj), obj));
-                    System.out.print(MAPPER.writerWithDefaultPrettyPrinter().writeValueAsString(root));
-                    return;
-                } catch (Throwable t) {
-                    Throwable cause = unwrap(t);
-                    // 依赖缺失（如 MarshallingCodec 缺 jboss-marshalling）视为该 codec 不可用，继续探测
-                    if (cause instanceof NoClassDefFoundError || cause instanceof ClassNotFoundException) {
-                        ref.initError = cause;
-                    }
-                    ref.decodeError = cause;
-                    lastError = cause;
+                active = ref;
+                ArrayNode root = MAPPER.createArrayNode();
+                root.add(obj == null ? "null" : obj.getClass().getName());
+                root.add(stripRootWrapper(MAPPER.valueToTree(obj), obj));
+                System.out.print(MAPPER.writerWithDefaultPrettyPrinter().writeValueAsString(root));
+                return;
+            } catch (Throwable t) {
+                Throwable cause = unwrap(t);
+                // 依赖缺失（如 MarshallingCodec 缺 jboss-marshalling）视为该 codec 不可用，继续探测
+                if (cause instanceof NoClassDefFoundError || cause instanceof ClassNotFoundException) {
+                    ref.initError = cause;
                 }
+                ref.decodeError = cause;
+                lastError = cause;
+            } finally {
+                releaseMethod.invoke(buf);
             }
-            fail(codecHint("解码失败", lastError));
-        } finally {
-            releaseMethod.invoke(buf);
+        }
+        fail(codecHint("解码失败", lastError));
+    }
+
+    /**
+     * Kryo 对任意字节也可能 readClassAndObject 成功（只消费对象头部、其余被 Input 预读丢掉），
+     * 再 encode 一次：长度对不上就说明不是该 codec 写出来的。
+     * 只比长度、不比逐字节：HashSet/HashMap 迭代顺序可能变，但总长度应一致。
+     */
+    private static boolean roundtripMatches(CodecRef ref, Object obj, byte[] original) {
+        try {
+            byte[] encoded = toByteArray(ref.encodeMethod.invoke(ref.encoder, obj));
+            if (encoded.length == original.length) {
+                return true;
+            }
+            ref.decodeError = new IllegalStateException(
+                    "往返长度不一致（输入 " + original.length + " 字节，写成 " + encoded.length
+                            + " 字节，可能不是该 codec）");
+            return false;
+        } catch (Throwable t) {
+            Throwable cause = unwrap(t);
+            if (cause instanceof NoClassDefFoundError || cause instanceof ClassNotFoundException) {
+                ref.initError = cause;
+            }
+            ref.decodeError = cause;
+            return false;
         }
     }
 
@@ -332,11 +363,15 @@ public final class RedissonCodec {
     }
 
     private static String toBase64(Object out) throws Exception {
+        return Base64.getEncoder().encodeToString(toByteArray(out));
+    }
+
+    private static byte[] toByteArray(Object out) throws Exception {
         try {
             int len = (Integer) readableBytesMethod.invoke(out);
             byte[] bytes = new byte[len];
             readBytesMethod.invoke(out, (Object) bytes);
-            return Base64.getEncoder().encodeToString(bytes);
+            return bytes;
         } finally {
             releaseMethod.invoke(out);
         }
