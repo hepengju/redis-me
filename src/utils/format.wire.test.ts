@@ -28,6 +28,13 @@ describe('format wire=base64 display-only', () => {
     expect(base64WireToUtf8Display(wire)).toBe(text)
   })
 
+  it('strjson 展示/写回 roundtrip', () => {
+    const display = JSON.stringify({ a: 1 }, null, 2)
+    const wire = meViewToWire(display, 'strjson')
+    expect(meFormatViewValue(wire, 'strjson')).toBe(display)
+    expect(base64WireToUtf8Display(wire)).toBe(JSON.stringify(JSON.stringify({ a: 1 })))
+  })
+
   it('空值', () => {
     expect(meFormatViewValue('', 'utf8')).toBe('')
     expect(meViewToWire('', 'utf8')).toBe('')

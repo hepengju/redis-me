@@ -8,6 +8,6 @@ pub mod model;
 pub mod redis_cli_format;
 pub mod redis_cli_tty;
 pub mod setup;
-pub mod ssh_tunnel;
+pub mod ssh_dialer;
 pub mod tls_cert;
 pub mod util;

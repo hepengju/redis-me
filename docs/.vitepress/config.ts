@@ -1,6 +1,10 @@
+import { fileURLToPath } from 'node:url'
+
 import { defineConfig } from 'vitepress'
 
 import { createLangRedirectScript } from './theme/lang-redirect'
+
+const repoRoot = fileURLToPath(new URL('../..', import.meta.url))
 
 /** 子路径部署时改为 `/仓库名/`（建议以 / 结尾），与 Vite `base` 一致 */
 const siteBase: string = '/'
@@ -62,5 +66,9 @@ export default defineConfig({
   // srcExclude: ['latest.json', '/zz/**'],
 
   // Windows（Hyper-V/WSL 等）常保留 5172–5271，Vite 默认 5173 会 EACCES
-  vite: { server: { port: 33333, host: '127.0.0.1' }, preview: { port: 3333, host: '127.0.0.1' } },
+  // fs.allow：文档页会 import 仓库 src/utils/redis-install-gen.ts
+  vite: {
+    server: { port: 33333, host: '127.0.0.1', fs: { allow: [repoRoot] } },
+    preview: { port: 3333, host: '127.0.0.1' },
+  },
 })

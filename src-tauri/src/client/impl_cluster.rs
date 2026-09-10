@@ -244,6 +244,14 @@ impl MeClient for MeCluster {
         )
     }
 
+    fn field_ttl(&self, param: RedisFieldTtl) -> AnyResult<()> {
+        field_ttl0(
+            self.get_conn()?,
+            param,
+            self.base().capabilities.httl_supported,
+        )
+    }
+
     fn field_get(&self, param: RedisFieldGet) -> AnyResult<RedisFieldValue> {
         field_get0(
             self.get_conn()?,
@@ -471,12 +479,19 @@ impl MeClient for MeCluster {
     }
 
     fn subscribe(&self, channel: Option<String>) -> AnyResult<()> {
-        let (client, _) = get_client_single(&self.conf, self.connection_timeout, false)?;
+        let (client, _) = get_client_single(
+            &self.conf,
+            self.connection_timeout,
+            false,
+            // 复用集群 Client 上的 SSH 会话，不要再 SshDialer::connect
+            self.client.dialer(),
+        )?;
         let conn = init_single_connection(
             &client,
             self.conf.db,
             self.connection_timeout,
             self.command_timeout,
+            &self.conf,
         )?;
         // 订阅长连接：建连后去掉读写超时，否则空闲超过读写超时会断流
         conn.set_read_timeout(None)?;
@@ -498,12 +513,15 @@ impl MeClient for MeCluster {
             conf.host = host.to_string();
             conf.port = port.parse::<u16>()?;
         }
-        let (client, _) = get_client_single(&conf, self.connection_timeout, false)?;
+        let (client, _) =
+            // 复用集群上的 SSH 会话
+            get_client_single(&conf, self.connection_timeout, false, self.client.dialer())?;
         let conn = init_single_connection(
             &client,
             conf.db,
             self.connection_timeout,
             self.command_timeout,
+            &conf,
         )?;
         conn.set_read_timeout(None)?;
         conn.set_write_timeout(None)?;
@@ -828,7 +846,7 @@ impl MeCluster {
         connect_timeout: Duration,
         command_timeout: Duration,
     ) -> AnyResult<Box<dyn MeClient>> {
-        let client = get_client_cluster(redis_conn, None)?;
+        let client = get_client_cluster(redis_conn, connect_timeout, false)?;
         let mut base = MeBase::from(redis_conn);
         base.connection_timeout = connect_timeout;
         base.command_timeout = command_timeout;
@@ -836,7 +854,7 @@ impl MeCluster {
         let db = redis_conn.db;
         // 阶段 1 建连验证 + 阶段 2 正式命令超时；验证通过后复用同一条 TCP（#155）
         let mut conn = LoggingClusterConnection::new(
-            init_cluster_connection(&client, connect_timeout, command_timeout)?,
+            init_cluster_connection(&client, connect_timeout, command_timeout, redis_conn)?,
             logger,
             db,
         );

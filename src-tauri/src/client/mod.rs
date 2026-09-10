@@ -163,12 +163,13 @@ mod tests {
     #[test]
     fn test_field_scan_mock() -> AnyResult<()> {
         let conn_single = conf_single();
-        let (client, _) = get_client_single(&conn_single, CONNECTION_CONNECT_TIMEOUT, false)?;
+        let (client, _) = get_client_single(&conn_single, CONNECTION_CONNECT_TIMEOUT, false, None)?;
         let mut conn = init_single_connection(
             &client,
             conn_single.db,
             CONNECTION_CONNECT_TIMEOUT,
             CONNECTION_NORMAL_TIMEOUT,
+            &conn_single,
         )?;
 
         let mut pipe = redis::pipe();
@@ -191,11 +192,12 @@ mod tests {
         let _: () = pipe.query(&mut conn)?;
 
         let conn_cluster = conf_cluster();
-        let client = get_client_cluster(&conn_cluster, None)?;
+        let client = get_client_cluster(&conn_cluster, CONNECTION_CONNECT_TIMEOUT, false)?;
         let mut conn = init_cluster_connection(
             &client,
             CONNECTION_CONNECT_TIMEOUT,
             CONNECTION_NORMAL_TIMEOUT,
+            &conn_cluster,
         )?;
 
         let mut pipe = ClusterPipeline::new();

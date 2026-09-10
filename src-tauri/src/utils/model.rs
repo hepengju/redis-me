@@ -200,12 +200,10 @@ impl AppSettings {
 impl ConnConfig {
     pub fn test(&self, connect_timeout: Duration) -> AnyResult<()> {
         if self.cluster {
-            get_client_cluster(self, Some(connect_timeout))?;
+            get_client_cluster(self, connect_timeout, true)?;
         } else {
-            get_client_single(self, connect_timeout, true)?;
+            get_client_single(self, connect_timeout, true, None)?;
         };
-        // 单机模式返回的元组在测试后丢弃，SSH 隧道随之关闭
-        // 集群模式不支持 SSH
         Ok(())
     }
 
@@ -216,8 +214,9 @@ impl ConnConfig {
     ) -> AnyResult<Vec<HashMap<String, String>>> {
         let mut conf = self.clone();
         conf.sentinel = false;
-        let (client, _) = get_client_single(&conf, connect_timeout, false)?;
-        let mut conn = init_single_connection(&client, conf.db, connect_timeout, command_timeout)?;
+        let (client, _) = get_client_single(&conf, connect_timeout, false, None)?;
+        let mut conn =
+            init_single_connection(&client, conf.db, connect_timeout, command_timeout, &conf)?;
         let masters: Vec<HashMap<String, String>> =
             redis::cmd("sentinel").arg("masters").query(&mut conn)?;
         Ok(masters)
@@ -763,6 +762,15 @@ api_model!(RedisPop {
     /// 操作模式（LPOP/RPOP/SPOP/ZPOPMIN/ZPOPMAX）
     mode: String,
     /// 弹出元素的展示格式
+    val_fmt: Option<BytesFormat>,
+});
+
+// 仅更新 Hash 字段过期：HEXPIRE / HPERSIST，不改字段值
+api_model!(RedisFieldTtl {
+    key: RedisKey,
+    field_key: String,
+    field_ttl: i64, // >0 秒；-1 永久（HPERSIST）
+    /// 字段名编码，与 field_set 的 val_fmt 一致
     val_fmt: Option<BytesFormat>,
 });
 

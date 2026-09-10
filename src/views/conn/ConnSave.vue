@@ -22,15 +22,7 @@ import {
   setConnUiMode,
   type ConnProtocol,
 } from '@/utils/conn'
-import {
-  meCommands,
-  PREDEFINE_COLORS,
-  meRandomString,
-  meOk,
-  meErr,
-  meWarn,
-  meCopy,
-} from '@/utils/util'
+import { meCommands, PREDEFINE_COLORS, meRandomString, meOk, meErr, meCopy } from '@/utils/util'
 const { t } = useI18n()
 // #endregion
 
@@ -78,12 +70,11 @@ const form = reactive({
     passphrase: '', // 私钥密码
   },
 
-  // 其他元信息补充: 复制连接时不保留
+  // 其他元信息补充（db 别名等）；复制时仅保留分组
   meta: {
     // 数据库别名
     // db0: '会话登录'
     // 未来的其他扩展
-
   },
 })
 
@@ -194,11 +185,17 @@ function open(modeValue: 'add' | 'edit', data?: UiConn) {
   mode.value = modeValue
   if (data) {
     const newData = cloneDeep(data)
-    // 新增时给了数据，则是复制连接。id和name需要重置, meta信息不复制
+    // 新增时给了数据，则是复制连接。id / name 重置；meta 仅保留分组（同组复制）
     if (modeValue === 'add') {
       newData.id = nanoid()
       newData.name = data.name + '-' + t('copy')
+      const group = getConnGroup(newData)
       newData.meta = {}
+      setConnGroup(newData, group)
+    }
+    // 集群与哨兵互斥；历史数据若同时为真，与后端建连一致：按集群处理
+    if (newData.cluster && newData.sentinel) {
+      newData.sentinel = false
     }
     Object.assign(form, newData)
   }
@@ -354,18 +351,19 @@ async function autoDiscover(alert: boolean = false) {
   }
 }
 
-// 哨兵模式自动发现 + 与SSH互斥
+/** 集群 / 哨兵互斥：勾选其一则取消另一项 */
+function onClusterChange(val: string | number | boolean) {
+  if (val) form.sentinel = false
+}
+function onSentinelChange(val: string | number | boolean) {
+  if (val) form.cluster = false
+}
+
+// 哨兵模式自动发现
 watch(
   () => form.sentinel,
   (newValue: boolean, _oldValue: boolean) => {
     if (newValue) {
-      // 与SSH互斥
-      if (form.ssh) {
-        meWarn(t('conn.sshModeTip'))
-        form.sentinel = false
-        return
-      }
-
       autoDiscover()
     }
   },
@@ -376,29 +374,6 @@ watch(
   (newValue: string | undefined, _oldValue: string | undefined) => {
     if (newValue === undefined) {
       form.sentinelOption.masterName = ''
-    }
-  },
-)
-
-// SSH与集群/哨兵互斥
-watch(
-  () => form.ssh,
-  (newValue: boolean) => {
-    if (newValue) {
-      if (form.cluster || form.sentinel) {
-        meWarn(t('conn.sshModeTip'))
-        form.ssh = false
-      }
-    }
-  },
-)
-
-watch(
-  () => form.cluster,
-  (newValue: boolean) => {
-    if (newValue && form.ssh) {
-      meWarn(t('conn.sshModeTip'))
-      form.cluster = false
     }
   },
 )
@@ -567,7 +542,7 @@ function applyAdvanced() {
                 placeholder="0" />
             </div>
             <div class="conn-mode-checkboxes">
-              <el-checkbox v-model="form.cluster">
+              <el-checkbox v-model="form.cluster" @change="onClusterChange">
                 <el-tooltip
                   placement="top"
                   raw-content
@@ -576,7 +551,7 @@ function applyAdvanced() {
                   <span>{{ t('conn.cluster') }}</span>
                 </el-tooltip>
               </el-checkbox>
-              <el-checkbox v-model="form.sentinel">
+              <el-checkbox v-model="form.sentinel" @change="onSentinelChange">
                 <el-tooltip
                   placement="top"
                   raw-content

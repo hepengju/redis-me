@@ -69,22 +69,28 @@ export interface RedisInstallOutput {
   guide: RedisInstallStep[]
 }
 
-// 宿主机目录约定：/data 下按模式建安装目录
+// 宿主机目录约定：/data 下按模式建安装目录；TLS 时加 -ssl 后缀，可与明文部署并存
 // 节点：<root>/ 或 <root>/<容器名>/{conf,data}；证书共享：<root>/cert；compose 落在 <root>
-function hostRoot(mode: RedisInstallMode): string {
-  return `/data/redis-${mode}`
+function hostRoot(o: RedisInstallOptions): string {
+  return `/data/redis-${o.mode}${o.ssl ? '-ssl' : ''}`
 }
-function certDir(mode: RedisInstallMode): string {
-  return `${hostRoot(mode)}/cert`
+function certDir(o: RedisInstallOptions): string {
+  return `${hostRoot(o)}/cert`
+}
+// 容器名 / compose service：redis-<端口>；TLS 时加 -ssl
+function nodeName(port: number, ssl: boolean): string {
+  return `redis-${port}${ssl ? '-ssl' : ''}`
 }
 // 官方镜像以 redis 用户（uid 999）运行，数据/证书/配置目录需授权
 const REDIS_UID = '999:999'
 // 容器内证书挂载点（与 /etc/redis/conf 同级）
 const CONTAINER_CERT_DIR = '/etc/redis/cert'
 
-// 各模式默认起始端口：集群惯例 7001 段（7001~7006）；单机/哨兵用经典 6379 段（哨兵组 +20000）
-export function genInstallDefaultPort(mode: RedisInstallMode): number {
-  return mode === 'cluster' ? 7001 : 6379
+// 各模式默认起始端口：明文 单机 6379 / 集群 7001 / 哨兵 7701；TLS 6380 / 8001 / 8801（哨兵进程仍 +20000）
+export function genInstallDefaultPort(mode: RedisInstallMode, ssl = false): number {
+  if (mode === 'cluster') return ssl ? 8001 : 7001
+  if (mode === 'sentinel') return ssl ? 8801 : 7701
+  return ssl ? 6380 : 6379
 }
 
 // 网络模式（内置约定）：单机用简单端口映射；集群/哨兵多端口 + 总线/通告需求，用宿主机网络更简单可靠
@@ -124,15 +130,16 @@ export function genInstallNodes(o: RedisInstallOptions): RedisInstallNode[] {
   const pick = (i: number) => hosts[i % hosts.length]
   const nodes: RedisInstallNode[] = []
   // 容器/目录命名：redis-<端口>（端口在部署内唯一）；单机直接落在模式目录，不再多一层节点目录
+  const ssl = o.ssl
   if (o.mode === 'single') {
-    nodes.push({ name: `redis-${o.basePort}`, ip: hosts[0], port: o.basePort, role: 'master' })
+    nodes.push({ name: nodeName(o.basePort, ssl), ip: hosts[0], port: o.basePort, role: 'master' })
   } else if (o.mode === 'cluster') {
     // 端口全局递增；redis-cli cluster create 将前 N 个节点作为主节点
     const total = o.clusterMasters * (1 + o.clusterReplicasPerMaster)
     for (let i = 0; i < total; i++) {
       const port = o.basePort + i
       nodes.push({
-        name: `redis-${port}`,
+        name: nodeName(port, ssl),
         ip: pick(i),
         port,
         role: i < o.clusterMasters ? 'master' : 'replica',
@@ -140,10 +147,10 @@ export function genInstallNodes(o: RedisInstallOptions): RedisInstallNode[] {
     }
   } else {
     // 哨兵：一主 + N 从 + 哨兵组（哨兵端口段 base+20000 起，避开集群总线端口段 +10000）
-    nodes.push({ name: `redis-${o.basePort}`, ip: hosts[0], port: o.basePort, role: 'master' })
+    nodes.push({ name: nodeName(o.basePort, ssl), ip: hosts[0], port: o.basePort, role: 'master' })
     for (let r = 0; r < o.sentinelReplicas; r++) {
       nodes.push({
-        name: `redis-${o.basePort + 1 + r}`,
+        name: nodeName(o.basePort + 1 + r, ssl),
         ip: pick(r + 1),
         port: o.basePort + 1 + r,
         role: 'replica',
@@ -151,7 +158,7 @@ export function genInstallNodes(o: RedisInstallOptions): RedisInstallNode[] {
     }
     for (let s = 0; s < o.sentinelCount; s++) {
       nodes.push({
-        name: `redis-${o.basePort + 20000 + s}`,
+        name: nodeName(o.basePort + 20000 + s, ssl),
         ip: pick(s),
         port: o.basePort + 20000 + s,
         role: 'sentinel',
@@ -182,7 +189,7 @@ function confMounted(o: RedisInstallOptions, node?: RedisInstallNode): boolean {
 
 // 节点宿主机目录：单机直接落在模式目录，集群/哨兵每节点一层（以容器名命名）
 function nodeDir(o: RedisInstallOptions, node: RedisInstallNode): string {
-  const root = hostRoot(o.mode)
+  const root = hostRoot(o)
   return o.mode === 'single' ? root : `${root}/${node.name}`
 }
 // 配置目录：挂到容器 /etc/redis，供 conf rewrite 写临时文件
@@ -217,7 +224,7 @@ function genComposeYaml(
     // conf 目录挂到 /etc/redis/conf（rewrite 需同目录可写）；证书挂 /etc/redis/cert（同级）
     if (n.role === 'sentinel' || confMounted(o, n))
       vols.push(`      - ${confDir(o, n)}:/etc/redis/conf`)
-    if (o.ssl) vols.push(`      - ${certDir(o.mode)}:${CONTAINER_CERT_DIR}:ro`)
+    if (o.ssl) vols.push(`      - ${certDir(o)}:${CONTAINER_CERT_DIR}:ro`)
     if (vols.length > 0) {
       lines.push('    volumes:')
       lines.push(...vols)
@@ -381,7 +388,7 @@ function dockerRunCmd(
   if (node.role === 'sentinel' || confMounted(o, node)) {
     parts.push(`-v ${confDir(o, node)}:/etc/redis/conf`)
   }
-  if (o.ssl) parts.push(`-v ${certDir(o.mode)}:${CONTAINER_CERT_DIR}:ro`)
+  if (o.ssl) parts.push(`-v ${certDir(o)}:${CONTAINER_CERT_DIR}:ro`)
   parts.push(finalImage(o))
   if (node.role === 'sentinel') {
     parts.push('redis-server /etc/redis/conf/sentinel.conf --sentinel')
@@ -474,10 +481,10 @@ function certStepOpenssl(
   labels: RedisInstallLabels,
   multi: boolean,
 ): RedisInstallStep {
-  const dir = certDir(o.mode)
+  const dir = certDir(o)
   const parts: string[] = ['# 将生成的 ca.crt、redis.crt、redis.key 复制到以下目录', `# ${dir}`]
   if (multi) parts.push(`# 多机部署：将证书文件分发到每台机器的 ${dir} 目录`)
-  parts.push('', `chown -R ${REDIS_UID} ${hostRoot(o.mode)}`)
+  parts.push('', `chown -R ${REDIS_UID} ${hostRoot(o)}`)
   return { title: labels.stepCert, code: parts.join('\n'), lang: 'shell' }
 }
 
@@ -494,8 +501,8 @@ export function genRedisInstall(
     multi ? `${base} - ${labels.machine} ${ip}` : base
   const master = nodes.find(n => n.role === 'master')!
   const sentinelNodes = nodes.filter(n => n.role === 'sentinel')
-  const root = hostRoot(o.mode)
-  const certs = certDir(o.mode)
+  const root = hostRoot(o)
+  const certs = certDir(o)
 
   // ===== docker 命令形态（纯 docker run，不含环境准备） =====
   const commands: RedisInstallStep[] = []
@@ -555,7 +562,7 @@ export function genRedisInstall(
   if (o.ssl) {
     sections.push({ header: labels.stepCert, code: certStepOpenssl(o, labels, multi).code })
   }
-  // 4. 启动容器：compose 落在模式根目录（/data/redis-{mode}），节点 conf/data 仍在各子目录
+  // 4. 启动容器：compose 落在模式根目录（/data/redis-{mode}[-ssl]），节点 conf/data 仍在各子目录
   for (const [ip, ns] of machines) {
     const code = [
       heredoc(`${root}/docker-compose.yml`, genComposeYaml(o, ns, master)),
@@ -598,7 +605,11 @@ export function genRedisInstall(
       ].join('\n'),
     })
   } else {
-    sections.push({ header: labels.stepVerify, code: `${dockerExecCli(o, master.name)} ping` })
+    // 单机 redis-cli 默认连 6379；改端口后必须显式 -p（容器内监听实际端口）
+    sections.push({
+      header: labels.stepVerify,
+      code: `${dockerExecCli(o, master.name)} -p ${master.port} ping`,
+    })
   }
 
   const GUIDE_SEP = CERT_BANNER_SEP

@@ -25,11 +25,22 @@ export default {
   actionOk: 'Success',
 
   timeUnit: {
-    width: '120',
     second: 'Second | Seconds',
     minute: 'Minute | Minutes',
     hour: 'Hour | Hours',
     day: 'Day | Days',
+  },
+
+  meTtl: {
+    duration: 'Duration',
+    at: 'Expire at',
+    modeWidth: '110',
+    unitWidth: '100',
+    previewAt: 'Expires at: {time} ({offset})',
+    previewRemain: 'Remaining: {text}',
+    forever: 'Forever',
+    past: 'Expire time must be in the future',
+    pickAt: 'Pick expire time',
   },
 
   appMain: {
@@ -212,7 +223,6 @@ export default {
     autoDiscoverOk: 'Discover {count} Master | Discover {count} Masters',
 
     ssh: 'SSH Tunnel',
-    sshModeTip: 'SSH tunnel does not support cluster/sentinel mode now',
     loginType: 'Login',
     nameHint: '[Optional] Automatically generated',
     advancedTitle: 'Advanced',
@@ -261,7 +271,7 @@ export default {
     downloading: 'Downloading',
 
     sshTip:
-      'Connect to Redis server via SSH tunnel, applicable to the following scenarios<br/>• Redis server is on intranet and cannot be accessed directly<br/>• Need to access Redis through jump server/bastion host<br/>• Need encrypted transmission channel for security<br/><b>Note:</b> SSH tunnel currently only supports standalone mode',
+      'Connect to Redis server via SSH tunnel, applicable to the following scenarios<br/>• Redis server is on intranet and cannot be accessed directly<br/>• Need to access Redis through jump server/bastion host<br/>• Need encrypted transmission channel for security<br/>• Works with standalone, cluster, and sentinel',
     sslTip:
       'Used when Redis server has TLS/SSL port enabled<br/>• Need to set tls-port instead of port in Redis configuration<br/>• May need to provide client certificate and private key<br/>• Used to encrypt transmission channel and prevent data theft',
     readonlyTip:
@@ -473,7 +483,7 @@ export default {
     ttlValidator: '-1 (Forever) or positive integer',
     jsonValidator: 'Value must be in a valid JSON format',
     hashHint: '(HashKey: HashValue)',
-    hashHintTtl: '(HashKey: HashValue: TTL Seconds)',
+    hashHintTtl: '(HashKey: HashValue: TTL)',
     zsetHint: '(Value: Score)',
     streamHint: '(Field: Value)',
     arrayHint: '(Index: Value)',
@@ -522,7 +532,9 @@ export default {
     element: 'Element',
     vector: 'Vector',
     attrs: 'Attributes',
-    fieldTtl: 'Field TTL (Second)',
+    fieldTtl: 'Field TTL',
+    saveTtl: 'Save TTL',
+    saveTtlOk: 'Field TTL updated',
     index: 'Index',
     score: 'Score',
     value: 'Value',
@@ -903,9 +915,12 @@ export default {
     optional: 'Optional',
     hashKey: 'HashKey',
     streamId: 'ID',
-    ttlHint: 'Click to modify the key expiration time',
-    ttlHintReadonly: 'Key expiration time',
     ttlForever: 'Forever',
+    ttlExpired: 'Key expired',
+    ttlFieldExpired: 'Field expired',
+    ttlExpireAt: 'Expires at: {time} ({offset})',
+    ttlUtc: 'UTC: {time}',
+    ttlSeconds: 'TTL: {n} {unit}',
     deleteKey: 'Delete',
     prettyHint:
       'Pretty is enabled by default. When enabled, it formats hash/list/set/json, etc. When disabled, it displays the raw value toString.',
@@ -1194,10 +1209,11 @@ Once an operation prevents Redis from keeping the space-saving encoding, special
   errors: {
     connection_not_found: 'Connection {id} not found',
     connection_lock_timeout: 'Connection lock timeout, please try again later',
-    sentinel_not_supported: 'SSH tunnel does not support sentinel mode',
-    cluster_not_supported: 'SSH tunnel does not support cluster mode',
     cluster_db_switch_not_supported:
       'Cluster mode does not support switching DB; change the initial DB in connection settings and reconnect',
+    tls_not_enabled: 'The server does not have TLS enabled; please uncheck SSL',
+    ssl_required: 'The server has TLS enabled; please check SSL',
+    sentinel_master_not_found: 'Sentinel did not find master "{name}"',
     key_not_found: '"{key}" not found',
     key_node_not_found: 'Node not found for key "{key}"',
     key_already_exists: 'Key "{key}" already exists',
@@ -1206,6 +1222,8 @@ Once an operation prevents Redis from keeping the space-saving encoding, special
     field_not_found: 'Hash key "{hash_key}" not found',
     field_not_found_stream: 'Stream ID "{stream_id}" not found',
     field_operation_not_supported: 'Unsupported operation mode: {mode}',
+    httl_not_supported:
+      'This Redis/Valkey version does not support hash field TTL (requires >= 7.4)',
     field_scan_not_supported: 'Field scan does not support type: {value_type}',
     invalid_zset_score_bound: 'Invalid ZSet score: {bound}',
     invalid_node_format: 'Invalid node format: {node}',

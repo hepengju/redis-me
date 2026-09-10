@@ -24,7 +24,19 @@ export default {
   deleteOk: '删除成功',
   actionOk: '操作成功',
 
-  timeUnit: { width: '80', second: '秒', minute: '分', hour: '小时', day: '天' },
+  timeUnit: { second: '秒', minute: '分', hour: '时', day: '天' },
+
+  meTtl: {
+    duration: '时长',
+    at: '时刻',
+    modeWidth: '74',
+    unitWidth: '60',
+    previewAt: '过期时刻：{time} ({offset})',
+    previewRemain: '剩余：{text}',
+    forever: '永久',
+    past: '过期时刻必须晚于当前时间',
+    pickAt: '选择过期时刻',
+  },
 
   appMain: {
     readonly: '只读',
@@ -206,7 +218,6 @@ export default {
     autoDiscoverOk: '查询到{count}个主节点',
 
     ssh: 'SSH 隧道',
-    sshModeTip: 'SSH 隧道暂不支持集群/哨兵模式',
     loginType: '登录',
     sshOption: {
       host: '主机',
@@ -251,7 +262,7 @@ export default {
     testOk: '测试连接成功',
     downloading: '下载中...',
 
-    sshTip: `通过SSH隧道连接Redis服务器，适用于以下场景<br/>• Redis服务器在内网，无法直接访问<br/>• 需要通过跳板机/堡垒机访问Redis<br/>• 需要加密传输通道保障安全<br/><b>注意：</b>SSH隧道目前仅支持单机模式`,
+    sshTip: `通过SSH隧道连接Redis服务器，适用于以下场景<br/>• Redis服务器在内网，无法直接访问<br/>• 需要通过跳板机/堡垒机访问Redis<br/>• 需要加密传输通道保障安全<br/>• 支持单机、集群、哨兵`,
     sslTip:
       'Redis服务器开启了TLS/SSL端口时使用<br/>• 需要在Redis配置中设置 tls-port 而非 port<br/>• 可能需要提供客户端证书和私钥<br/>• 用于加密传输通道，防止数据被窃听',
     readonlyTip:
@@ -464,7 +475,7 @@ export default {
     ttlValidator: '只允许-1(永久) 或 正整数',
     jsonValidator: '值必须为有效的JSON格式',
     hashHint: '(哈希键：值)',
-    hashHintTtl: '(哈希键：值：过期秒)',
+    hashHintTtl: '(哈希键：值：TTL)',
     zsetHint: '(值：分数)',
     streamHint: '(字段：值)',
     arrayHint: '(索引：值)',
@@ -499,7 +510,7 @@ export default {
     hashKey: '哈希键',
     streamId: 'ID (*表示服务器自动生成)',
     streamIdRequired: '请输入ID',
-    fieldTtl: '超时秒数',
+    fieldTtl: 'TTL',
   },
 
   fieldSet: {
@@ -512,7 +523,9 @@ export default {
     element: '元素',
     vector: '向量',
     attrs: '属性',
-    fieldTtl: '字段过期 (秒)',
+    fieldTtl: '字段过期',
+    saveTtl: '保存过期',
+    saveTtlOk: '字段过期已更新',
     index: '索引',
     score: '分数',
     value: '值',
@@ -886,9 +899,12 @@ export default {
     optional: '可选输入',
     hashKey: '哈希键',
     streamId: 'ID',
-    ttlHint: '点击修改键的过期时间',
-    ttlHintReadonly: '键的过期时间',
     ttlForever: '永久',
+    ttlExpired: '键已过期',
+    ttlFieldExpired: '字段已过期',
+    ttlExpireAt: '过期时刻：{time} ({offset})',
+    ttlUtc: 'UTC：{time}',
+    ttlSeconds: 'TTL：{n} {unit}',
     deleteKey: '删除键',
     prettyHint: '默认开启美化，开启后针对hash/list/set/json等进行格式化，关闭后显示原始值toString',
     locationHint: '查看键所在集群节点',
@@ -1149,7 +1165,7 @@ export default {
     quick01: '永久',
     quick02: '10秒',
     quick03: '1分',
-    quick04: '1小时',
+    quick04: '1时',
     quick05: '1天',
     ttlOk: '设置TTL成功',
     ttlOkBatch: '批量设置TTL成功',
@@ -1174,9 +1190,10 @@ export default {
   errors: {
     connection_not_found: '连接 {id} 不存在',
     connection_lock_timeout: '获取连接超时，请稍后重试',
-    sentinel_not_supported: 'SSH 隧道暂不支持哨兵模式',
-    cluster_not_supported: 'SSH 隧道暂不支持集群模式',
     cluster_db_switch_not_supported: '集群模式不支持切换 DB，请在连接配置中修改初始库后重连',
+    tls_not_enabled: '服务端未开启 TLS，请取消勾选 SSL',
+    ssl_required: '服务端已开启 TLS，请勾选 SSL',
+    sentinel_master_not_found: '哨兵未找到主节点 "{name}"',
     key_not_found: '"{key}" 键不存在',
     key_node_not_found: '未找到键 "{key}" 所在的节点',
     key_already_exists: '键 "{key}" 已存在',
@@ -1185,6 +1202,7 @@ export default {
     field_not_found: '哈希键 "{hash_key}" 不存在',
     field_not_found_stream: 'Stream ID "{stream_id}" 不存在',
     field_operation_not_supported: '不支持的操作模式: {mode}',
+    httl_not_supported: '当前 Redis/Valkey 版本不支持 Hash 字段过期（需 >= 7.4）',
     field_scan_not_supported: '字段扫描不支持类型: {value_type}',
     invalid_zset_score_bound: '无效的 ZSet 分数: {bound}',
     invalid_node_format: '无效的节点格式: {node}',

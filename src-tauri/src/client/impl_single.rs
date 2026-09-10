@@ -7,7 +7,6 @@ use crate::utils::conn::{
 };
 use crate::utils::error::AppError;
 use crate::utils::model::*;
-use crate::utils::ssh_tunnel::SshTunnel;
 use crate::utils::util::*;
 use anyhow::bail;
 use chrono::Utc;
@@ -24,9 +23,6 @@ pub struct MeSingle {
     base: MeBase,
     client: Client,
     conn: Mutex<LoggingConnection>,
-    // SSH 隧道，在 Drop 时自动关闭
-    #[allow(dead_code)]
-    ssh_tunnel: Option<SshTunnel>,
 }
 
 impl Deref for MeSingle {
@@ -177,6 +173,14 @@ impl MeClient for MeSingle {
 
     fn field_set(&self, param: RedisFieldSet) -> AnyResult<()> {
         field_set0(
+            self.get_conn()?,
+            param,
+            self.base().capabilities.httl_supported,
+        )
+    }
+
+    fn field_ttl(&self, param: RedisFieldTtl) -> AnyResult<()> {
+        field_ttl0(
             self.get_conn()?,
             param,
             self.base().capabilities.httl_supported,
@@ -603,14 +607,19 @@ impl MeSingle {
         connect_timeout: Duration,
         command_timeout: Duration,
     ) -> AnyResult<Box<dyn MeClient>> {
-        let (client, ssh_tunnel) = get_client_single(redis_conn, connect_timeout, false)?;
+        let (client, _) = get_client_single(redis_conn, connect_timeout, false, None)?;
         let mut base = MeBase::from(redis_conn);
         base.connection_timeout = connect_timeout;
         base.command_timeout = command_timeout;
         let logger = base.command_logger.clone();
         // 阶段 1 建连验证 + 阶段 2 正式命令超时；验证通过后复用同一条 TCP（#155）
-        let raw_conn =
-            init_single_connection(&client, redis_conn.db, connect_timeout, command_timeout)?;
+        let raw_conn = init_single_connection(
+            &client,
+            redis_conn.db,
+            connect_timeout,
+            command_timeout,
+            redis_conn,
+        )?;
         let mut conn = LoggingConnection::new(raw_conn, logger, redis_conn.db);
         set_client_name_unless_minimal(&mut conn, redis_conn);
         detect_server_capabilities(&mut conn, &mut base, false);
@@ -621,7 +630,6 @@ impl MeSingle {
             base,
             client,
             conn: Mutex::new(conn),
-            ssh_tunnel,
         }))
     }
 

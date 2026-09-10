@@ -41,6 +41,7 @@ const settings = { ...defaultSettings, ...storeSettings }
 if (settings.fieldShow !== 'auto' && settings.fieldShow !== 'table') settings.fieldShow = 'auto'
 if (settings.fieldShowView !== 'json' && settings.fieldShowView !== 'table')
   settings.fieldShowView = 'table'
+if (typeof settings.hashFieldTtl !== 'boolean') settings.hashFieldTtl = false
 // delete settings.keyLabel // v3.5+ 移除键名称全称/简称，统一简称
 if (!Array.isArray(settings.connGroups)) settings.connGroups = []
 if (settings.connShow !== 'flat' && settings.connShow !== 'group') settings.connShow = 'flat'

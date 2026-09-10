@@ -14,6 +14,7 @@ export const defaultSettings = {
   keyHeight: 20,
   fieldShow: 'auto', // 'table' 始终表格 | 'auto' 默认表格、记住手动切换
   fieldShowView: 'table', // auto 模式下上次手动选择的 json/table，持久化供切换连接/键沿用
+  hashFieldTtl: false, // Hash 字段 TTL 列：记住 HTTL 开关，换键/刷新沿用
   // 首页连接分组（见 src/utils/conn.ts）
   connShow: 'flat', // 'flat' | 'group'
   connGroups: [] as string[], // 分组名有序列表

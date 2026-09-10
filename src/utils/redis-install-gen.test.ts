@@ -66,10 +66,13 @@ describe('genInstallNodes / genRedisInstall', () => {
     expect(out.compose[0].code).not.toContain('network_mode: host')
   })
 
-  it('默认起始端口：集群 7001 段，单机/哨兵 6379 段', () => {
-    expect(genInstallDefaultPort('cluster')).toBe(7001)
+  it('默认起始端口：明文 6379/7001/7701，TLS 6380/8001/8801', () => {
     expect(genInstallDefaultPort('single')).toBe(6379)
-    expect(genInstallDefaultPort('sentinel')).toBe(6379)
+    expect(genInstallDefaultPort('cluster')).toBe(7001)
+    expect(genInstallDefaultPort('sentinel')).toBe(7701)
+    expect(genInstallDefaultPort('single', true)).toBe(6380)
+    expect(genInstallDefaultPort('cluster', true)).toBe(8001)
+    expect(genInstallDefaultPort('sentinel', true)).toBe(8801)
   })
 
   it('集群三主三从：默认 7001~7006，端口全局递增，IP 轮询分配，宿主机网络', () => {
@@ -103,10 +106,11 @@ describe('genInstallNodes / genRedisInstall', () => {
     expect(guideCode).not.toContain('/redis-7001/docker-compose.yml')
   })
 
-  it('哨兵：主从端口递增，哨兵端口段 +20000，quorum 正确', () => {
+  it('哨兵：默认 7701 段，主从递增，哨兵端口段 +20000，quorum 正确', () => {
     const out = genRedisInstall(
       baseOptions({
         mode: 'sentinel',
+        basePort: genInstallDefaultPort('sentinel'),
         ips: ['10.0.0.1', '10.0.0.2'],
         sentinelReplicas: 2,
         sentinelCount: 3,
@@ -115,19 +119,19 @@ describe('genInstallNodes / genRedisInstall', () => {
       labels,
     )
     const ports = out.nodes.map(n => n.port)
-    expect(ports).toEqual([6379, 6380, 6381, 26379, 26380, 26381])
+    expect(ports).toEqual([7701, 7702, 7703, 27701, 27702, 27703])
     const guideCode = out.guide[0].code
-    expect(guideCode).toContain('sentinel monitor mymaster 10.0.0.1 6379 2')
+    expect(guideCode).toContain('sentinel monitor mymaster 10.0.0.1 7701 2')
     expect(guideCode).toContain('sentinel auth-pass mymaster')
-    expect(guideCode).toContain('replicaof 10.0.0.1 6379')
+    expect(guideCode).toContain('replicaof 10.0.0.1 7701')
     // 哨兵挂 conf 目录（可写回），不是单文件挂载
     expect(out.compose.map(c => c.code).join('\n')).toContain(
-      '/data/redis-sentinel/redis-26379/conf:/etc/redis/conf',
+      '/data/redis-sentinel/redis-27701/conf:/etc/redis/conf',
     )
     expect(out.compose.map(c => c.code).join('\n')).not.toContain(
       'sentinel.conf:/etc/redis/conf/sentinel.conf',
     )
-    expect(guideCode).toContain('cat > /data/redis-sentinel/redis-26379/conf/sentinel.conf')
+    expect(guideCode).toContain('cat > /data/redis-sentinel/redis-27701/conf/sentinel.conf')
   })
 
   it('密码含特殊字符：conf 双引号转义、shell 单引号转义', () => {
@@ -139,21 +143,24 @@ describe('genInstallNodes / genRedisInstall', () => {
   })
 
   it('TLS：安装指南证书步骤仅包含文件处理，openssl 脚本在证书弹框中', () => {
-    const sslOut = genRedisInstall(baseOptions({ ssl: true }), labels)
+    const sslOut = genRedisInstall(
+      baseOptions({ ssl: true, basePort: genInstallDefaultPort('single', true) }),
+      labels,
+    )
     const guideCode = sslOut.guide[0].code
     // cert 目录仅在环境准备步骤 mkdir 一次
     expect((guideCode.match(/mkdir -p [^\n]*\/cert/g) || []).length).toBe(1)
-    expect(guideCode).toContain('/data/redis-single/cert')
+    expect(guideCode).toContain('/data/redis-single-ssl/cert')
     expect(guideCode).not.toContain('chmod')
     expect(guideCode).not.toContain('openssl genrsa')
 
     expect(guideCode).toContain('port 0')
-    expect(guideCode).toContain('tls-port 6379')
+    expect(guideCode).toContain('tls-port 6380')
     expect(guideCode).toContain('tls-cert-file /etc/redis/cert/redis.crt')
     expect(guideCode).toContain('tls-protocols "TLSv1.2 TLSv1.3"')
 
-    expect(sslOut.compose[0].code).toContain('/data/redis-single/cert:/etc/redis/cert:ro')
-    expect(sslOut.compose[0].code).toContain('/data/redis-single/conf:/etc/redis/conf')
+    expect(sslOut.compose[0].code).toContain('/data/redis-single-ssl/cert:/etc/redis/cert:ro')
+    expect(sslOut.compose[0].code).toContain('/data/redis-single-ssl/conf:/etc/redis/conf')
     expect(sslOut.compose[0].code).not.toContain('redis.conf:/etc/redis/conf/redis.conf')
     expect(sslOut.commands[0].code).toContain(':/etc/redis/cert:ro')
   })
@@ -209,6 +216,14 @@ describe('genInstallNodes / genRedisInstall', () => {
     const out = genRedisInstall(baseOptions({ mountConf: false, basePort: 6380 }), labels)
     const cmd = out.commands[0].code
     expect(cmd).toContain('--port 6380')
+  })
+
+  it('单机验证命令携带实际端口', () => {
+    const def = genRedisInstall(baseOptions(), labels)
+    expect(def.guide[0].code).toContain('docker exec redis-6379 redis-cli -p 6379 ping')
+    const custom = genRedisInstall(baseOptions({ basePort: 6380 }), labels)
+    expect(custom.guide[0].code).toContain('docker exec redis-6380 redis-cli -p 6380 ping')
+    expect(custom.guide[0].code).not.toContain('redis-cli ping')
   })
 
   it('不挂载数据但挂载配置：指南环境准备仍创建 conf 目录', () => {
@@ -273,7 +288,7 @@ describe('genInstallNodes / genRedisInstall', () => {
       baseOptions({
         mode: 'cluster',
         ssl: true,
-        basePort: genInstallDefaultPort('cluster'),
+        basePort: genInstallDefaultPort('cluster', true),
         ips: ['10.0.0.1', '10.0.0.2', '10.0.0.3'],
       }),
       labels,
@@ -282,7 +297,7 @@ describe('genInstallNodes / genRedisInstall', () => {
     // redis.conf 含集群 TLS 配置
     expect(guideCode).toContain('tls-cluster yes')
     expect(guideCode).toContain('tls-replication yes')
-    expect(guideCode).toContain('tls-port 7001')
+    expect(guideCode).toContain('tls-port 8001')
     expect(guideCode).toContain('port 0')
     // 集群初始化命令携带 --tls 和证书参数
     expect(guideCode).toContain('--tls')
@@ -290,11 +305,19 @@ describe('genInstallNodes / genRedisInstall', () => {
     expect(guideCode).toContain('--key /etc/redis/cert/redis.key')
     expect(guideCode).toContain('--cacert /etc/redis/cert/ca.crt')
     expect(guideCode).toContain('--cluster create')
+    expect(guideCode).toContain('/data/redis-cluster-ssl')
+    expect(guideCode).toContain('docker exec redis-8001-ssl')
   })
 
   it('TLS + 哨兵：配置含 tls-replication，哨兵配置含证书路径', () => {
     const out = genRedisInstall(
-      baseOptions({ mode: 'sentinel', ssl: true, ips: ['10.0.0.1', '10.0.0.2'], password: 'pass' }),
+      baseOptions({
+        mode: 'sentinel',
+        ssl: true,
+        basePort: genInstallDefaultPort('sentinel', true),
+        ips: ['10.0.0.1', '10.0.0.2'],
+        password: 'pass',
+      }),
       labels,
     )
     const guideCode = out.guide[0].code
@@ -303,5 +326,29 @@ describe('genInstallNodes / genRedisInstall', () => {
     // 哨兵验证步骤携带 --tls
     expect(guideCode).toContain('--tls')
     expect(guideCode).toContain('sentinel master mymaster')
+    expect(guideCode).toContain('/data/redis-sentinel-ssl')
+    expect(guideCode).toContain('docker exec redis-8801-ssl')
+    expect(guideCode).toContain('docker exec redis-28801-ssl')
+  })
+
+  it('TLS：根目录与容器名均加 -ssl 后缀', () => {
+    const single = genRedisInstall(
+      baseOptions({ ssl: true, basePort: genInstallDefaultPort('single', true) }),
+      labels,
+    )
+    expect(single.nodes[0].name).toBe('redis-6380-ssl')
+    expect(single.commands[0].code).toContain('--name redis-6380-ssl')
+    expect(single.compose[0].code).toContain('container_name: redis-6380-ssl')
+    expect(single.compose[0].code).toContain('  redis-6380-ssl:')
+    expect(single.guide[0].code).toContain('/data/redis-single-ssl')
+    expect(single.guide[0].code).not.toMatch(/\/data\/redis-single(?!-ssl)/)
+
+    const cluster = genRedisInstall(
+      baseOptions({ mode: 'cluster', ssl: true, basePort: genInstallDefaultPort('cluster', true) }),
+      labels,
+    )
+    expect(cluster.nodes[0].name).toBe('redis-8001-ssl')
+    expect(cluster.compose[0].code).toContain('container_name: redis-8001-ssl')
+    expect(cluster.guide[0].code).toContain('/data/redis-cluster-ssl/redis-8001-ssl')
   })
 })

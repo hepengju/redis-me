@@ -1,7 +1,7 @@
 <script setup lang="ts">
 // #region 导入
 import { cloneDeep } from 'lodash'
-import { computed, inject, onUnmounted, ref, useTemplateRef, watch } from 'vue'
+import { computed, inject, nextTick, onUnmounted, ref, useTemplateRef, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import MeSelectUpDownIcon from '@/components/MeSelectUpDownIcon.vue'
@@ -30,7 +30,7 @@ import {
   type ViewBytesFormat,
 } from '@/utils/format'
 import { meCommands, meCopy, meErr, meFormatDisplayValue, meJsonNormal, meOk } from '@/utils/util'
-import { attrsNormalizedEqual, parseAttrsInput, parseVectorInput } from '@/utils/vector'
+import { parseAttrsInput, parseVectorInput } from '@/utils/vector'
 // #endregion
 
 // 字段编辑面板：fieldScan 返回的 wire（恒 base64）→ 前端按编码展示/编辑 → field_set 写回。
@@ -51,6 +51,7 @@ type FieldSetOpen = Partial<FieldSetForm> & {
   readonly?: boolean // 查看模式：表单只读，隐藏保存
   vectorDim?: number | null // Vector Set：键的 VDIM（用于维度预检）
   srcFieldAttrs?: string // Vector Set：field_get 已拿到的 attrs（跳过 VGETATTR）
+  fieldExpireAt?: Date // 表格扫描时钉死的字段过期时刻
 }
 
 const props = withDefaults(
@@ -62,7 +63,12 @@ const props = withDefaults(
 )
 
 const { t } = useI18n()
-const emit = defineEmits<{ success: []; closed: []; refreshed: [data: RedisFieldValue] }>()
+const emit = defineEmits<{
+  success: []
+  closed: []
+  refreshed: [data: RedisFieldValue]
+  ttlSaved: [ttl: number]
+}>()
 defineExpose({ open, close })
 
 const share = inject(shareProvideKey)!
@@ -73,6 +79,7 @@ const share = inject(shareProvideKey)!
 const visible = ref(false)
 const readonly = ref(false)
 const isSaving = ref(false)
+const isSavingTtl = ref(false)
 const initForm: FieldSetForm = {
   key: { key: '', bytes: '' },
   type: 'string',
@@ -92,18 +99,16 @@ const form = ref<FieldSetForm>(cloneDeep(initForm))
 const srcFieldWire = ref('') // fieldScan 返回的原始 base64；切换编码时以此为源，不被展示覆盖
 const expectedVectorDim = ref<number | null>(null) // Vector Set：键的 VDIM，打开时传入，提交前预检维度
 const attrsText = ref('') // Vector Set：attrs 展示文本，打开时由 field_get 提供，保存时全量提交
-const initialAttrsDisplay = ref('')
 const fieldViewFmt = ref<ViewBytesFormat>('auto') // 编码下拉；默认 Auto，与 STRING 键级一致
 const fieldPretty = ref(true)
 const editorLoading = ref(false)
 const isRefreshing = ref(false)
 const decodeFailed = ref(false)
 const codeRemountKey = ref(0)
-const initialFieldDisplay = ref('') // 编辑器同步后的展示快照，用于脏检查
 // #endregion
 
 // #region 计算属性
-// 编码选项 / 生效视图 / 脏检查 / 保存按钮
+// 编码选项 / 生效视图 / 保存按钮
 const customNames = computed(() => (window.meTauri.settings.customCodecs ?? []).map(f => f.name))
 const fieldViewOptionList = computed(() => fieldViewOptions(customNames.value))
 const detectedAuto = computed(() => detectViewFormatAuto(srcFieldWire.value)) // Auto 识别（含 Gzip 剥壳）
@@ -129,29 +134,20 @@ const prettyEnabled = computed(
 const isViewReadonlyFmt = computed(
   () => isReadonlyView(effectiveFieldViewFmt.value) || gzipReadonly.value,
 ) // JdkSerial / Pickle / PhpSerial / Gzip 剥壳不支持写回 → 按钮禁用 + tooltip
-const vectorDirty = computed(() => form.value.fieldValue !== initialFieldDisplay.value)
-const attrsDirty = computed(
-  () => vectorsetType.value && !attrsNormalizedEqual(attrsText.value, initialAttrsDisplay.value),
-)
-const fieldDirty = computed(() =>
-  vectorsetType.value ? vectorDirty.value || attrsDirty.value : vectorDirty.value,
-)
 const canSaveField = computed(
   () =>
     !readonly.value &&
     !share.readonly &&
-    (vectorsetType.value || (!isViewReadonlyFmt.value && !decodeFailed.value)) &&
-    fieldDirty.value,
+    !editorLoading.value &&
+    (vectorsetType.value || (!isViewReadonlyFmt.value && !decodeFailed.value)),
 )
 const saveFieldTip = computed(() => {
-  // 禁用原因提示；可保存时与按钮文案一致
   if (!vectorsetType.value && gzipReadonly.value) return t('util.gzipReadonly')
   if (!vectorsetType.value && isReadonlyView(effectiveFieldViewFmt.value)) {
     return readonlyViewTip(effectiveFieldViewFmt.value)
   }
   if (!vectorsetType.value && decodeFailed.value) return t('util.saveDecodeFailed')
-  if (!fieldDirty.value) return t('util.saveNoChange')
-  return t('save')
+  return ''
 })
 const showSaveField = computed(() => !readonly.value && !share.readonly) // 连接只读 / 查看模式 → 隐藏保存钮
 const supportsFieldRefresh = computed(() => {
@@ -167,7 +163,6 @@ async function syncFieldEditor() {
   // Vector Set：向量为 JSON 明文，attrs 由 open 中一并设置
   if (vectorsetType.value) {
     form.value.fieldValue = meFormatDisplayValue(srcFieldWire.value, fieldPretty.value)
-    initialFieldDisplay.value = form.value.fieldValue
     decodeFailed.value = false
     return
   }
@@ -178,13 +173,11 @@ async function syncFieldEditor() {
   const fmt = effectiveFieldViewFmt.value
   if (!wire) {
     form.value.fieldValue = ''
-    initialFieldDisplay.value = ''
     decodeFailed.value = false
     return
   }
   if (!fieldPretty.value && fmt === 'strjson') {
     form.value.fieldValue = base64WireToUtf8Display(wire)
-    initialFieldDisplay.value = form.value.fieldValue
     decodeFailed.value = false
     return
   }
@@ -201,10 +194,8 @@ async function syncFieldEditor() {
       form.value.fieldValue = meFormatViewValue(wire, fmt)
     }
     decodeFailed.value = isViewDecodeError(form.value.fieldValue)
-    initialFieldDisplay.value = form.value.fieldValue
   } catch (e) {
     form.value.fieldValue = e instanceof Error ? e.message : String(e)
-    initialFieldDisplay.value = form.value.fieldValue
     decodeFailed.value = true
   } finally {
     editorLoading.value = false
@@ -218,15 +209,13 @@ function open(data: FieldSetOpen) {
   visible.value = true
   readonly.value = !!data.readonly
   expectedVectorDim.value = data.vectorDim ?? null
-  Object.assign(form.value, cloneDeep(initForm), data)
+  const { fieldExpireAt, ...rest } = data
+  Object.assign(form.value, cloneDeep(initForm), rest)
   srcFieldWire.value = String(data.srcFieldValue ?? '')
   attrsText.value = ''
-  initialAttrsDisplay.value = ''
   // VectorSet：attrs 已由 field_get 一并返回，直接设置
   if (vectorsetType.value && data.srcFieldAttrs != null) {
-    const display = meFormatDisplayValue(data.srcFieldAttrs || '', fieldPretty.value)
-    attrsText.value = display
-    initialAttrsDisplay.value = display
+    attrsText.value = meFormatDisplayValue(data.srcFieldAttrs || '', fieldPretty.value)
   }
   // Hash / VectorSet 元素名：wireFieldKey 为 base64，fieldKey 为展示用 UTF-8
   const wireKey = String(data.wireFieldKey || data.fieldKey || '')
@@ -237,6 +226,12 @@ function open(data: FieldSetOpen) {
   fieldViewFmt.value = 'auto'
   fieldPretty.value = props.pretty
   void syncFieldEditor()
+  void nextTick(() => {
+    if (form.value.type === 'hash' && props.hashFieldTtlEnabled) {
+      if (fieldExpireAt) fieldTtlRef.value?.syncFromAt(fieldExpireAt)
+      else fieldTtlRef.value?.syncFromSeconds(form.value.fieldTtl ?? -1)
+    }
+  })
 }
 
 function onFieldViewFmtChange() {
@@ -301,6 +296,11 @@ const rules = computed(() => ({
 }))
 
 const formRef = useTemplateRef('formRef')
+const fieldTtlRef = useTemplateRef<{
+  toSeconds: () => number
+  syncFromSeconds: (sec: number) => void
+  syncFromAt: (at: Date) => void
+}>('fieldTtlRef')
 function submit() {
   if (!canSaveField.value) return
   formRef.value.validate(async (valid: boolean) => {
@@ -361,6 +361,15 @@ function submit() {
 
     const useWireKey = (form.value.type === 'hash' || vectorsetType.value) && !!wireFieldKey
 
+    let fieldTtl = form.value.fieldTtl
+    if (form.value.type === 'hash' && props.hashFieldTtlEnabled) {
+      fieldTtl = fieldTtlRef.value?.toSeconds() ?? form.value.fieldTtl
+      if (!(fieldTtl === -1 || fieldTtl > 0)) {
+        meErr(t('fieldAdd.ttlValidator'))
+        return
+      }
+    }
+
     isSaving.value = true
     try {
       await meCommands.fieldSet(share.conn!.id, {
@@ -372,6 +381,7 @@ function submit() {
         attrs: vectorsetType.value ? attrsJson : '',
         valFmt: IPC_WIRE_FORMAT,
         includeFieldTtl: form.value.type === 'hash' ? props.hashFieldTtlEnabled : null,
+        fieldTtl,
       })
       visible.value = false
       emit('success')
@@ -380,6 +390,36 @@ function submit() {
       isSaving.value = false
     }
   })
+}
+
+/** 只改 Hash 字段过期，不写值；只读编码也可点 */
+async function saveFieldTtl() {
+  if (readonly.value || share.readonly || isSavingTtl.value) return
+  if (form.value.type !== 'hash' || !props.hashFieldTtlEnabled) return
+  const conn = share.conn
+  if (!conn) return
+  const fieldTtl = fieldTtlRef.value?.toSeconds() ?? form.value.fieldTtl
+  if (!(fieldTtl === -1 || fieldTtl > 0)) {
+    meErr(t('fieldAdd.ttlValidator'))
+    return
+  }
+  const wireFieldKey = form.value.wireFieldKey
+  isSavingTtl.value = true
+  try {
+    await meCommands.fieldTtl(conn.id, {
+      key: form.value.key,
+      fieldKey: wireFieldKey || form.value.fieldKey,
+      fieldTtl,
+      valFmt: IPC_WIRE_FORMAT,
+    })
+    form.value.fieldTtl = fieldTtl
+    emit('ttlSaved', fieldTtl)
+    meOk(t('fieldSet.saveTtlOk'))
+  } catch {
+    // meCommands 已弹错
+  } finally {
+    isSavingTtl.value = false
+  }
 }
 // #endregion
 
@@ -407,6 +447,7 @@ function applyFieldGetToForm(data: RedisFieldValue) {
     form.value.fieldKey = meFormatViewValue(data.fieldKey, 'utf8')
     if (props.hashFieldTtlEnabled) {
       form.value.fieldTtl = data.fieldTtl
+      fieldTtlRef.value?.syncFromSeconds(data.fieldTtl)
     }
   } else if (type === 'zset' && data.fieldScore != null) {
     form.value.fieldScore = data.fieldScore
@@ -440,10 +481,13 @@ onUnmounted(() => window.removeEventListener('keydown', onEscapeKey, true))
 
 <template>
   <!-- 字段编辑面板：查看/编辑字段值，支持编码切换、美化、单行刷新 -->
-  <el-card
-    :header="readonly ? t('fieldSet.viewField') : t('fieldSet.editField')"
-    v-show="visible"
-    class="field-set">
+  <el-card v-show="visible" class="field-set">
+    <template #header>
+      <div class="me-flex" style="align-items: center">
+        <span>{{ readonly ? t('fieldSet.viewField') : t('fieldSet.editField') }}</span>
+        <me-icon icon="el-icon-close" class="icon-btn" :info="t('close')" @click="cancel" />
+      </div>
+    </template>
     <el-form ref="formRef" class="field-set-form" :model="form" :rules="rules" label-position="top">
       <el-form-item :label="t('fieldSet.fieldKey')" v-if="form.type === 'hash'">
         <el-input v-model="form.fieldKey" disabled />
@@ -457,13 +501,16 @@ onUnmounted(() => window.removeEventListener('keydown', onEscapeKey, true))
       <el-form-item
         :label="t('fieldSet.fieldTtl')"
         v-if="form.type === 'hash' && share.capabilities.httlSupported && hashFieldTtlEnabled">
-        <el-input-number
-          v-model="form.fieldTtl"
-          :min="-1"
-          :controls="false"
-          :disabled="readonly"
-          style="width: 100%"
-          align="left" />
+        <div class="field-ttl-row">
+          <me-ttl ref="fieldTtlRef" v-model="form.fieldTtl" :disabled="readonly" />
+          <el-button
+            v-if="showSaveField"
+            type="primary"
+            :loading="isSavingTtl"
+            @click="saveFieldTtl"
+            >{{ t('fieldSet.saveTtl') }}</el-button
+          >
+        </div>
       </el-form-item>
       <el-form-item
         :label="t('fieldSet.index')"
@@ -557,7 +604,11 @@ onUnmounted(() => window.removeEventListener('keydown', onEscapeKey, true))
         <div>
           <el-button @click="cancel">{{ t('cancel') }}</el-button>
           <!-- 连接只读/查看模式：隐藏；禁用时 tooltip 说明原因 -->
-          <el-tooltip v-if="showSaveField" :content="saveFieldTip" placement="top">
+          <el-tooltip
+            v-if="showSaveField"
+            :content="saveFieldTip"
+            placement="top"
+            :disabled="!saveFieldTip">
             <span style="margin-left: 12px; display: inline-block">
               <el-button
                 type="primary"
@@ -605,6 +656,22 @@ onUnmounted(() => window.removeEventListener('keydown', onEscapeKey, true))
     flex: 1;
     height: 100%;
     min-height: 0;
+  }
+
+  .field-ttl-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+
+    :deep(.me-ttl) {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .el-button {
+      flex-shrink: 0;
+    }
   }
 
   // 底栏

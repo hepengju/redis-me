@@ -79,11 +79,11 @@ const labels = computed<RedisInstallLabels>(() => ({
 
 const output = computed(() => genRedisInstall(options.value, labels.value))
 
-// 切换部署模式时自动跟随该模式的推荐起始端口（集群 7001 段，单机/哨兵 6379 段）
+// 切换模式或 TLS 时跟随推荐起始端口（明文 6379/7001/7701，TLS 6380/8001/8801）
 watch(
-  () => form.mode,
-  mode => {
-    form.basePort = genInstallDefaultPort(mode)
+  () => [form.mode, form.ssl] as const,
+  ([mode, ssl]) => {
+    form.basePort = genInstallDefaultPort(mode, ssl)
   },
 )
 
@@ -143,7 +143,7 @@ const timezoneOptions = [
     <div class="ri-body">
       <!-- 左侧表单 -->
       <div class="ri-form">
-        <el-form label-position="right" label-width="100">
+        <el-form label-position="right" label-width="110">
           <el-form-item :label="t('redisInstall.mode')">
             <el-radio-group v-model="form.mode">
               <el-radio-button value="single">{{ t('redisInstall.modeSingle') }}</el-radio-button>
@@ -152,6 +152,15 @@ const timezoneOptions = [
                 t('redisInstall.modeSentinel')
               }}</el-radio-button>
             </el-radio-group>
+          </el-form-item>
+
+          <el-form-item :label="t('redisInstall.ssl')">
+            <div class="ri-ssl-row">
+              <el-switch v-model="form.ssl" />
+              <el-button v-if="form.ssl" link type="primary" @click="certGenRef?.open()">
+                {{ t('redisInstall.genCert') }}
+              </el-button>
+            </div>
           </el-form-item>
 
           <el-form-item :label="t('redisInstall.image')">
@@ -212,15 +221,6 @@ const timezoneOptions = [
             <el-switch v-model="form.mountConf" :disabled="form.mode === 'sentinel'" />
           </el-form-item>
 
-          <el-form-item :label="t('redisInstall.ssl')">
-            <div class="ri-ssl-row">
-              <el-switch v-model="form.ssl" />
-              <el-button v-if="form.ssl" link type="primary" @click="certGenRef?.open()">
-                {{ t('redisInstall.genCert') }}
-              </el-button>
-            </div>
-          </el-form-item>
-
           <el-form-item :label="t('redisInstall.timezone')">
             <el-select
               v-model="form.timezone"
@@ -268,10 +268,14 @@ const timezoneOptions = [
 
 .ri-form {
   margin-top: 10px;
-  width: 350px;
+  width: 360px;
   flex-shrink: 0;
   overflow-y: auto;
   padding-right: 8px;
+
+  :deep(.el-form-item__label) {
+    white-space: nowrap;
+  }
 
   .ri-image-row {
     display: flex;

@@ -379,9 +379,9 @@ export function fieldViewOptions(customNames: string[] = []): FieldViewOption[] 
   return opts
 }
 
-/** 保存前需 JSON compact；FieldSet / RedisValue */
+/** 保存前需 JSON compact；仅 MsgPack（编辑区可 JSON5）。StrJson 写回已用 JSON.parse，不再走 JSON5 */
 export function needsJsonNormalize(view: ViewBytesFormat): boolean {
-  return view === 'msgpack' || view === 'strjson'
+  return view === 'msgpack'
 }
 
 /** UTF-8 文本 → base64 wire */
@@ -583,11 +583,12 @@ export function meJsonToMsgpackBase64(json: string): string {
 }
 
 function unwrapStrJsonValue(wire: string): unknown {
-  const parsed = JSON5.parse(wire.trim())
+  // 与 Auto 一致：只用 JSON.parse（~1.5MB 约 4ms；JSON5.parse 约 260ms）
+  const parsed = JSON.parse(wire.trim())
   if (typeof parsed !== 'string') {
     throw new Error('StrJson wire is not a JSON string wrapper')
   }
-  return JSON5.parse(parsed.trim())
+  return JSON.parse(parsed.trim())
 }
 
 /** base64 wire → StrJson 展示（先解 UTF-8 再拆双层 JSON） */
@@ -607,7 +608,7 @@ export function meStrJsonWireToDisplay(base64: string): string {
 
 /** 编辑区 JSON → 双层 JSON 字符串（UTF-8 文本，再由 meViewToWire 转 base64） */
 export function meDisplayToStrJsonWire(text: string): string {
-  const value = JSON5.parse(text.trim())
+  const value = JSON.parse(text.trim())
   return JSON.stringify(JSON.stringify(value))
 }
 

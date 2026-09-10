@@ -1,7 +1,12 @@
 // RedisValue 域内共享：类型、键类型能力、扫描/表格纯函数（有状态编排在 index.vue）
 import dayjs from 'dayjs'
 
+import i18n from '@/locales'
 import type { FieldScanResult } from '@/types/tauri-specta'
+import { formatUtcOffset, meTtlAlignAt, meTtlFromAt, meTtlToAt } from '@/utils/ttl'
+import { meHumanSeconds } from '@/utils/util'
+
+const t = i18n.global.t
 
 // 类型与行工具
 
@@ -15,6 +20,8 @@ export type ValueTableRow = Record<string, unknown> & {
   id?: string
   score?: number
   ttl?: number
+  /** 扫描/刷新时钉死的字段过期时刻，避免 hover 用 now+剩余秒往后漂 */
+  expireAtMs?: number | null
   index?: number // List 行真实 Redis 索引
   vector?: string // VectorSet 向量 JSON 字符串
   attrs?: string // VectorSet 属性 JSON 字符串
@@ -26,7 +33,29 @@ export function fieldValueRows(v: unknown): unknown[] {
 }
 
 export function toViewState(data: FieldScanResult): FieldScanViewState {
+  if (data.type === 'hash') pinHashRowsExpireAt(data.value)
   return { ...data, newValue: null }
+}
+
+/** 字段 TTL 在扫描当下钉过期时刻（表格不倒计时，剩余秒会过时） */
+export function pinFieldExpireAt(
+  row: { ttl?: number; expireAtMs?: number | null },
+  now = Date.now(),
+) {
+  if (typeof row.ttl === 'number' && row.ttl > 0) {
+    row.expireAtMs = meTtlToAt(row.ttl, now).getTime()
+  } else {
+    row.expireAtMs = null
+  }
+}
+
+export function pinHashRowsExpireAt(value: unknown, now = Date.now()) {
+  if (!Array.isArray(value)) return
+  for (const row of value) {
+    if (row && typeof row === 'object' && 'ttl' in row) {
+      pinFieldExpireAt(row as ValueTableRow, now)
+    }
+  }
 }
 
 export function listRowRedisIndex(row: ValueTableRow): number {
@@ -49,6 +78,78 @@ export function streamIdToDate(id: string): string {
   } catch {
     return ''
   }
+}
+
+const DATETIME_FMT = 'YYYY-MM-DD HH:mm:ss'
+
+function pad2(n: number): string {
+  return String(n).padStart(2, '0')
+}
+
+function formatUtcDateTime(ms: number): string {
+  const d = new Date(ms)
+  return `${d.getUTCFullYear()}-${pad2(d.getUTCMonth() + 1)}-${pad2(d.getUTCDate())} ${pad2(d.getUTCHours())}:${pad2(d.getUTCMinutes())}:${pad2(d.getUTCSeconds())}`
+}
+
+/** TTL 悬停 HTML：过期时刻（本地+偏移）/ UTC / 剩余秒；永久或无效则空串（不展示 tooltip）。
+ * expireAtMs：键页倒计时钉死的过期时刻；有则用它，避免 now+ttl 再算一次差 1 秒。
+ * expiredText：ttl=0 时的提示（键/字段已过期）。 */
+export function formatTtlExpireTooltip(
+  ttl: number | undefined | null,
+  expireAtMs?: number | null,
+  expiredText?: string,
+): string {
+  if (ttl == null || ttl < 0) return ''
+  if (!(ttl > 0)) return expiredText ?? t('redisValue.ttlExpired')
+  const ms =
+    expireAtMs != null && expireAtMs > 0
+      ? meTtlAlignAt(expireAtMs).getTime()
+      : meTtlToAt(ttl).getTime()
+  return [
+    t('redisValue.ttlExpireAt', {
+      time: dayjs(ms).format(DATETIME_FMT),
+      offset: formatUtcOffset(ms),
+    }),
+    t('redisValue.ttlUtc', { time: formatUtcDateTime(ms) }),
+    t('redisValue.ttlSeconds', { n: ttl, unit: t('timeUnit.second', ttl) }),
+  ].join('<br/>')
+}
+
+function fieldExpireMs(ttl: number, expireAtMs?: number | null): number | null {
+  if (expireAtMs != null && expireAtMs > 0) return meTtlAlignAt(expireAtMs).getTime()
+  if (ttl > 0) return meTtlToAt(ttl).getTime()
+  return null
+}
+
+/** Hash 字段 TTL 单元格：钉死的过期时刻（不倒计时）；永久/无值/-到期无时刻则兜底 */
+export function formatFieldTtlCell(
+  ttl: number | undefined | null,
+  expireAtMs?: number | null,
+): string {
+  if (ttl == null) return '-'
+  if (ttl === -1) return t('redisValue.ttlForever')
+  const ms = fieldExpireMs(ttl, expireAtMs)
+  if (ms == null) return '00:00:00'
+  return dayjs(ms).format(DATETIME_FMT)
+}
+
+/** Hash 字段 TTL 悬停：按 nowMs 算剩余（秒 + 时分秒）和 UTC；由 tooltip 内时钟传入，表格不跑 timer */
+export function formatFieldTtlTooltip(
+  ttl: number | undefined | null,
+  expireAtMs?: number | null,
+  expiredText?: string,
+  nowMs = Date.now(),
+): string {
+  if (ttl == null || ttl < 0) return ''
+  const remain = expireAtMs != null && expireAtMs > 0 ? meTtlFromAt(expireAtMs, nowMs) : ttl
+  if (!(remain > 0)) return expiredText ?? t('redisValue.ttlFieldExpired')
+  const ms = fieldExpireMs(ttl, expireAtMs)
+  const lines = [
+    t('meTtl.previewRemain', { text: meHumanSeconds(remain) }),
+    t('redisValue.ttlSeconds', { n: remain, unit: t('timeUnit.second', remain) }),
+  ]
+  if (ms != null) lines.push(t('redisValue.ttlUtc', { time: formatUtcDateTime(ms) }))
+  return lines.join('<br/>')
 }
 
 // 键类型能力
@@ -117,6 +218,7 @@ export function mergeFieldScanPage(
   includeMeta: boolean,
 ): boolean {
   if (!supportsTableView(data.type)) return false
+  if (data.type === 'hash') pinHashRowsExpireAt(data.value)
   const merged: unknown[] = [...fieldValueRows(prev.value), ...fieldValueRows(data.value)]
   ;(prev as { value: unknown }).value = merged
   if (includeMeta) {

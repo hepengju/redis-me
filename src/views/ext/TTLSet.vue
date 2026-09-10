@@ -2,26 +2,40 @@
 // #region 导入
 import type { FormItemRule } from 'element-plus'
 import { cloneDeep } from 'lodash'
-import { computed, inject, ref, useTemplateRef } from 'vue'
+import { computed, inject, nextTick, ref, useTemplateRef } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { shareProvideKey } from '@/types/me-interface'
 import type { RedisKey_Deserialize } from '@/types/tauri-specta'
-import { meCommands, meOk, meTtlSeconds } from '@/utils/util'
+import { meCommands, meOk } from '@/utils/util'
 // #endregion
 
 // #region 核心状态
 
-type TtlForm = { ttl: number; ttlUnit: string; keyList: RedisKey_Deserialize[] }
+type TtlForm = { ttl: number; keyList: RedisKey_Deserialize[] }
 
 const { t } = useI18n()
 const emit = defineEmits(['success', 'closed'])
 defineExpose({ open })
-function open(data: { ttl?: number; keyList?: RedisKey_Deserialize[] }) {
+function open(data: { ttl?: number; at?: Date; keyList?: RedisKey_Deserialize[] }) {
   visible.value = true
   Object.assign(form.value, cloneDeep(initForm))
   form.value.ttl = data.ttl ?? -1
   form.value.keyList = data.keyList ?? []
+  const at = data.at
+  syncTtlInput(at)
+}
+
+function syncTtlInput(at?: Date, attempt = 0) {
+  void nextTick(() => {
+    const input = ttlInputRef.value
+    if (!input) {
+      if (attempt < 5) syncTtlInput(at, attempt + 1)
+      return
+    }
+    if (at) input.syncFromAt(at)
+    else input.syncFromSeconds(form.value.ttl)
+  })
 }
 
 // 共享数据
@@ -30,8 +44,14 @@ const share = inject(shareProvideKey)!
 // 表单数据
 const visible = ref(false)
 const loading = ref(false)
-const initForm: TtlForm = { ttl: -1, ttlUnit: 'second', keyList: [] }
+const initForm: TtlForm = { ttl: -1, keyList: [] }
 const form = ref<TtlForm>(cloneDeep(initForm))
+const ttlInputRef = useTemplateRef<{
+  toSeconds: () => number
+  setDuration: (sec: number) => void
+  syncFromSeconds: (sec: number) => void
+  syncFromAt: (at: Date) => void
+}>('ttlInputRef')
 // #endregion
 
 // #region 计算属性
@@ -44,9 +64,10 @@ const rules = computed(() => ({
         _value: unknown,
         callback: (error?: string | Error) => void,
       ) => {
-        const n = form.value.ttl
+        const n = ttlInputRef.value?.toSeconds() ?? form.value.ttl
         if (!(n === -1 || n > 0)) {
           callback(new Error(t('ttlSet.ttlValidator')))
+          return
         }
         callback()
       },
@@ -60,7 +81,7 @@ function submit() {
 
     loading.value = true
     try {
-      const seconds = meTtlSeconds(form.value.ttl, form.value.ttlUnit)
+      const seconds = ttlInputRef.value?.toSeconds() ?? form.value.ttl
       if (isBatch.value) {
         const param = { ttl: seconds, keyList: form.value.keyList }
         await meCommands.batchTtl(share.conn!.id, param)
@@ -80,9 +101,8 @@ function submit() {
 // #endregion
 
 // #region 面板操作
-function quickSet(ttl: number, ttlUnit: string) {
-  form.value.ttl = ttl
-  form.value.ttlUnit = ttlUnit
+function quickSet(ttl: number) {
+  ttlInputRef.value?.setDuration(ttl)
 }
 
 const isBatch = computed(() => form.value.keyList.length > 0)
@@ -93,7 +113,7 @@ const title = computed(() =>
 </script>
 
 <template>
-  <el-dialog :title v-model="visible" :width="500" @closed="emit('closed')">
+  <el-dialog :title v-model="visible" :width="500" destroy-on-close @closed="emit('closed')">
     <el-form ref="formRef" :model="form" :rules="rules" label-position="top">
       <el-form-item :label="t('ttlSet.key')" v-if="!isBatch">
         <!-- 此处保留可编辑，使用更加方便 -->
@@ -101,32 +121,23 @@ const title = computed(() =>
       </el-form-item>
 
       <el-form-item :label="t('ttlSet.ttl')" prop="ttl">
-        <el-input v-model.number="form.ttl" style="flex: 1">
-          <template #append>
-            <el-select v-model="form.ttlUnit" :style="{ width: t('timeUnit.width') + 'px' }">
-              <el-option :label="t('timeUnit.second', form.ttl)" value="second" />
-              <el-option :label="t('timeUnit.minute', form.ttl)" value="minute" />
-              <el-option :label="t('timeUnit.hour', form.ttl)" value="hour" />
-              <el-option :label="t('timeUnit.day', form.ttl)" value="day" />
-            </el-select>
-          </template>
-        </el-input>
+        <me-ttl ref="ttlInputRef" v-model="form.ttl" />
       </el-form-item>
       <el-form-item :label="t('ttlSet.quickSet')">
         <div class="me-flex" style="width: 100%">
-          <el-button round type="primary" plain @click="quickSet(-1, 'second')">
+          <el-button round type="primary" plain @click="quickSet(-1)">
             {{ t('ttlSet.quick01') }}</el-button
           >
-          <el-button round type="success" plain @click="quickSet(10, 'second')">{{
+          <el-button round type="success" plain @click="quickSet(10)">{{
             t('ttlSet.quick02')
           }}</el-button>
-          <el-button round type="success" plain @click="quickSet(1, 'minute')">{{
+          <el-button round type="success" plain @click="quickSet(60)">{{
             t('ttlSet.quick03')
           }}</el-button>
-          <el-button round type="success" plain @click="quickSet(1, 'hour')">{{
+          <el-button round type="success" plain @click="quickSet(3600)">{{
             t('ttlSet.quick04')
           }}</el-button>
-          <el-button round type="success" plain @click="quickSet(1, 'day')">{{
+          <el-button round type="success" plain @click="quickSet(86400)">{{
             t('ttlSet.quick05')
           }}</el-button>
         </div>
