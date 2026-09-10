@@ -193,6 +193,10 @@ function open(modeValue: 'add' | 'edit', data?: UiConn) {
       newData.meta = {}
       setConnGroup(newData, group)
     }
+    // 集群与哨兵互斥；历史数据若同时为真，与后端建连一致：按集群处理
+    if (newData.cluster && newData.sentinel) {
+      newData.sentinel = false
+    }
     Object.assign(form, newData)
   }
 }
@@ -345,6 +349,14 @@ async function autoDiscover(alert: boolean = false) {
       meErr(e instanceof Error ? e : String(e), t('error'))
     }
   }
+}
+
+/** 集群 / 哨兵互斥：勾选其一则取消另一项 */
+function onClusterChange(val: string | number | boolean) {
+  if (val) form.sentinel = false
+}
+function onSentinelChange(val: string | number | boolean) {
+  if (val) form.cluster = false
 }
 
 // 哨兵模式自动发现
@@ -530,7 +542,7 @@ function applyAdvanced() {
                 placeholder="0" />
             </div>
             <div class="conn-mode-checkboxes">
-              <el-checkbox v-model="form.cluster">
+              <el-checkbox v-model="form.cluster" @change="onClusterChange">
                 <el-tooltip
                   placement="top"
                   raw-content
@@ -539,7 +551,7 @@ function applyAdvanced() {
                   <span>{{ t('conn.cluster') }}</span>
                 </el-tooltip>
               </el-checkbox>
-              <el-checkbox v-model="form.sentinel">
+              <el-checkbox v-model="form.sentinel" @change="onSentinelChange">
                 <el-tooltip
                   placement="top"
                   raw-content
