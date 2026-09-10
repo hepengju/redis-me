@@ -1,10 +1,29 @@
 # 5.x Changelog
 
-## Unreleased
+## [v5.2.0](https://mp.weixin.qq.com/s/oMVi3OsBLD-yaMfBbpxesA) (2026-09-10)
 
 ### ✨ New Features
 
-- Connection: SSH tunnel supports **cluster** and **sentinel**
+- Connection: **SSH tunnel** fully rewritten; works in all modes (standalone, cluster, sentinel)
+- TTL: set by duration or **expire-at time**; hover shows local and UTC
+- Value area: Hash field TTL
+  - Column shows expire-at; hover countdown of remaining time
+  - HTTL toggle is remembered; switching keys / refresh no longer resets it
+  - Field expiry can be saved independently; TTL can be changed even with a read-only codec
+- Info page: memory usage shown as a percentage of system memory
+- Redis Install helper: TLS switch moved up; sentinel/TLS default ports and output directories adjusted
+- Other details
+  - Website: Redis Docker install and TLS certificate generation pages
+  - Close button on the field edit panel
+  - STRING/JSON save button shows loading
+  - Copy connection keeps the original group
+
+### 🐞 Bug Fixes
+
+- Fixed Auto sometimes misdetecting already-loaded large values (partial trial-decode replaced with full decode)
+- Fixed hanging when the SSL checkbox doesn't match the server; **mismatch now prompts immediately and precisely**
+- Fixed sentinel TLS connect hanging, and client certificates being dropped when certificate verification is skipped
+- Fixed cluster and sentinel both being checkable when creating a new connection
 
 ## v5.1.1 (2026-09-05)
 
