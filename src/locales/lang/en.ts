@@ -1211,6 +1211,9 @@ Once an operation prevents Redis from keeping the space-saving encoding, special
     connection_lock_timeout: 'Connection lock timeout, please try again later',
     cluster_db_switch_not_supported:
       'Cluster mode does not support switching DB; change the initial DB in connection settings and reconnect',
+    tls_not_enabled: 'The server does not have TLS enabled; please uncheck SSL',
+    ssl_required: 'The server has TLS enabled; please check SSL',
+    sentinel_master_not_found: 'Sentinel did not find master "{name}"',
     key_not_found: '"{key}" not found',
     key_node_not_found: 'Node not found for key "{key}"',
     key_already_exists: 'Key "{key}" already exists',

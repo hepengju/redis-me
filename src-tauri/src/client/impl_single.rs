@@ -613,8 +613,13 @@ impl MeSingle {
         base.command_timeout = command_timeout;
         let logger = base.command_logger.clone();
         // 阶段 1 建连验证 + 阶段 2 正式命令超时；验证通过后复用同一条 TCP（#155）
-        let raw_conn =
-            init_single_connection(&client, redis_conn.db, connect_timeout, command_timeout)?;
+        let raw_conn = init_single_connection(
+            &client,
+            redis_conn.db,
+            connect_timeout,
+            command_timeout,
+            redis_conn,
+        )?;
         let mut conn = LoggingConnection::new(raw_conn, logger, redis_conn.db);
         set_client_name_unless_minimal(&mut conn, redis_conn);
         detect_server_capabilities(&mut conn, &mut base, false);

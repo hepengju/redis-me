@@ -169,6 +169,7 @@ mod tests {
             conn_single.db,
             CONNECTION_CONNECT_TIMEOUT,
             CONNECTION_NORMAL_TIMEOUT,
+            &conn_single,
         )?;
 
         let mut pipe = redis::pipe();
@@ -196,6 +197,7 @@ mod tests {
             &client,
             CONNECTION_CONNECT_TIMEOUT,
             CONNECTION_NORMAL_TIMEOUT,
+            &conn_cluster,
         )?;
 
         let mut pipe = ClusterPipeline::new();

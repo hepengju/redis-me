@@ -215,7 +215,8 @@ impl ConnConfig {
         let mut conf = self.clone();
         conf.sentinel = false;
         let (client, _) = get_client_single(&conf, connect_timeout, false, None)?;
-        let mut conn = init_single_connection(&client, conf.db, connect_timeout, command_timeout)?;
+        let mut conn =
+            init_single_connection(&client, conf.db, connect_timeout, command_timeout, &conf)?;
         let masters: Vec<HashMap<String, String>> =
             redis::cmd("sentinel").arg("masters").query(&mut conn)?;
         Ok(masters)

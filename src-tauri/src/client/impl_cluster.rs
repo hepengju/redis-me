@@ -491,6 +491,7 @@ impl MeClient for MeCluster {
             self.conf.db,
             self.connection_timeout,
             self.command_timeout,
+            &self.conf,
         )?;
         // 订阅长连接：建连后去掉读写超时，否则空闲超过读写超时会断流
         conn.set_read_timeout(None)?;
@@ -520,6 +521,7 @@ impl MeClient for MeCluster {
             conf.db,
             self.connection_timeout,
             self.command_timeout,
+            &conf,
         )?;
         conn.set_read_timeout(None)?;
         conn.set_write_timeout(None)?;
@@ -852,7 +854,7 @@ impl MeCluster {
         let db = redis_conn.db;
         // 阶段 1 建连验证 + 阶段 2 正式命令超时；验证通过后复用同一条 TCP（#155）
         let mut conn = LoggingClusterConnection::new(
-            init_cluster_connection(&client, connect_timeout, command_timeout)?,
+            init_cluster_connection(&client, connect_timeout, command_timeout, redis_conn)?,
             logger,
             db,
         );

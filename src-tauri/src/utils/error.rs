@@ -27,6 +27,14 @@ pub enum AppError {
     },
     ConnectionLockTimeout,
     ClusterDbSwitchNotSupported,
+    /// 勾了 SSL，但对端仍是明文 Redis（探测到 RESP）
+    TlsNotEnabled,
+    /// 未勾 SSL，但对端是 TLS（明文被 RST，且 TLS 探测确认）
+    SslRequired,
+    /// 哨兵 GET-MASTER-ADDR-BY-NAME 未返回该主节点
+    SentinelMasterNotFound {
+        name: String,
+    },
     KeyNodeNotFound {
         key: String,
     },
