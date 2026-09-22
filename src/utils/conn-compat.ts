@@ -4,6 +4,16 @@ import { DEFAULT_KEY_SEPARATOR } from '@/utils/conn'
 /** 本地 store / 旧版数据：字段可能缺失，或含已迁移的扁平哨兵字段 */
 export type ConnFromStore = { [K in keyof ConnConfig]?: ConnConfig[K] } & Record<string, unknown>
 
+/** 代理默认值；勾选后默认系统模式便于立刻检测；系统模式不使用这些 host/port（每次建连实时检测） */
+export const DEFAULT_PROXY_OPTION = {
+  proxyMode: 'system',
+  proxyType: 'http',
+  host: '',
+  port: 8080,
+  username: '',
+  password: '',
+}
+
 /**
  * 连接数据兼容性处理（版本迁移）
  * - v1.6.0: 补充哨兵模式属性，迁移 masterName/masterUsername/masterPassword → sentinelOption
@@ -83,6 +93,13 @@ export function checkConnList(connList: ConnFromStore[]): void {
         pkfile: '', // 私钥文件
         passphrase: '', // 私钥密码
       }
+
+    // 网络代理：旧连接缺字段视为未开。RedisME 导入若已有字段则保留；竞品转换不映射代理。
+    if (!('proxy' in conn) || typeof conn.proxy != 'boolean') conn.proxy = false
+    const po = conn.proxyOption
+    const poObj = po && typeof po === 'object' && !Array.isArray(po) ? po : {}
+    conn.proxyOption = { ...DEFAULT_PROXY_OPTION, ...poObj }
+    if (!conn.proxyOption.port) conn.proxyOption.port = DEFAULT_PROXY_OPTION.port
 
     // db 未填或为 null 时默认赋值 0
     if (conn.db == null) conn.db = 0

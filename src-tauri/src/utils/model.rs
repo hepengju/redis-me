@@ -78,6 +78,12 @@ api_model!(
         ssh: bool,
         ssh_option: SshOption,
 
+        // 网络代理（与 ssh 互斥）；缺省视为未开，不影响旧连接
+        #[serde(default)]
+        proxy: bool,
+        #[serde(default)]
+        proxy_option: ProxyOption,
+
         // 扩展元信息（分组、命令映射、库别名等，与前端 conn.meta 一致）
         #[serde(default)]
         meta: HashMap<String, ConnMetaValue>,
@@ -157,6 +163,45 @@ api_model!(
         password: String,
         pkfile: String,
         passphrase: String,
+    }
+);
+
+// 连接级网络代理。proxy=false 时忽略。
+// proxy_mode: system | manual；proxy_type: http | https | socks5 | socks5h
+api_model!(ProxyOption {
+    proxy_mode: String,
+    proxy_type: String,
+    host: String,
+    port: u16,
+    username: String,
+    password: String,
+});
+
+impl Default for ProxyOption {
+    fn default() -> Self {
+        Self {
+            proxy_mode: "system".into(),
+            proxy_type: "http".into(),
+            host: String::new(),
+            port: 8080,
+            username: String::new(),
+            password: String::new(),
+        }
+    }
+}
+
+// 前端勾选「使用系统代理」时的只读检测结果（不含密码）
+api_model!(
+    #[derive(Default)]
+    SystemProxyDetect {
+        /// 是否将走代理
+        found: bool,
+        /// none / env / windows / macos
+        source: String,
+        proxy_type: String,
+        host: String,
+        port: u16,
+        has_auth: bool,
     }
 );
 

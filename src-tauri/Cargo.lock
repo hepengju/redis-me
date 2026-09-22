@@ -3988,6 +3988,7 @@ dependencies = [
  "tauri-specta",
  "tokio",
  "url",
+ "winreg",
  "x509-parser",
 ]
 

@@ -90,6 +90,26 @@ pub enum AppError {
     },
     SshAuthFailed,
     SshTimeout,
+    /// 同一连接不能同时开 SSH 与代理
+    SshAndProxyMutuallyExclusive,
+
+    // 网络代理
+    ProxyModeNotSupported {
+        mode: String,
+    },
+    ProxyTypeNotSupported {
+        proxy_type: String,
+    },
+    ProxyHostRequired,
+    ProxyAuthRequired,
+    ProxyConnectRejected {
+        status: u16,
+    },
+    ProxyHandshakeFailed {
+        detail: String,
+    },
+    /// HTTPS 代理类型会对代理本身做 TLS；Clash 等明文口会握手失败
+    ProxyTlsToProxyFailed,
 
     // 文件操作
     FileReadFailed {

@@ -20,6 +20,7 @@ fn tauri_specta_commands() -> Commands<tauri::Wry> {
         is_app_store,
         restart_after_update,
         test_conn,
+        detect_system_proxy,
         masters,
         conn_list,
         app_settings,

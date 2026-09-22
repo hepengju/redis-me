@@ -11,6 +11,8 @@ export const commands = {
 	/**  更新安装完成后重启。macOS 上延迟 `open` 再退出，避免 single-instance 与 `relaunch()` 竞态。 */
 	restartAfterUpdate: () => typedError<null, string>(__TAURI_INVOKE("restart_after_update")),
 	testConn: (conf: ConnConfig) => typedError<null, string>(__TAURI_INVOKE("test_conn", { conf })),
+	/**  勾选「使用系统代理」时检测一次，供表单只读展示。建连时会再检测。 */
+	detectSystemProxy: () => typedError<SystemProxyDetect, string>(__TAURI_INVOKE("detect_system_proxy")),
 	masters: (conf: ConnConfig) => typedError<{ [key in string]: string }[], string>(__TAURI_INVOKE("masters", { conf })),
 	connList: (connList: ConnConfig[]) => typedError<null, string>(__TAURI_INVOKE("conn_list", { connList })),
 	appSettings: (appSettings: AppSettings) => typedError<null, string>(__TAURI_INVOKE("app_settings", { appSettings })),
@@ -164,6 +166,8 @@ export type ConnConfig = {
 	sentinelOption: SentinelOption,
 	ssh: boolean,
 	sshOption: SshOption,
+	proxy?: boolean,
+	proxyOption?: ProxyOption,
 	meta?: { [key in string]: ConnMetaValue },
 };
 
@@ -262,6 +266,15 @@ export type FieldScanResult_Serialize = {
 	logicalLength?: number | null,
 	/**  Vector Set：VDIM（向量维度）；其它类型为 None */
 	vectorDim?: number | null,
+};
+
+export type ProxyOption = {
+	proxyMode: string,
+	proxyType: string,
+	host: string,
+	port: number,
+	username: string,
+	password: string,
 };
 
 export type RedisArInfoItem = {
@@ -946,6 +959,17 @@ export type SslOption = {
 	key: string,
 	cert: string,
 	ca: string,
+};
+
+export type SystemProxyDetect = {
+	/**  是否将走代理 */
+	found: boolean,
+	/**  none / env / windows / macos */
+	source: string,
+	proxyType: string,
+	host: string,
+	port: number,
+	hasAuth: boolean,
 };
 
 export type XInfoConsumer = {

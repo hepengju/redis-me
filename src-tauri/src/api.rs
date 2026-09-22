@@ -3,6 +3,7 @@ use crate::client::state::{ClientAccess, app_timeouts};
 use crate::utils::app_store;
 use crate::utils::capabilities::ServerCapabilities;
 use crate::utils::model::*;
+use crate::utils::system_proxy;
 use crate::utils::util::*;
 use specta::specta;
 use std::collections::HashMap;
@@ -83,6 +84,13 @@ fn shell_escape(s: &str) -> String {
 pub fn test_conn(app_handle: AppHandle, conf: ConnConfig) -> ApiResult<()> {
     let (connect_timeout, _) = app_timeouts(&app_handle);
     to_api_result(conf.test(connect_timeout))
+}
+
+/// 勾选「使用系统代理」时检测一次，供表单只读展示。建连时会再检测。
+#[command]
+#[specta]
+pub fn detect_system_proxy() -> ApiResult<SystemProxyDetect> {
+    Ok(system_proxy::detect_for_ui())
 }
 
 // 哨兵模式获取主节点列表

@@ -25,7 +25,9 @@
 
 HTTPS **代理** = 先对代理服务器做 TLS，再 CONNECT（企业 SSL 解密代理）。这和 Redis 的 `rediss://` 不是一回事，两者都要做。
 
-SSH 与代理互斥：同一连接不能同时勾选（跳板 vs 代理二选一）。
+SSH 与代理互斥：同一连接不能同时勾选（跳板 vs 代理二选一）。场景与四种类型说明见 [`29_proxy-http-socks5.md`](./29_proxy-http-socks5.md)「场景与分工」。
+
+**分工**：SSH 解决「Redis 在内网、你有跳板」；代理解决「地址够得着，但本机出网必须经过 HTTP/SOCKS」（公司出口、Clash/系统代理、代理侧 DNS）。代理不替代跳板；也不做先代理再 SSH。
 
 ### 1.1 简单可靠（实施时遵守）
 
@@ -205,7 +207,7 @@ HTTP/SOCKS 的 `TcpStream::connect_timeout` 只接受 `&SocketAddr`：先解析*
 
 新增 `AppError`（代理类型不支持、CONNECT 非 200、SOCKS 握手失败、SSH+代理互斥等），走现有 `code` + i18n。企业代理常只允许 CONNECT 443，连 6379 失败时文案要能看懂。
 
-TinyRDM 导入（29）：映射系统/手动及 HTTP/HTTPS/SOCKS5/SOCKS5H；`ssh && proxy` 时保留 SSH、丢弃代理。
+竞品导入（29）：**不映射代理**（缺字段视为未开）。RedisME 自身 `.mec` 原样保留 `proxy` / `proxyOption`。
 
 ---
 
@@ -256,14 +258,15 @@ TinyRDM 导入（29）：映射系统/手动及 HTTP/HTTPS/SOCKS5/SOCKS5H；`ssh
 
 ## 八、风险
 
-| 风险                        | 缓解                                                               |
-| --------------------------- | ------------------------------------------------------------------ |
-| fork 与上游漂移             | 改动集中在建连入口、`get_connection_info`、match 分支；定期 rebase |
-| Custom 流超时无效           | 契约强制 `RedisStream`；28/29 验收含命令超时                       |
-| SSH `block_on` 嵌套 runtime | 专用 runtime，禁止接到 Tauri 主 runtime                            |
-| `MaxSessions`               | 透传 russh 错误；文档提示跳板加大 `MaxSessions`                    |
-| HTTP CONNECT 被拒（非 443） | 错误里带状态码                                                     |
-| 系统代理 PAC                | **不解析**；只认环境变量 + 静态代理；否则直连并提示                |
+| 风险                        | 缓解                                                                                   |
+| --------------------------- | -------------------------------------------------------------------------------------- |
+| fork 与上游漂移             | 改动集中在建连入口、`get_connection_info`、match 分支；定期 rebase                     |
+| Custom 流超时无效           | 契约强制 `RedisStream`；28/29 验收含命令超时                                           |
+| SSH `block_on` 嵌套 runtime | 专用 runtime，禁止接到 Tauri 主 runtime                                                |
+| `MaxSessions`               | 透传 russh 错误；文档提示跳板加大 `MaxSessions`                                        |
+| HTTP CONNECT 被拒（非 443） | 错误里带状态码                                                                         |
+| 系统代理 PAC                | **不解析**；只认环境变量 + 静态代理；否则直连并提示                                    |
+| 集群节点为内网 IP           | 公司 HTTP 出口代理常 CONNECT 不到 `CLUSTER SLOTS` 返回的 `10.x`；文档写明，走 SSH 跳板 |
 
 ---
 

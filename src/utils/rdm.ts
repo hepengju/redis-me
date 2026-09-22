@@ -9,6 +9,7 @@ import { parse as parseYaml } from 'yaml'
 
 import type { UiConn } from '@/types/me-interface'
 import { setConnGroup } from '@/utils/conn'
+import { DEFAULT_PROXY_OPTION } from '@/utils/conn-compat'
 import { meJsonParse } from '@/utils/util'
 
 // #region 错误与来源标识
@@ -55,6 +56,7 @@ export function encodeRedisMeConnectionsToMec(connList: UiConn[]): string {
   return encodeBase64Utf8(JSON.stringify(connList))
 }
 
+/** 竞品转换用空连接（proxy 默认未开）。RedisME 自身 .mec 不走这里，JSON 原样解析。 */
 function emptyConn(overrides: Partial<UiConn>): UiConn {
   const base: UiConn = {
     id: '',
@@ -79,6 +81,8 @@ function emptyConn(overrides: Partial<UiConn>): UiConn {
       pkfile: '',
       passphrase: '',
     },
+    proxy: false,
+    proxyOption: { ...DEFAULT_PROXY_OPTION },
     meta: {},
   }
   return { ...base, ...overrides }

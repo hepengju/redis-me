@@ -1,5 +1,11 @@
 # 5.x 更新日志
 
+## 未发布
+
+### ✨ 新增优化
+
+- 连接: **网络代理** HTTP / HTTPS / SOCKS5 / SOCKS5H，以及使用系统代理（环境变量与 Windows/macOS 静态设置）。与 SSH 互斥
+
 ## [v5.2.0](https://mp.weixin.qq.com/s/oMVi3OsBLD-yaMfBbpxesA) (2026-09-10)
 
 ### ✨ 新增优化

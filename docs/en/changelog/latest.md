@@ -1,5 +1,11 @@
 # 5.x Changelog
 
+## Unreleased
+
+### ✨ New Features
+
+- Connection: **network proxy** HTTP / HTTPS / SOCKS5 / SOCKS5H, plus system proxy (env vars and Windows/macOS static settings). Mutually exclusive with SSH
+
 ## [v5.2.0](https://mp.weixin.qq.com/s/oMVi3OsBLD-yaMfBbpxesA) (2026-09-10)
 
 ### ✨ New Features

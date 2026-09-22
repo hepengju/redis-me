@@ -9,7 +9,6 @@
 - Redisson的键空间通知 模块 参考实现
 - 自定义编码也支持自动识别
 - Viewer 解压查看：Gzip / Deflate / Brotli（对标 TinyRDM / Another）
-- 网络代理：HTTP / SOCKS5
 - Unix Socket 支持
 - 树形节点的内存占用显示
 - 图表：集群多节点折线同屏展示
@@ -25,6 +24,7 @@
 
 ### 已完成
 
+- 网络代理：HTTP / HTTPS / SOCKS5 / SOCKS5H + 系统代理 ✅️
 - SSH 隧道支持集群和哨兵 ✅️
 - 数据编码魔数自动识别（Auto：ACED / Pickle PROTO / PhpSerial a:/O:/C: / MsgPack / StrJson / UTF-8 / Hex）✅️
 - String类型阈值保护 ✅️

@@ -1,12 +1,13 @@
 <script setup lang="ts">
 // #region 导入
-import { ElLoading, type FormItemRule } from 'element-plus'
+import { ElLoading, ElMessage, type FormItemRule } from 'element-plus'
 import { cloneDeep } from 'lodash'
 import { nanoid } from 'nanoid'
 import { computed, inject, reactive, ref, useTemplateRef, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { shareProvideKey, type UiConn } from '@/types/me-interface'
+import type { SystemProxyDetect } from '@/types/tauri-specta'
 import { buildRedisUrl } from '@/utils/conn'
 import {
   getConnCommandMap,
@@ -22,6 +23,7 @@ import {
   setConnUiMode,
   type ConnProtocol,
 } from '@/utils/conn'
+import { DEFAULT_PROXY_OPTION } from '@/utils/conn-compat'
 import { meCommands, PREDEFINE_COLORS, meRandomString, meOk, meErr, meCopy } from '@/utils/util'
 const { t } = useI18n()
 // #endregion
@@ -69,6 +71,9 @@ const form = reactive({
     pkfile: '', // 私钥文件
     passphrase: '', // 私钥密码
   },
+
+  proxy: false,
+  proxyOption: { ...DEFAULT_PROXY_OPTION },
 
   // 其他元信息补充（db 别名等）；复制时仅保留分组
   meta: {
@@ -171,6 +176,38 @@ const rules = {
       },
     },
   ],
+  'proxyOption.host': [
+    {
+      trigger: 'blur',
+      validator: (
+        _rule: FormItemRule,
+        value: unknown,
+        callback: (error?: string | Error) => void,
+      ) => {
+        if (form.proxy && form.proxyOption.proxyMode === 'manual' && !value) {
+          callback(new Error(t('conn.proxyOption.hostRequired')))
+        } else {
+          callback()
+        }
+      },
+    },
+  ],
+  'proxyOption.port': [
+    {
+      trigger: 'blur',
+      validator: (
+        _rule: FormItemRule,
+        value: unknown,
+        callback: (error?: string | Error) => void,
+      ) => {
+        if (form.proxy && form.proxyOption.proxyMode === 'manual' && !value) {
+          callback(new Error(t('conn.proxyOption.portRequired')))
+        } else {
+          callback()
+        }
+      },
+    },
+  ],
 }
 // #endregion
 
@@ -197,7 +234,10 @@ function open(modeValue: 'add' | 'edit', data?: UiConn) {
     if (newData.cluster && newData.sentinel) {
       newData.sentinel = false
     }
+    if (newData.ssh && newData.proxy) newData.proxy = false
     Object.assign(form, newData)
+    form.proxy = !!form.proxy
+    form.proxyOption = { ...DEFAULT_PROXY_OPTION, ...form.proxyOption }
   }
 }
 
@@ -359,6 +399,69 @@ function onSentinelChange(val: string | number | boolean) {
   if (val) form.cluster = false
 }
 
+watch(
+  () => [form.ssh, form.proxy] as const,
+  (curr, prev) => {
+    if (!curr[0] || !curr[1]) return
+    ElMessage.warning(t('conn.sshProxyMutex'))
+    if (prev && curr[0] !== prev[0]) form.ssh = false
+    else form.proxy = false
+  },
+)
+
+const systemProxy = ref<SystemProxyDetect | null>(null)
+const systemProxyDetecting = ref(false)
+let systemProxyDetectSeq = 0
+watch(
+  () => [form.proxy, form.proxyOption.proxyMode] as const,
+  async ([proxy, mode]) => {
+    if (!proxy || mode !== 'system') {
+      systemProxyDetectSeq++
+      systemProxy.value = null
+      systemProxyDetecting.value = false
+      return
+    }
+    const seq = ++systemProxyDetectSeq
+    systemProxyDetecting.value = true
+    systemProxy.value = null
+    try {
+      const result = await meCommands.detectSystemProxy()
+      if (seq !== systemProxyDetectSeq) return
+      systemProxy.value = result
+    } catch {
+      if (seq !== systemProxyDetectSeq) return
+      systemProxy.value = {
+        found: false,
+        source: 'none',
+        proxyType: '',
+        host: '',
+        port: 0,
+        hasAuth: false,
+      }
+    } finally {
+      if (seq === systemProxyDetectSeq) systemProxyDetecting.value = false
+    }
+  },
+)
+
+const systemProxyHint = computed(() => {
+  if (systemProxyDetecting.value || !systemProxy.value) return t('conn.proxyDetecting')
+  const d = systemProxy.value
+  if (!d.found) return t('conn.proxyDetectNone')
+  const source =
+    d.source === 'windows'
+      ? t('conn.proxySourceWindows')
+      : d.source === 'macos'
+        ? t('conn.proxySourceMacos')
+        : t('conn.proxySourceEnv')
+  const key = d.hasAuth ? 'conn.proxyDetectFoundAuth' : 'conn.proxyDetectFound'
+  return t(key, { type: d.proxyType.toUpperCase(), host: d.host, port: d.port, source })
+})
+
+const proxyTypeIsSocks = computed(
+  () => form.proxyOption.proxyType === 'socks5' || form.proxyOption.proxyType === 'socks5h',
+)
+
 // 哨兵模式自动发现
 watch(
   () => form.sentinel,
@@ -439,7 +542,7 @@ function applyAdvanced() {
     @closed="emit('closed')"
     draggable
     v-model="visible"
-    width="600"
+    :width="t('conn.dialogWidth')"
     :close-on-click-modal="false"
     :close-on-press-escape="false"
     append-to-body
@@ -576,6 +679,15 @@ function applyAdvanced() {
                   :show-after="tipShowAfter"
                   :content="t('conn.sshTip')">
                   <span>SSH</span>
+                </el-tooltip>
+              </el-checkbox>
+              <el-checkbox v-model="form.proxy">
+                <el-tooltip
+                  placement="top"
+                  raw-content
+                  :show-after="tipShowAfter"
+                  :content="t('conn.proxyTip')">
+                  <span>{{ t('conn.proxy') }}</span>
                 </el-tooltip>
               </el-checkbox>
             </div>
@@ -732,6 +844,71 @@ function applyAdvanced() {
               clearable
               show-password />
           </el-form-item>
+        </template>
+      </div>
+
+      <!-- 网络代理 -->
+      <div v-show="form.proxy">
+        <el-divider content-position="left">{{ t('conn.proxy') }}</el-divider>
+        <el-form-item>
+          <el-segmented
+            v-model="form.proxyOption.proxyMode"
+            :options="[
+              { label: t('conn.proxyModeSystem'), value: 'system' },
+              { label: t('conn.proxyModeManual'), value: 'manual' },
+            ]" />
+        </el-form-item>
+        <el-form-item v-if="form.proxyOption.proxyMode === 'system'">
+          <el-text type="info" class="conn-proxy-hint">{{ systemProxyHint }}</el-text>
+        </el-form-item>
+        <template v-else>
+          <!-- 类型 + 主机 + 端口同一行：下拉 | 主机 : 端口 -->
+          <el-form-item :label="t('conn.proxyOption.config')" class="conn-proxy-addr-wrap">
+            <div class="conn-proxy-addr">
+              <el-select v-model="form.proxyOption.proxyType" class="conn-proxy-type">
+                <el-option :label="t('conn.proxyOption.typeHttp')" value="http" />
+                <el-option :label="t('conn.proxyOption.typeHttps')" value="https" />
+                <el-option :label="t('conn.proxyOption.typeSocks5')" value="socks5" />
+                <el-option :label="t('conn.proxyOption.typeSocks5h')" value="socks5h" />
+              </el-select>
+              <el-form-item prop="proxyOption.host" label-width="0" class="conn-proxy-host-item">
+                <el-input
+                  v-model.trim="form.proxyOption.host"
+                  :placeholder="t('conn.proxyOption.host')"
+                  clearable />
+              </el-form-item>
+              <span class="conn-proxy-colon">:</span>
+              <el-form-item prop="proxyOption.port" label-width="0" class="conn-proxy-port-item">
+                <el-input-number
+                  v-model="form.proxyOption.port"
+                  :min="1"
+                  :max="65535"
+                  :controls="false"
+                  align="left"
+                  :placeholder="proxyTypeIsSocks ? '1080' : '8080'" />
+              </el-form-item>
+            </div>
+          </el-form-item>
+          <el-row :gutter="24">
+            <el-col :span="12">
+              <el-form-item :label="t('conn.proxyOption.username')">
+                <el-input
+                  v-model.trim="form.proxyOption.username"
+                  :placeholder="t('conn.proxyOption.username')"
+                  clearable />
+              </el-form-item>
+            </el-col>
+            <el-col :span="12">
+              <el-form-item :label="t('conn.proxyOption.password')">
+                <el-input
+                  v-model.trim="form.proxyOption.password"
+                  type="password"
+                  :placeholder="t('conn.proxyOption.password')"
+                  clearable
+                  show-password />
+              </el-form-item>
+            </el-col>
+          </el-row>
         </template>
       </div>
     </el-form>
@@ -942,6 +1119,52 @@ function applyAdvanced() {
   align-items: center;
   flex-wrap: wrap;
   gap: 0 10px;
+}
+
+.conn-proxy-hint {
+  color: var(--el-text-color-secondary);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.conn-proxy-addr-wrap {
+  margin-bottom: 18px;
+}
+
+.conn-proxy-addr {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  width: 100%;
+}
+
+.conn-proxy-type {
+  width: 118px;
+  flex-shrink: 0;
+}
+
+.conn-proxy-host-item {
+  flex: 1;
+  min-width: 0;
+  margin-bottom: 0;
+}
+
+.conn-proxy-colon {
+  display: flex;
+  align-items: center;
+  height: var(--el-component-size);
+  color: var(--el-text-color-placeholder);
+  flex-shrink: 0;
+}
+
+.conn-proxy-port-item {
+  width: 92px;
+  flex-shrink: 0;
+  margin-bottom: 0;
+
+  :deep(.el-input-number) {
+    width: 100%;
+  }
 }
 
 .conn-footer {
