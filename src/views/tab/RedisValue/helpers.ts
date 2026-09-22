@@ -62,6 +62,67 @@ export function listRowRedisIndex(row: ValueTableRow): number {
   return typeof row.index === 'number' ? row.index : -1
 }
 
+function scannedRowObject(item: unknown): ValueTableRow | null {
+  if (!item || typeof item !== 'object') return null
+  return item as ValueTableRow
+}
+
+/** 在 fieldScan 原始行里定位要删的那一条（与表格 dataList 的映射一致） */
+function findScannedFieldRowIndex(rows: unknown[], type: string, row: ValueTableRow): number {
+  if (type === 'set') {
+    const member = row.value
+    return rows.findIndex(item => item === member)
+  }
+  if (type === 'vectorset') {
+    const name = String(row.value ?? '')
+    return rows.findIndex(item => scannedRowObject(item)?.name === name)
+  }
+  if (type === 'hash') {
+    const key = row.key ?? ''
+    return rows.findIndex(item => scannedRowObject(item)?.key === key)
+  }
+  if (type === 'zset') {
+    const member = row.value
+    return rows.findIndex(item => scannedRowObject(item)?.value === member)
+  }
+  if (type === 'stream') {
+    const id = row.id ?? ''
+    return rows.findIndex(item => scannedRowObject(item)?.id === id)
+  }
+  if (type === 'list' || type === 'array') {
+    const index = listRowRedisIndex(row)
+    return rows.findIndex(item => scannedRowObject(item)?.index === index)
+  }
+  return -1
+}
+
+/**
+ * 删除成功后从已扫描行里摘掉这一条，避免整表刷新清掉扫描条件、本地过滤和排序。
+ * List：LREM 会让后续下标前移；Array：ARDEL 留空洞，其它下标不变。
+ * 原地修改 rows，返回是否摘掉。
+ */
+export function removeScannedFieldRow(rows: unknown[], type: string, row: ValueTableRow): boolean {
+  const idx = findScannedFieldRowIndex(rows, type, row)
+  if (idx < 0) return false
+
+  if (type === 'list') {
+    const removedIndex = listRowRedisIndex(scannedRowObject(rows[idx]) ?? {})
+    rows.splice(idx, 1)
+    if (removedIndex >= 0) {
+      for (const item of rows) {
+        const next = scannedRowObject(item)
+        if (next && typeof next.index === 'number' && next.index > removedIndex) {
+          next.index -= 1
+        }
+      }
+    }
+    return true
+  }
+
+  rows.splice(idx, 1)
+  return true
+}
+
 export function parseListIndexInput(raw: string): number | null {
   const s = raw.trim()
   if (!s) return null

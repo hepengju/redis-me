@@ -97,6 +97,7 @@ import {
   listRowRedisIndex,
   mergeFieldScanPage,
   parseListIndexInput,
+  removeScannedFieldRow,
   pinFieldExpireAt,
   shouldFieldScanAuto,
   streamIdToDate,
@@ -1413,7 +1414,16 @@ async function fieldDel(row: ValueTableRow) {
 
   await meCommands.fieldDel(share.conn!.id, param)
   meOk(t('deleteOk'))
-  await refreshKey()
+  // 不整表刷新：保留扫描参数、本地过滤和表格排序，只摘掉这一行
+  dropDeletedFieldRow(row)
+}
+
+function dropDeletedFieldRow(row: ValueTableRow) {
+  const rv = redisValue.value
+  if (!rv || !Array.isArray(rv.value)) return
+  if (!removeScannedFieldRow(rv.value, rv.type, row)) return
+  if (rv.length > 0) rv.length -= 1
+  fieldSetInit()
 }
 // #endregion
 

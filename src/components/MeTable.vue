@@ -187,6 +187,15 @@ function updatePageSize(size: number): void {
   currentPage.value = 1
   pageSize.value = size
 }
+
+// 行变少后停在仍有数据的页（例如删掉当前页最后一条）
+watch(
+  () => sortedData.value.length,
+  len => {
+    const maxPage = Math.max(1, Math.ceil(len / pageSize.value))
+    if (currentPage.value > maxPage) currentPage.value = maxPage
+  },
+)
 // #endregion
 
 // #region 导出：RAW 直接序列化数据；其余格式由 exportRows 数据层计算，不渲染 DOM
