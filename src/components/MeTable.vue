@@ -274,6 +274,10 @@ defineExpose({
   scrollTo(top: number, left?: number) {
     tableRef.value?.scrollTo(top, left)
   },
+  /** 回到第 1 页；每页条数和排序保留 */
+  resetPage() {
+    currentPage.value = 1
+  },
 })
 // #endregion
 </script>
@@ -300,6 +304,7 @@ defineExpose({
         size="small"
         background
         :hide-on-single-page="hideOnSinglePage"
+        v-model:current-page="currentPage"
         @change="handleChange"
         :page-size="pageSize"
         :page-sizes="[20, 50, 100]"

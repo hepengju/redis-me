@@ -2030,8 +2030,9 @@ onUnmounted(() => {
             </div>
           </div>
           <div class="table-view">
+            <!-- 类型或键变化时重建，页码回到第 1 页 -->
             <me-table
-              :key="redisValue?.type"
+              :key="`${redisValue?.type ?? ''}\0${share.redisKey?.key ?? ''}`"
               layout="sizes, prev, pager, next, jumper"
               :data="tableDisplayList"
               :default-sort="tableDefaultSort"
