@@ -182,8 +182,8 @@ impl Default for ProxyOption {
         Self {
             proxy_mode: "system".into(),
             proxy_type: "http".into(),
-            host: String::new(),
-            port: 8080,
+            host: "127.0.0.1".into(),
+            port: 7897,
             username: String::new(),
             password: String::new(),
         }

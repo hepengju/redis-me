@@ -8,8 +8,8 @@ export type ConnFromStore = { [K in keyof ConnConfig]?: ConnConfig[K] } & Record
 export const DEFAULT_PROXY_OPTION = {
   proxyMode: 'system',
   proxyType: 'http',
-  host: '',
-  port: 8080,
+  host: '127.0.0.1',
+  port: 7897,
   username: '',
   password: '',
 }

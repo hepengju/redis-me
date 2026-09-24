@@ -885,7 +885,7 @@ function applyAdvanced() {
                   :max="65535"
                   :controls="false"
                   align="left"
-                  :placeholder="proxyTypeIsSocks ? '1080' : '8080'" />
+                  :placeholder="proxyTypeIsSocks ? '1080' : '7897'" />
               </el-form-item>
             </div>
           </el-form-item>
