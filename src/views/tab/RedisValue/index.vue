@@ -114,6 +114,7 @@ import TableArLastItems from './TableArLastItems.vue'
 import TableGroup from './TableGroup.vue'
 import TableHashKeys from './TableHashKeys.vue'
 import TableInfo from './TableInfo.vue'
+import TableTsChart from './TableTsChart.vue'
 import TableVSim from './TableVSim.vue'
 import TableZsetRange from './TableZsetRange.vue'
 import ValueShortcut from './ValueShortcut.vue'
@@ -1563,8 +1564,12 @@ function toggleFavorite() {
 
 // 更多菜单 / 快捷键 / 命令帮助
 const tableInfoRef = useTemplateRef<InstanceType<typeof TableInfo>>('tableInfoRef')
+const tableTsChartRef = useTemplateRef<InstanceType<typeof TableTsChart>>('tableTsChartRef')
 const valueShortcutRef = useTemplateRef('valueShortcutRef')
 const commandHelpRef = useTemplateRef<InstanceType<typeof CommandHelp>>('commandHelpRef')
+function openTsChart() {
+  tableTsChartRef.value?.open(tableDisplayList.value as ValueTableRow[])
+}
 function showZsetRank(row: ValueTableRow) {
   tableInfoRef.value?.open('zrank', { member: String(row.value ?? '') })
 }
@@ -1683,6 +1688,10 @@ function onPopCommand(command: string) {
   }
   if (command === 'TSINFO') {
     tableInfoRef.value?.open('tsinfo')
+    return
+  }
+  if (command === 'TSCHART') {
+    openTsChart()
     return
   }
   const confirmMap: Record<string, string> = {
@@ -2122,6 +2131,9 @@ onUnmounted(() => {
                     <el-dropdown-item v-if="timeseriesType" command="TSINFO"
                       >TS.INFO</el-dropdown-item
                     >
+                    <el-dropdown-item v-if="timeseriesType" command="TSCHART">{{
+                      t('redisValue.tsChartTitle')
+                    }}</el-dropdown-item>
                   </el-dropdown-menu>
                 </template>
               </el-dropdown>
@@ -2442,11 +2454,19 @@ onUnmounted(() => {
           <!-- TimeSeries 无本地过滤框：长扫描暂停跟刷新同区，与状态文案分开 -->
           <me-scan-control
             v-if="timeseriesType && showScanControl"
-            style="margin-left: 8px"
+            style="margin-left: 5px"
             :percentage="scanProgress"
             :loading="loading"
             :tip="scanToggleTip"
             @click="onFieldScanAction" />
+          <me-icon
+            v-if="timeseriesType"
+            class="icon-btn"
+            style="font-size: 18px; margin-left: 5px"
+            icon="me-icon-line-charts"
+            :info="t('redisValue.tsChartTitle')"
+            placement="top-start"
+            @click="openTsChart" />
 
           <el-divider direction="vertical" v-if="textMemory" />
 
@@ -2589,8 +2609,9 @@ onUnmounted(() => {
     <KeyRename ref="keyRenameRef" />
     <CommandHelp ref="commandHelpRef" />
 
-    <!-- 本域弹窗：OBJECT / ARINFO / VINFO / ZRANK / 自定义编解码 -->
+    <!-- 本域弹窗：OBJECT / ARINFO / VINFO / TS.INFO / ZRANK / 自定义编解码 -->
     <TableInfo ref="tableInfoRef" />
+    <TableTsChart ref="tableTsChartRef" />
     <CustomCodec v-model="customCodecVisible" />
 
     <!-- 本域类型扩展：Stream 组 / Hash 全量 / ZSet TopN / Array 尾部 -->

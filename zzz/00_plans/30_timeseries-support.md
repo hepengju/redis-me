@@ -1,6 +1,6 @@
 # 30. Redis TimeSeries 类型支持
 
-> **实现状态**：30.1 / 30.2 已实现（待手测）；30.3 待实施  
+> **实现状态**：30.1 / 30.2 已实现；30.3 折线图已实现（当前表样本弹框）；其余 P2 待实施  
 > **关联 backlog**：`docs/zh/changelog/future.md`（TimeSeries 的支持）  
 > **对标实现**：[`18_array-type-support.md`](./18_array-type-support.md)、[`19_vector-set-support.md`](./19_vector-set-support.md)；浏览管线更近 **Stream**（时间范围 + 续页）  
 > **竞品核对**：2026-09 源码 / issue（见 §一）；旧表 [`20260718_rdm-competitive-analysis.md`](./20260718_rdm-competitive-analysis.md) §2.5「Tiny/Another 均无 TS」**已过时**（Another 已上）  
