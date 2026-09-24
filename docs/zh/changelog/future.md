@@ -1,7 +1,7 @@
 ## Future
 
 - 键的数据编码记住(连接内粘住或每个键自定义待进一步确认)
-- TimeSeries 的支持
+- TimeSeries：TS.CREATE 全参数、多键 MRANGE 与聚合
 - RedisSearch 的支持
 - 抖音/B站短视频的制作: 每个痛点解决1个小视频
 - Redis实战相关文章的编写
@@ -25,6 +25,7 @@
 
 ### 已完成
 
+- TimeSeries 键详情：浏览 / 增删改 / Info / 当前样本折线图 ✅️
 - 网络代理：HTTP / HTTPS / SOCKS5 / SOCKS5H + 系统代理 ✅️
 - SSH 隧道支持集群和哨兵 ✅️
 - 数据编码魔数自动识别（Auto：ACED / Pickle PROTO / PhpSerial a:/O:/C: / MsgPack / StrJson / UTF-8 / Hex）✅️

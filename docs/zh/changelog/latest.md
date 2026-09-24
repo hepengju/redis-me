@@ -1,10 +1,25 @@
 # 5.x 更新日志
 
-## 未发布
+## [v5.3.0](https://mp.weixin.qq.com/s/P691_vhcJjZATq8qbRUtBw) (2026-09-25) 中秋节
 
 ### ✨ 新增优化
 
-- 连接: **网络代理** HTTP / HTTPS / SOCKS5 / SOCKS5H，以及使用系统代理（环境变量与 Windows/macOS 静态设置）。与 SSH 互斥
+- 新增支持连接配置 **网络代理** （系统代理或手动配置）
+- 新增支持 **TimeSeries 类型**（RedisTimeSeries的`TSDB-TYPE`）
+  - 样本表：按时间戳与数值区间过滤，默认新→旧，可切换正序
+  - 新增、编辑、删除样本；行可复制为 `TS.ADD`；可查看 `TS.INFO`
+  - 键列表 Tag 为 **T**，支持按类型筛选
+  - **折线图**使用当前已加载样本；底栏图标与命令菜单均可打开
+- 其他细节
+  - 键类型下拉：List / Array 改为 info 色并相邻排列
+  - 命令监控、发布订阅时间列只显示时分秒；监控默认按新到旧排序
+  - 慢日志耗时显示整数毫秒并右对齐
+
+### 🐞 修复问题
+
+- 删除表格中的元素后整表重扫，现只去掉当前行，扫描条件与排序保留 #168
+- 修复切换键后表格页码仍停在旧页
+- 修复 Redisson 编码探测时 Kryo 把 Marshalling 数据误读出来
 
 ## [v5.2.0](https://mp.weixin.qq.com/s/oMVi3OsBLD-yaMfBbpxesA) (2026-09-10)
 
