@@ -118,8 +118,22 @@ onUnmounted(() => tauriUnlisten())
       </div>
     </div>
     <div class="table">
-      <me-table :data="filterDataList" ref="table" export-name="monitor" :export-rows="exportRows">
-        <el-table-column :label="t('redisMonitor.time')" prop="datetime" width="200" sortable />
+      <me-table
+        :data="filterDataList"
+        ref="table"
+        :default-sort="{ prop: 'datetime', order: 'descending' }"
+        export-name="monitor"
+        :export-rows="exportRows">
+        <el-table-column
+          :label="t('redisMonitor.time')"
+          prop="datetime"
+          width="118"
+          sortable
+          show-overflow-tooltip>
+          <template #default="{ row }">
+            {{ row.datetime?.slice(11) }}
+          </template>
+        </el-table-column>
         <el-table-column :label="t('redisMonitor.command')" prop="command" show-overflow-tooltip />
         <el-table-column :label="t('action')" width="80" align="center">
           <template #default="scope">

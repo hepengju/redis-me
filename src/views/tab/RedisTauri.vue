@@ -26,6 +26,7 @@ import type {
   ScanParam,
 } from '@/types/tauri-specta'
 import { commands } from '@/types/tauri-specta'
+import { DEFAULT_PROXY_OPTION } from '@/utils/conn-compat'
 import { meJsonParse } from '@/utils/util'
 // #endregion
 
@@ -71,6 +72,8 @@ function buildMinimalConn(): ConnConfig {
     sentinelOption: { ...emptySentinel },
     ssh: false,
     sshOption: { ...emptySsh },
+    proxy: false,
+    proxyOption: { ...DEFAULT_PROXY_OPTION },
   }
 }
 
@@ -279,6 +282,7 @@ function defaultPayload(cmd: CommandKey): Record<string, unknown> {
     case 'keyNode':
     case 'arInfo':
     case 'vInfo':
+    case 'tsInfo':
     case 'objectInfo':
     case 'xinfoGroups':
       return { id: connIdForDefaults(), key: { ...dummyKey } }

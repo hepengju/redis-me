@@ -74,6 +74,9 @@ specta = { version = "2.0.0-rc.25", features = ["derive", "chrono", "serde_json"
 specta-typescript = "0.0.12"
 tauri-specta = { version = "2.0.0-rc.25", features = ["typescript"] }
 
+[target.'cfg(windows)'.dependencies]
+winreg = "0.55"
+
 [target.'cfg(any(target_os = "macos", windows, target_os = "linux"))'.dependencies]
 tauri-plugin-updater = "2"
 

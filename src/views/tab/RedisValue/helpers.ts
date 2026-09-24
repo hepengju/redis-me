@@ -1,10 +1,13 @@
 // RedisValue 域内共享：类型、键类型能力、扫描/表格纯函数（有状态编排在 index.vue）
 import dayjs from 'dayjs'
+import customParseFormat from 'dayjs/plugin/customParseFormat'
 
 import i18n from '@/locales'
 import type { FieldScanResult } from '@/types/tauri-specta'
 import { formatUtcOffset, meTtlAlignAt, meTtlFromAt, meTtlToAt } from '@/utils/ttl'
 import { meHumanSeconds } from '@/utils/util'
+
+dayjs.extend(customParseFormat)
 
 const t = i18n.global.t
 
@@ -62,6 +65,72 @@ export function listRowRedisIndex(row: ValueTableRow): number {
   return typeof row.index === 'number' ? row.index : -1
 }
 
+function scannedRowObject(item: unknown): ValueTableRow | null {
+  if (!item || typeof item !== 'object') return null
+  return item as ValueTableRow
+}
+
+/** 在 fieldScan 原始行里定位要删的那一条（与表格 dataList 的映射一致） */
+function findScannedFieldRowIndex(rows: unknown[], type: string, row: ValueTableRow): number {
+  if (type === 'set') {
+    const member = row.value
+    return rows.findIndex(item => item === member)
+  }
+  if (type === 'vectorset') {
+    const name = String(row.value ?? '')
+    return rows.findIndex(item => scannedRowObject(item)?.name === name)
+  }
+  if (type === 'hash') {
+    const key = row.key ?? ''
+    return rows.findIndex(item => scannedRowObject(item)?.key === key)
+  }
+  if (type === 'zset') {
+    const member = row.value
+    return rows.findIndex(item => scannedRowObject(item)?.value === member)
+  }
+  if (type === 'stream') {
+    const id = row.id ?? ''
+    return rows.findIndex(item => scannedRowObject(item)?.id === id)
+  }
+  // TimeSeries：样本行 key=timestamp 明文
+  if (type === 'timeseries') {
+    const ts = row.key ?? ''
+    return rows.findIndex(item => scannedRowObject(item)?.key === ts)
+  }
+  if (type === 'list' || type === 'array') {
+    const index = listRowRedisIndex(row)
+    return rows.findIndex(item => scannedRowObject(item)?.index === index)
+  }
+  return -1
+}
+
+/**
+ * 删除成功后从已扫描行里摘掉这一条，避免整表刷新清掉扫描条件、本地过滤和排序。
+ * List：LREM 会让后续下标前移；Array：ARDEL 留空洞，其它下标不变。
+ * 原地修改 rows，返回是否摘掉。
+ */
+export function removeScannedFieldRow(rows: unknown[], type: string, row: ValueTableRow): boolean {
+  const idx = findScannedFieldRowIndex(rows, type, row)
+  if (idx < 0) return false
+
+  if (type === 'list') {
+    const removedIndex = listRowRedisIndex(scannedRowObject(rows[idx]) ?? {})
+    rows.splice(idx, 1)
+    if (removedIndex >= 0) {
+      for (const item of rows) {
+        const next = scannedRowObject(item)
+        if (next && typeof next.index === 'number' && next.index > removedIndex) {
+          next.index -= 1
+        }
+      }
+    }
+    return true
+  }
+
+  rows.splice(idx, 1)
+  return true
+}
+
 export function parseListIndexInput(raw: string): number | null {
   const s = raw.trim()
   if (!s) return null
@@ -78,6 +147,37 @@ export function streamIdToDate(id: string): string {
   } catch {
     return ''
   }
+}
+
+/** TimeSeries 毫秒 timestamp（十进制字符串）→ 本地可读时间；非法则空串 */
+export function tsTimestampToDate(ts: string): string {
+  try {
+    const n = Number(ts)
+    if (!Number.isFinite(n) || n <= 0) return ''
+    return dayjs(n).format('YYYY-MM-DD HH:mm:ss.SSS')
+  } catch {
+    return ''
+  }
+}
+
+/** 工具栏时间戳区间：数字 ms / `-`/`+` 原样；可读时间转本地 ms 字符串；空串保持空 */
+const TS_RANGE_BOUND_FMTS = [
+  'YYYY-MM-DD HH:mm:ss.SSS',
+  'YYYY-MM-DD HH:mm:ss',
+  'YYYY-MM-DD HH:mm',
+  'YYYY-MM-DD',
+] as const
+
+export function normalizeTsRangeBound(raw: string): string {
+  const s = raw.trim()
+  if (!s) return ''
+  if (s === '-' || s === '+') return s
+  if (/^\d+$/.test(s)) return s
+  for (const fmt of TS_RANGE_BOUND_FMTS) {
+    const d = dayjs(s, fmt, true)
+    if (d.isValid()) return String(d.valueOf())
+  }
+  return s
 }
 
 const DATETIME_FMT = 'YYYY-MM-DD HH:mm:ss'
@@ -170,11 +270,12 @@ export function supportsTableView(type: string | undefined) {
     type === 'zset' ||
     type === 'stream' ||
     type === 'array' ||
-    type === 'vectorset'
+    type === 'vectorset' ||
+    type === 'timeseries'
   )
 }
 
-// field_get 可单行刷新的表格类型
+// field_get 可单行刷新的表格类型（TimeSeries 无 field_get；改后整表 refresh）
 export function supportsFieldRowRefresh(type: string | undefined) {
   return (
     type === 'hash' ||
@@ -190,10 +291,12 @@ export function isStringLikeType(type: string | undefined) {
   return type === 'string' || type === 'json'
 }
 
-// 非精确扫描时是否自动连续拉取（pattern 扫描或 List/Stream 前端分页）
+// 非精确扫描时是否自动连续拉取（pattern 扫描或 List/Stream/TimeSeries 前端分页）
 export function shouldFieldScanAuto(type: string | undefined, exact: boolean) {
   if (exact || !type) return false
-  return supportsFieldServerScan(type) || type === 'list' || type === 'stream'
+  return (
+    supportsFieldServerScan(type) || type === 'list' || type === 'stream' || type === 'timeseries'
+  )
 }
 
 // 命令帮助分组：键类型 → Redis 命令文档 group
@@ -207,6 +310,7 @@ export const KEY_TYPE_TO_GROUP: Record<string, string> = {
   json: 'json',
   array: 'array',
   vectorset: 'vector_set',
+  timeseries: 'timeseries',
 }
 
 // 扫描纯函数

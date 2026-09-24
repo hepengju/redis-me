@@ -1,7 +1,7 @@
 <script setup lang="ts">
 // #region 导入
-// 键元信息弹框：ARINFO / VINFO / OBJECT / ZRANK 共用。
-// - arinfo|vinfo：标题用原命令名，两列 field/value
+// 键元信息弹框：ARINFO / VINFO / TS.INFO / OBJECT / ZRANK 共用。
+// - arinfo|vinfo|tsinfo：标题用原命令名，两列 field/value
 // - object|zrank：命令 / 项目 / 值 三列（object 另含 tip / 不可用提示）
 import { computed, inject, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
@@ -12,7 +12,7 @@ import { IPC_WIRE_FORMAT } from '@/utils/format'
 import { meCommands, meHumanSeconds } from '@/utils/util'
 // #endregion
 
-export type TableInfoKind = 'arinfo' | 'vinfo' | 'object' | 'zrank'
+export type TableInfoKind = 'arinfo' | 'vinfo' | 'tsinfo' | 'object' | 'zrank'
 
 type InfoRow = { command: string; item: string; value: string; tip?: string; unavailable?: boolean }
 
@@ -28,10 +28,13 @@ const rankInfo = ref<RedisZsetRankResult | null>(null)
 // #endregion
 
 // #region 计算属性
-const isKv = computed(() => kind.value === 'arinfo' || kind.value === 'vinfo')
+const isKv = computed(
+  () => kind.value === 'arinfo' || kind.value === 'vinfo' || kind.value === 'tsinfo',
+)
 const title = computed(() => {
   if (kind.value === 'arinfo') return 'ARINFO'
   if (kind.value === 'vinfo') return 'VINFO'
+  if (kind.value === 'tsinfo') return 'TS.INFO'
   if (kind.value === 'zrank') return t('redisValue.rankTitle')
   return t('redisValue.objectInfo')
 })
@@ -123,6 +126,8 @@ async function open(next: TableInfoKind, extra?: { member?: string }) {
       kvRows.value = await meCommands.arInfo(conn.id, rk)
     } else if (next === 'vinfo') {
       kvRows.value = await meCommands.vInfo(conn.id, rk)
+    } else if (next === 'tsinfo') {
+      kvRows.value = await meCommands.tsInfo(conn.id, rk)
     } else if (next === 'zrank') {
       rankInfo.value = await meCommands.zsetRank(conn.id, {
         key: rk,
@@ -147,7 +152,7 @@ defineExpose({ open })
       <me-icon :icon="headerIcon" :name="title" />
     </template>
 
-    <!-- ARINFO / VINFO：扁平键值 -->
+    <!-- ARINFO / VINFO / TS.INFO：扁平键值 -->
     <el-table v-if="isKv" v-loading="loading" :data="kvRows" border stripe>
       <el-table-column :label="t('redisValue.infoField')" prop="field" width="200" />
       <el-table-column :label="t('redisValue.infoValue')" prop="value" min-width="200" />

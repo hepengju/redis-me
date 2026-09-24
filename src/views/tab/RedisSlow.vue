@@ -82,7 +82,7 @@ function exportRows(data: unknown[]): TableExportMatrix {
     rows: (data as RedisSlowLog[]).map(row => {
       const cells = [
         row.time,
-        `${(row.cost ?? 0).toFixed(2)} ms`,
+        `${Math.round(row.cost ?? 0)} ms`,
         row.command,
         row.clientName,
         row.client,
@@ -280,9 +280,10 @@ const rules = computed(() => ({
           :label="t('redisSlow.cost')"
           prop="cost"
           width="90"
+          align="right"
           sortable
           show-overflow-tooltip>
-          <template #default="scope"> {{ scope.row.cost.toFixed(2) }} ms </template>
+          <template #default="scope"> {{ Math.round(scope.row.cost) }} ms </template>
         </el-table-column>
         <el-table-column
           :label="t('redisSlow.command')"

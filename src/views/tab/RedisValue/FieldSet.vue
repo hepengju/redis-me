@@ -124,10 +124,12 @@ const detectedViewText = computed(() =>
     : '',
 )
 const vectorsetType = computed(() => form.value.type === 'vectorset')
+const timeseriesType = computed(() => form.value.type === 'timeseries')
 const prettyEnabled = computed(
-  // Vector Set 为 JSON 明文，始终可美化；其它类型随 utf8/strjson
+  // Vector Set / TimeSeries 为明文，始终可美化；其它类型随 utf8/strjson
   () =>
     vectorsetType.value ||
+    timeseriesType.value ||
     effectiveFieldViewFmt.value === 'utf8' ||
     effectiveFieldViewFmt.value === 'strjson',
 )
@@ -139,14 +141,17 @@ const canSaveField = computed(
     !readonly.value &&
     !share.readonly &&
     !editorLoading.value &&
-    (vectorsetType.value || (!isViewReadonlyFmt.value && !decodeFailed.value)),
+    (vectorsetType.value ||
+      timeseriesType.value ||
+      (!isViewReadonlyFmt.value && !decodeFailed.value)),
 )
 const saveFieldTip = computed(() => {
-  if (!vectorsetType.value && gzipReadonly.value) return t('util.gzipReadonly')
-  if (!vectorsetType.value && isReadonlyView(effectiveFieldViewFmt.value)) {
+  if (vectorsetType.value || timeseriesType.value) return ''
+  if (gzipReadonly.value) return t('util.gzipReadonly')
+  if (isReadonlyView(effectiveFieldViewFmt.value)) {
     return readonlyViewTip(effectiveFieldViewFmt.value)
   }
-  if (!vectorsetType.value && decodeFailed.value) return t('util.saveDecodeFailed')
+  if (decodeFailed.value) return t('util.saveDecodeFailed')
   return ''
 })
 const showSaveField = computed(() => !readonly.value && !share.readonly) // 连接只读 / 查看模式 → 隐藏保存钮
@@ -163,6 +168,12 @@ async function syncFieldEditor() {
   // Vector Set：向量为 JSON 明文，attrs 由 open 中一并设置
   if (vectorsetType.value) {
     form.value.fieldValue = meFormatDisplayValue(srcFieldWire.value, fieldPretty.value)
+    decodeFailed.value = false
+    return
+  }
+  // TimeSeries：timestamp/value 为数值明文，不走 wire 解码
+  if (timeseriesType.value) {
+    form.value.fieldValue = srcFieldWire.value
     decodeFailed.value = false
     return
   }
@@ -336,6 +347,13 @@ function submit() {
         return
       }
       attrsJson = attrsParsed.json
+    } else if (timeseriesType.value) {
+      // 明文数值；空值不允许
+      fieldValue = String(form.value.fieldValue ?? '').trim()
+      if (!fieldValue) {
+        meErr(t('fieldAdd.tsValueRequired'))
+        return
+      }
     } else {
       // 与 KeyRename / FieldAdd 一致：提交前先编码检查，失败 meErr 并 return
       try {
@@ -379,7 +397,8 @@ function submit() {
         fieldValue,
         vector,
         attrs: vectorsetType.value ? attrsJson : '',
-        valFmt: IPC_WIRE_FORMAT,
+        // TimeSeries timestamp/value 明文；其它类型 IPC 恒 base64
+        valFmt: timeseriesType.value ? 'utf8' : IPC_WIRE_FORMAT,
         includeFieldTtl: form.value.type === 'hash' ? props.hashFieldTtlEnabled : null,
         fieldTtl,
       })
@@ -492,6 +511,9 @@ onUnmounted(() => window.removeEventListener('keydown', onEscapeKey, true))
       <el-form-item :label="t('fieldSet.fieldKey')" v-if="form.type === 'hash'">
         <el-input v-model="form.fieldKey" disabled />
       </el-form-item>
+      <el-form-item :label="t('fieldSet.timestamp')" v-if="timeseriesType">
+        <el-input v-model="form.fieldKey" disabled />
+      </el-form-item>
       <el-form-item :label="t('fieldSet.streamId')" v-if="form.type === 'stream'">
         <el-input :model-value="form.streamId || ''" disabled />
       </el-form-item>
@@ -532,7 +554,10 @@ onUnmounted(() => window.removeEventListener('keydown', onEscapeKey, true))
           :key="codeRemountKey"
           v-model="form.fieldValue"
           :read-only="
-            editorLoading || readonly || (!vectorsetType && isViewReadonlyFmt) || decodeFailed
+            editorLoading ||
+            readonly ||
+            (!vectorsetType && !timeseriesType && isViewReadonlyFmt) ||
+            decodeFailed
           "
           :error="decodeFailed"
           class="field-code-editor" />
@@ -576,8 +601,8 @@ onUnmounted(() => window.removeEventListener('keydown', onEscapeKey, true))
             icon="el-icon-refresh-right"
             :style="{ opacity: isRefreshing ? 0.5 : 1, cursor: isRefreshing ? 'wait' : 'pointer' }"
             @click="refreshField" />
-          <!-- Auto 识别结果：下拉右侧；Vector Set 向量非 wire 不展示编码 -->
-          <div v-if="!vectorsetType" class="field-set-enc me-flex">
+          <!-- Auto 识别结果：下拉右侧；Vector Set / TimeSeries 非 wire 不展示编码 -->
+          <div v-if="!vectorsetType && !timeseriesType" class="field-set-enc me-flex">
             <!-- 底栏贴底：下拉固定向上，避免翻到窗口外 -->
             <el-select
               v-model="fieldViewFmt"

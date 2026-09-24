@@ -175,7 +175,16 @@ onUnmounted(() => tauriUnlisten())
         :default-sort="{ prop: 'datetime', order: 'descending' }"
         export-name="pubsub"
         :export-rows="exportRows">
-        <el-table-column :label="t('redisPubSub.datetime')" prop="datetime" sortable width="200" />
+        <el-table-column
+          :label="t('redisPubSub.datetime')"
+          prop="datetime"
+          width="118"
+          sortable
+          show-overflow-tooltip>
+          <template #default="{ row }">
+            {{ row.datetime?.slice(11) }}
+          </template>
+        </el-table-column>
         <el-table-column :label="t('redisPubSub.channel')" prop="channel" show-overflow-tooltip />
         <el-table-column :label="t('redisPubSub.message')" prop="message" show-overflow-tooltip />
         <el-table-column :label="t('action')" width="80" align="center">

@@ -296,6 +296,10 @@ impl MeClient for MeCluster {
         v_info0(self.get_conn()?, key)
     }
 
+    fn ts_info(&self, key: RedisKey) -> AnyResult<Vec<RedisArInfoItem>> {
+        ts_info0(self.get_conn()?, key)
+    }
+
     fn v_getattr(&self, param: RedisVAttr) -> AnyResult<String> {
         v_getattr0(self.get_conn()?, param)
     }

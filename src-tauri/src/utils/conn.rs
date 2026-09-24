@@ -1,5 +1,6 @@
 use crate::utils::error::AppError;
 use crate::utils::model::{ConnConfig, SslOption};
+use crate::utils::proxy_dialer::build_proxy_dialer;
 use crate::utils::ssh_dialer::SshDialer;
 use crate::utils::tls_cert;
 use crate::utils::util::{AnyResult, parse_path};
@@ -15,7 +16,7 @@ use std::sync::Arc;
 use std::time::Duration;
 use url::Url;
 
-/// 无 `existing` 且勾了 SSH 时新建会话。29 在此加 proxy 分支（与 ssh 互斥）。
+/// 无 `existing` 时：SSH 优先；否则代理（系统模式检不到则直连）。SSH 与代理互斥。
 fn resolve_dialer(
     conf: &ConnConfig,
     connect_timeout: Duration,
@@ -24,8 +25,13 @@ fn resolve_dialer(
     if let Some(d) = existing {
         return Ok(Some(d));
     }
+    if conf.ssh && conf.proxy {
+        bail!(AppError::SshAndProxyMutuallyExclusive);
+    }
     if conf.ssh {
         Ok(Some(SshDialer::connect(&conf.ssh_option, connect_timeout)?))
+    } else if conf.proxy {
+        build_proxy_dialer(conf, connect_timeout)
     } else {
         Ok(None)
     }
@@ -568,6 +574,7 @@ pub fn set_client_name_unless_minimal(conn: &mut dyn ConnectionLike, conf: &Conn
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::utils::model::ProxyOption;
 
     #[test]
     fn io_timeout_is_not_redis_protocol() {
@@ -588,6 +595,47 @@ mod tests {
     fn auth_failed_counts_as_redis_protocol() {
         let err = RedisError::from((ErrorKind::AuthenticationFailed, "NOAUTH"));
         assert!(server_spoke_redis_protocol(&err));
+    }
+
+    #[test]
+    fn ssh_and_proxy_rejected_before_io() {
+        let conf = ConnConfig {
+            ssh: true,
+            proxy: true,
+            ..ConnConfig::default()
+        };
+        let err = match get_client_single(&conf, Duration::from_secs(1), false, None) {
+            Ok(_) => panic!("expected ssh+proxy to fail"),
+            Err(e) => e,
+        };
+        assert!(
+            err.to_string().contains("ssh_and_proxy_mutually_exclusive"),
+            "unexpected error: {err}"
+        );
+    }
+
+    #[test]
+    fn manual_proxy_empty_host_fails_before_io() {
+        let conf = ConnConfig {
+            proxy: true,
+            proxy_option: ProxyOption {
+                proxy_mode: "manual".into(),
+                proxy_type: "http".into(),
+                host: String::new(),
+                port: 8080,
+                username: String::new(),
+                password: String::new(),
+            },
+            ..ConnConfig::default()
+        };
+        let err = match get_client_single(&conf, Duration::from_secs(1), false, None) {
+            Ok(_) => panic!("expected empty proxy host to fail"),
+            Err(e) => e,
+        };
+        assert!(
+            err.to_string().contains("proxy_host_required"),
+            "unexpected error: {err}"
+        );
     }
 
     #[test]

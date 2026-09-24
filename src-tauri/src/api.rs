@@ -3,6 +3,7 @@ use crate::client::state::{ClientAccess, app_timeouts};
 use crate::utils::app_store;
 use crate::utils::capabilities::ServerCapabilities;
 use crate::utils::model::*;
+use crate::utils::system_proxy;
 use crate::utils::util::*;
 use specta::specta;
 use std::collections::HashMap;
@@ -85,6 +86,13 @@ pub fn test_conn(app_handle: AppHandle, conf: ConnConfig) -> ApiResult<()> {
     to_api_result(conf.test(connect_timeout))
 }
 
+/// 勾选「使用系统代理」时检测一次，供表单只读展示。建连时会再检测。
+#[command]
+#[specta]
+pub fn detect_system_proxy() -> ApiResult<SystemProxyDetect> {
+    Ok(system_proxy::detect_for_ui())
+}
+
 // 哨兵模式获取主节点列表
 #[command]
 #[specta]
@@ -156,6 +164,7 @@ api_commands!(
     ar_last_items(param: RedisArLastItems) -> Vec<RedisArLastItemsItem>; // Array ARLASTITEMS
     ar_info(key: RedisKey) -> Vec<RedisArInfoItem>;               // Array ARINFO 元数据
     v_info(key: RedisKey) -> Vec<RedisArInfoItem>;                // Vector Set VINFO 元数据（行结构同 ARINFO）
+    ts_info(key: RedisKey) -> Vec<RedisArInfoItem>;               // TimeSeries TS.INFO 元数据（行结构同 ARINFO）
     v_getattr(param: RedisVAttr) -> String;                       // Vector Set VGETATTR（按需，不随 VRANGE）
     v_setattr(param: RedisVAttr) -> ();                           // Vector Set VSETATTR（空串删除）
     v_sim(param: RedisVSim) -> Vec<RedisVSimItem>;                // Vector Set VSIM 相似度查询

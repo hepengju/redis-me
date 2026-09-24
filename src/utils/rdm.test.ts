@@ -1,7 +1,13 @@
 import { describe, expect, it } from 'vite-plus/test'
 
 import { getConnGroup, mergeConnGroupsFromList } from '@/utils/conn'
-import { ConnImportParseError, parseAnotherRdmFromAno } from '@/utils/rdm'
+import { checkConnList } from '@/utils/conn-compat'
+import {
+  ConnImportParseError,
+  encodeRedisMeConnectionsToMec,
+  parseAnotherRdmFromAno,
+  parseRedisMeConnections,
+} from '@/utils/rdm'
 
 /** 与 `.ano` 一致：UTF-8 JSON → Base64 */
 function toAno(payload: unknown): string {
@@ -50,6 +56,7 @@ describe('parseAnotherRdmFromAno', () => {
     expect(c.readonly).toBe(true)
     expect(c.color).toBe('#ff0000')
     expect(getConnGroup(c)).toBe('')
+    expect(c.proxy).toBe(false)
   })
 
   it('旧版数组里偶带 groupId 也不当分组（无 groups 表）', () => {
@@ -170,5 +177,46 @@ describe('parseAnotherRdmFromAno', () => {
   it('非法 Base64 / 非 JSON 报对应错误', () => {
     expectParseErr('!!!not-base64!!!', 'conn.importAnoDecodeErr')
     expectParseErr(btoa('not-json'), 'conn.importJsonErr')
+  })
+})
+
+describe('parseRedisMeConnections', () => {
+  it('保留自身 JSON / .mec 中的代理字段', () => {
+    const list = parseRedisMeConnections(
+      JSON.stringify([
+        {
+          id: 'id1',
+          name: 'with-proxy',
+          host: '10.0.0.1',
+          port: 6379,
+          proxy: true,
+          proxyOption: {
+            proxyMode: 'manual',
+            proxyType: 'socks5',
+            host: '127.0.0.1',
+            port: 1080,
+            username: 'u',
+            password: 'secret',
+          },
+        },
+      ]),
+    )
+    expect(list).toHaveLength(1)
+    expect(list[0]!.proxy).toBe(true)
+    expect(list[0]!.proxyOption).toEqual({
+      proxyMode: 'manual',
+      proxyType: 'socks5',
+      host: '127.0.0.1',
+      port: 1080,
+      username: 'u',
+      password: 'secret',
+    })
+
+    const round = parseRedisMeConnections(encodeRedisMeConnectionsToMec(list))
+    checkConnList(round)
+    expect(round[0]!.proxy).toBe(true)
+    expect(round[0]!.proxyOption?.proxyType).toBe('socks5')
+    expect(round[0]!.proxyOption?.port).toBe(1080)
+    expect(round[0]!.proxyOption?.password).toBe('secret')
   })
 })

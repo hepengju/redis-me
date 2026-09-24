@@ -8,7 +8,7 @@ Redisson 客户端默认使用二进制序列化（4.x 默认 Kryo5Codec，3.x �
 
 - **零依赖瘦 jar**（约 10KB）：不打包任何第三方库，运行时复用你项目自带的 Redisson/Kryo/Jackson jar，
   因此天然匹配你的 Redisson 版本与序列化配置
-- **codec 自动探测**：依次尝试 `Kryo5Codec` → `MarshallingCodec`，哪个能解开用哪个
+- **codec 自动探测**：依次尝试 `Kryo5Codec` → `MarshallingCodec`，decode 后再 encode 校验往返长度，避免 Kryo 把别的 codec 的字节误读成无关类型
 - **类型保真**：`List<Person>` 等泛型结构编辑回写后元素类型不丢失
 - **兼容性**：JDK / JRE 8+ 即可运行；Redisson 3.16+ / 4.x 均支持
 
@@ -90,8 +90,17 @@ REDISSON_CODEC_CLASS=org.redisson.codec.Kryo5Codec
 
 **报错「请把包含该类的 jar 放入 lib 目录」/「无可用 codec」**
 按提示补齐 `lib/` 中缺失的 jar。典型缺失：jackson-databind、kryo、netty-buffer、
-jboss-marshalling（3.x 默认 codec 需要）、objenesis、slf4j-api。
+jboss-marshalling / jboss-marshalling-river（3.x 默认 codec 需要）、objenesis、slf4j-api。
 建议直接用 `mvn dependency:copy-dependencies` 一次拷全。
+
+**解出来类型明显不对（例如 List 变成 `java.lang.Float`）**
+Kryo5 可能对非 Kryo 字节“误读成功”。当前入口会再 encode 一次做往返长度校验，对不上就改试
+`MarshallingCodec`。若仍不对，看项目 Redisson 版本：3.19 之前默认是 Marshalling，之后默认 Kryo5。
+也可设环境变量跳过探测，例如：
+
+```
+REDISSON_CODEC_CLASS=org.redisson.codec.MarshallingCodec
+```
 
 **报 `ClassNotFoundException: com.xxx.YourClass`**
 业务 classes 没放对：确认 `lib/classes` 下有完整包目录结构。

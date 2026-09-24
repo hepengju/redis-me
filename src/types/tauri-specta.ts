@@ -11,6 +11,8 @@ export const commands = {
 	/**  更新安装完成后重启。macOS 上延迟 `open` 再退出，避免 single-instance 与 `relaunch()` 竞态。 */
 	restartAfterUpdate: () => typedError<null, string>(__TAURI_INVOKE("restart_after_update")),
 	testConn: (conf: ConnConfig) => typedError<null, string>(__TAURI_INVOKE("test_conn", { conf })),
+	/**  勾选「使用系统代理」时检测一次，供表单只读展示。建连时会再检测。 */
+	detectSystemProxy: () => typedError<SystemProxyDetect, string>(__TAURI_INVOKE("detect_system_proxy")),
 	masters: (conf: ConnConfig) => typedError<{ [key in string]: string }[], string>(__TAURI_INVOKE("masters", { conf })),
 	connList: (connList: ConnConfig[]) => typedError<null, string>(__TAURI_INVOKE("conn_list", { connList })),
 	appSettings: (appSettings: AppSettings) => typedError<null, string>(__TAURI_INVOKE("app_settings", { appSettings })),
@@ -43,6 +45,7 @@ export const commands = {
 	arLastItems: (id: string, param: RedisArLastItems_Deserialize) => typedError<RedisArLastItemsItem[], string>(__TAURI_INVOKE("ar_last_items", { id, param })),
 	arInfo: (id: string, key: RedisKey_Deserialize) => typedError<RedisArInfoItem[], string>(__TAURI_INVOKE("ar_info", { id, key })),
 	vInfo: (id: string, key: RedisKey_Deserialize) => typedError<RedisArInfoItem[], string>(__TAURI_INVOKE("v_info", { id, key })),
+	tsInfo: (id: string, key: RedisKey_Deserialize) => typedError<RedisArInfoItem[], string>(__TAURI_INVOKE("ts_info", { id, key })),
 	vGetattr: (id: string, param: RedisVAttr_Deserialize) => typedError<string, string>(__TAURI_INVOKE("v_getattr", { id, param })),
 	vSetattr: (id: string, param: RedisVAttr_Deserialize) => typedError<null, string>(__TAURI_INVOKE("v_setattr", { id, param })),
 	vSim: (id: string, param: RedisVSim_Deserialize) => typedError<RedisVSimItem[], string>(__TAURI_INVOKE("v_sim", { id, param })),
@@ -164,6 +167,8 @@ export type ConnConfig = {
 	sentinelOption: SentinelOption,
 	ssh: boolean,
 	sshOption: SshOption,
+	proxy?: boolean,
+	proxyOption?: ProxyOption,
 	meta?: { [key in string]: ConnMetaValue },
 };
 
@@ -192,6 +197,16 @@ export type FieldScanMeta = {
 	zsetMinScore?: string | null,
 	/**  ZSet 分数上界；空/缺省则 +inf */
 	zsetMaxScore?: string | null,
+	/**  TimeSeries：时间下界；空则 `-` */
+	tsMin?: string | null,
+	/**  TimeSeries：时间上界；空则 `+`；续页时由 `stream_cursor` 覆盖一端 */
+	tsMax?: string | null,
+	/**  TimeSeries：`FILTER_BY_VALUE` 下界；与 `ts_max_value` 任一非空才加过滤 */
+	tsMinValue?: string | null,
+	/**  TimeSeries：`FILTER_BY_VALUE` 上界 */
+	tsMaxValue?: string | null,
+	/**  TimeSeries 扫描方向：true=`TS.REVRANGE`（新→旧），false=`TS.RANGE`；默认 true */
+	tsDesc?: boolean | null,
 };
 
 export type FieldScanParam = FieldScanParam_Serialize | FieldScanParam_Deserialize;
@@ -262,6 +277,15 @@ export type FieldScanResult_Serialize = {
 	logicalLength?: number | null,
 	/**  Vector Set：VDIM（向量维度）；其它类型为 None */
 	vectorDim?: number | null,
+};
+
+export type ProxyOption = {
+	proxyMode: string,
+	proxyType: string,
+	host: string,
+	port: number,
+	username: string,
+	password: string,
 };
 
 export type RedisArInfoItem = {
@@ -867,6 +891,7 @@ export type ScanCursor_Deserialize = {
 	nowNode: string,
 	/**  SCAN 游标 IPC 用字符串，避免 JS Number 超过 2^53 丢精度导致续扫卡死 */
 	nowCursor: string,
+	/**  Stream：entry id；VectorSet VRANGE：上一页末元素 wire；TimeSeries：上一页边缘 timestamp（倒序最小 / 正序最大） */
 	streamCursor: string,
 	finished: boolean,
 };
@@ -876,6 +901,7 @@ export type ScanCursor_Serialize = {
 	nowNode: string,
 	/**  SCAN 游标 IPC 用字符串，避免 JS Number 超过 2^53 丢精度导致续扫卡死 */
 	nowCursor: string,
+	/**  Stream：entry id；VectorSet VRANGE：上一页末元素 wire；TimeSeries：上一页边缘 timestamp（倒序最小 / 正序最大） */
 	streamCursor: string,
 	finished: boolean,
 };
@@ -946,6 +972,17 @@ export type SslOption = {
 	key: string,
 	cert: string,
 	ca: string,
+};
+
+export type SystemProxyDetect = {
+	/**  是否将走代理 */
+	found: boolean,
+	/**  none / env / windows / macos */
+	source: string,
+	proxyType: string,
+	host: string,
+	port: number,
+	hasAuth: boolean,
 };
 
 export type XInfoConsumer = {

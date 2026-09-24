@@ -1,5 +1,26 @@
 # 5.x Changelog
 
+## [v5.3.0](https://mp.weixin.qq.com/s/P691_vhcJjZATq8qbRUtBw) (2026-09-25)
+
+### ✨ New Features
+
+- Connection: **network proxy** (system proxy or manual configuration)
+- Value area: **TimeSeries** (RedisTimeSeries `TSDB-TYPE`)
+  - Sample table: filter by timestamp and value range; newest first by default, can switch to ascending
+  - Add, edit, and delete samples; copy a row as `TS.ADD`; view `TS.INFO`
+  - Key list tag is **T**; filter by type
+  - **Line chart** of the samples currently loaded; open from the bottom-bar icon or the command menu
+- Other details
+  - Key type dropdown: List / Array use the info color and sit next to each other
+  - Monitor and Pub/Sub time columns show time of day only; Monitor defaults to newest first
+  - Slow log duration shown as whole milliseconds, right-aligned
+
+### 🐞 Bug Fixes
+
+- Deleting a table row no longer rescans the whole key; only that row is removed, and scan filters and sort are kept #168
+- Fixed the table staying on the old page after switching keys
+- Fixed Redisson codec detection where Kryo misread Marshalling data
+
 ## [v5.2.0](https://mp.weixin.qq.com/s/oMVi3OsBLD-yaMfBbpxesA) (2026-09-10)
 
 ### ✨ New Features

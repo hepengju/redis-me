@@ -38,6 +38,10 @@ pub const EVENT_COMMAND_LOG: &str = "command-log";
 pub const ME_JSON_TYPE_NAME: &str = "json";
 pub const REDIS_JSON_TYPE_NAME: &str = "ReJSON-RL";
 
+/// UI / IPC 展示名（小写）；与 `TYPE` 原始名 `TSDB-TYPE` 成对，仿 JSON
+pub const ME_TIMESERIES_TYPE_NAME: &str = "timeseries";
+pub const REDIS_TIMESERIES_TYPE_NAME: &str = "TSDB-TYPE";
+
 /// 将用户输入的命令名按连接 meta.commandMap 映射为服务端实际命令（键为小写，如 `config`）。
 pub fn resolve_command_name(conf: &ConnConfig, cmd: &str) -> String {
     let map = conf.command_map();
@@ -82,10 +86,12 @@ pub fn ui_key_type(key_type: ValueType) -> String {
     ui_key_type_str(&key_type)
 }
 
-/// `TYPE` 等返回的原始类型名（含模块名如 ReJSON-RL）统一为与 `ui_key_type` 一致的展示名
+/// `TYPE` 等返回的原始类型名（含模块名如 ReJSON-RL / TSDB-TYPE）统一为与 `ui_key_type` 一致的展示名
 pub fn ui_key_type_str(key_type: &str) -> String {
     if key_type == REDIS_JSON_TYPE_NAME {
         ME_JSON_TYPE_NAME.to_string()
+    } else if key_type == REDIS_TIMESERIES_TYPE_NAME {
+        ME_TIMESERIES_TYPE_NAME.to_string()
     } else {
         key_type.to_string()
     }
@@ -94,9 +100,37 @@ pub fn ui_key_type_str(key_type: &str) -> String {
 pub fn to_key_type(key_type: &str) -> ValueType {
     match key_type {
         ME_JSON_TYPE_NAME => ValueType::JSON,
+        // 前端 KEY_TYPE_LIST / SCAN 用 timeseries；TYPE 原始名也可经 From 落到 TimeSeries
+        s if s.eq_ignore_ascii_case(ME_TIMESERIES_TYPE_NAME) => ValueType::TimeSeries,
         // 规范化为小写 "array"，与 TYPE 回复一致，便于 is_array_type 识别
         s if s.eq_ignore_ascii_case("array") => ValueType::Unknown("array".into()),
         _ => key_type.into(),
+    }
+}
+
+/// TimeSeries 倒序续页：上一页最小 timestamp 减 1（`TS.REVRANGE` 下一页 `to`）。
+/// 用十进制字符串解析为 i128，避免 JS Number / i64 边界问题；非法或 ≤0 时回 `"0"`。
+pub fn ts_timestamp_dec_one(ts: &str) -> String {
+    let s = ts.trim();
+    if s.is_empty() {
+        return "0".into();
+    }
+    match s.parse::<i128>() {
+        Ok(n) if n > 0 => (n - 1).to_string(),
+        Ok(_) => "0".into(),
+        Err(_) => "0".into(),
+    }
+}
+
+/// TimeSeries 正序续页：上一页最大 timestamp 加 1（`TS.RANGE` 下一页 `from`）。
+pub fn ts_timestamp_inc_one(ts: &str) -> String {
+    let s = ts.trim();
+    if s.is_empty() {
+        return "0".into();
+    }
+    match s.parse::<i128>() {
+        Ok(n) => n.saturating_add(1).to_string(),
+        Err(_) => "0".into(),
     }
 }
 
@@ -796,6 +830,61 @@ pub fn parse_path(path: &str) -> PathBuf {
     PathBuf::from(expanded.as_ref())
 }
 
+/// 将 Redis Value 标量为十进制/明文字符串（TimeSeries timestamp / value）
+fn redis_scalar_to_plain(v: &Value) -> String {
+    redis_value_to_string(v.clone(), "")
+}
+
+/// 解析 `TS.REVRANGE` / `TS.RANGE` 回复为样本行（`[[ts, value], ...]`）
+pub fn parse_ts_range_items(raw: Value) -> AnyResult<Vec<RedisTimeSeriesItem>> {
+    match raw {
+        Value::Nil => Ok(Vec::new()),
+        Value::Array(rows) => {
+            let mut out = Vec::with_capacity(rows.len());
+            for row in rows {
+                match row {
+                    Value::Array(pair) if pair.len() >= 2 => {
+                        out.push(RedisTimeSeriesItem {
+                            key: redis_scalar_to_plain(&pair[0]),
+                            value: redis_scalar_to_plain(&pair[1]),
+                        });
+                    }
+                    other => bail!("unexpected TS.RANGE sample: {:?}", other),
+                }
+            }
+            Ok(out)
+        }
+        other => bail!("unexpected TS.RANGE reply: {:?}", other),
+    }
+}
+
+/// 从 `TS.INFO` 扁平键值中取 `totalSamples`；解析失败返回 None
+pub fn ts_info_total_samples(raw: &Value) -> Option<u64> {
+    let pairs: Vec<(String, String)> = match raw {
+        Value::Array(arr) => {
+            let mut pairs = Vec::new();
+            let mut i = 0;
+            while i + 1 < arr.len() {
+                pairs.push((
+                    redis_scalar_to_plain(&arr[i]),
+                    redis_scalar_to_plain(&arr[i + 1]),
+                ));
+                i += 2;
+            }
+            pairs
+        }
+        Value::Map(map) => map
+            .iter()
+            .map(|(k, v)| (redis_scalar_to_plain(k), redis_scalar_to_plain(v)))
+            .collect(),
+        _ => return None,
+    };
+    pairs
+        .into_iter()
+        .find(|(k, _)| k.eq_ignore_ascii_case("totalSamples"))
+        .and_then(|(_, v)| v.parse::<u64>().ok())
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -1016,9 +1105,36 @@ mod tests {
     }
 
     #[test]
-    fn test_timestamp_to_string() {
-        let timestamp = 1759409274;
-        println!("{}", timestamp_to_string(timestamp));
+    fn test_ts_timestamp_dec_one() {
+        assert_eq!(ts_timestamp_dec_one("100"), "99");
+        assert_eq!(ts_timestamp_dec_one("1"), "0");
+        assert_eq!(ts_timestamp_dec_one("0"), "0");
+        assert_eq!(ts_timestamp_dec_one(""), "0");
+        assert_eq!(ts_timestamp_dec_one("abc"), "0");
+        assert_eq!(ts_timestamp_dec_one(" 42 "), "41");
+    }
+
+    #[test]
+    fn test_ts_timestamp_inc_one() {
+        assert_eq!(ts_timestamp_inc_one("100"), "101");
+        assert_eq!(ts_timestamp_inc_one("0"), "1");
+        assert_eq!(ts_timestamp_inc_one(""), "0");
+        assert_eq!(ts_timestamp_inc_one("abc"), "0");
+        assert_eq!(ts_timestamp_inc_one(" 42 "), "43");
+    }
+
+    #[test]
+    fn test_parse_ts_range_items() {
+        let raw = Value::Array(vec![
+            Value::Array(vec![Value::Int(1000), Value::BulkString(b"1.5".to_vec())]),
+            Value::Array(vec![Value::Int(900), Value::Double(2.0)]),
+        ]);
+        let items = parse_ts_range_items(raw).unwrap();
+        assert_eq!(items.len(), 2);
+        assert_eq!(items[0].key, "1000");
+        assert_eq!(items[0].value, "1.5");
+        assert_eq!(items[1].key, "900");
+        assert_eq!(items[1].value, "2");
     }
 
     #[test]

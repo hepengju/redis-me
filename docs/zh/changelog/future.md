@@ -1,6 +1,7 @@
 ## Future
 
-- Time Series 的支持
+- 键的数据编码记住(连接内粘住或每个键自定义待进一步确认)
+- TimeSeries：TS.CREATE 全参数、多键 MRANGE 与聚合
 - RedisSearch 的支持
 - 抖音/B站短视频的制作: 每个痛点解决1个小视频
 - Redis实战相关文章的编写
@@ -9,7 +10,6 @@
 - Redisson的键空间通知 模块 参考实现
 - 自定义编码也支持自动识别
 - Viewer 解压查看：Gzip / Deflate / Brotli（对标 TinyRDM / Another）
-- 网络代理：HTTP / SOCKS5
 - Unix Socket 支持
 - 树形节点的内存占用显示
 - 图表：集群多节点折线同屏展示
@@ -25,6 +25,8 @@
 
 ### 已完成
 
+- TimeSeries 键详情：浏览 / 增删改 / Info / 当前样本折线图 ✅️
+- 网络代理：HTTP / HTTPS / SOCKS5 / SOCKS5H + 系统代理 ✅️
 - SSH 隧道支持集群和哨兵 ✅️
 - 数据编码魔数自动识别（Auto：ACED / Pickle PROTO / PhpSerial a:/O:/C: / MsgPack / StrJson / UTF-8 / Hex）✅️
 - String类型阈值保护 ✅️

@@ -11,13 +11,14 @@ const t = i18n.global.t
 export const KEY_TYPE_LIST: KeyTypeListItem[] = [
   { short: 'S', value: 'String', type: 'primary' },
   { short: 'H', value: 'Hash', type: 'success' },
-  { short: 'L', value: 'List', type: 'warning' },
+  { short: 'L', value: 'List', type: 'info' },
+  { short: 'A', value: 'Array', type: 'info' }, // Redis 8.8；与 List 同色，紧挨 List
   { short: 'E', value: 'Set', type: 'warning' },
   { short: 'Z', value: 'SortedSet', type: 'warning' },
   { short: 'V', value: 'VectorSet', type: 'warning' }, // Redis 8.4+；与 *Set 同色，紧挨 SortedSet
   { short: 'X', value: 'Stream', type: 'danger' },
   { short: 'J', value: 'Json', type: 'danger' },
-  { short: 'A', value: 'Array', type: 'danger' }, // Redis 8.8
+  { short: 'T', value: 'TimeSeries', type: 'danger' }, // RedisTimeSeries；TYPE=TSDB-TYPE；列表垫底
 ]
 
 const keyTypeMap = new Map(KEY_TYPE_LIST.map(item => [item.value, item.type]))
@@ -47,6 +48,9 @@ export function toKeyTypeLabel(keyType: string | undefined | null): string {
       return 'Stream'
     case 'array':
       return 'Array'
+    case 'tsdb-type':
+    case 'timeseries':
+      return 'TimeSeries'
     default:
       return (
         KEY_TYPE_LIST.find(i => i.value.toLowerCase() === keyType.toLowerCase())?.value ?? keyType
@@ -60,6 +64,9 @@ export function toRedisTypeName(displayOrRedis: string): string {
     case 'sortedset':
     case 'zset':
       return 'zset'
+    // 展示名 TimeSeries → IPC/SCAN 用 timeseries（后端再换成 TSDB-TYPE）
+    case 'timeseries':
+      return 'timeseries'
     default:
       return displayOrRedis.toLowerCase()
   }
