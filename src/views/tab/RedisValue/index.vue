@@ -96,11 +96,13 @@ import {
   isStringLikeType,
   listRowRedisIndex,
   mergeFieldScanPage,
+  normalizeTsRangeBound,
   parseListIndexInput,
   removeScannedFieldRow,
   pinFieldExpireAt,
   shouldFieldScanAuto,
   streamIdToDate,
+  tsTimestampToDate,
   supportsFieldRowRefresh,
   supportsFieldServerScan,
   supportsTableView,
@@ -139,6 +141,7 @@ const isPretty = ref(true)
 const stringType = computed(() => 'string' === redisValue.value?.type)
 const jsonType = computed(() => 'json' === redisValue.value?.type)
 const streamType = computed(() => 'stream' === redisValue.value?.type)
+const timeseriesType = computed(() => 'timeseries' === redisValue.value?.type)
 const hashType = computed(() => 'hash' === redisValue.value?.type)
 const listType = computed(() => 'list' === redisValue.value?.type)
 const arrayType = computed(() => 'array' === redisValue.value?.type)
@@ -226,14 +229,20 @@ const showValueTruncatedAlert = computed(
   () => stringType.value && valueTruncated.value && !valueTruncatedDismissed.value,
 )
 
-// List / Stream / ZSet 扫描范围与方向
+// List / Stream / ZSet / TimeSeries 扫描范围与方向
 const meta = ref({ maxId: '', minId: '' }) // Stream minId / maxId
 const listIndexMin = ref('')
 const listIndexMax = ref('')
 const listDescAsc = ref(true) // true=升序
 const streamDescAsc = ref(true) // true=XRANGE
+const tsDescAsc = ref(false) // true=TS.RANGE；默认倒序（TS.REVRANGE，新→旧）
 const zsetScoreMin = ref('')
 const zsetScoreMax = ref('')
+// TimeSeries：时间戳 / 值区间（明文；空=不限）；无本地关键词过滤，省出工具栏宽度
+const tsMin = ref('')
+const tsMax = ref('')
+const tsMinValue = ref('')
+const tsMaxValue = ref('')
 
 function toggleListSortOrder() {
   listDescAsc.value = !listDescAsc.value
@@ -241,6 +250,10 @@ function toggleListSortOrder() {
 }
 function toggleStreamSortOrder() {
   streamDescAsc.value = !streamDescAsc.value
+  void restartFieldScan()
+}
+function toggleTsSortOrder() {
+  tsDescAsc.value = !tsDescAsc.value
   void restartFieldScan()
 }
 // #endregion
@@ -545,6 +558,12 @@ function fieldScanValueForJsonView(type: string, value: unknown): unknown {
           attrs: tryParse(v.attrs || ''),
         }
       })
+    case 'timeseries':
+      // timestamp/value 为明文，不做 wire 解码
+      return (value as ValueTableRow[]).map(row => ({
+        key: String(row.key ?? ''),
+        value: String(row.value ?? ''),
+      }))
     default:
       return value
   }
@@ -570,7 +589,8 @@ const showValue = computed(() => {
     setType.value ||
     zsetType.value ||
     arrayType.value ||
-    vectorsetType.value
+    vectorsetType.value ||
+    timeseriesType.value
   ) {
     const display = fieldScanValueForJsonView(rv.type, obj)
     return JSON.stringify(display, null, isPretty.value ? 2 : undefined)
@@ -618,11 +638,12 @@ const dataList = computed(() => {
   return data
 })
 
-// List/Stream：关键词本地包含过滤
+// List/Stream：关键词本地包含过滤（TimeSeries 无本地过滤框，靠时间/数值区间）
 const filterDataList = computed(() => {
   const key = fieldKeyword.value.toLowerCase()
   return dataList.value.filter(row => {
     if (!key) return true
+    if (timeseriesType.value) return true
     if ((formatTableCell(row.key).toLowerCase() ?? '').indexOf(key) > -1) return true
     if ((row.id?.toLowerCase() ?? '').indexOf(key) > -1) return true
     const cell = streamType.value ? JSON.stringify(row.value) : formatTableCell(row.value)
@@ -776,9 +797,14 @@ function resetParam() {
   listIndexMax.value = ''
   listDescAsc.value = true
   streamDescAsc.value = true
+  tsDescAsc.value = false
   zsetScoreMin.value = ''
   zsetScoreMax.value = ''
   vectorsetSample.value = true
+  tsMin.value = ''
+  tsMax.value = ''
+  tsMinValue.value = ''
+  tsMaxValue.value = ''
 }
 function fieldScanIncludeMeta(): boolean {
   return cursor.value == null // 续扫跳过 TYPE/TTL/MEMORY 等
@@ -802,6 +828,11 @@ function buildFieldScanParam() {
       vectorsetSample: vectorsetType.value ? vectorsetSample.value : null,
       zsetMinScore: zsetType.value ? zsetScoreMin.value.trim() || null : null,
       zsetMaxScore: zsetType.value ? zsetScoreMax.value.trim() || null : null,
+      tsMin: timeseriesType.value ? normalizeTsRangeBound(tsMin.value) || null : null,
+      tsMax: timeseriesType.value ? normalizeTsRangeBound(tsMax.value) || null : null,
+      tsMinValue: timeseriesType.value ? tsMinValue.value.trim() || null : null,
+      tsMaxValue: timeseriesType.value ? tsMaxValue.value.trim() || null : null,
+      tsDesc: timeseriesType.value ? !tsDescAsc.value : null,
       valueByteLimit: VALUE_BYTE_LIMIT.value,
       valuePreviewBytes: VALUE_PREVIEW_BYTES.value,
       forceFullValue: forceFullValue.value,
@@ -1035,13 +1066,18 @@ const fieldSetRow = ref<ValueTableRow | null>(null) // 分页下不能用 index 
 function fieldAdd() {
   const rv = redisValue.value
   if (!rv || !canEdit.value) return
+  // TimeSeries：默认时间戳 *（服务器当前时间）；value 明文不走 wire
+  const isTs = rv.type === 'timeseries'
   fieldAddRef.value?.open({
     mode: 'field',
     type: rv.type,
-    valFmt: IPC_WIRE_FORMAT,
-    viewValFmt: viewFmtForField(bytesFormat.value),
+    valFmt: isTs ? 'utf8' : IPC_WIRE_FORMAT,
+    viewValFmt: isTs ? 'utf8' : viewFmtForField(bytesFormat.value),
     key: { ...share.redisKey! },
     vectorDim: rv.vectorDim,
+    ...(isTs
+      ? { fieldValueList: [{ fieldKey: '*', fieldValue: '0', fieldScore: 0, fieldTtl: -1 }] }
+      : {}),
   })
 }
 
@@ -1055,7 +1091,7 @@ function fieldSetInit() {
 }
 
 function prepareFieldRowContext(row: ValueTableRow) {
-  // VectorSet 元素名在 row.value（与 Set 一致）
+  // VectorSet 元素名在 row.value（与 Set 一致）；TimeSeries timestamp 在 row.key
   fieldEditKey.value = vectorsetType.value ? String(row.value ?? '') : row.key || ''
   fieldEditIndex.value = -1
   if (listType.value || arrayType.value) {
@@ -1080,6 +1116,8 @@ function formatFieldTtl(ttl: number | undefined, expireAtMs?: number | null): st
 }
 function fieldRowDisplayValue(row: ValueTableRow): string {
   if (streamType.value) return JSON.stringify(row.value)
+  // TimeSeries value 为数值明文，不做 base64 wire 解码
+  if (timeseriesType.value) return String(row.value ?? '')
   return formatTableCell(row.value)
 }
 function compareFieldRowValue(a: ValueTableRow, b: ValueTableRow): number {
@@ -1103,9 +1141,14 @@ function exportValueTableRows(data: unknown[]): TableExportMatrix {
       return date ? `${id} ${date}` : id
     })
   }
-  if (hashType.value) {
-    headers.push(t('redisValue.key'))
-    cells.push(row => formatTableCell(row.key))
+  if (hashType.value || timeseriesType.value) {
+    headers.push(timeseriesType.value ? t('redisValue.timestamp') : t('redisValue.key'))
+    cells.push(row => {
+      const ts = String(row.key ?? '')
+      if (!timeseriesType.value) return formatTableCell(row.key)
+      const date = tsTimestampToDate(ts)
+      return date ? `${ts} ${date}` : ts
+    })
   }
   if (listType.value || arrayType.value) {
     headers.push(t('redisValue.index'))
@@ -1167,16 +1210,17 @@ async function openFieldPanel(row: ValueTableRow, index: number, readonly: boole
     ? meViewToWire(JSON.stringify(row.value ?? {}), 'utf8')
     : vectorsetType.value
       ? vectorValue
-      : String(row.value ?? '')
+      : String(row.value ?? '') // TimeSeries 等明文也走此支
+  const tsOrKey = timeseriesType.value ? String(row.key ?? '') : row.key || ''
   const params = {
-    fieldKey: vectorsetType.value ? String(row.value ?? '') : row.key || '',
+    fieldKey: vectorsetType.value ? String(row.value ?? '') : tsOrKey,
     fieldScore: row.score || 0,
     fieldTtl: row.ttl ?? -1,
     fieldExpireAt:
       row.expireAtMs != null && (row.ttl ?? 0) > 0 ? new Date(row.expireAtMs) : undefined,
     srcFieldValue: rowValWire,
-    wireFieldKey: vectorsetType.value ? String(row.value ?? '') : row.key || '',
-    keyWireFmt: IPC_WIRE_FORMAT,
+    wireFieldKey: vectorsetType.value ? String(row.value ?? '') : tsOrKey,
+    keyWireFmt: timeseriesType.value ? ('utf8' as const) : IPC_WIRE_FORMAT,
     type: rv.type,
     key: share.redisKey!,
     fieldIndex: -1,
@@ -1293,11 +1337,19 @@ function buildFieldAsCommandParam(row: ValueTableRow): RedisFieldAsCommand_Deser
   if (!rv || !rk) return null
   const param: RedisFieldAsCommand_Deserialize = {
     key: rk,
-    fieldKey: vectorsetType.value ? String(row.value ?? '') : row.key || '',
-    fieldValue: vectorsetType.value ? '' : String(row.value ?? ''),
+    fieldKey: vectorsetType.value
+      ? String(row.value ?? '')
+      : timeseriesType.value
+        ? String(row.key ?? '')
+        : row.key || '',
+    fieldValue: vectorsetType.value
+      ? ''
+      : timeseriesType.value
+        ? String(row.value ?? '')
+        : String(row.value ?? ''),
     streamId: row.id || '',
     fieldIndex: -1,
-    valFmt: IPC_WIRE_FORMAT,
+    valFmt: timeseriesType.value ? 'utf8' : IPC_WIRE_FORMAT,
   }
   if (listType.value || arrayType.value) {
     param.fieldIndex = listRowRedisIndex(row)
@@ -1325,7 +1377,7 @@ function onFieldRowMoreCommand(command: string, row: ValueTableRow) {
   } else if (command === 'refreshRow') {
     void refreshFieldRow(row)
   } else if (command === 'copyKey') {
-    meCopy(formatTableCell(row.key ?? ''))
+    meCopy(timeseriesType.value ? String(row.key ?? '') : formatTableCell(row.key ?? ''))
   } else if (command === 'copyValue') {
     meCopy(fieldRowDisplayValue(row))
   } else if (command === 'copyAttrs') {
@@ -1398,12 +1450,16 @@ async function fieldDel(row: ValueTableRow) {
   const rv = redisValue.value
   if (!rv) return
   const param: RedisFieldDel_Deserialize = {
-    fieldKey: vectorsetType.value ? String(row.value ?? '') : row.key || '',
+    fieldKey: vectorsetType.value
+      ? String(row.value ?? '')
+      : timeseriesType.value
+        ? String(row.key ?? '')
+        : row.key || '',
     fieldValue: vectorsetType.value ? '' : String(row.value ?? ''),
     key: share.redisKey!,
     streamId: row.id || '',
     fieldIndex: -1,
-    valFmt: IPC_WIRE_FORMAT,
+    valFmt: timeseriesType.value ? 'utf8' : IPC_WIRE_FORMAT,
   }
   if (listType.value || arrayType.value) {
     param.fieldIndex = listRowRedisIndex(row)
@@ -1616,13 +1672,17 @@ async function runFieldPop(mode: string) {
   await restartFieldScan()
 }
 function onPopCommand(command: string) {
-  // Array / VectorSet 只读扩展走工具栏「更多」，下拉项用原命令名
+  // Array / VectorSet / TimeSeries 只读扩展走工具栏「更多」，下拉项用原命令名
   if (command === 'ARINFO') {
     tableInfoRef.value?.open('arinfo')
     return
   }
   if (command === 'VINFO') {
     tableInfoRef.value?.open('vinfo')
+    return
+  }
+  if (command === 'TSINFO') {
+    tableInfoRef.value?.open('tsinfo')
     return
   }
   const confirmMap: Record<string, string> = {
@@ -1865,7 +1925,9 @@ onUnmounted(() => {
         <!-- 表格显示 -->
         <div class="me-flex value-table-pane" v-else @click="onFieldPanelOutsideClick">
           <div class="me-flex table-toolbar">
+            <!-- TimeSeries：去掉本地过滤，工具栏留给时间/数值区间 -->
             <el-input
+              v-if="!timeseriesType"
               v-model="fieldKeyword"
               :placeholder="fieldScanInputPlaceholder"
               :readonly="loading"
@@ -1934,6 +1996,34 @@ onUnmounted(() => {
                 clearable />
             </div>
 
+            <!-- TimeSeries：时间戳 + 数值区间常显（无本地过滤） -->
+            <div v-if="timeseriesType" class="list-range-inputs">
+              <el-input
+                @keyup.enter="restartFieldScan()"
+                v-model.trim="tsMin"
+                :placeholder="t('redisValue.tsMin')"
+                clearable />
+              <span class="list-range-sep">~</span>
+              <el-input
+                @keyup.enter="restartFieldScan()"
+                v-model.trim="tsMax"
+                :placeholder="t('redisValue.tsMax')"
+                clearable />
+            </div>
+            <div v-if="timeseriesType" class="list-range-inputs">
+              <el-input
+                @keyup.enter="restartFieldScan()"
+                v-model.trim="tsMinValue"
+                :placeholder="t('redisValue.tsMinValue')"
+                clearable />
+              <span class="list-range-sep">~</span>
+              <el-input
+                @keyup.enter="restartFieldScan()"
+                v-model.trim="tsMaxValue"
+                :placeholder="t('redisValue.tsMaxValue')"
+                clearable />
+            </div>
+
             <!-- 右侧更多+插入行 -->
             <div class="table-toolbar-actions">
               <!-- VectorSet 浏览模式：随机采样 / 范围查询 -->
@@ -1957,6 +2047,13 @@ onUnmounted(() => {
                 @click="toggleStreamSortOrder"
                 style="margin-left: 10px">
                 {{ streamDescAsc ? t('redisValue.listSortAsc') : t('redisValue.listSortDesc') }}
+              </el-button>
+              <el-button
+                v-if="timeseriesType"
+                :icon="tsDescAsc ? 'el-icon-sort-up' : 'el-icon-sort-down'"
+                @click="toggleTsSortOrder"
+                style="margin-left: 10px">
+                {{ tsDescAsc ? t('redisValue.listSortAsc') : t('redisValue.listSortDesc') }}
               </el-button>
               <el-button
                 icon="el-icon-grid"
@@ -2001,7 +2098,12 @@ onUnmounted(() => {
                 {{ t('redisValue.arLastItems') }}
               </me-button>
               <el-dropdown
-                v-if="((listType || setType || zsetType) && canEdit) || arrayType || vectorsetType"
+                v-if="
+                  ((listType || setType || zsetType) && canEdit) ||
+                  arrayType ||
+                  vectorsetType ||
+                  timeseriesType
+                "
                 placement="bottom-end"
                 @command="onPopCommand"
                 style="margin-left: 10px">
@@ -2017,6 +2119,9 @@ onUnmounted(() => {
                     <el-dropdown-item v-if="zsetType" command="ZPOPMAX">ZPOPMAX</el-dropdown-item>
                     <el-dropdown-item v-if="arrayType" command="ARINFO">ARINFO</el-dropdown-item>
                     <el-dropdown-item v-if="vectorsetType" command="VINFO">VINFO</el-dropdown-item>
+                    <el-dropdown-item v-if="timeseriesType" command="TSINFO"
+                      >TS.INFO</el-dropdown-item
+                    >
                   </el-dropdown-menu>
                 </template>
               </el-dropdown>
@@ -2077,10 +2182,23 @@ onUnmounted(() => {
                 </template>
               </el-table-column>
 
-              <!-- Hash：哈希键 -->
-              <el-table-column :label="t('redisValue.key')" prop="key" sortable v-if="hashType">
+              <!-- Hash / TimeSeries：键或时间戳（TS 宽度对齐 Stream ID） -->
+              <el-table-column
+                :label="timeseriesType ? t('redisValue.timestamp') : t('redisValue.key')"
+                prop="key"
+                :width="timeseriesType ? 350 : undefined"
+                sortable
+                v-if="hashType || timeseriesType">
                 <template #default="scope">
-                  {{ formatTableCell(scope.row.key) }}
+                  <div v-if="timeseriesType" class="me-flex" style="width: 100%">
+                    <span>{{ scope.row.key }}</span>
+                    <span
+                      v-if="tsTimestampToDate(String(scope.row.key ?? ''))"
+                      style="color: var(--el-color-info)">
+                      {{ tsTimestampToDate(String(scope.row.key ?? '')) }}
+                    </span>
+                  </div>
+                  <template v-else>{{ formatTableCell(scope.row.key) }}</template>
                 </template>
               </el-table-column>
 
@@ -2201,7 +2319,7 @@ onUnmounted(() => {
                               icon="el-icon-refresh-right"
                               :name="t('redisValue.refreshFieldRow')" />
                           </el-dropdown-item>
-                          <el-dropdown-item v-if="hashType" command="copyKey">
+                          <el-dropdown-item v-if="hashType || timeseriesType" command="copyKey">
                             <me-icon icon="el-icon-document-copy" :name="t('redisValue.copyKey')" />
                           </el-dropdown-item>
                           <el-dropdown-item v-if="listType || arrayType" command="copyIndex">
@@ -2321,6 +2439,14 @@ onUnmounted(() => {
               </el-dropdown-menu>
             </template>
           </el-dropdown>
+          <!-- TimeSeries 无本地过滤框：长扫描暂停跟刷新同区，与状态文案分开 -->
+          <me-scan-control
+            v-if="timeseriesType && showScanControl"
+            style="margin-left: 8px"
+            :percentage="scanProgress"
+            :loading="loading"
+            :tip="scanToggleTip"
+            @click="onFieldScanAction" />
 
           <el-divider direction="vertical" v-if="textMemory" />
 
@@ -2607,6 +2733,11 @@ onUnmounted(() => {
         margin-left: 10px;
         flex-shrink: 0;
         align-items: center;
+
+        // TimeSeries 等无左侧关键词时，首组区间与表格左缘对齐
+        &:first-child {
+          margin-left: 0;
+        }
 
         :deep(.el-input) {
           width: 120px;

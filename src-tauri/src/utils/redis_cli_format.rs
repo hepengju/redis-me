@@ -213,6 +213,16 @@ pub fn format_json_set_command(key: &[u8], json: &[u8]) -> String {
     format!("JSON.SET {} $ {}", format_quoted(key), format_quoted(json))
 }
 
+/// TimeSeries 单样本：`TS.ADD key timestamp value`（timestamp/value 为十进制明文）
+pub fn format_ts_add_command(key: &[u8], timestamp: &str, value: &str) -> String {
+    format!(
+        "TS.ADD {} {} {}",
+        format_quoted(key),
+        timestamp.trim(),
+        value.trim()
+    )
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

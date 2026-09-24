@@ -412,6 +412,21 @@ api_model!(FieldScanMeta {
     /// ZSet 分数上界；空/缺省则 +inf
     #[serde(default)]
     zset_max_score: Option<String>,
+    /// TimeSeries：时间下界；空则 `-`
+    #[serde(default)]
+    ts_min: Option<String>,
+    /// TimeSeries：时间上界；空则 `+`；续页时由 `stream_cursor` 覆盖一端
+    #[serde(default)]
+    ts_max: Option<String>,
+    /// TimeSeries：`FILTER_BY_VALUE` 下界；与 `ts_max_value` 任一非空才加过滤
+    #[serde(default)]
+    ts_min_value: Option<String>,
+    /// TimeSeries：`FILTER_BY_VALUE` 上界
+    #[serde(default)]
+    ts_max_value: Option<String>,
+    /// TimeSeries 扫描方向：true=`TS.REVRANGE`（新→旧），false=`TS.RANGE`；默认 true
+    #[serde(default)]
+    ts_desc: Option<bool>,
 });
 
 api_model!(FieldScanParam {
@@ -466,6 +481,7 @@ ScanCursor {
     #[serde(with = "u64_as_string")]
     #[specta(type = String)]
     now_cursor: u64,
+    /// Stream：entry id；VectorSet VRANGE：上一页末元素 wire；TimeSeries：上一页边缘 timestamp（倒序最小 / 正序最大）
     stream_cursor: String,
     finished: bool,
 });
@@ -660,6 +676,12 @@ api_model!(RedisZetItem {
 api_model!(RedisStreamItem {
     id: String,
     value: HashMap<String, String>, // map转化为的json字符串
+});
+
+// TimeSeries 样本行（fieldScan）；key=timestamp 十进制字符串，value=数值明文（不走 wire/base64）
+api_model!(RedisTimeSeriesItem {
+    key: String,
+    value: String,
 });
 
 // 字段新增

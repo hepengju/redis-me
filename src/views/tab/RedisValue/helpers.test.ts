@@ -1,3 +1,4 @@
+import dayjs from 'dayjs'
 import { afterEach, describe, expect, it } from 'vite-plus/test'
 
 import i18n from '@/locales'
@@ -6,6 +7,7 @@ import {
   formatFieldTtlCell,
   formatFieldTtlTooltip,
   formatTtlExpireTooltip,
+  normalizeTsRangeBound,
   pinFieldExpireAt,
   removeScannedFieldRow,
   type ValueTableRow,
@@ -182,9 +184,44 @@ describe('removeScannedFieldRow', () => {
     expect(rows).toEqual([{ name: 'b', vector: '[2]', attrs: '{}' }])
   })
 
+  it('TimeSeries 按 timestamp(key) 摘掉', () => {
+    const rows = [
+      { key: '1000', value: '1.5' },
+      { key: '900', value: '2' },
+    ]
+    expect(removeScannedFieldRow(rows, 'timeseries', { key: '1000' })).toBe(true)
+    expect(rows).toEqual([{ key: '900', value: '2' }])
+  })
+
   it('找不到则不改行', () => {
     const rows = [{ key: 'a', value: '1' }]
     expect(removeScannedFieldRow(rows, 'hash', { key: 'missing' })).toBe(false)
     expect(rows).toEqual([{ key: 'a', value: '1' }])
+  })
+})
+
+describe('normalizeTsRangeBound', () => {
+  it('空 / 边界符 / 纯数字原样', () => {
+    expect(normalizeTsRangeBound('')).toBe('')
+    expect(normalizeTsRangeBound('  ')).toBe('')
+    expect(normalizeTsRangeBound('-')).toBe('-')
+    expect(normalizeTsRangeBound('+')).toBe('+')
+    expect(normalizeTsRangeBound('1600000000000')).toBe('1600000000000')
+  })
+
+  it('可读时间转本地 ms', () => {
+    expect(normalizeTsRangeBound('2020-09-13 23:13:18')).toBe(
+      String(dayjs('2020-09-13 23:13:18', 'YYYY-MM-DD HH:mm:ss', true).valueOf()),
+    )
+    expect(normalizeTsRangeBound('2020-09-13 23:13:18.000')).toBe(
+      String(dayjs('2020-09-13 23:13:18.000', 'YYYY-MM-DD HH:mm:ss.SSS', true).valueOf()),
+    )
+    expect(normalizeTsRangeBound('2020-09-13')).toBe(
+      String(dayjs('2020-09-13', 'YYYY-MM-DD', true).valueOf()),
+    )
+  })
+
+  it('无法解析则原样交 Redis', () => {
+    expect(normalizeTsRangeBound('not-a-date')).toBe('not-a-date')
   })
 })

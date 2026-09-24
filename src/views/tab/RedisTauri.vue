@@ -282,6 +282,7 @@ function defaultPayload(cmd: CommandKey): Record<string, unknown> {
     case 'keyNode':
     case 'arInfo':
     case 'vInfo':
+    case 'tsInfo':
     case 'objectInfo':
     case 'xinfoGroups':
       return { id: connIdForDefaults(), key: { ...dummyKey } }

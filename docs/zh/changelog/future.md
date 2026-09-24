@@ -1,6 +1,7 @@
 ## Future
 
-- Time Series 的支持
+- 键的数据编码记住(连接内粘住或每个键自定义待进一步确认)
+- TimeSeries 的支持
 - RedisSearch 的支持
 - 抖音/B站短视频的制作: 每个痛点解决1个小视频
 - Redis实战相关文章的编写

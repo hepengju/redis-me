@@ -12,6 +12,7 @@ import { KEY_TYPE_LIST, meType, toKeyTypeLabel, toRedisTypeName } from '@/utils/
 import { redisKeyWireBase64 } from '@/utils/redis-key'
 import { meCommands, meErr, meOk, meJsonParse, meJsonNormal } from '@/utils/util'
 import { parseAttrsInput, parseVectorInput } from '@/utils/vector'
+import { normalizeTsRangeBound } from '@/views/tab/RedisValue/helpers'
 // #endregion
 
 // #region 核心状态
@@ -74,6 +75,7 @@ const keyTtlRef = useTemplateRef<{ toSeconds: () => number }>('keyTtlRef')
 const stringOrJsonType = computed(() => form.value.type === 'string' || form.value.type === 'json')
 const jsonType = computed(() => form.value.type === 'json')
 const vectorsetType = computed(() => form.value.type === 'vectorset')
+const timeseriesType = computed(() => form.value.type === 'timeseries')
 // 键的 VDIM（打开时传入；非 vectorset 或未知时为 null）
 const expectedVectorDim = ref<number | null>(null)
 const arrayArsetMode = computed(
@@ -222,6 +224,19 @@ function submit() {
       attrs = attrsParsed.json
     }
 
+    // TimeSeries：校验数值明文；空列表由后端 TS.ADD * 0
+    if (timeseriesType.value) {
+      for (const item of form.value.fieldValueList) {
+        const ts = String(item.fieldKey ?? '').trim()
+        const val = String(item.fieldValue ?? '').trim()
+        if (!ts && !val) continue // 空行：新建键时后端落 * 0
+        if (!val) {
+          meErr(t('fieldAdd.tsValueRequired'))
+          return
+        }
+      }
+    }
+
     // 与 KeyRename 一致：提交前先做编码转换检查，失败 meErr 并 return，不打后端
     try {
       if (form.value.type === 'string') {
@@ -232,9 +247,15 @@ function submit() {
         ...item,
         fieldKey: isArrayArset
           ? String(item.fieldKey).trim()
-          : meViewToWire(item.fieldKey, valViewFmt),
-        // Vector Set 向量走 vector[]，fieldValue 置空避免误 wire
-        fieldValue: vectorsetType.value ? '' : meViewToWire(item.fieldValue, valViewFmt),
+          : timeseriesType.value
+            ? normalizeTsRangeBound(String(item.fieldKey ?? ''))
+            : meViewToWire(item.fieldKey, valViewFmt),
+        // Vector Set 向量走 vector[]；TimeSeries 明文；其余 wire
+        fieldValue: vectorsetType.value
+          ? ''
+          : timeseriesType.value
+            ? String(item.fieldValue).trim()
+            : meViewToWire(item.fieldValue, valViewFmt),
       }))
       fieldValueList.forEach(item => {
         const sec = fieldTtlRefs.get(item)?.toSeconds()
@@ -272,7 +293,7 @@ function submit() {
         ttl: keyTtlRef.value?.toSeconds() ?? form.value.ttl,
         fieldValueList,
         keyFmt: IPC_WIRE_FORMAT,
-        valFmt: isJson ? 'utf8' : IPC_WIRE_FORMAT,
+        valFmt: isJson || timeseriesType.value ? 'utf8' : IPC_WIRE_FORMAT,
       })
       visible.value = false
       emit('success', redisKey)
@@ -288,6 +309,7 @@ const hint = computed(() => {
     return share.capabilities.httlSupported ? t('fieldAdd.hashHintTtl') : t('fieldAdd.hashHint')
   if (form.value.type === 'zset') return t('fieldAdd.zsetHint')
   if (form.value.type === 'stream') return t('fieldAdd.streamHint')
+  if (form.value.type === 'timeseries') return t('fieldAdd.timeseriesHint')
   if (form.value.type === 'array') {
     return arrayArsetMode.value ? t('fieldAdd.arrayHint') : t('fieldAdd.arrayInsertHint')
   }
@@ -302,9 +324,9 @@ watch(
   },
 )
 
-// json和stream类型不支持编码
+// json / stream / timeseries 不支持值编码（TS 为数值明文）
 function handleKeyTypeChange() {
-  if (jsonType.value) {
+  if (jsonType.value || timeseriesType.value) {
     form.value.keyFmt = 'utf8'
     form.value.valFmt = 'utf8'
   }
@@ -440,19 +462,22 @@ function handleKeyTypeChange() {
                 ? t('fieldAdd.arrayIndex')
                 : form.type === 'hash'
                   ? t('fieldAdd.hashKey')
-                  : t('fieldAdd.field')
+                  : form.type === 'timeseries'
+                    ? t('fieldAdd.timestamp')
+                    : t('fieldAdd.field')
             "
             style="margin-right: 10px"
             v-if="
               form.type === 'hash' ||
               form.type === 'stream' ||
+              form.type === 'timeseries' ||
               (form.type === 'array' && arrayArsetMode)
             "
             :validate-event="false" />
           <el-input
             type="text"
             v-model="item.fieldValue"
-            :placeholder="t('fieldAdd.value')"
+            :placeholder="form.type === 'timeseries' ? t('fieldAdd.tsValue') : t('fieldAdd.value')"
             style="margin-right: 10px"
             :validate-event="false" />
           <el-input-number
@@ -484,15 +509,16 @@ function handleKeyTypeChange() {
             v-show="form.mode === 'key'"
             v-model="form.keyFmt"
             style="width: 100px; margin: 0 20px 0 10px"
-            :disabled="jsonType">
+            :disabled="jsonType || timeseriesType">
             <el-option v-for="item in BYTES_FORMAT" :label="item" :value="item.toLowerCase()" />
           </el-select>
 
-          <!-- 值编码；Vector Set 仅元素名走 wire，文案改为元素编码 -->
-          <el-text type="info">{{
+          <!-- 值编码；Vector Set 仅元素名走 wire，文案改为元素编码；TimeSeries 数值明文 -->
+          <el-text v-show="!timeseriesType" type="info">{{
             vectorsetType ? t('fieldAdd.elementCodec') : t('fieldAdd.valueCodec')
           }}</el-text>
           <el-select
+            v-show="!timeseriesType"
             v-model="form.valFmt"
             style="width: 100px; margin: 0 20px 0 10px"
             :disabled="jsonType">

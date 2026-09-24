@@ -53,6 +53,7 @@ fn tauri_specta_commands() -> Commands<tauri::Wry> {
         ar_last_items,
         ar_info,
         v_info,
+        ts_info,
         v_getattr,
         v_setattr,
         v_sim,

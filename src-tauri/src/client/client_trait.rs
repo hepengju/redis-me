@@ -94,6 +94,8 @@ pub trait MeClient: Send + Sync {
 
     fn v_info(&self, key: RedisKey) -> AnyResult<Vec<RedisArInfoItem>>;
 
+    fn ts_info(&self, key: RedisKey) -> AnyResult<Vec<RedisArInfoItem>>;
+
     fn v_getattr(&self, param: RedisVAttr) -> AnyResult<String>;
 
     fn v_setattr(&self, param: RedisVAttr) -> AnyResult<()>;
@@ -289,8 +291,11 @@ pub fn scan_1_cmd(cursor: u64, pattern: &str, batch_count: u64, scan_type: Optio
     if let Some(mut scan_type) = scan_type
         && !scan_type.is_empty()
     {
+        // SCAN TYPE 要原始模块名；UI 用 json / timeseries
         if scan_type == ME_JSON_TYPE_NAME {
             scan_type = REDIS_JSON_TYPE_NAME.to_string();
+        } else if scan_type == ME_TIMESERIES_TYPE_NAME {
+            scan_type = REDIS_TIMESERIES_TYPE_NAME.to_string();
         }
         cmd.arg("type").arg(scan_type);
     }
@@ -833,6 +838,82 @@ fn field_scan_vectorset_page(
     Ok(elements)
 }
 
+/// TimeSeries 分页：默认 `TS.REVRANGE`（新→旧）；`ts_desc=false` 时用 `TS.RANGE`。
+/// 续页：`stream_cursor` 存上一页边缘 timestamp；倒序下一页 `to = ts−1`，正序 `from = ts+1`。
+/// `FILTER_BY_VALUE` 仅在工具栏有输入时追加。
+fn field_scan_timeseries_page(
+    conn: &mut MutexGuard<impl Commands>,
+    key: &RedisKey,
+    param: &FieldScanParam,
+    cc: &mut ScanCursor,
+) -> AnyResult<Vec<RedisTimeSeriesItem>> {
+    let count = field_scan_batch_count(param.count);
+    let meta = param.meta.as_ref();
+    let is_desc = meta.and_then(|m| m.ts_desc).unwrap_or(true);
+
+    let toolbar_from = meta
+        .and_then(|m| m.ts_min.as_ref())
+        .map(|s| s.trim().to_string())
+        .filter(|s| !s.is_empty())
+        .unwrap_or_else(|| "-".into());
+    let toolbar_to = meta
+        .and_then(|m| m.ts_max.as_ref())
+        .map(|s| s.trim().to_string())
+        .filter(|s| !s.is_empty())
+        .unwrap_or_else(|| "+".into());
+
+    let (from, to) = if is_desc {
+        // REVRANGE：首页用工具栏上界；续页用上一页最小 ts−1
+        let to = if cc.stream_cursor.is_empty() {
+            toolbar_to
+        } else {
+            ts_timestamp_dec_one(&cc.stream_cursor)
+        };
+        (toolbar_from, to)
+    } else {
+        // RANGE：首页用工具栏下界；续页用上一页最大 ts+1
+        let from = if cc.stream_cursor.is_empty() {
+            toolbar_from
+        } else {
+            ts_timestamp_inc_one(&cc.stream_cursor)
+        };
+        (from, toolbar_to)
+    };
+
+    let mut cmd = redis::cmd(if is_desc { "TS.REVRANGE" } else { "TS.RANGE" });
+    cmd.arg(key).arg(&from).arg(&to);
+
+    let min_v = meta
+        .and_then(|m| m.ts_min_value.as_ref())
+        .map(|s| s.trim().to_string())
+        .filter(|s| !s.is_empty());
+    let max_v = meta
+        .and_then(|m| m.ts_max_value.as_ref())
+        .map(|s| s.trim().to_string())
+        .filter(|s| !s.is_empty());
+    if min_v.is_some() || max_v.is_some() {
+        cmd.arg("FILTER_BY_VALUE")
+            .arg(min_v.as_deref().unwrap_or("-inf"))
+            .arg(max_v.as_deref().unwrap_or("+inf"));
+    }
+
+    cmd.arg("COUNT").arg(count);
+    let raw: Value = cmd.query(conn)?;
+    let items = parse_ts_range_items(raw)?;
+
+    if (items.len() as u64) < count {
+        cc.finished = true;
+        cc.stream_cursor.clear();
+    } else {
+        cc.finished = false;
+        // 页内最后一条：倒序为本页最小 ts，正序为本页最大 ts
+        if let Some(last) = items.last() {
+            cc.stream_cursor = last.key.clone();
+        }
+    }
+    Ok(items)
+}
+
 pub fn field_scan_0_get(
     mut conn: &mut MutexGuard<impl Commands>,
     param: &FieldScanParam,
@@ -969,6 +1050,11 @@ pub fn field_scan_0_get(
             };
             Some(serde_json::to_value(value)?)
         }
+        // TimeSeries：TS.RANGE / REVRANGE 分页（见 field_scan_timeseries_page）；不做精确单点
+        ValueType::TimeSeries => {
+            let items = field_scan_timeseries_page(&mut conn, key, param, &mut cc)?;
+            Some(serde_json::to_value(items)?)
+        }
         ValueType::Unknown(_) => {
             handle_other_value_type(&key_type, key)?;
             None
@@ -1089,6 +1175,11 @@ fn resolve_field_scan_length(
             ValueType::ZSet => conn.zcard(key)?,
             ValueType::Stream => redis::cmd("XLEN").arg(key).query(conn)?,
             ValueType::VectorSet => conn.vcard(key)?,
+            // TimeSeries：TS.INFO totalSamples；失败则回落 field_byte_len（通常为 0）
+            ValueType::TimeSeries => {
+                let raw: Value = redis::cmd("TS.INFO").arg(key).query(conn)?;
+                ts_info_total_samples(&raw).unwrap_or(field_byte_len as u64) as usize
+            }
             _ => field_byte_len,
         }
     };
@@ -1355,6 +1446,33 @@ pub fn field_add0(
                 vsetattr_json_or_clear(&mut conn, &key, &elem, &param.attrs)?;
             }
         }
+        // TimeSeries：timestamp/value 为明文（不走 wire）；空列表或空样本 → TS.ADD key * 0
+        ValueType::TimeSeries => {
+            let samples: Vec<(&str, &str)> = fv_list
+                .iter()
+                .map(|f| (f.field_key.trim(), f.field_value.trim()))
+                .filter(|(ts, val)| !ts.is_empty() || !val.is_empty())
+                .collect();
+            if samples.is_empty() {
+                let _: Value = redis::cmd("TS.ADD")
+                    .arg(&key)
+                    .arg("*")
+                    .arg(0)
+                    .query(&mut conn)?;
+            } else {
+                for (ts, val) in samples {
+                    let timestamp = if ts.is_empty() { "*" } else { ts };
+                    if val.is_empty() {
+                        bail!("timeseries value is required");
+                    }
+                    let _: Value = redis::cmd("TS.ADD")
+                        .arg(&key)
+                        .arg(timestamp)
+                        .arg(val)
+                        .query(&mut conn)?;
+                }
+            }
+        }
         _ => {
             handle_other_value_type(&key_type, &key)?;
         }
@@ -1436,6 +1554,24 @@ pub fn field_set0(
             let elem = parse_bytes(&param.field_key, &val_fmt)?;
             vadd_values(&mut conn, &key, &param.vector, &elem)?;
             vsetattr_json_or_clear(&mut conn, &key, &elem, &param.attrs)?;
+        }
+        // TimeSeries：同 timestamp upsert；ON_DUPLICATE LAST（policy=BLOCK 时透传原错）
+        ValueType::TimeSeries => {
+            let ts = param.field_key.trim();
+            let val = param.field_value.trim();
+            if ts.is_empty() {
+                bail!("timeseries timestamp is required");
+            }
+            if val.is_empty() {
+                bail!("timeseries value is required");
+            }
+            let _: Value = redis::cmd("TS.ADD")
+                .arg(&key)
+                .arg(ts)
+                .arg(val)
+                .arg("ON_DUPLICATE")
+                .arg("LAST")
+                .query(&mut conn)?;
         }
         _ => {
             handle_other_value_type(&key_type, &key)?;
@@ -1703,6 +1839,18 @@ pub fn field_del0(mut conn: MutexGuard<impl Commands>, param: RedisFieldDel) -> 
             let elem = parse_bytes(&param.field_key, &val_fmt)?;
             let _: bool = conn.vrem(&key, &elem)?;
         }
+        // TimeSeries：TS.DEL from to（单点 from=to）；timestamp 在 field_key 明文
+        ValueType::TimeSeries => {
+            let ts = param.field_key.trim();
+            if ts.is_empty() {
+                bail!("timeseries timestamp is required");
+            }
+            let _: i64 = redis::cmd("TS.DEL")
+                .arg(&key)
+                .arg(ts)
+                .arg(ts)
+                .query(&mut conn)?;
+        }
         _ => {
             handle_other_value_type(&key_type, &key)?;
         }
@@ -1807,6 +1955,83 @@ pub fn v_info0(
     }
     let raw: Value = redis::cmd("VINFO").arg(&key).query(&mut conn)?;
     parse_info_kv_items(raw, "VINFO")
+}
+
+/// TimeSeries TS.INFO：元数据；行结构同 ARINFO。labels/rules 等嵌套数组展平为可读字符串。
+pub fn ts_info0(
+    mut conn: MutexGuard<impl Commands>,
+    key: RedisKey,
+) -> AnyResult<Vec<RedisArInfoItem>> {
+    let key_type: ValueType = conn.key_type(&key)?;
+    if key_type != ValueType::TimeSeries {
+        handle_other_value_type(&key_type, &key)?;
+        unreachable!()
+    }
+    let raw: Value = redis::cmd("TS.INFO").arg(&key).query(&mut conn)?;
+    parse_ts_info_items(raw)
+}
+
+/// TS.INFO 嵌套值展平：label 对 `k=v`；规则等多元素用 `,`；多组用 `; `
+fn format_ts_info_value(value: Value) -> String {
+    match value {
+        Value::Array(items)
+            if !items.is_empty() && items.iter().all(|x| matches!(x, Value::Array(_))) =>
+        {
+            items
+                .into_iter()
+                .map(|item| match item {
+                    Value::Array(pair) if pair.len() == 2 => {
+                        format!(
+                            "{}={}",
+                            redis_value_to_string(pair[0].clone(), ""),
+                            redis_value_to_string(pair[1].clone(), "")
+                        )
+                    }
+                    Value::Array(parts) => parts
+                        .into_iter()
+                        .map(|p| redis_value_to_string(p, ""))
+                        .collect::<Vec<_>>()
+                        .join(","),
+                    other => redis_value_to_string(other, ""),
+                })
+                .collect::<Vec<_>>()
+                .join("; ")
+        }
+        Value::Array(items) => items
+            .into_iter()
+            .map(|x| redis_value_to_string(x, ""))
+            .collect::<Vec<_>>()
+            .join(", "),
+        other => redis_value_to_string(other, ", "),
+    }
+}
+
+fn parse_ts_info_items(raw: Value) -> AnyResult<Vec<RedisArInfoItem>> {
+    match raw {
+        Value::Nil => Ok(Vec::new()),
+        Value::Map(map) => Ok(map
+            .into_iter()
+            .map(|(k, v)| RedisArInfoItem {
+                field: redis_value_to_string(k, ""),
+                value: format_ts_info_value(v),
+            })
+            .collect()),
+        Value::Array(arr) => {
+            let mut items = Vec::with_capacity(arr.len() / 2);
+            let mut i = 0;
+            while i + 1 < arr.len() {
+                items.push(RedisArInfoItem {
+                    field: redis_value_to_string(arr[i].clone(), ""),
+                    value: format_ts_info_value(arr[i + 1].clone()),
+                });
+                i += 2;
+            }
+            Ok(items)
+        }
+        other => bail!(AppError::Internal {
+            message: format!("unexpected TS.INFO reply: {:?}", other)
+        }),
+    }
 }
 
 /// Vector Set VGETATTR：按需读取元素 attrs（不随 VRANGE）
@@ -2825,6 +3050,45 @@ fn key_as_command_lines(conn: &mut impl Commands, key: &RedisKey) -> AnyResult<V
             }
             lines
         }
+        // TimeSeries：TS.REVRANGE 分页导出 → 多条 TS.ADD（上限对齐 VectorSet）
+        ValueType::TimeSeries => {
+            const TS_EXPORT_LIMIT: u64 = 1000;
+            let mut lines = Vec::new();
+            let mut to = "+".to_string();
+            loop {
+                let remain = TS_EXPORT_LIMIT.saturating_sub(lines.len() as u64);
+                if remain == 0 {
+                    break;
+                }
+                let page = remain.min(100);
+                let raw: Value = redis::cmd("TS.REVRANGE")
+                    .arg(key)
+                    .arg("-")
+                    .arg(&to)
+                    .arg("COUNT")
+                    .arg(page)
+                    .query(conn)?;
+                let items = parse_ts_range_items(raw)?;
+                if items.is_empty() {
+                    break;
+                }
+                for item in &items {
+                    if lines.len() as u64 >= TS_EXPORT_LIMIT {
+                        break;
+                    }
+                    lines.push(format_ts_add_command(
+                        key_bytes,
+                        &item.key,
+                        &item.value,
+                    ));
+                }
+                if (items.len() as u64) < page || lines.len() as u64 >= TS_EXPORT_LIMIT {
+                    break;
+                }
+                to = ts_timestamp_dec_one(&items.last().unwrap().key);
+            }
+            lines
+        }
         other => bail!(AppError::KeyTypeUnsupported {
             value_type: ui_key_type(other)
         }),
@@ -2942,6 +3206,22 @@ pub fn get_field_as_command0(
             }
             let attrs = vgetattr_opt(&mut conn, &key, &elem);
             format_vadd_command(key_bytes, &nums, &elem, attrs.as_deref())
+        }
+        // TimeSeries：行内 timestamp/value 已是明文（表格传来），直接拼 TS.ADD
+        ValueType::TimeSeries => {
+            let ts = param.field_key.trim();
+            let val = param.field_value.trim();
+            if ts.is_empty() {
+                bail!(AppError::FieldNotFound {
+                    hash_key: param.field_key.clone(),
+                });
+            }
+            if val.is_empty() {
+                bail!(AppError::FieldNotFound {
+                    hash_key: ts.to_string(),
+                });
+            }
+            format_ts_add_command(key_bytes, ts, val)
         }
         other => bail!(AppError::KeyTypeUnsupported {
             value_type: ui_key_type(other)
@@ -3716,6 +3996,44 @@ mod acl_selector_tests {
 }
 
 #[cfg(test)]
+mod ts_info_parse_tests {
+    use super::*;
+
+    #[test]
+    fn labels_pairs_flatten() {
+        let raw = Value::Array(vec![
+            Value::BulkString(b"totalSamples".to_vec()),
+            Value::Int(2),
+            Value::BulkString(b"labels".to_vec()),
+            Value::Array(vec![
+                Value::Array(vec![
+                    Value::BulkString(b"device".to_vec()),
+                    Value::BulkString(b"thermometer".to_vec()),
+                ]),
+                Value::Array(vec![
+                    Value::BulkString(b"location".to_vec()),
+                    Value::BulkString(b"lab".to_vec()),
+                ]),
+            ]),
+            Value::BulkString(b"rules".to_vec()),
+            Value::Array(vec![Value::Array(vec![
+                Value::BulkString(b"dest".to_vec()),
+                Value::Int(60000),
+                Value::BulkString(b"avg".to_vec()),
+            ])]),
+        ]);
+        let items = parse_ts_info_items(raw).unwrap();
+        assert_eq!(items.len(), 3);
+        assert_eq!(items[0].field, "totalSamples");
+        assert_eq!(items[0].value, "2");
+        assert_eq!(items[1].field, "labels");
+        assert_eq!(items[1].value, "device=thermometer; location=lab");
+        assert_eq!(items[2].field, "rules");
+        assert_eq!(items[2].value, "dest,60000,avg");
+    }
+}
+
+#[cfg(test)]
 mod zset_score_range_tests {
     use super::*;
 
@@ -3742,6 +4060,11 @@ mod zset_score_range_tests {
                 vectorset_sample: None,
                 zset_min_score: min.map(str::to_string),
                 zset_max_score: max.map(str::to_string),
+                ts_min: None,
+                ts_max: None,
+                ts_min_value: None,
+                ts_max_value: None,
+                ts_desc: None,
             }),
             bytes_format: None,
             include_meta: None,

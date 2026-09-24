@@ -164,6 +164,7 @@ api_commands!(
     ar_last_items(param: RedisArLastItems) -> Vec<RedisArLastItemsItem>; // Array ARLASTITEMS
     ar_info(key: RedisKey) -> Vec<RedisArInfoItem>;               // Array ARINFO 元数据
     v_info(key: RedisKey) -> Vec<RedisArInfoItem>;                // Vector Set VINFO 元数据（行结构同 ARINFO）
+    ts_info(key: RedisKey) -> Vec<RedisArInfoItem>;               // TimeSeries TS.INFO 元数据（行结构同 ARINFO）
     v_getattr(param: RedisVAttr) -> String;                       // Vector Set VGETATTR（按需，不随 VRANGE）
     v_setattr(param: RedisVAttr) -> ();                           // Vector Set VSETATTR（空串删除）
     v_sim(param: RedisVSim) -> Vec<RedisVSimItem>;                // Vector Set VSIM 相似度查询
