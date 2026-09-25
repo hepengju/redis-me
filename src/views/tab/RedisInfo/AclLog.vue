@@ -159,10 +159,10 @@ function clearLogs() {
             :label="t('redisACL.logEntryId')"
             width="88"
             align="right" />
-          <el-table-column :label="t('redisACL.logTimeCreated')" width="170" show-overflow-tooltip>
+          <el-table-column :label="t('redisACL.logTimeCreated')" width="180" show-overflow-tooltip>
             <template #default="{ row }">{{ formatTimestamp(row.timestampCreated) }}</template>
           </el-table-column>
-          <el-table-column :label="t('redisACL.logTimeUpdated')" width="170" show-overflow-tooltip>
+          <el-table-column :label="t('redisACL.logTimeUpdated')" width="180" show-overflow-tooltip>
             <template #default="{ row }">{{ formatTimestamp(row.timestampLastUpdated) }}</template>
           </el-table-column>
           <el-table-column
