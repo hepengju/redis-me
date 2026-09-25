@@ -51,7 +51,7 @@
   height: 1em;
 }
 
-/* 文本选择: 整体禁用，个别地方放开 */
+/* 文本选择: 整体禁用，个别地方放开（表格挂 .cell，勿挂 td） */
 html {
   user-select: none;
   -webkit-user-select: none; /* Chrome, Safari */
@@ -59,7 +59,7 @@ html {
 }
 
 .el-descriptions__content,
-.el-table__body-wrapper .el-table__cell,
+.el-table__body-wrapper .el-table__cell .cell,
 .el-tooltip,
 .el-text,
 .terminal {
