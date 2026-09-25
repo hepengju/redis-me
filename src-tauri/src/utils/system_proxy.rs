@@ -144,6 +144,8 @@ fn detect_windows_static() -> Option<DetectedProxy> {
 
 /// Windows `ProxyServer`：`host:port` 或 `http=host:port;socks=host:port`。
 /// `https=` 仍是 HTTP CONNECT 代理（不是 TLS-to-proxy）。
+/// 生产路径只在 Windows 调用；测试在各平台都编进来。
+#[cfg(any(test, windows))]
 pub(crate) fn parse_windows_proxy_server(s: &str) -> Option<DetectedProxy> {
     let s = s.trim();
     if s.is_empty() {
@@ -174,6 +176,8 @@ pub(crate) fn parse_windows_proxy_server(s: &str) -> Option<DetectedProxy> {
     socks.or(http)
 }
 
+/// Windows `ProxyServer` 与 macOS `scutil --proxy` 共用。Linux 生产构建不检测静态代理。
+#[cfg(any(test, windows, target_os = "macos"))]
 pub(crate) fn parse_host_port(s: &str, proxy_type: &str) -> Option<DetectedProxy> {
     let s = s.trim();
     if s.is_empty() {

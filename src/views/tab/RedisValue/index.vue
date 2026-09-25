@@ -2819,11 +2819,18 @@ onUnmounted(() => {
 
       :deep(.el-table) {
         // 单行省略：不依赖 show-overflow-tooltip（避免悬停气泡）
+        // Mac/WebKit：长无空格串（向量、JSON）会按内容撑开列，表头与同行操作列错位；
+        // table-layout:fixed 下 max-width:0 锁住列宽；break-all 降低 min-content。
+        .el-table__cell {
+          overflow: hidden;
+          max-width: 0;
+        }
         .cell {
           overflow: hidden;
           text-overflow: ellipsis;
           white-space: nowrap;
-          word-break: keep-all;
+          word-break: break-all;
+          min-width: 0;
         }
 
         .field-set-row {

@@ -1,5 +1,14 @@
 # 5.x Changelog
 
+## v5.3.1 (2026-09-25)
+
+### 🐞 Bug Fixes
+
+- **Fixed Mac value-table header / action-column misalignment with long cell content**
+- Fixed Slow Log and ACL Log datetime columns wrapping on Mac with the default theme
+- Fixed accidental text selection when clicking blank areas in tables on Mac
+- Fixed the empty-state glow looking poor in dark theme (removed)
+
 ## [v5.3.0](https://mp.weixin.qq.com/s/P691_vhcJjZATq8qbRUtBw) (2026-09-25)
 
 ### ✨ New Features

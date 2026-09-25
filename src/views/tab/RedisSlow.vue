@@ -275,7 +275,7 @@ const rules = computed(() => ({
             />
           </template>
         </el-table-column>-->
-        <el-table-column :label="t('redisSlow.time')" prop="time" width="170" sortable />
+        <el-table-column :label="t('redisSlow.time')" prop="time" width="180" sortable />
         <el-table-column
           :label="t('redisSlow.cost')"
           prop="cost"
