@@ -6,6 +6,13 @@ allowBuilds:
   esbuild: true
   # vue-codemirror6 的 Vue2/3 兼容层（postinstall 切换入口）
   vue-demi: true
+  # packageManager 自举：生成原生 pnpm.exe（缺了会导致 vp install 卡住）
+  pnpm: true
+
+# 统一 Codemirror 版本，避免 @codemirror/view / state 双实例导致 TS2345
+overrides:
+  '@codemirror/view': ^6.43.13
+  '@codemirror/state': ^6.7.6
 
 # Java 序列化：补丁支持 TC_CLASS / Externalizable（如 java.time）
 patchedDependencies:

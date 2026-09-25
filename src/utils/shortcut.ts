@@ -5,7 +5,7 @@ import type { ComposerTranslation } from 'vue-i18n'
 import type { ConnShortcutAction } from '@/types/me-interface'
 
 /** 快捷键按键 token；`mod`/`shift`/`alt` 由 MeShortcut 按平台渲染；`[shift]` 表示可选 Shift */
-export type ShortcutKey = 'mod' | 'shift' | 'alt' | '[shift]' | string
+export type ShortcutKey = 'mod' | 'shift' | 'alt' | '[shift]' | (string & {})
 
 /** MeShortcut 列表项；各 get*Shortcuts 返回此结构 */
 export interface ShortcutItem {

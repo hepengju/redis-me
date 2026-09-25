@@ -77,7 +77,8 @@ function findScannedFieldRowIndex(rows: unknown[], type: string, row: ValueTable
     return rows.findIndex(item => item === member)
   }
   if (type === 'vectorset') {
-    const name = String(row.value ?? '')
+    const v = row.value
+    const name = typeof v === 'string' || typeof v === 'number' ? String(v) : ''
     return rows.findIndex(item => scannedRowObject(item)?.name === name)
   }
   if (type === 'hash') {
