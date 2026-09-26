@@ -9,4 +9,4 @@
 
 ## 文章列表
 
-更多实战文章即将发布，敬请期待。
+- [慢日志专项治理](/zh/handbook/slowlog-governance)：生产慢日志专项实践（RedisME 观测与改造闭环）

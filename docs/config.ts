@@ -74,7 +74,10 @@ function sidebarGuide() {
 }
 
 function sidebarHandbook() {
-  return [{ text: 'Overview', items: [{ text: 'Introduction', link: '/intro' }] }]
+  return [
+    { text: 'Overview', items: [{ text: 'Introduction', link: '/intro' }] },
+    { text: 'Articles', items: [{ text: 'Slowlog Governance', link: '/slowlog-governance' }] },
+  ]
 }
 
 function sidebarChangelog() {

@@ -61,6 +61,9 @@ export default defineConfig({
   },
   rewrites: { 'en/:rest*': ':rest*' },
 
+  // 预加载文档里实际用到的高亮语言，避免搜索索引时 fallback 到 txt
+  markdown: { languages: ['bash', 'rust', 'python', 'javascript', 'java'] },
+
   // 显示最后更新时间
   lastUpdated: false,
   // srcExclude: ['latest.json', '/zz/**'],

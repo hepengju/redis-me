@@ -9,4 +9,4 @@ How it differs from the [Guide](/guide/intro/about):
 
 ## Articles
 
-More practical articles are coming soon.
+- [Slowlog Governance](/handbook/slowlog-governance): Production slowlog remediation (baseline → locate → fix → prevent recurrence)
