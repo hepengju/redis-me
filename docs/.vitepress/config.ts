@@ -2,7 +2,7 @@ import { fileURLToPath } from 'node:url'
 
 import { defineConfig } from 'vitepress'
 
-import { createLangRedirectScript } from './theme/lang-redirect'
+import { createLangRedirectScript } from './theme/lang-redirect.js'
 
 const repoRoot = fileURLToPath(new URL('../..', import.meta.url))
 
