@@ -36,7 +36,7 @@ redis = { version = "1", features = [
   "tls-rustls-insecure",
 ] }
 url = "2"
-rustls = { version = "0.23.43", default-features = false, features = [
+rustls = { version = "0.23.45", default-features = false, features = [
   "ring",
   "std",
   "tls12",
@@ -46,7 +46,7 @@ parking_lot = "0.12"
 log = "0.4"
 rand = "0.10"
 anyhow = { version = "1" }
-base64 = "0.22"
+base64 = "0.23"
 chrono = "0.4"
 chrono-tz = "0.10"
 fern = { version = "0.7", features = ["colored"] }
@@ -75,7 +75,7 @@ specta-typescript = "0.0.12"
 tauri-specta = { version = "2.0.0-rc.25", features = ["typescript"] }
 
 [target.'cfg(windows)'.dependencies]
-winreg = "0.55"
+winreg = "0.56"
 
 [target.'cfg(any(target_os = "macos", windows, target_os = "linux"))'.dependencies]
 tauri-plugin-updater = "2"

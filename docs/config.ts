@@ -7,6 +7,7 @@ export default defineAdditionalConfig({
     nav: nav(),
     sidebar: {
       '/guide/': { base: '/guide/', items: sidebarGuide() },
+      '/handbook/': { base: '/handbook/', items: sidebarHandbook() },
       '/changelog/': { base: '/changelog/', items: sidebarChangelog() },
     },
     footer: {
@@ -26,6 +27,7 @@ function nav() {
   return [
     { text: 'Home', link: '/' },
     { text: 'Guide', link: '/guide/intro/about', activeMatch: '/guide/' },
+    { text: 'Handbook', link: '/handbook/intro', activeMatch: '/handbook/' },
     { text: 'Changelog', link: '/changelog/latest', activeMatch: '/changelog/' },
   ]
 }
@@ -68,6 +70,13 @@ function sidebarGuide() {
         { text: 'Privacy Policy', link: '/other/privacy' },
       ],
     },
+  ]
+}
+
+function sidebarHandbook() {
+  return [
+    { text: 'Overview', items: [{ text: 'Introduction', link: '/intro' }] },
+    { text: 'Articles', items: [{ text: 'Slowlog Governance', link: '/slowlog-governance' }] },
   ]
 }
 

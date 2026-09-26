@@ -414,7 +414,7 @@ function handleKeyTypeChange() {
         <el-input v-model="form.streamId" clearable />
       </el-form-item>
 
-      <!-- Vector Set：元素 + 向量文本（提交前归一为 number[]） -->
+      <!-- Vector Set：元素 → 向量 → 属性（提交前归一为 number[]） -->
       <template v-if="vectorsetType">
         <el-form-item :label="t('fieldAdd.element')">
           <el-input

@@ -562,7 +562,7 @@ onUnmounted(() => window.removeEventListener('keydown', onEscapeKey, true))
           :error="decodeFailed"
           class="field-code-editor" />
       </el-form-item>
-      <!-- Vector Set：打开时自动 VGETATTR；空内容保存即删除 -->
+      <!-- VectorSet：元素 → 向量 → 属性；空内容保存即删除 attrs -->
       <el-form-item v-if="vectorsetType" :label="t('fieldSet.attrs')" class="field-value-item">
         <me-code
           :key="`attrs-${codeRemountKey}`"

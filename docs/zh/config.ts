@@ -7,6 +7,7 @@ export default defineAdditionalConfig({
     nav: nav(),
     sidebar: {
       '/zh/guide/': { base: '/zh/guide/', items: sidebarGuide() },
+      '/zh/handbook/': { base: '/zh/handbook/', items: sidebarHandbook() },
       '/zh/changelog/': { base: '/zh/changelog/', items: sidebarChangelog() },
     },
     footer: {
@@ -45,6 +46,7 @@ function nav() {
   return [
     { text: '主页', link: '/zh/' },
     { text: '使用指南', link: '/zh/guide/intro/about', activeMatch: '/zh/guide/' },
+    { text: '实战手册', link: '/zh/handbook/intro', activeMatch: '/zh/handbook/' },
     { text: '更新日志', link: '/zh/changelog/latest', activeMatch: '/zh/changelog/' },
   ]
 }
@@ -87,6 +89,13 @@ function sidebarGuide() {
         { text: '隐私政策', link: '/other/privacy' },
       ],
     },
+  ]
+}
+
+function sidebarHandbook() {
+  return [
+    { text: '概览', items: [{ text: '简介', link: '/intro' }] },
+    { text: '实战文章', items: [{ text: '慢日志专项治理', link: '/slowlog-governance' }] },
   ]
 }
 

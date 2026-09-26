@@ -2,7 +2,7 @@ import { fileURLToPath } from 'node:url'
 
 import { defineConfig } from 'vitepress'
 
-import { createLangRedirectScript } from './theme/lang-redirect'
+import { createLangRedirectScript } from './theme/lang-redirect.js'
 
 const repoRoot = fileURLToPath(new URL('../..', import.meta.url))
 
@@ -60,6 +60,9 @@ export default defineConfig({
     zh: { label: '简体中文', lang: 'zh-Hans' }, // zh-Hans 简体中文
   },
   rewrites: { 'en/:rest*': ':rest*' },
+
+  // 预加载文档里实际用到的高亮语言，避免搜索索引时 fallback 到 txt
+  markdown: { languages: ['bash', 'rust', 'python', 'javascript', 'java'] },
 
   // 显示最后更新时间
   lastUpdated: false,

@@ -1158,10 +1158,10 @@ function exportValueTableRows(data: unknown[]): TableExportMatrix {
   headers.push(vectorsetType.value ? t('redisValue.element') : t('redisValue.value'))
   cells.push(row => fieldRowDisplayValue(row))
   if (vectorsetType.value) {
-    headers.push(t('fieldSet.attrs'))
-    cells.push(row => String(row.attrs ?? ''))
     headers.push(t('fieldSet.vector'))
     cells.push(row => String(row.vector ?? ''))
+    headers.push(t('fieldSet.attrs'))
+    cells.push(row => String(row.attrs ?? ''))
   }
   if (zsetType.value) {
     headers.push(t('redisValue.score'))
@@ -2234,18 +2234,7 @@ onUnmounted(() => {
                 </template>
               </el-table-column>
 
-              <!-- VectorSet：属性 -->
-              <el-table-column
-                :label="t('fieldSet.attrs')"
-                prop="attrs"
-                min-width="180"
-                v-if="vectorsetType">
-                <template #default="scope">
-                  {{ scope.row.attrs || '' }}
-                </template>
-              </el-table-column>
-
-              <!-- VectorSet：向量 -->
+              <!-- VectorSet：元素 → 向量 → 属性（与编辑/新增一致） -->
               <el-table-column
                 :label="t('fieldSet.vector')"
                 prop="vector"
@@ -2253,6 +2242,16 @@ onUnmounted(() => {
                 v-if="vectorsetType">
                 <template #default="scope">
                   {{ scope.row.vector || '' }}
+                </template>
+              </el-table-column>
+
+              <el-table-column
+                :label="t('fieldSet.attrs')"
+                prop="attrs"
+                min-width="180"
+                v-if="vectorsetType">
+                <template #default="scope">
+                  {{ scope.row.attrs || '' }}
                 </template>
               </el-table-column>
 
@@ -2353,16 +2352,16 @@ onUnmounted(() => {
                                   : t('redisValue.copyValue')
                               " />
                           </el-dropdown-item>
-                          <!-- VectorSet：复制属性、复制向量 -->
-                          <el-dropdown-item v-if="vectorsetType" command="copyAttrs">
-                            <me-icon
-                              icon="el-icon-document-copy"
-                              :name="t('redisValue.copyAttrs')" />
-                          </el-dropdown-item>
+                          <!-- VectorSet：复制向量、复制属性（与列序一致） -->
                           <el-dropdown-item v-if="vectorsetType" command="copyVector">
                             <me-icon
                               icon="el-icon-document-copy"
                               :name="t('redisValue.copyVector')" />
+                          </el-dropdown-item>
+                          <el-dropdown-item v-if="vectorsetType" command="copyAttrs">
+                            <me-icon
+                              icon="el-icon-document-copy"
+                              :name="t('redisValue.copyAttrs')" />
                           </el-dropdown-item>
                           <el-dropdown-item v-if="zsetType" command="copyScore">
                             <me-icon
