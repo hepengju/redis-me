@@ -2365,6 +2365,8 @@ async function searchKeysAll(): Promise<void> {
     height: 30px;
     border: 1px solid var(--el-border-color);
     border-top: none;
+    // 键区底边两角与左上角 select 同半径圆角（顶边两角由搜索行 input 组自带）
+    border-radius: 0 0 var(--el-border-radius-base) var(--el-border-radius-base);
     display: flex;
     align-items: center;
     justify-content: space-between;
