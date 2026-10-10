@@ -41,8 +41,8 @@ pub fn field_add0(
                 })
             }
         }
-        // 当键不存在时，下面的match会抛出对应异常
-        "field" => key_type = conn.key_type(&key)?,
+        // 直接沿用前端键类型：键不存在时 Redis 命令会自动创建；省一次 TYPE 调用
+        "field" => key_type = to_key_type(&param.key_type),
         _ => bail!(AppError::FieldOperationNotSupported { mode }),
     }
 
