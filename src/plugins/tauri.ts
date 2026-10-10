@@ -45,7 +45,7 @@ if (typeof settings.hashFieldTtl !== 'boolean') settings.hashFieldTtl = false
 if (typeof settings.keyShowMemory !== 'boolean') settings.keyShowMemory = false
 // delete settings.keyLabel // v3.5+ 移除键名称全称/简称，统一简称
 if (!Array.isArray(settings.connGroups)) settings.connGroups = []
-if (settings.connShow !== 'flat' && settings.connShow !== 'group') settings.connShow = 'flat'
+if (settings.connShow !== 'flat' && settings.connShow !== 'group') settings.connShow = 'group'
 if (
   !settings.connGroupExpanded ||
   typeof settings.connGroupExpanded !== 'object' ||

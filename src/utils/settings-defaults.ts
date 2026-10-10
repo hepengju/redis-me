@@ -18,7 +18,7 @@ export const defaultSettings = {
   fieldShowView: 'table', // auto 模式下上次手动选择的 json/table，持久化供切换连接/键沿用
   hashFieldTtl: false, // Hash 字段 TTL 列：记住 HTTL 开关，换键/刷新沿用
   // 首页连接分组（见 src/utils/conn.ts）
-  connShow: 'flat', // 'flat' | 'group'
+  connShow: 'group', // 'flat' | 'group'
   connGroups: [] as string[], // 分组名有序列表
   connGroupExpanded: {} as Record<string, boolean>, // 分组折叠状态，键为分组名（''=默认分组）
   // 自定义 Codec（STRING 值编解码，见 zzz/plans/05_custom-formatter.md）
