@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { getCurrentWindow } from '@tauri-apps/api/window'
-import { type as getOsType } from '@tauri-apps/plugin-os'
+import { type as getOsType, version as getOsVersion } from '@tauri-apps/plugin-os'
 import { computed, ref } from 'vue'
 
 import { meOk } from '@/utils/util'
@@ -14,11 +14,13 @@ appWindow.onResized(async () => {
   isFullScreen.value = await appWindow.isFullscreen()
 })
 
-// MacOS 左侧留出红绿灯按钮 + 圆角空间
+// MacOS 左侧留出红绿灯按钮 + 圆角空间；Big Sur (11+) 圆角更大，间距需要更多
 const isMacOS = getOsType() === 'macos'
+const isMacOSBigSurPlus = isMacOS && parseInt(getOsVersion(), 10) >= 11
 const marginLeft = computed(() => {
   if (isFullScreen.value) return '5px'
-  return isMacOS ? '80px' : '5px'
+  if (!isMacOS) return '5px'
+  return isMacOSBigSurPlus ? '80px' : '70px'
 })
 
 // 点击图标切换主题
