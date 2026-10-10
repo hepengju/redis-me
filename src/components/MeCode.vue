@@ -1,9 +1,6 @@
 <script setup lang="ts">
 // #region 导入
-import { LanguageSupport, StreamLanguage, syntaxHighlighting } from '@codemirror/language'
-import { properties as propertiesMode } from '@codemirror/legacy-modes/mode/properties'
-import { shell as shellMode } from '@codemirror/legacy-modes/mode/shell'
-import { yaml as yamlMode } from '@codemirror/legacy-modes/mode/yaml'
+import { syntaxHighlighting } from '@codemirror/language'
 import { Prec, EditorState, StateEffect } from '@codemirror/state'
 import { EditorView, keymap, lineNumbers } from '@codemirror/view'
 import { useDark } from '@vueuse/core'
@@ -24,6 +21,9 @@ import {
   meBasicSetup,
   propertiesDarkSyntax,
   propertiesEagerParse,
+  propertiesLang,
+  shellLang,
+  yamlLang,
   zhPhrases,
 } from '@/plugins/codemirror'
 import { redisHighlighting, redisLang } from '@/utils/redis-lang'
@@ -31,12 +31,6 @@ import { isZh, meCopy } from '@/utils/util'
 // #endregion
 
 // #region 核心状态
-// Java .properties 流式解析：适配 Redis INFO/CONFIG（key:value、# 段注释、续行）
-const propertiesLang = new LanguageSupport(StreamLanguage.define(propertiesMode))
-// shell / yaml 流式解析：Redis 安装帮助产物展示用；conf 复用 properties（行式 key value）
-const shellLang = new LanguageSupport(StreamLanguage.define(shellMode))
-const yamlLang = new LanguageSupport(StreamLanguage.define(yamlMode))
-
 // 在编辑器聚焦时 F11：对 `.cm-editor` 调用 Fullscreen API（再按 F11 或 Esc 退出）
 function toggleCmEditorFullscreen(el: HTMLElement) {
   const doc = el.ownerDocument

@@ -15,6 +15,8 @@ export { EditorView }
 import { history, defaultKeymap, historyKeymap } from '@codemirror/commands'
 import {
   HighlightStyle,
+  LanguageSupport,
+  StreamLanguage,
   foldGutter,
   forceParsing,
   indentOnInput,
@@ -23,6 +25,9 @@ import {
   bracketMatching,
   foldKeymap,
 } from '@codemirror/language'
+import { properties as propertiesMode } from '@codemirror/legacy-modes/mode/properties'
+import { shell as shellMode } from '@codemirror/legacy-modes/mode/shell'
+import { yaml as yamlMode } from '@codemirror/legacy-modes/mode/yaml'
 import { highlightSelectionMatches, searchKeymap } from '@codemirror/search'
 import { EditorState } from '@codemirror/state'
 import { tags } from '@lezer/highlight'
@@ -58,6 +63,15 @@ export const meBasicSetup = [
     // ...lintKeymap
   ]),
 ]
+
+/**
+ * 语言支持（模块级单例，供 MeCode 复用，避免每个编辑器实例各建一份）。
+ * properties：Java .properties 流式解析，适配 Redis INFO/CONFIG（key:value、# 段注释、续行）；conf 亦复用。
+ * shell / yaml：Redis 安装帮助产物展示用。
+ */
+export const propertiesLang = new LanguageSupport(StreamLanguage.define(propertiesMode))
+export const shellLang = new LanguageSupport(StreamLanguage.define(shellMode))
+export const yamlLang = new LanguageSupport(StreamLanguage.define(yamlMode))
 
 /**
  * properties / Redis INFO·CONFIG 等在深色下的高亮补丁：默认 key 为 #00f 不适配暗底。
