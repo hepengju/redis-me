@@ -3,7 +3,7 @@ import { getCurrentWindow } from '@tauri-apps/api/window'
 import { type as getOsType, version as getOsVersion } from '@tauri-apps/plugin-os'
 import { computed, ref } from 'vue'
 
-import { meOk } from '@/utils/util'
+import { meLog, meOk } from '@/utils/util'
 
 const appWindow = getCurrentWindow()
 const isFullScreen = ref(false)
@@ -14,13 +14,16 @@ appWindow.onResized(async () => {
   isFullScreen.value = await appWindow.isFullscreen()
 })
 
-// MacOS 左侧留出红绿灯按钮 + 圆角空间；Big Sur (11+) 圆角更大，间距需要更多
+// MacOS 左侧留出红绿灯按钮 + 圆角空间；Tahoe (26+) 引入 Liquid Glass 大圆角(约26pt)需更多间距，此前 Big Sur~Sequoia (11~15) 为 10pt 小圆角
 const isMacOS = getOsType() === 'macos'
-const isMacOSBigSurPlus = isMacOS && parseInt(getOsVersion(), 10) >= 11
+const osVersionRaw = getOsVersion()
+const osVersionMajor = parseInt(osVersionRaw, 10)
+const isMacOSTahoePlus = isMacOS && osVersionMajor >= 26
+meLog('标题栏边距判断: os=', getOsType(), 'version=', osVersionRaw, 'major=', osVersionMajor, 'tahoePlus=', isMacOSTahoePlus)
 const marginLeft = computed(() => {
   if (isFullScreen.value) return '7px'
   if (!isMacOS) return '7px'
-  return isMacOSBigSurPlus ? '80px' : '70px'
+  return isMacOSTahoePlus ? '80px' : '70px'
 })
 
 // 点击图标切换主题
