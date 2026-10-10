@@ -411,9 +411,13 @@ const nodeGroups = computed(() => {
           }}</el-text>
           <el-text type="info" style="margin-left: 10px; max-width: 300px" truncated>
             [
-            <el-link underline="never" @click="goConfig" type="primary">{{
-              t('redisInfo.config')
-            }}</el-link
+            <!-- el-link 默认 vertical-align: middle，与前后基线对齐的文本会错开，这里改回基线对齐 -->
+            <el-link
+              underline="never"
+              @click="goConfig"
+              type="primary"
+              style="vertical-align: baseline"
+              >{{ t('redisInfo.config') }}</el-link
             >: {{ dic['config_file'] || '--' }} ]
           </el-text>
         </div>
