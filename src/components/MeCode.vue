@@ -11,7 +11,6 @@ import { json5 as cmJson5 } from 'codemirror-json5'
 import {
   type HTMLAttributes,
   computed,
-  nextTick,
   onBeforeUnmount,
   onMounted,
   ref,
@@ -212,25 +211,48 @@ const fullExtensions = computed(() => [
 const containerEl = ref<HTMLElement>()
 const view = shallowRef<EditorView>()
 let lastEmitted: string | null = null // 抑制「用户输入 → emit → 父回灌」的整篇替换回环
+let pendingExternal: string | null = null // IME 合成期间收到的外部改值，合成结束后重放
 
-onMounted(async () => {
+// 外部改值整篇替换：跳过自身 emit 的回灌与文档已相同的值
+function applyExternalValue(value: string) {
+  const v = view.value
+  if (!v || v.composing) return
+  if (value === lastEmitted) {
+    lastEmitted = null
+    return
+  }
+  if (v.state.doc.toString() === value) return
+  v.dispatch({ changes: { from: 0, to: v.state.doc.length, insert: value }, scrollIntoView: true })
+}
+
+// IME 合成结束后重放合成期间暂存的外部改值（否则那次改值会被永久丢弃）
+function flushPendingExternal() {
+  if (pendingExternal === null || view.value?.composing) return
+  const pending = pendingExternal
+  pendingExternal = null
+  applyExternalValue(pending)
+}
+
+onMounted(() => {
   if (!containerEl.value || typeof window === 'undefined') return
   view.value = new EditorView({
     parent: containerEl.value,
     state: EditorState.create({ doc: props.modelValue, extensions: fullExtensions.value }),
     dispatch: (tr, dv) => {
-      const txs = Array.isArray(tr) ? tr : [tr]
-      dv.update(txs)
-      const last = txs[txs.length - 1]
-      if (!last || last.changes.empty || !last.docChanged) return
-      lastEmitted = dv.state.doc.toString()
-      emit('update:modelValue', lastEmitted)
+      const before = dv.state.doc
+      dv.update(Array.isArray(tr) ? tr : [tr])
+      // 仅当整批事务前后文档真正变化才 emit：只看末尾事务会漏发「前面改文档、末尾没改」的情况
+      if (dv.state.doc !== before) {
+        lastEmitted = dv.state.doc.toString()
+        emit('update:modelValue', lastEmitted)
+      }
     },
   })
-  await nextTick()
+  containerEl.value.addEventListener('compositionend', flushPendingExternal)
 })
 
 onBeforeUnmount(() => {
+  containerEl.value?.removeEventListener('compositionend', flushPendingExternal)
   view.value?.destroy()
   view.value = undefined
 })
@@ -240,21 +262,15 @@ watch(fullExtensions, exts => {
   view.value?.dispatch({ effects: StateEffect.reconfigure.of(exts) })
 })
 
-// 外部改值（加载 / 刷新 / 切换键）整篇替换；跳过 IME 合成中与自身 emit 回灌
+// 外部改值（加载 / 刷新 / 切换键）整篇替换；IME 合成中先暂存，合成结束后重放
 watch(
   () => props.modelValue,
   value => {
-    const v = view.value
-    if (!v || v.composing) return
-    if (value === lastEmitted) {
-      lastEmitted = null
+    if (view.value?.composing) {
+      pendingExternal = value
       return
     }
-    if (v.state.doc.toString() === value) return
-    v.dispatch({
-      changes: { from: 0, to: v.state.doc.length, insert: value },
-      scrollIntoView: true,
-    })
+    applyExternalValue(value)
   },
 )
 // #endregion
