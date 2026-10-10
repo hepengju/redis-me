@@ -19,7 +19,16 @@ const isMacOS = getOsType() === 'macos'
 const osVersionRaw = getOsVersion()
 const osVersionMajor = parseInt(osVersionRaw, 10)
 const isMacOSTahoePlus = isMacOS && osVersionMajor >= 26
-meLog('标题栏边距判断: os=', getOsType(), 'version=', osVersionRaw, 'major=', osVersionMajor, 'tahoePlus=', isMacOSTahoePlus)
+meLog(
+  '标题栏边距判断: os=',
+  getOsType(),
+  'version=',
+  osVersionRaw,
+  'major=',
+  osVersionMajor,
+  'tahoePlus=',
+  isMacOSTahoePlus,
+)
 const marginLeft = computed(() => {
   if (isFullScreen.value) return '7px'
   if (!isMacOS) return '7px'
