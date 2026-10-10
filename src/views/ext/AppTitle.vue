@@ -18,8 +18,8 @@ appWindow.onResized(async () => {
 const isMacOS = getOsType() === 'macos'
 const isMacOSBigSurPlus = isMacOS && parseInt(getOsVersion(), 10) >= 11
 const marginLeft = computed(() => {
-  if (isFullScreen.value) return '5px'
-  if (!isMacOS) return '5px'
+  if (isFullScreen.value) return '7px'
+  if (!isMacOS) return '7px'
   return isMacOSBigSurPlus ? '80px' : '70px'
 })
 
