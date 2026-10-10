@@ -14,14 +14,11 @@ appWindow.onResized(async () => {
   isFullScreen.value = await appWindow.isFullscreen()
 })
 
-// MacOS且未全屏时 留出最大化最小化按钮空间
+// MacOS 左侧留出红绿灯按钮 + 圆角空间
 const isMacOS = getOsType() === 'macos'
 const marginLeft = computed(() => {
-  if (isFullScreen.value) {
-    return '5px'
-  } else {
-    return isMacOS ? '70px' : '5px'
-  }
+  if (isFullScreen.value) return '5px'
+  return isMacOS ? '80px' : '5px'
 })
 
 // 点击图标切换主题
