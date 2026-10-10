@@ -2819,6 +2819,7 @@ onUnmounted(() => {
 
     :deep(.el-input-group__prepend) {
       padding: 0 12px;
+      background: none;
     }
 
     .value-header-main {
