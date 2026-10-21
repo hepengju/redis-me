@@ -5,6 +5,7 @@ import { computed, inject, onUnmounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import type { MeColumn } from '@/components/me-table-column'
+import MeSelectUpDownIcon from '@/components/MeSelectUpDownIcon.vue'
 import MeWebsite from '@/components/MeWebsite.vue'
 import { shareProvideKey } from '@/types/me-interface'
 import { BYTES_FORMAT, IPC_WIRE_FORMAT, meViewToWire, type ViewBytesFormat } from '@/utils/format'
@@ -191,13 +192,19 @@ onUnmounted(() => tauriUnlisten())
         v-model="sendChannel"
         :placeholder="t('redisPubSub.channel')"
         class="footer-channel" />
+      <!-- 编码选择：内嵌在消息输入框左侧（prepend），套用 me-select 无边框样式；底栏贴底故下拉向上 -->
       <el-input
         v-model="sendMessage"
         :placeholder="t('redisPubSub.messageContent')"
         class="footer-message"
         @keydown.enter.prevent="publishOnEnter">
-        <template #append>
-          <el-select v-model="sendMessageFmt" style="width: 100px">
+        <template #prepend>
+          <el-select
+            v-model="sendMessageFmt"
+            class="footer-message-fmt me-select-plain"
+            :suffix-icon="MeSelectUpDownIcon"
+            placement="top-start"
+            :fallback-placements="['top', 'top-end']">
             <el-option
               v-for="item in BYTES_FORMAT"
               :key="item"
