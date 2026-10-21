@@ -845,7 +845,7 @@ export default {
     monitorStopped: '监控已停止',
     clearMessage: '清空消息',
     clearConfirm: '确定清空当前监控的命令记录吗？',
-    keyword: '模糊筛选',
+    keyword: '模糊筛选（命令）',
     monitorStart: '监控',
     monitorStop: '停止',
     time: '时间',

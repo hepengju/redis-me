@@ -36,7 +36,7 @@ const stream = createRealtimeStream<MonitorRow>({ maxRows: MAX_ROWS })
 const dataList = stream.list
 const filterDataList = computed(() =>
   filterByKeyword(dataList.value, keyword.value, (row, key) =>
-    `${row.command ?? ''} ${row.datetime ?? ''}`.toLowerCase().includes(key),
+    (row.command ?? '').toLowerCase().includes(key),
   ),
 )
 

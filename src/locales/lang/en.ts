@@ -862,7 +862,7 @@ export default {
     monitorStopped: 'Unmonitor',
     clearMessage: 'Clear Message',
     clearConfirm: 'Clear the monitored command records?',
-    keyword: 'Filter Command',
+    keyword: 'Filter (Command)',
     monitorStart: 'Monitor',
     monitorStop: 'Unmonitor',
     time: 'DateTime',
