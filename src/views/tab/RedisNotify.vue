@@ -77,7 +77,6 @@ const notifyColumns = computed<MeColumn<NotifyRow>[]>(() => [
   { key: 'db', prop: 'db', title: t('redisNotify.db'), width: 64, align: 'center' },
   { key: 'key', prop: 'key', title: t('redisNotify.key'), minWidth: 200 },
   { key: 'event', prop: 'event', title: t('redisNotify.event'), width: 120 },
-  { key: 'action', title: t('action'), width: 80, align: 'center' },
 ])
 // #endregion
 
@@ -272,14 +271,6 @@ onUnmounted(() => unlisten?.())
         :total="dataList.length"
         export-name="notify">
         <template #cell-datetime="{ row }">{{ row.datetime?.slice(11) }}</template>
-        <template #cell-action="{ row }">
-          <me-icon
-            :info="t('copy')"
-            icon="el-icon-document-copy"
-            class="icon-btn"
-            style="justify-content: center"
-            @click="meCopy(row.key)" />
-        </template>
       </me-table>
     </div>
 

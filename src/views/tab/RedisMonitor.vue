@@ -8,7 +8,7 @@ import type { MeColumn } from '@/components/me-table-column'
 import MeWebsite from '@/components/MeWebsite.vue'
 import { shareProvideKey } from '@/types/me-interface'
 import { createRealtimeStream, filterByKeyword } from '@/utils/realtime-stream'
-import { meConfirm, meCopy, meCommands, meOk } from '@/utils/util'
+import { meConfirm, meCommands, meOk } from '@/utils/util'
 import NodeList from '@/views/ext/NodeList.vue'
 // #endregion
 
@@ -44,7 +44,6 @@ const filterDataList = computed(() =>
 const monitorColumns = computed<MeColumn[]>(() => [
   { key: 'datetime', prop: 'datetime', title: t('redisMonitor.time'), width: 118 },
   { key: 'command', prop: 'command', title: t('redisMonitor.command'), minWidth: 200 },
-  { key: 'action', title: t('action'), width: 80, align: 'center' },
 ])
 
 // 监控函数防抖
@@ -127,14 +126,6 @@ onUnmounted(() => tauriUnlisten())
         :total="dataList.length"
         export-name="monitor">
         <template #cell-datetime="{ row }">{{ row.datetime?.slice(11) }}</template>
-        <template #cell-action="{ row }">
-          <me-icon
-            :info="t('copy')"
-            icon="el-icon-document-copy"
-            class="icon-btn"
-            style="justify-content: center"
-            @click="meCopy(row.command)" />
-        </template>
       </me-table>
     </div>
   </div>

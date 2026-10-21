@@ -10,7 +10,7 @@ import MeWebsite from '@/components/MeWebsite.vue'
 import { shareProvideKey } from '@/types/me-interface'
 import { BYTES_FORMAT, IPC_WIRE_FORMAT, meViewToWire, type ViewBytesFormat } from '@/utils/format'
 import { createRealtimeStream, filterByKeyword } from '@/utils/realtime-stream'
-import { meCopy, meCommands, meErr, meOk } from '@/utils/util'
+import { meCommands, meErr, meOk } from '@/utils/util'
 // #endregion
 
 // #region 核心状态
@@ -51,7 +51,6 @@ const pubsubColumns = computed<MeColumn[]>(() => [
   { key: 'datetime', prop: 'datetime', title: t('redisPubSub.datetime'), width: 118 },
   { key: 'channel', prop: 'channel', title: t('redisPubSub.channel'), minWidth: 150 },
   { key: 'message', prop: 'message', title: t('redisPubSub.message'), minWidth: 150 },
-  { key: 'action', title: t('action'), width: 80, align: 'center' },
 ])
 
 // 订阅按钮防抖
@@ -178,14 +177,6 @@ onUnmounted(() => tauriUnlisten())
         :total="dataList.length"
         export-name="pubsub">
         <template #cell-datetime="{ row }">{{ row.datetime?.slice(11) }}</template>
-        <template #cell-action="{ row }">
-          <me-icon
-            :info="t('copy')"
-            icon="el-icon-document-copy"
-            class="icon-btn"
-            style="justify-content: center"
-            @click="meCopy(row.message)" />
-        </template>
       </me-table>
     </div>
     <div class="footer" v-if="canEdit">
