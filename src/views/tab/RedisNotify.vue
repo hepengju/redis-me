@@ -7,6 +7,7 @@ import { useI18n } from 'vue-i18n'
 import type { MeColumn } from '@/components/me-table-column'
 import MeWebsite from '@/components/MeWebsite.vue'
 import { shareProvideKey } from '@/types/me-interface'
+import { createRealtimeStream, filterByKeyword } from '@/utils/realtime-stream'
 import { meCommands, meConfirm, meCopy, meOk } from '@/utils/util'
 // #endregion
 
@@ -51,17 +52,19 @@ interface NotifyRow {
   key?: string
   event?: string
 }
-const dataList = ref<NotifyRow[]>([])
-const filterDataList = computed(() => {
-  const key = keyword.value.toLowerCase()
-  return dataList.value.filter(
-    row =>
-      !key ||
+// 实时流：批量缓冲并入 dataList，避免高频通知逐条头插拖慢主线程
+const stream = createRealtimeStream<NotifyRow>({ maxRows: MAX_ROWS })
+const dataList = stream.list
+const filterDataList = computed(() =>
+  filterByKeyword(
+    dataList.value,
+    keyword.value,
+    (row, key) =>
       (row.key?.toLowerCase() ?? '').indexOf(key) > -1 ||
       (row.event?.toLowerCase() ?? '').indexOf(key) > -1 ||
       (row.node?.toLowerCase() ?? '').indexOf(key) > -1,
-  )
-})
+  ),
+)
 
 // 列描述：单一来源驱动渲染/排序/导出；节点列仅集群显示（单机 node 为空串）
 const notifyColumns = computed<MeColumn<NotifyRow>[]>(() => [
@@ -145,6 +148,7 @@ const subscribe = async () => {
       unlisten?.()
       await meCommands.notifySubscribeStop(share.conn!.id)
       subscribing.value = false
+      stream.flush() // 收尾：把缓冲里剩余通知立即并入，避免停订后丢尾部消息
       meOk(t('redisNotify.subscribeStopped'))
     } else {
       await tauriListen()
@@ -162,7 +166,7 @@ const subscribe = async () => {
 }
 
 function clearData() {
-  dataList.value = []
+  stream.clear()
 }
 
 // 监听通知事件（按连接 id 过滤，避免串到别的连接）
@@ -171,9 +175,7 @@ async function tauriListen() {
   unlisten = await listen<NotifyRow>('notify', event => {
     const payload = event.payload
     if (payload.id !== share.conn!.id) return
-    // 新记录入头 → 数组天然时间倒序，显示层不再依赖 default-sort，省一次 MeTable orderBy 全表排序
-    dataList.value.unshift(payload)
-    if (dataList.value.length > MAX_ROWS) dataList.value.length = MAX_ROWS
+    stream.push(payload)
   })
 }
 
@@ -235,7 +237,7 @@ onUnmounted(() => unlisten?.())
           v-model="pattern"
           :placeholder="t('redisNotify.pattern')"
           :disabled="subscribing"
-          style="width: 200px; margin-left: 10px"
+          style="width: 160px; margin-left: 10px"
           clearable>
           <template #prefix>
             <me-icon

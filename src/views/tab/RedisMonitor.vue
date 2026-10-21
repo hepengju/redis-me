@@ -7,6 +7,7 @@ import { useI18n } from 'vue-i18n'
 import type { MeColumn } from '@/components/me-table-column'
 import MeWebsite from '@/components/MeWebsite.vue'
 import { shareProvideKey } from '@/types/me-interface'
+import { createRealtimeStream, filterByKeyword } from '@/utils/realtime-stream'
 import { meConfirm, meCopy, meCommands, meOk } from '@/utils/util'
 import NodeList from '@/views/ext/NodeList.vue'
 // #endregion
@@ -30,15 +31,14 @@ interface MonitorRow {
   datetime?: string
   command?: string
 }
-const dataList = ref<MonitorRow[]>([])
-const filterDataList = computed(() => {
-  const key = keyword.value.toLowerCase()
-  return dataList.value.filter(row => {
-    if (!key) return true
-    const text = `${row.command ?? ''} ${row.datetime ?? ''}`.toLowerCase()
-    return text.includes(key)
-  })
-})
+// 实时流：批量缓冲并入 dataList，避免 MONITOR 高频命令逐条头插拖慢主线程
+const stream = createRealtimeStream<MonitorRow>({ maxRows: MAX_ROWS })
+const dataList = stream.list
+const filterDataList = computed(() =>
+  filterByKeyword(dataList.value, keyword.value, (row, key) =>
+    `${row.command ?? ''} ${row.datetime ?? ''}`.toLowerCase().includes(key),
+  ),
+)
 
 // 列描述：时间列导出/悬停保留完整日期时间（取 prop 原值），单元格经 #cell-datetime 只显时分秒（与迁移前一致）
 const monitorColumns = computed<MeColumn[]>(() => [
@@ -56,6 +56,7 @@ const monitor = async () => {
       unlisten?.()
       await meCommands.monitorStop(share.conn!.id)
       monitoring.value = false
+      stream.flush() // 收尾：把缓冲里剩余命令立即并入，避免停用后丢尾部数据
       meOk(t('redisMonitor.monitorStopped'))
     } else {
       meConfirm(t('redisMonitor.monitorHint'), async () => {
@@ -71,7 +72,7 @@ const monitor = async () => {
 }
 
 function clearData() {
-  dataList.value = []
+  stream.clear()
 }
 
 // 监听消息
@@ -80,9 +81,7 @@ async function tauriListen() {
   unlisten = await listen<MonitorRow>('monitor', event => {
     const payload = event.payload
     if (payload.id !== share.conn!.id) return
-    // 新记录入头 → 数组天然时间倒序，显示层不再依赖 default-sort，省一次 MeTable orderBy 全表排序
-    dataList.value.unshift(payload)
-    if (dataList.value.length > MAX_ROWS) dataList.value.length = MAX_ROWS
+    stream.push(payload)
   })
 }
 
@@ -110,7 +109,7 @@ onUnmounted(() => tauriUnlisten())
         <el-input
           v-model="keyword"
           :placeholder="t('redisMonitor.keyword')"
-          style="width: 280px; margin: 0 10px"
+          style="width: 220px; margin: 0 10px"
           clearable />
         <me-button
           :icon="monitoring ? 'el-icon-video-pause' : 'el-icon-user'"
