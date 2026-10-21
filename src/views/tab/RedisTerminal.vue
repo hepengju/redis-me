@@ -10,7 +10,7 @@ import { commandHelp, isReadonlyCommand, parseCommandName } from '@/locales/cmd'
 import { shareProvideKey } from '@/types/me-interface'
 import type { CliOutputMode } from '@/types/tauri-specta'
 import { getTerminalShortcuts } from '@/utils/shortcut'
-import { bus, DB_SWITCH, meCopy, meCommands, isZh } from '@/utils/util'
+import { bus, DB_SWITCH, formatSpectaErrorForUser, meCopy, meCommands, isZh } from '@/utils/util'
 
 import CommandHelp from '../ext/CommandHelp.vue'
 import NodeList from '../ext/NodeList.vue'
@@ -94,12 +94,13 @@ async function handleSelect(command: string): Promise<string> {
   }
   if (!share.conn) return colorText('var(--el-color-error)', '(error) no connection')
   try {
-    await meCommands.selectDb(share.conn.id, db)
+    // 末尾传 false 关闭错误弹窗，集群切库等失败统一在终端内联回显，不另弹框
+    await meCommands.selectDb(share.conn.id, db, false)
     share.conn.db = db
     bus.emit(DB_SWITCH, db)
     return colorText('var(--el-color-success)', 'OK')
   } catch (e: unknown) {
-    return colorText('var(--el-color-error)', `(error) ${String(e)}`)
+    return colorText('var(--el-color-error)', `(error) ${formatSpectaErrorForUser(String(e))}`)
   }
 }
 

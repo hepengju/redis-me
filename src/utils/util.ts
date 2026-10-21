@@ -124,8 +124,8 @@ function errString(e: unknown): string {
   }
 }
 
-/** 若 `errorStr` 为带 `code` 的应用错误 JSON 则走 i18n，否则原样返回（供弹窗） */
-function formatSpectaErrorForUser(errorStr: string): string {
+/** 若 `errorStr` 为带 `code` 的应用错误 JSON 则走 i18n，否则原样返回（供弹窗/终端内联复用） */
+export function formatSpectaErrorForUser(errorStr: string): string {
   try {
     const parsed = JSON.parse(errorStr) as unknown
     if (
