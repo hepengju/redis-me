@@ -182,8 +182,11 @@ const subscribe = async () => {
   }
 }
 
+// 清空前二次确认（与命令日志页一致：防误点丢实时流数据）
 function clearData() {
-  stream.clear()
+  meConfirm(t('redisNotify.clearConfirm'), () => {
+    stream.clear()
+  })
 }
 
 // 监听通知事件（按连接 id 过滤，避免串到别的连接）

@@ -10,7 +10,7 @@ import MeWebsite from '@/components/MeWebsite.vue'
 import { shareProvideKey } from '@/types/me-interface'
 import { BYTES_FORMAT, IPC_WIRE_FORMAT, meViewToWire, type ViewBytesFormat } from '@/utils/format'
 import { createRealtimeStream, filterByKeyword } from '@/utils/realtime-stream'
-import { meCommands, meErr, meOk } from '@/utils/util'
+import { meCommands, meConfirm, meErr, meOk } from '@/utils/util'
 // #endregion
 
 // #region 核心状态
@@ -107,8 +107,11 @@ function publishOnEnter() {
   void publish()
 }
 
+// 清空前二次确认（与命令日志页一致：防误点丢实时流数据）
 function clearData() {
-  stream.clear()
+  meConfirm(t('redisPubSub.clearConfirm'), () => {
+    stream.clear()
+  })
 }
 
 // 监听消息

@@ -70,8 +70,11 @@ const monitor = async () => {
   }
 }
 
+// 清空前二次确认（与命令日志页一致：防误点丢实时流数据）
 function clearData() {
-  stream.clear()
+  meConfirm(t('redisMonitor.clearConfirm'), () => {
+    stream.clear()
+  })
 }
 
 // 监听消息
