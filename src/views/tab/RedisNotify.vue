@@ -257,7 +257,7 @@ onUnmounted(() => unlisten?.())
           style="width: 220px; margin: 0 10px"
           clearable />
         <me-button
-          :icon="subscribing ? 'el-icon-video-pause' : 'el-icon-bell'"
+          :icon="subscribing ? 'el-icon-video-pause' : 'el-icon-video-play'"
           :loading="loading"
           @click="subscribe"
           type="primary">
