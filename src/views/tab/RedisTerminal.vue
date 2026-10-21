@@ -43,11 +43,7 @@ function colorText(color: string, text: string, bold = false): string {
 
 const autoBroadcast = ref(true)
 const node = ref('')
-// 提示符带当前库号；SELECT 切库后 share.conn.db 变化会驱动重算（与 node 同理）
-const prefix = computed(() => {
-  const db = share.conn?.db ?? 0
-  return node.value ? `${node.value}[${db}]> ` : `[${db}]> `
-})
+const prefix = computed(() => (node.value ? node.value + '> ' : '$ '))
 const welcome = computed(() =>
   t('redisTerminal.welcome', { RedisME: colorText(share.color, 'RedisME', true) }),
 )

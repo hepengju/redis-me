@@ -67,20 +67,6 @@ async function execCmd(
 
 const theme = computed(() => (isDark.value ? 'dark' : 'light'))
 
-// 命令回显 content = 前缀裸文本 + 命令 HTML（context 传空，前缀即 contextSuffix）。
-// 前缀以第一个 '> ' 结尾，拆出来单独套 .t-prompt，历史行的前缀才能和当前输入行同为 info 色。
-function splitEcho(content: unknown): [string, string] {
-  const text = String(content ?? '')
-  const i = text.indexOf('> ')
-  return i === -1 ? ['', text] : [text.slice(0, i + 2), text.slice(i + 2)]
-}
-function echoPrompt(content: unknown): string {
-  return splitEcho(content)[0]
-}
-function echoCommand(content: unknown): string {
-  return splitEcho(content)[1]
-}
-
 // 多行粘贴由 Redis 终端决定。这里只透出命令的读写和执行。
 defineExpose({
   getCommand: () => terminalRef.value?.getCommand() ?? '',
@@ -136,22 +122,15 @@ function onKeydown(e: KeyboardEvent): void {
       :command-store="commandHelp"
       :input-tips-search-handler="handleInputTipsSearch"
       :context-suffix="prefix">
-      <!-- 命令回显：前缀是裸文本，拆出来单独套 .t-prompt，历史行前缀才与当前输入行同为 info 色 -->
-      <template #cmdLine="{ item }">
-        <span class="t-crude-font t-cmd-line">
-          <span class="t-prompt t-cmd-line-content">{{ echoPrompt(item.content) }}</span>
-          <span class="t-cmd-line-content" v-html="echoCommand(item.content)"></span>
-        </span>
-      </template>
     </terminal>
   </div>
 </template>
 
 <style lang="scss">
-/* 提示前缀颜色：info 灰，避免纯白太刺眼 */
-.t-prompt {
-  color: var(--el-color-info);
-}
+/* 提示颜色 */
+//.t-prompt {
+//  color: var(--el-color-primary);
+//}
 
 /* 提示行：左侧命令完整显示，右侧说明过长时省略 */
 .t-cmd-tips-item {
