@@ -78,13 +78,15 @@ const helpColumns = computed<MeColumn<CommandHelpRow>[]>(() => [
   },
   { key: 'usage', prop: 'usage', title: t('redisTerminal.usage'), minWidth: 200 },
   { key: 'summary', prop: 'summary', title: t('redisTerminal.summary'), minWidth: 200 },
-  { key: 'since', prop: 'since', title: t('redisTerminal.since'), width: 100 },
+  // 列头是筛选面板：整格可点排序会劫持筛选点击，显式关闭（MeTable 默认对有 prop 的列开排序）
+  { key: 'since', prop: 'since', title: t('redisTerminal.since'), width: 100, sortable: false },
   {
     key: 'readonly',
     prop: 'readonly',
     title: t('redisTerminal.readonly'),
     width: readonlyColWidth.value,
     align: 'center',
+    sortable: false,
     formatter: row =>
       row.readonly ? t('redisTerminal.readonlyYes') : t('redisTerminal.readonlyNo'),
   },

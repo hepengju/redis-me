@@ -112,6 +112,8 @@ const memoryColumns = computed<MeColumn<RedisKeySize_Serialize>[]>(() => [
     prop: 'type',
     title: t('redisMemory.type'),
     width: 100,
+    // 列头是筛选面板：整格可点排序会劫持筛选点击，显式关闭（MeTable 默认对有 prop 的列开排序）
+    sortable: false,
     formatter: row => toKeyTypeLabel(row.type),
   },
   { key: 'key', prop: 'key', title: t('redisMemory.key'), minWidth: 200 },
