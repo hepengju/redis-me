@@ -251,8 +251,8 @@ function tableColumnCount(headers: string[], rows: string[][]): number {
 
 /** 表头 + 前 10 行里每列最宽的单元格，再换成 Excel 列宽并夹在上下限里 */
 function tableColumnWidths(headers: string[], rows: string[][], colCount: number): number[] {
-  const widest = new Array<string>(colCount).fill('')
-  const widestUnits = new Array<number>(colCount).fill(0)
+  const widest: string[] = Array.from({ length: colCount }, () => '')
+  const widestUnits: number[] = Array.from({ length: colCount }, () => 0)
   const sampleCount = Math.min(rows.length, EXCEL_COL_WIDTH_SAMPLE_ROWS)
   for (let rowIndex = 0; rowIndex < sampleCount; rowIndex++) {
     const row = rows[rowIndex]!
@@ -292,9 +292,7 @@ function* tableXlsxRows(
     style: excelTitleStyle,
   }))
   for (const row of rows) {
-    const line = new Array<string>(colCount)
-    for (let index = 0; index < colCount; index++) line[index] = row[index] ?? ''
-    yield line
+    yield Array.from({ length: colCount }, (_, index) => row[index] ?? '')
   }
 }
 

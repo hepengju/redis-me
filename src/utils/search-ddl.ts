@@ -383,15 +383,7 @@ function quoteName(s: string): string {
 }
 
 function quoteArg(s: string): string {
-  const simple =
-    s.length > 0 &&
-    [...s].every(
-      c =>
-        (c >= '0' && c <= '9') ||
-        (c >= 'A' && c <= 'Z') ||
-        (c >= 'a' && c <= 'z') ||
-        '_:-.$*[]/@+\\'.includes(c),
-    )
+  const simple = s.length > 0 && /^[0-9A-Za-z_:\-.$*[\]/@+\\]+$/.test(s)
   if (simple) return s
   return `"${s.replaceAll('\\', '\\\\').replaceAll('"', '\\"')}"`
 }

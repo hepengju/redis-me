@@ -257,12 +257,13 @@ async function syncFieldEditor() {
     form.value.fieldValue = e instanceof Error ? e.message : String(e)
     decodeFailed.value = true
   } finally {
-    if (gen !== fieldProbeGen) return
-    fieldProbeName.value = ''
-    // 晚一拍再允许编辑器回写，避免空内容盖住刚写入的解码结果
-    void nextTick(() => {
-      if (gen === fieldProbeGen) editorLoading.value = false
-    })
+    if (gen === fieldProbeGen) {
+      fieldProbeName.value = ''
+      // 晚一拍再允许编辑器回写，避免空内容盖住刚写入的解码结果
+      void nextTick(() => {
+        if (gen === fieldProbeGen) editorLoading.value = false
+      })
+    }
   }
 }
 // #endregion

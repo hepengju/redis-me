@@ -84,10 +84,10 @@ export function clearKeyMemoryCacheForConn(connId: string): void {
 }
 
 function dropWhere(pred: (ck: string) => boolean): void {
-  for (const ck of [...cache.keys()]) {
+  for (const ck of cache.keys()) {
     if (pred(ck)) cache.delete(ck)
   }
-  for (const ck of [...queued.keys()]) {
+  for (const ck of queued.keys()) {
     if (pred(ck)) queued.delete(ck)
   }
 }
