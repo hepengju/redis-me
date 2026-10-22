@@ -903,7 +903,7 @@ export default {
     custom: 'Custom flags, e.g. AKE / Ex / Kg',
     flags: 'Flags',
     flagsHint:
-      'K keyspace events · E key events<br/>g generic (DEL/EXPIRE/RENAME…) · $ string · l list · s set · h hash · z sorted set · t stream · d module<br/>x expired · e evicted · f flushed · n new key · m key miss (not configurable)<br/>A = g$lshzxe (all)<br/>Common: AKE all / Ex expired only / Kg$ generic+string',
+      '<div style="font-size:12px;line-height:1.8;min-width:300px"><div style="font-weight:600;margin-bottom:2px">Event families</div><div style="display:grid;grid-template-columns:auto 1fr;column-gap:14px"><b>K</b><span>Keyspace events (match by key name)</span><b>E</b><span>Key events (match by event name)</span></div><div style="font-weight:600;margin:8px 0 2px">Command classes (under E)</div><div style="display:grid;grid-template-columns:auto 1fr auto 1fr;column-gap:14px"><b>g</b><span>generic</span><b>l</b><span>list</span><b>$</b><span>string</span><b>s</b><span>set</span><b>h</b><span>hash</span><b>z</b><span>sorted set</span><b>t</b><span>stream</span><b>d</b><span>module</span><b>x</b><span>expired</span><b>e</b><span>evicted</span><b>f</b><span>flushed</span><b>n</b><span>new key</span><b>m</b><span>key miss (n/a)</span></div><div style="margin-top:8px"><b>A</b> = g$lshzxe (all)</div><div style="font-weight:600;margin-top:8px">Common: AKE all · Ex expired only · Kg$ generic+string</div></div>',
     enable: 'Enable',
     update: 'Update',
     enableConfirm:
@@ -924,7 +924,7 @@ export default {
     pattern: 'Match pattern',
     patternHint:
       'keyevent view: matches event names, e.g. *expired*<br/>keyspace view: matches key names, e.g. user:*<br/>Empty = * (match all)',
-    keyword: 'Filter (Key / Event / Node)',
+    keyword: 'Filter (Key)',
     datetime: 'DateTime',
     node: 'Node',
     db: 'DB',

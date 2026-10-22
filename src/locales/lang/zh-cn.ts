@@ -886,7 +886,7 @@ export default {
     custom: '自定义 flags，如 AKE / Ex / Kg',
     flags: '标识',
     flagsHint:
-      'K 键空间事件 · E 键事件<br/>g 通用(DEL/EXPIRE/RENAME…) · $ 字符串 · l 列表 · s 集合 · h 哈希 · z 有序集合 · t Stream · d 模块<br/>x 过期 · e 逐出 · f Flush · n 新键 · m 未命中(不可配)<br/>A = g$lshzxe（全部）<br/>常用：AKE 全部 / Ex 仅过期 / Kg$ 通用+字符串',
+      '<div style="font-size:12px;line-height:1.8;min-width:300px"><div style="font-weight:600;margin-bottom:2px">事件族</div><div style="display:grid;grid-template-columns:auto 1fr;column-gap:14px"><b>K</b><span>键空间事件（按 key 名匹配）</span><b>E</b><span>键事件（按事件名匹配）</span></div><div style="font-weight:600;margin:8px 0 2px">命令类别（E 族细分）</div><div style="display:grid;grid-template-columns:auto 1fr auto 1fr;column-gap:14px"><b>g</b><span>通用</span><b>l</b><span>列表</span><b>$</b><span>字符串</span><b>s</b><span>集合</span><b>h</b><span>哈希</span><b>z</b><span>有序集合</span><b>t</b><span>Stream</span><b>d</b><span>模块</span><b>x</b><span>过期</span><b>e</b><span>逐出</span><b>f</b><span>Flush</span><b>n</b><span>新键</span><b>m</b><span>未命中(不可配)</span></div><div style="margin-top:8px"><b>A</b> = g$lshzxe（全部）</div><div style="font-weight:600;margin-top:8px">常用：AKE 全部 · Ex 仅过期 · Kg$ 通用+字符串</div></div>',
     enable: '开启',
     update: '更新',
     enableConfirm:
@@ -907,7 +907,7 @@ export default {
     pattern: '匹配 pattern',
     patternHint:
       'keyevent 视角：匹配事件名，如 *expired*<br/>keyspace 视角：匹配键名，如 user:*<br/>留空 = * 匹配全部',
-    keyword: '模糊筛选（键、事件、节点）',
+    keyword: '模糊筛选（键）',
     datetime: '时间',
     node: '节点',
     db: 'DB',
