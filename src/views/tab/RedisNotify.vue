@@ -56,39 +56,18 @@ interface NotifyRow {
 const stream = createRealtimeStream<NotifyRow>({ maxRows: MAX_ROWS })
 const dataList = stream.list
 
-// 列描述：单一来源驱动渲染/排序/导出；节点列仅集群显示（单机 node 为空串）；关键词(key/event/node)与节点/库/事件列头筛选均由 MeTable 内部处理
+// 列描述：单一来源驱动渲染/排序/导出；节点列仅集群显示（单机 node 为空串）；关键词仅匹配键(key)，节点/事件列头筛选由 MeTable 内部处理
 const notifyColumns = computed<MeColumn<NotifyRow>[]>(() => [
   { key: 'datetime', prop: 'datetime', title: t('redisNotify.datetime'), width: 118 },
+  { key: 'db', prop: 'db', title: t('redisNotify.db'), width: 80, align: 'center' },
+  { key: 'key', prop: 'key', title: t('redisNotify.key'), minWidth: 200, searchable: true },
+  { key: 'event', prop: 'event', title: t('redisNotify.event'), width: 120, filterable: true },
+  // 节点列排在最后（与慢查询一致）
   ...(share.conn?.cluster
     ? ([
-        {
-          key: 'node',
-          prop: 'node',
-          title: t('redisNotify.node'),
-          width: 150,
-          filterable: true,
-          searchable: true,
-        },
+        { key: 'node', prop: 'node', title: t('redisNotify.node'), width: 150, filterable: true },
       ] as MeColumn<NotifyRow>[])
     : []),
-  {
-    key: 'db',
-    prop: 'db',
-    title: t('redisNotify.db'),
-    width: 80,
-    align: 'center',
-    filterable: true,
-    filterCenter: true,
-  },
-  { key: 'key', prop: 'key', title: t('redisNotify.key'), minWidth: 200, searchable: true },
-  {
-    key: 'event',
-    prop: 'event',
-    title: t('redisNotify.event'),
-    width: 120,
-    filterable: true,
-    searchable: true,
-  },
 ])
 // #endregion
 
