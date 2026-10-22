@@ -100,7 +100,8 @@ pub fn get_client_cluster(
     let url = redis_url(conf)?;
     log_redis_url(conf, &url);
 
-    let mut builder = ClusterClient::builder(vec![url.to_string()]).retries(CLUSTER_COMMAND_RETRIES);
+    let mut builder =
+        ClusterClient::builder(vec![url.to_string()]).retries(CLUSTER_COMMAND_RETRIES);
     if conf.is_resp3() {
         builder = builder.use_protocol(ProtocolVersion::RESP3);
     }

@@ -664,7 +664,7 @@ fn ft_info_display_value(value: Value) -> Value {
 }
 
 fn fold_info_map(arr: Vec<Value>) -> Value {
-    if arr.len() % 2 != 0 {
+    if !arr.len().is_multiple_of(2) {
         return Value::Array(arr);
     }
     let mut pairs = Vec::with_capacity(arr.len() / 2);
@@ -798,16 +798,16 @@ fn field_pairs(value: &Value, vectors: &HashSet<String>) -> AnyResult<Vec<Search
 
 /// Hash 的 VECTOR 是小端 FLOAT32 二进制。JSON 数组仍是文本，不拆字节。
 fn field_text(name: &str, value: &Value, vectors: &HashSet<String>) -> String {
-    if vectors.contains(name) {
-        if let Value::BulkString(bytes) = value {
-            if let Ok(text) = std::str::from_utf8(bytes) {
-                if text.trim_start().starts_with('[') {
-                    return text.to_string();
-                }
-            }
-            if let Some(text) = format_f32_le(bytes) {
-                return text;
-            }
+    if vectors.contains(name)
+        && let Value::BulkString(bytes) = value
+    {
+        if let Ok(text) = std::str::from_utf8(bytes)
+            && text.trim_start().starts_with('[')
+        {
+            return text.to_string();
+        }
+        if let Some(text) = format_f32_le(bytes) {
+            return text;
         }
     }
     text_sep(value)
@@ -815,12 +815,12 @@ fn field_text(name: &str, value: &Value, vectors: &HashSet<String>) -> String {
 
 /// 长度是 4 的倍数时，按小端 FLOAT32 拼成 JSON 数组，和 JSON 文档里的向量一样。
 fn format_f32_le(bytes: &[u8]) -> Option<String> {
-    if bytes.is_empty() || bytes.len() % 4 != 0 {
+    if bytes.is_empty() || !bytes.len().is_multiple_of(4) {
         return None;
     }
     let mut parts = Vec::with_capacity(bytes.len() / 4);
-    for chunk in bytes.chunks_exact(4) {
-        let n = f32::from_le_bytes([chunk[0], chunk[1], chunk[2], chunk[3]]);
+    for chunk in bytes.as_chunks::<4>().0 {
+        let n = f32::from_le_bytes(*chunk);
         parts.push(format_f32(n));
     }
     Some(format!("[{}]", parts.join(", ")))
@@ -1008,7 +1008,7 @@ mod tests {
         bytes.extend(1.5f32.to_le_bytes());
         bytes.extend((-0.25f32).to_le_bytes());
         bytes.extend(0.0f32.to_le_bytes());
-        bytes.extend(0.123456789f32.to_le_bytes());
+        bytes.extend(0.123_456_79f32.to_le_bytes());
         let raw = Value::Array(vec![
             Value::Int(1),
             b("bikes:1"),

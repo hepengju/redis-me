@@ -546,7 +546,7 @@ mod tests {
             format!("{}...", "a".repeat(32))
         );
 
-        let (command, args) = parse_cmd(&redis::cmd("get").arg("mykey"));
+        let (command, args) = parse_cmd(redis::cmd("get").arg("mykey"));
         assert_eq!(command, "GET");
         assert_eq!(args, vec!["mykey".to_string()]);
         assert_eq!(format_cmd_brief(&redis::cmd("PING")), "PING");
