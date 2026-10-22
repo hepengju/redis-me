@@ -80,8 +80,11 @@ const sendChannel = ref('')
 const sendMessage = ref('')
 const sendMessageFmt = ref<ViewBytesFormat>('utf8')
 const sendLoading = ref(false)
+// 多行编辑弹框：底栏保持单行（回车即发），复杂/多行内容在此编辑
+const editorVisible = ref(false)
 
-async function publish() {
+// 返回是否发布成功，供弹框决定发布后是否关闭
+async function publish(): Promise<boolean> {
   sendLoading.value = true
   try {
     const viewFmt = sendMessageFmt.value
@@ -90,11 +93,12 @@ async function publish() {
       message = meViewToWire(message, viewFmt)
     } catch (e) {
       meErr(e instanceof Error ? e.message : String(e))
-      return
+      return false
     }
     await meCommands.publish(share.conn!.id, sendChannel.value, message, IPC_WIRE_FORMAT)
     sendMessage.value = ''
     meOk(t('redisPubSub.publishOk'))
+    return true
   } finally {
     sendLoading.value = false
   }
@@ -105,6 +109,13 @@ function publishOnEnter() {
   if (sendLoading.value) return
   if (!sendChannel.value || !sendMessage.value) return
   void publish()
+}
+
+// 弹框内发布：成功后关闭；频道/消息任一为空不响应
+async function publishFromEditor() {
+  if (sendLoading.value) return
+  if (!sendChannel.value || !sendMessage.value) return
+  if (await publish()) editorVisible.value = false
 }
 
 // 清空前二次确认（与命令日志页一致：防误点丢实时流数据）
@@ -186,7 +197,8 @@ onUnmounted(() => tauriUnlisten())
       <el-input
         v-model="sendChannel"
         :placeholder="t('redisPubSub.channel')"
-        class="footer-channel" />
+        class="footer-channel"
+        clearable />
       <!-- 编码选择：内嵌在消息输入框左侧（prepend），套用 me-select 无边框样式；底栏贴底故下拉向上 -->
       <el-input
         v-model="sendMessage"
@@ -207,6 +219,16 @@ onUnmounted(() => tauriUnlisten())
               :value="item.toLowerCase()" />
           </el-select>
         </template>
+        <!-- 展开多行编辑：单行放不下时进弹框编辑，不改变底栏回车发送习惯 -->
+        <template #suffix>
+          <me-icon
+            icon="el-icon-full-screen"
+            class="footer-expand"
+            :info="t('redisPubSub.multiLine')"
+            placement="top"
+            :show-after="200"
+            @click="editorVisible = true" />
+        </template>
       </el-input>
       <el-button
         icon="el-icon-promotion"
@@ -217,6 +239,54 @@ onUnmounted(() => tauriUnlisten())
         >{{ t('redisPubSub.send') }}</el-button
       >
     </div>
+    <!-- 多行消息编辑弹框：与底栏共用 sendChannel / sendMessageFmt / sendMessage -->
+    <me-dialog
+      v-model="editorVisible"
+      :title="t('redisPubSub.messageContent')"
+      icon="el-icon-chat-line-square"
+      width="640px"
+      body-height="auto">
+      <div class="editor">
+        <el-input
+          v-model="sendChannel"
+          :placeholder="t('redisPubSub.channel')"
+          class="editor-channel"
+          clearable />
+        <!-- 消息内容用 me-code：mode=json 获得 JSON 语法高亮（多行/自动换行/行号） -->
+        <me-code
+          v-model="sendMessage"
+          mode="json"
+          :placeholder="t('redisPubSub.messageContent')"
+          class="editor-code" />
+      </div>
+      <!-- 编码下拉放底部左侧：与消息内容就近，避免误以为是频道的编码 -->
+      <template #footer>
+        <div class="editor-footer">
+          <el-select
+            v-model="sendMessageFmt"
+            class="editor-fmt"
+            :suffix-icon="MeSelectUpDownIcon"
+            placement="top-start"
+            :fallback-placements="['top', 'top-end']">
+            <el-option
+              v-for="item in BYTES_FORMAT"
+              :key="item"
+              :label="item"
+              :value="item.toLowerCase()" />
+          </el-select>
+          <div>
+            <el-button @click="editorVisible = false">{{ t('cancel') }}</el-button>
+            <el-button
+              type="warning"
+              :loading="sendLoading"
+              :disabled="!(sendChannel && sendMessage)"
+              @click="publishFromEditor">
+              {{ t('redisPubSub.send') }}
+            </el-button>
+          </div>
+        </div>
+      </template>
+    </me-dialog>
   </div>
 </template>
 
@@ -247,6 +317,56 @@ onUnmounted(() => tauriUnlisten())
     .footer-message {
       flex: 1;
       min-width: 0;
+
+      // 展开图标：靠右侧、可点击
+      .footer-expand {
+        display: inline-flex;
+        align-items: center;
+        height: 100%;
+        cursor: pointer;
+        color: var(--el-color-info);
+
+        &:hover {
+          color: var(--el-color-primary);
+        }
+      }
+    }
+  }
+}
+
+// 多行编辑弹框（slot 在 append-to-body 下仍携带本组件 scope，样式生效）
+.editor {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+
+  // me-code 需固定高度（其内部 height:100%）
+  .editor-code {
+    width: 100%;
+    height: 260px;
+  }
+}
+
+// 底栏：左侧编码选择 + 右侧按钮
+.editor-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+
+  .editor-fmt {
+    // 按选中文案收缩（同外部 me-select-plain 宽度），但保留边框
+    --el-select-width: max-content;
+
+    :deep(.el-select__wrapper) {
+      width: max-content;
+    }
+
+    // 选中项默认 absolute+width:100%，不进 max-content，改回文档流
+    :deep(.el-select__selected-item.el-select__placeholder) {
+      position: static;
+      transform: none;
+      width: auto;
     }
   }
 }

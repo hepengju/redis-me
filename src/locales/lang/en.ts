@@ -886,6 +886,7 @@ export default {
     message: 'Message',
     messageContent: 'Message Content',
     send: 'Publish',
+    multiLine: 'Multi-line edit',
   },
 
   redisNotify: {

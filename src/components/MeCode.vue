@@ -2,7 +2,7 @@
 // #region 导入
 import { syntaxHighlighting } from '@codemirror/language'
 import { Prec, EditorState, StateEffect } from '@codemirror/state'
-import { EditorView, keymap, lineNumbers } from '@codemirror/view'
+import { EditorView, keymap, lineNumbers, placeholder as cmPlaceholder } from '@codemirror/view'
 import { useDark } from '@vueuse/core'
 import { json5 as cmJson5 } from 'codemirror-json5'
 import {
@@ -120,6 +120,8 @@ const props = withDefaults(
     /** 自定义编码识别中：编辑区留空，只盖一行半透明提示 */
     loading?: boolean
     loadingText?: string
+    /** 空内容时的占位提示（仅文档为空时显示，同原生 input placeholder） */
+    placeholder?: string
   }>(),
   {
     modelValue: '',
@@ -129,6 +131,7 @@ const props = withDefaults(
     copyable: false,
     loading: false,
     loadingText: '',
+    placeholder: '',
   },
 )
 
@@ -180,6 +183,11 @@ const extensions = computed(() => {
 
   if (showLineNumbers.value) {
     list.push(lineNumbers())
+  }
+
+  // 空文档时的占位提示（非空自动隐藏）
+  if (props.placeholder) {
+    list.push(cmPlaceholder(props.placeholder))
   }
 
   if (props.mode === 'properties' || props.mode === 'conf') {
@@ -359,6 +367,11 @@ watch(
   /* 字体设置 */
   :deep(.cm-scroller) {
     font-family: var(--code-font);
+  }
+
+  /* 空内容占位提示：与输入框 placeholder 同色，避免误读为正文 */
+  :deep(.cm-placeholder) {
+    color: var(--el-text-color-placeholder);
   }
 }
 

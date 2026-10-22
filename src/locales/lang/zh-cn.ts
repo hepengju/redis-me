@@ -869,6 +869,7 @@ export default {
     message: '消息',
     messageContent: '消息内容',
     send: '发布',
+    multiLine: '多行编辑',
   },
 
   redisNotify: {
