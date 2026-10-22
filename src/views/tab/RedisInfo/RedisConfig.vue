@@ -61,23 +61,17 @@ const showTypeOptions = [
   { label: t('redisConfig.diff'), value: 'Diff' },
 ]
 const showType = ref('All')
-const filterDataList = computed(() => {
-  const key = keyword.value.toLowerCase()
-  return dataList.value.filter(
-    row =>
-      (!key ||
-        row.param?.toLowerCase().indexOf(key) > -1 ||
-        row.value?.toLowerCase().indexOf(key) > -1 ||
-        (tipMap.value[row.param]?.toLowerCase() ?? '').indexOf(key) > -1) &&
-      (showType.value === 'All' ||
-        (showType.value === 'Diff' && row.value !== dictRaw.value[row.param])),
-  )
-})
+// 「全部/差异」业务预筛交给 MeTable filter 谓词（页面传全量 dataList，MeTable 内部过滤）；关键词 param/value/tip 由 searchable + keyword 处理
+const diffFilter = (row: unknown): boolean => {
+  if (showType.value === 'All') return true
+  const r = row as ConfigTableRow
+  return r.value !== dictRaw.value[r.param]
+}
 
 // MeTable 列描述：单一来源，表格与导出共用（默认配置/说明取值由 formatter 计算，与界面展示一致）
 const configColumns = computed<MeColumn<ConfigTableRow>[]>(() => [
-  { key: 'param', prop: 'param', title: t('redisConfig.param'), minWidth: 180 },
-  { key: 'value', prop: 'value', title: t('redisConfig.value'), minWidth: 100 },
+  { key: 'param', prop: 'param', title: t('redisConfig.param'), minWidth: 180, searchable: true },
+  { key: 'value', prop: 'value', title: t('redisConfig.value'), minWidth: 100, searchable: true },
   {
     key: 'default',
     title: `${dictVersion.value} ${t('redisConfig.defaultConfig')}`,
@@ -91,6 +85,7 @@ const configColumns = computed<MeColumn<ConfigTableRow>[]>(() => [
     // 灰色加在单元格节点（而非内部 span）：截断省略号与文字同色继承
     className: 'col-tip-info',
     formatter: row => tipMap.value[row.param] ?? '',
+    searchable: true,
   },
   ...(canEdit.value
     ? [
@@ -260,9 +255,10 @@ async function configSet() {
     <div class="table" :style="{ '--me-config-diff': share.color }">
       <me-table
         v-loading="loading"
-        :data="filterDataList"
+        :data="dataList"
+        :filter="diffFilter"
+        :keyword="keyword"
         :columns="configColumns"
-        :total="dataList.length"
         :row-class="diffRowClass"
         export-name="config">
         <template #cell-action="{ row }">

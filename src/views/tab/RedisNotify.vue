@@ -4,10 +4,10 @@ import { listen } from '@tauri-apps/api/event'
 import { computed, inject, onMounted, onUnmounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import type { MeColumn, MeFilterValue } from '@/components/me-table-column'
+import type { MeColumn } from '@/components/me-table-column'
 import MeWebsite from '@/components/MeWebsite.vue'
 import { shareProvideKey } from '@/types/me-interface'
-import { createRealtimeStream, filterByKeyword } from '@/utils/realtime-stream'
+import { createRealtimeStream } from '@/utils/realtime-stream'
 import { meCommands, meConfirm, meCopy, meOk } from '@/utils/util'
 // #endregion
 
@@ -55,45 +55,39 @@ interface NotifyRow {
 // 实时流：批量缓冲并入 dataList，避免高频通知逐条头插拖慢主线程
 const stream = createRealtimeStream<NotifyRow>({ maxRows: MAX_ROWS })
 const dataList = stream.list
-// 事件列头筛选已选值（备选项从全量数据动态去重，与键值页同一套 MeColumnFilter）
-const eventFilter = ref<MeFilterValue[]>([])
-const eventFilters = computed(() =>
-  [...new Set(dataList.value.map(row => row.event).filter(Boolean))]
-    .sort()
-    .map(value => ({ text: value!, value: value! })),
-)
-const filterDataList = computed(() => {
-  const rows = filterByKeyword(
-    dataList.value,
-    keyword.value,
-    (row, key) =>
-      (row.key?.toLowerCase() ?? '').indexOf(key) > -1 ||
-      (row.event?.toLowerCase() ?? '').indexOf(key) > -1 ||
-      (row.node?.toLowerCase() ?? '').indexOf(key) > -1,
-  )
-  const events = eventFilter.value
-  // 未筛选时原样返回，避免每批新通知并入都多拷一次数组
-  if (!events.length || !rows.length) return rows
-  return rows.filter(row => events.includes(row.event ?? ''))
-})
 
-// 列描述：单一来源驱动渲染/排序/导出；节点列仅集群显示（单机 node 为空串）
+// 列描述：单一来源驱动渲染/排序/导出；节点列仅集群显示（单机 node 为空串）；关键词(key/event/node)与节点/库/事件列头筛选均由 MeTable 内部处理
 const notifyColumns = computed<MeColumn<NotifyRow>[]>(() => [
   { key: 'datetime', prop: 'datetime', title: t('redisNotify.datetime'), width: 118 },
   ...(share.conn?.cluster
     ? ([
-        { key: 'node', prop: 'node', title: t('redisNotify.node'), width: 150 },
+        {
+          key: 'node',
+          prop: 'node',
+          title: t('redisNotify.node'),
+          width: 150,
+          filterable: true,
+          searchable: true,
+        },
       ] as MeColumn<NotifyRow>[])
     : []),
-  { key: 'db', prop: 'db', title: t('redisNotify.db'), width: 64, align: 'center' },
-  { key: 'key', prop: 'key', title: t('redisNotify.key'), minWidth: 200 },
+  {
+    key: 'db',
+    prop: 'db',
+    title: t('redisNotify.db'),
+    width: 80,
+    align: 'center',
+    filterable: true,
+    filterCenter: true,
+  },
+  { key: 'key', prop: 'key', title: t('redisNotify.key'), minWidth: 200, searchable: true },
   {
     key: 'event',
     prop: 'event',
     title: t('redisNotify.event'),
     width: 120,
-    // 列头是筛选面板：整格可点排序会劫持筛选点击，显式关闭（MeTable 默认对有 prop 的列开排序）
-    sortable: false,
+    filterable: true,
+    searchable: true,
   },
 ])
 // #endregion
@@ -286,19 +280,8 @@ onUnmounted(() => unlisten?.())
       </div>
     </div>
     <div class="table">
-      <me-table
-        :data="filterDataList"
-        :columns="notifyColumns"
-        :total="dataList.length"
-        export-name="notify">
+      <me-table :data="dataList" :keyword="keyword" :columns="notifyColumns" export-name="notify">
         <template #cell-datetime="{ row }">{{ row.datetime?.slice(11) }}</template>
-        <!-- 事件列头筛选：标题 + 下拉面板（v2 无内置筛选 UI） -->
-        <template #header-event>
-          <me-column-filter
-            v-model="eventFilter"
-            :title="t('redisNotify.event')"
-            :options="eventFilters" />
-        </template>
       </me-table>
     </div>
 

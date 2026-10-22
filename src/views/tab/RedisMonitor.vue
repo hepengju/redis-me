@@ -7,7 +7,7 @@ import { useI18n } from 'vue-i18n'
 import type { MeColumn } from '@/components/me-table-column'
 import MeWebsite from '@/components/MeWebsite.vue'
 import { shareProvideKey } from '@/types/me-interface'
-import { createRealtimeStream, filterByKeyword } from '@/utils/realtime-stream'
+import { createRealtimeStream } from '@/utils/realtime-stream'
 import { meConfirm, meCommands, meOk } from '@/utils/util'
 import NodeList from '@/views/ext/NodeList.vue'
 // #endregion
@@ -34,16 +34,17 @@ interface MonitorRow {
 // 实时流：批量缓冲并入 dataList，避免 MONITOR 高频命令逐条头插拖慢主线程
 const stream = createRealtimeStream<MonitorRow>({ maxRows: MAX_ROWS })
 const dataList = stream.list
-const filterDataList = computed(() =>
-  filterByKeyword(dataList.value, keyword.value, (row, key) =>
-    (row.command ?? '').toLowerCase().includes(key),
-  ),
-)
 
 // 列描述：时间列导出/悬停保留完整日期时间（取 prop 原值），单元格经 #cell-datetime 只显时分秒（与迁移前一致）
 const monitorColumns = computed<MeColumn[]>(() => [
   { key: 'datetime', prop: 'datetime', title: t('redisMonitor.time'), width: 118 },
-  { key: 'command', prop: 'command', title: t('redisMonitor.command'), minWidth: 200 },
+  {
+    key: 'command',
+    prop: 'command',
+    title: t('redisMonitor.command'),
+    minWidth: 200,
+    searchable: true,
+  },
 ])
 
 // 监控函数防抖
@@ -123,11 +124,7 @@ onUnmounted(() => tauriUnlisten())
       </div>
     </div>
     <div class="table">
-      <me-table
-        :data="filterDataList"
-        :columns="monitorColumns"
-        :total="dataList.length"
-        export-name="monitor">
+      <me-table :data="dataList" :keyword="keyword" :columns="monitorColumns" export-name="monitor">
         <template #cell-datetime="{ row }">{{ row.datetime?.slice(11) }}</template>
       </me-table>
     </div>

@@ -32,19 +32,7 @@ watchEffect(() => {
   if (slowerGetCount.value < 1) slowerGetCount.value = 1
 })
 
-// 只做关键词过滤；排序交给 MeTable（default-sort 时间倒序，与后端返回顺序一致）
-const filterDataList = computed(() => {
-  const key = keyword.value.toLowerCase()
-  return dataList.value.filter(
-    row =>
-      !key ||
-      row.command?.toLowerCase().indexOf(key) > -1 ||
-      row.client?.toLowerCase().indexOf(key) > -1 ||
-      row.clientName?.toLowerCase().indexOf(key) > -1,
-  )
-})
-
-// 列描述：展示与导出文本单一来源；sortable 交由 MeTable 默认策略开启
+// 列描述：展示与导出文本单一来源；关键词（command/client/clientName）与节点列头筛选均由 MeTable 内部处理；排序交给 MeTable（default-sort 时间倒序，与后端返回顺序一致）
 const slowColumns = computed<MeColumn<RedisSlowLog>[]>(() => [
   { key: 'time', prop: 'time', title: t('redisSlow.time'), width: 180 },
   {
@@ -55,12 +43,33 @@ const slowColumns = computed<MeColumn<RedisSlowLog>[]>(() => [
     align: 'right',
     formatter: row => `${Math.round(row.cost ?? 0)} ms`,
   },
-  { key: 'command', prop: 'command', title: t('redisSlow.command'), minWidth: 200 },
-  { key: 'clientName', prop: 'clientName', title: t('redisSlow.clientName'), width: 140 },
-  { key: 'client', prop: 'client', title: t('redisSlow.client'), width: 180 },
+  {
+    key: 'command',
+    prop: 'command',
+    title: t('redisSlow.command'),
+    minWidth: 200,
+    searchable: true,
+  },
+  {
+    key: 'clientName',
+    prop: 'clientName',
+    title: t('redisSlow.clientName'),
+    width: 140,
+    searchable: true,
+  },
+  { key: 'client', prop: 'client', title: t('redisSlow.client'), width: 180, searchable: true },
   // 集群下才需要区分节点
   ...(share.conn?.cluster
-    ? [{ key: 'node', prop: 'node', title: t('redisSlow.node'), width: 180 }]
+    ? [
+        {
+          key: 'node',
+          prop: 'node',
+          title: t('redisSlow.node'),
+          width: 180,
+          // 列头筛选：MeTable 自动去重生成选项并内部过滤
+          filterable: true,
+        },
+      ]
     : []),
 ])
 
@@ -226,9 +235,9 @@ const rules = computed(() => ({
     <div class="table">
       <me-table
         v-loading="loading"
-        :data="filterDataList"
+        :data="dataList"
+        :keyword="keyword"
         :columns="slowColumns"
-        :total="dataList.length"
         :default-sort="{ prop: 'time', order: 'descending' }"
         export-name="slowlog" />
     </div>

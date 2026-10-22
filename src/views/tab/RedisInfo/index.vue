@@ -174,25 +174,15 @@ watchEffect(() => {
   })
 })
 
-const dataList = computed(() => {
-  return tagTable.value.filter(d => !tagSelected.value || d.tag === tagSelected.value)
-})
-const filterDataList = computed(() => {
-  const key = keyword.value.toLowerCase()
-  return dataList.value.filter(
-    d =>
-      !key ||
-      d.key?.toLowerCase().indexOf(key) > -1 ||
-      d.value?.toLowerCase().indexOf(key) > -1 ||
-      (tipMap.value[d.key]?.toLowerCase() ?? '').indexOf(key) > -1,
-  )
-})
+// 分类下拉预筛交给 MeTable filter 谓词（页面传全量 tagTable，MeTable 内部过滤）；关键词 key/value/tip 由 searchable + keyword 处理
+const tagFilter = (row: unknown): boolean =>
+  !tagSelected.value || (row as InfoRow).tag === tagSelected.value
 
-// MeTable 列描述：单一来源，表格与导出共用（说明列文本由 formatter 计算，与界面展示一致）
+// MeTable 列描述：单一来源，表格与导出共用（说明列文本由 formatter 计算，与界面展示一致）；关键词搜索 key/value/tip 由 MeTable 内部处理（tip 走 formatter 展示文本）
 const infoColumns = computed<MeColumn<InfoRow>[]>(() => [
   { key: 'tag', prop: 'tag', title: t('redisInfo.tag'), width: 100 },
-  { key: 'key', prop: 'key', title: t('redisInfo.key'), minWidth: 150 },
-  { key: 'value', prop: 'value', title: t('redisInfo.value'), minWidth: 150 },
+  { key: 'key', prop: 'key', title: t('redisInfo.key'), minWidth: 150, searchable: true },
+  { key: 'value', prop: 'value', title: t('redisInfo.value'), minWidth: 150, searchable: true },
   {
     key: 'tip',
     title: t('redisInfo.tip'),
@@ -200,6 +190,7 @@ const infoColumns = computed<MeColumn<InfoRow>[]>(() => [
     // 灰色加在单元格节点（而非内部 span）：截断省略号与文字同色继承
     className: 'col-tip-info',
     formatter: row => tipMap.value[row.key] ?? '',
+    searchable: true,
   },
 ])
 
@@ -480,9 +471,10 @@ const nodeGroups = computed(() => {
 
       <me-table
         ref="table"
-        :data="filterDataList"
+        :data="tagTable"
+        :filter="tagFilter"
+        :keyword="keyword"
         :columns="infoColumns"
-        :total="tagTable.length"
         export-name="info" />
     </el-card>
   </div>

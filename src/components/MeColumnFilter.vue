@@ -1,7 +1,9 @@
 <script setup lang="ts">
-// 列头筛选：标题 + 下拉复选面板，放在 MeTable 的 header-${key} 插槽里用。
+// 列头筛选：标题 + 下拉复选面板。常规用法是列描述 filterOptions 声明备选项，由 MeTable 自动渲染本组件；
+// 也可手动放在 header-${key} 插槽里用（需自定义面板外层时）。
 // el-table-v2 无内置筛选 UI，故自渲染；勾选即时生效、全不选即清除，
-// 选中值经 v-model 回传，实际过滤由调用方在数据层完成（与关键词过滤同一处，便于叠加）。
+// 选中值经 v-model 回传：filterable/filterOptions 声明式用法下由 MeTable 内部完成过滤；
+// 仅手动放进 header-${key} 插槽自持选中态时，才需调用方在数据层自行过滤（并自行关该列排序，避免表头点击热区劫持下拉）。
 import { useI18n } from 'vue-i18n'
 
 import type { MeFilterValue } from './me-table-column'

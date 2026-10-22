@@ -27,12 +27,6 @@ const dataList = ref<RedisClientListRow[]>([])
 // #region 计算属性
 const canEdit = computed(() => !share.readonly)
 const tipMap = computed(() => tips.value as Record<string, string | undefined>)
-const filterDataList = computed(() => {
-  const key = keyword.value.toLowerCase()
-  return dataList.value.filter(
-    row => !key || row.addr.toLowerCase().includes(key) || row.name.toLowerCase().includes(key),
-  )
-})
 // #endregion
 
 // #region 面板操作
@@ -133,8 +127,8 @@ function fieldCol(
 // 操作列无取值源不参与导出）
 const clientColumns = computed<MeColumn<RedisClientListRow>[]>(() => [
   fieldCol('id', 'ID', { width: 100, align: 'right' }),
-  fieldCol('addr', t('redisClient.addr'), { width: 180 }),
-  fieldCol('name', t('redisClient.name'), { width: 160 }),
+  fieldCol('addr', t('redisClient.addr'), { width: 180, searchable: true }),
+  fieldCol('name', t('redisClient.name'), { width: 160, searchable: true }),
   fieldCol('age', t('redisClient.age'), {
     width: 140,
     align: 'right',
@@ -193,9 +187,9 @@ const clientColumns = computed<MeColumn<RedisClientListRow>[]>(() => [
     <div class="table">
       <me-table
         v-loading="loading"
-        :data="filterDataList"
+        :data="dataList"
+        :keyword="keyword"
         :columns="clientColumns"
-        :total="dataList.length"
         :default-sort="{ prop: 'id', order: 'ascending' }"
         export-name="client">
         <template #cell-action="{ row }">

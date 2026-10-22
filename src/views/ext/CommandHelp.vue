@@ -46,21 +46,18 @@ const readonlyFilters = computed(() => [
   { text: t('redisTerminal.readonlyNo'), value: false },
 ])
 
-const filterDataList = computed(() => {
-  let rows = commandHelp.value
+// 行谓词交给 MeTable：分组/关键词/版本/只读均在此判定（读同一批页面 ref，行为与旧 filterDataList 一致），
+// 关键词比的是 title（文档标题，非展示列 key）故不适合 searchable；页面传全量 commandHelp、MeTable 自算总数
+const helpFilter = (row: unknown): boolean => {
+  const r = row as CommandHelpRow
+  if (group.value && r.group !== group.value) return false
   const key = keyword.value.toLowerCase().trim()
-  if (group.value) rows = rows.filter(row => row.group === group.value)
-  if (key) {
-    rows = rows.filter(
-      row => row.title.toLowerCase().includes(key) || row.summary.toLowerCase().includes(key),
-    )
-  }
-  const sinces = sinceFilter.value
-  if (sinces.length) rows = rows.filter(row => sinces.includes(row.since))
-  const readonlys = readonlyFilter.value
-  if (readonlys.length) rows = rows.filter(row => readonlys.includes(!!row.readonly))
-  return rows
-})
+  if (key && !(r.title.toLowerCase().includes(key) || r.summary.toLowerCase().includes(key)))
+    return false
+  if (sinceFilter.value.length && !sinceFilter.value.includes(r.since)) return false
+  if (readonlyFilter.value.length && !readonlyFilter.value.includes(!!r.readonly)) return false
+  return true
+}
 
 // 只读列表头：英文 Read-only 较宽，中文只读可窄一些
 const readonlyColWidth = computed(() => (isZh.value ? 88 : 120))
@@ -143,9 +140,9 @@ defineExpose({ open, close })
       <div class="cmd-table" style="margin-top: 10px; flex-grow: 1; height: 0">
         <me-table
           :key="tableKey"
-          :data="filterDataList"
+          :data="commandHelp"
+          :filter="helpFilter"
           :columns="helpColumns"
-          :total="commandHelp.length"
           export-name="command"
           :default-sort="{ prop: 'key', order: 'ascending' }">
           <!-- 命令名为文档链接（路径统一为小写+空格转连字符） -->

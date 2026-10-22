@@ -4,6 +4,10 @@
 // 排序与 el-table 的 default-sort、列 sortable / sort-method / sort-by 一致；
 // sortable="custom" 时不改行顺序，由父组件在 sort-change 中自行更新 :data。
 // 未显式指定 sortable 的数据列（有 prop/formatter、非勾选/序号列）默认可排序，免去逐列手写。
+// 列描述 filterable 声明列头筛选：MeTable 自动按列 prop 从 data 去重生成选项、渲染面板并在排序前内部过滤（页面无需胶水）；
+// 带筛选的列自动关排序（v2 整格点击热区会劫持筛选下拉点击）。filterOptions 可手动覆盖选项（枚举源非行字段原值时）。
+// 列描述 searchable + 顶层 keyword prop 声明关键词搜索：MeTable 在排序前列筛选前按展示文本（含 formatter）包含匹配，页面直接传全量 data 即可。
+// 顶层 filter prop 传入行谓词：承接「全部/差异」「分类下拉」等对同一批行的业务预筛；配合 data 传全量，总数默认取 data.length，页面无需再传 total。
 // 表头点击三态循环 asc → desc → 无（对齐 el-table）；v2 原生仅 asc↔desc，取消态由本组件拦下。
 // 表内 footer 固定行：总数 + #footer 插槽（调用方主动作，右侧紧邻导出）+「…」导出菜单贴右（RAW 项直接序列化数据永远可用，其余格式由列描述计算矩阵、不渲染 DOM）。
 import type { TableV2Instance } from 'element-plus'
@@ -26,11 +30,12 @@ import {
 import { meCopy, meErr } from '@/utils/util'
 
 import {
+  type MeColumn,
+  type MeFilterValue,
   exportableColumns,
   exportMatrixFromColumns,
   isExportableColumn,
   toCellText,
-  type MeColumn,
 } from './me-table-column'
 
 defineOptions({ inheritAttrs: false })
@@ -53,11 +58,86 @@ const props = withDefaults(
     emptyText?: string
     /** 自定义行类：如差异行着色标记；与内置 stripe 类组合 */
     rowClass?: (row: unknown, rowIndex: number) => string
+    /** 关键词：配合列描述 searchable 列，MeTable 在排序/列筛选前自动按展示文本包含匹配过滤（页面无需写 filterDataList） */
+    keyword?: string
+    /** 行谓词：如「全部/差异」「分类下拉」等业务预筛；在关键词/列头筛选前先过一遍，页面据此把全量 data 交给 MeTable 而不必自行 reduce */
+    filter?: (row: unknown, index: number) => boolean
   }>(),
-  { data: () => [], exportName: 'table' },
+  { data: () => [], exportName: 'table', keyword: '' },
 )
 
 const attrs = useAttrs()
+// #endregion
+
+// #region 数据过滤（关键词 searchable + 列头 filterable：均在排序前由 MeTable 内部完成）
+// 列头筛选选中态：列 key → 已选值数组；不向外暴露（页面只管传 filterable 列，过滤在此完成）
+const colFilters = ref<Record<string, MeFilterValue[]>>({})
+
+function colFilterable(col: MeColumn): boolean {
+  return !!col.filterable || !!col.filterOptions
+}
+
+// filterable 列自动去重选项：缓存为 computed（随 data/colFilters 变化各算一次、多列共享一遍遍历），
+// 避免模板内按列直调使实时流每次刷新对每列各做 O(n) 扫描 + 排序。
+// 同时把「已选但当前不在数据里」的值并入：清空/换视角后面板仍可见可取消，不会退化成空列表却图标高亮、静默吞行。
+const autoFilterOptions = computed(() => {
+  const map: Record<string, { text: string; value: MeFilterValue }[]> = {}
+  for (const col of props.columns) {
+    if (!col.filterable || col.filterOptions) continue
+    const key = col.prop ?? col.key
+    const set = new Set<MeFilterValue>()
+    for (const row of props.data) {
+      const v = (row as Record<string, unknown>)?.[key]
+      if (v != null && v !== '') set.add(v as MeFilterValue)
+    }
+    for (const v of colFilters.value[col.key] ?? []) set.add(v)
+    map[col.key] = [...set]
+      .sort((a, b) =>
+        typeof a === 'number' && typeof b === 'number' ? a - b : String(a).localeCompare(String(b)),
+      )
+      .map(v => ({ text: String(v), value: v }))
+  }
+  return map
+})
+
+// filterable 列的选项：filterOptions 优先（手动覆盖），否则取上面缓存的自动去重结果
+function colFilterOptions(col: MeColumn): { text: string; value: MeFilterValue }[] {
+  return col.filterOptions ?? autoFilterOptions.value[col.key] ?? []
+}
+
+function updateColFilter(key: string, vals: MeFilterValue[]): void {
+  colFilters.value = { ...colFilters.value, [key]: vals }
+}
+
+// 关键词搜索列（searchable）
+const searchableCols = computed(() => props.columns.filter(c => c.searchable))
+
+// 生效中的筛选列（已选非空）：无则下方 filteredData 直接返回原数组，不给实时流多拷一次
+const activeFilterCols = computed(() =>
+  props.columns.filter(c => colFilterable(c) && (colFilters.value[c.key]?.length ?? 0) > 0),
+)
+
+const filteredData = computed(() => {
+  const key = props.keyword.toLowerCase().trim()
+  const sCols = searchableCols.value
+  const cols = activeFilterCols.value
+  const fn = props.filter
+  const needKw = !!key && sCols.length > 0
+  // 无外部谓词、无关键词、无列筛选：直接返回原数组引用（不触发虚拟列表重渲染）
+  if (!fn && !needKw && !cols.length) return props.data
+  return props.data.filter((row, i) => {
+    // 页面谓词（filter）：业务预筛先于关键词/列筛选套用
+    if (fn && !fn(row, i)) return false
+    // 关键词：任一 searchable 列的展示文本命中即保留
+    if (needKw && !sCols.some(c => cellText(c, row, i).toLowerCase().includes(key))) return false
+    // 列头筛选：每个生效列均需命中
+    return cols.every(c =>
+      colFilters.value[c.key].includes(
+        (row as Record<string, unknown>)[c.prop ?? c.key] as MeFilterValue,
+      ),
+    )
+  })
+})
 // #endregion
 
 // #region 排序（default-sort 初值 + 表头点击，整表 orderBy 与 EP 列行为一致）
@@ -91,9 +171,9 @@ const sortedData = computed(() => {
   const prop = sortProp.value
   const order = sortOrder.value
   // custom 列只回传 sort-change，行序由父组件自行更新 :data
-  if (!col || !prop || !order || col.sortable === 'custom') return props.data
+  if (!col || !prop || !order || col.sortable === 'custom') return filteredData.value
   return orderBy(
-    [...props.data] as never,
+    [...filteredData.value] as never,
     prop,
     order,
     (col.sortMethod ?? null) as never,
@@ -107,7 +187,8 @@ const sortedData = computed(() => {
 const footerTotalText = computed(() => {
   if (props.totalText) return props.totalText
   const filtered = sortedData.value.length
-  const total = props.total ?? filtered
+  // 默认总数取传入全量 data 长度：页面把未过滤数据交给 MeTable 后无需再显式传 total
+  const total = props.total ?? props.data.length
   if (total !== filtered) return t('meTable.totalFiltered', { filtered, total })
   return t('meTable.total', { total })
 })
@@ -134,8 +215,10 @@ const v2Data = computed(() => {
   return rows
 })
 
-// 列是否可排序：显式 sortable 优先；未指定时数据列默认开启（勾选列/序号列/纯插槽列无数据源，跳过）
+// 列是否可排序：显式 sortable 优先；带列头筛选的列恒关（v2 整格点击热区会劫持筛选下拉点击，
+// 且留着可见排序箭头会误导）；未指定时数据列默认开启（勾选列/序号列/纯插槽列无数据源，跳过）
 function isColumnSortable(col: MeColumn): boolean {
+  if (colFilterable(col)) return false
   if (col.sortable !== undefined) return Boolean(col.sortable)
   if (col.selection || col.index) return false
   return Boolean(col.prop || col.formatter)
@@ -476,7 +559,18 @@ defineExpose({
                 :indeterminate="isSomeSelected"
                 @change="(v: boolean) => toggleSelectAll(v)" />
               <slot v-else :name="`header-${String(column.key)}`" :column="meColumnOf(column.key)">
-                <el-tooltip v-if="column.headerTip" :content="column.headerTip" placement="top">
+                <!-- 三者互斥：有 filterOptions 只渲染筛选面板（含标题），否则回退标题（可选 headerTip） -->
+                <me-column-filter
+                  v-if="meColumnOf(column.key) && colFilterable(meColumnOf(column.key)!)"
+                  :title="column.title"
+                  :center="meColumnOf(column.key)?.filterCenter"
+                  :options="colFilterOptions(meColumnOf(column.key)!)"
+                  :model-value="colFilters[String(column.key)] ?? []"
+                  @update:model-value="updateColFilter(String(column.key), $event)" />
+                <el-tooltip
+                  v-else-if="column.headerTip"
+                  :content="column.headerTip"
+                  placement="top">
                   <span>{{ column.title }}</span>
                 </el-tooltip>
                 <span v-else>{{ column.title }}</span>

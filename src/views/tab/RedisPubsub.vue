@@ -9,7 +9,7 @@ import MeSelectUpDownIcon from '@/components/MeSelectUpDownIcon.vue'
 import MeWebsite from '@/components/MeWebsite.vue'
 import { shareProvideKey } from '@/types/me-interface'
 import { BYTES_FORMAT, IPC_WIRE_FORMAT, meViewToWire, type ViewBytesFormat } from '@/utils/format'
-import { createRealtimeStream, filterByKeyword } from '@/utils/realtime-stream'
+import { createRealtimeStream } from '@/utils/realtime-stream'
 import { meCommands, meConfirm, meErr, meOk } from '@/utils/util'
 // #endregion
 
@@ -36,21 +36,26 @@ interface PubsubRow {
 // 实时流：批量缓冲并入 dataList，避免高频消息逐条头插拖慢主线程
 const stream = createRealtimeStream<PubsubRow>({ maxRows: MAX_ROWS })
 const dataList = stream.list
-const filterDataList = computed(() =>
-  filterByKeyword(
-    dataList.value,
-    keyword.value,
-    (row, key) =>
-      (row.channel?.toLowerCase() ?? '').indexOf(key) > -1 ||
-      (row.message?.toLowerCase() ?? '').indexOf(key) > -1,
-  ),
-)
 
 // 列描述：时间列导出/悬停保留完整日期时间（取 prop 原值），单元格经 #cell-datetime 只显时分秒（与迁移前一致）
 const pubsubColumns = computed<MeColumn[]>(() => [
   { key: 'datetime', prop: 'datetime', title: t('redisPubSub.datetime'), width: 118 },
-  { key: 'channel', prop: 'channel', title: t('redisPubSub.channel'), minWidth: 150 },
-  { key: 'message', prop: 'message', title: t('redisPubSub.message'), minWidth: 150 },
+  {
+    key: 'channel',
+    prop: 'channel',
+    title: t('redisPubSub.channel'),
+    minWidth: 150,
+    // 列头筛选 + 关键词搜索均由 MeTable 自动处理
+    filterable: true,
+    searchable: true,
+  },
+  {
+    key: 'message',
+    prop: 'message',
+    title: t('redisPubSub.message'),
+    minWidth: 150,
+    searchable: true,
+  },
 ])
 
 // 订阅按钮防抖
@@ -185,11 +190,7 @@ onUnmounted(() => tauriUnlisten())
       </div>
     </div>
     <div class="table">
-      <me-table
-        :data="filterDataList"
-        :columns="pubsubColumns"
-        :total="dataList.length"
-        export-name="pubsub">
+      <me-table :data="dataList" :keyword="keyword" :columns="pubsubColumns" export-name="pubsub">
         <template #cell-datetime="{ row }">{{ row.datetime?.slice(11) }}</template>
       </me-table>
     </div>

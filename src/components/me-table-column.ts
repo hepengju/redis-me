@@ -2,7 +2,7 @@
 // 避免界面列与导出列两份描述靠人肉同步。
 import type { TableExportMatrix } from '@/utils/export'
 
-/** 列头筛选备选值：与行字段值全等比对（由 MeColumnFilter 在插槽内自实现筛选） */
+/** 列头筛选备选值：与行字段值全等比对（由 MeTable 内置的 MeColumnFilter 渲染筛选面板） */
 export type MeFilterValue = string | number | boolean
 
 export type MeColumn<T = any> = {
@@ -34,6 +34,14 @@ export type MeColumn<T = any> = {
   headerClassName?: string
   /** 展示/导出文本计算，优先于 prop 取值 */
   formatter?: (row: T, index: number) => string
+  /** 列头筛选开关：置 true 则 MeTable 自动按本列 prop 从传入 data 去重生成选项、渲染筛选面板并内部过滤（无需页面写任何胶水）；带筛选的列自动关排序 */
+  filterable?: boolean
+  /** 关键词搜索列：置 true 则 MeTable 根据 `keyword` prop 在排序/列筛选前自动过滤本列（比对展示文本，含 formatter/tip）；页面无需再写 filterDataList */
+  searchable?: boolean
+  /** 列头筛选备选项手动覆盖：枚举源不是行字段原值（如需自定义 text 映射）时才用；不传且 filterable 时 MeTable 自动去重 */
+  filterOptions?: { text: string; value: MeFilterValue }[]
+  /** 筛选面板标题与图标居中（配合 align=center 的列） */
+  filterCenter?: boolean
 }
 
 /** 单元格值 → 展示文本：字符串原样、对象序列化、null/undefined 空串 */
