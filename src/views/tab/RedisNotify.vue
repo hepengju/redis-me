@@ -8,6 +8,7 @@ import type { MeColumn } from '@/components/me-table-column'
 import MeWebsite from '@/components/MeWebsite.vue'
 import { shareProvideKey } from '@/types/me-interface'
 import { createRealtimeStream } from '@/utils/realtime-stream'
+import { enrichNodeList } from '@/utils/redis-display'
 import { meCommands, meConfirm, meCopy, meOk } from '@/utils/util'
 // #endregion
 
@@ -75,6 +76,19 @@ const notifyColumns = computed<MeColumn<NotifyRow>[]>(() => [
 const configValue = ref('')
 const configLoading = ref(false)
 const customFlags = ref('')
+// 集群配置一致性：null=单机/未判定，true=各 master 一致，false=不一致
+const clusterConsistent = ref<boolean | null>(null)
+// 各 master 的配置明细（不一致时悬浮展示）
+const clusterConfigList = ref<{ node: string; label: string; value: string }[]>([])
+// 不一致悬浮内容（HTML，raw-content 渲染）：节点文案与节点下拉一致（host:port | M1），小标题靠加粗区分（不依赖主题色变量）
+const clusterConfigTip = computed(() =>
+  clusterConfigList.value
+    .map(
+      i =>
+        `<div><b>${i.node}${i.label ? ` | ${i.label}` : ''}</b>：${i.value || t('redisNotify.configEmpty')}</div>`,
+    )
+    .join(''),
+)
 // 已开启时按钮显示「更新」，未开启显示「开启」（避免已开启仍叫开启的违和）
 const enableLabel = computed(() =>
   configValue.value ? t('redisNotify.update') : t('redisNotify.enable'),
@@ -96,16 +110,52 @@ function openEditDialog() {
 }
 
 // 读取当前配置；CONFIG 被 ACL 限制时降级为空（不挡订阅）
+// 集群下对所有 master 各读一次并判断一致性：一致显示共同值，不一致仅提示、可悬浮看明细
 async function loadConfig() {
   configLoading.value = true
   try {
-    const data = await meCommands.configGet(share.conn!.id, 'notify-keyspace-events', null, false)
-    configValue.value = data?.['notify-keyspace-events'] ?? ''
+    if (share.conn?.cluster) {
+      await loadClusterConfig()
+    } else {
+      const data = await meCommands.configGet(share.conn!.id, 'notify-keyspace-events', null, false)
+      configValue.value = data?.['notify-keyspace-events'] ?? ''
+      clusterConsistent.value = null
+      clusterConfigList.value = []
+    }
   } catch {
     configValue.value = ''
+    clusterConsistent.value = null
+    clusterConfigList.value = []
   } finally {
     configLoading.value = false
   }
+}
+
+// 集群：逐个 master 读 notify-keyspace-events，汇总一致性并保留明细供悬浮
+async function loadClusterConfig() {
+  const raw = await meCommands.nodeList(share.conn!.id, false)
+  const masters = enrichNodeList(raw || []).filter(n => n.isMaster)
+  const list: { node: string; label: string; value: string }[] = []
+  for (const m of masters) {
+    let value = ''
+    try {
+      const data = await meCommands.configGet(
+        share.conn!.id,
+        'notify-keyspace-events',
+        m.node,
+        false,
+      )
+      value = data?.['notify-keyspace-events'] ?? ''
+    } catch {
+      value = ''
+    }
+    list.push({ node: m.node, label: m.shortLabel, value })
+  }
+  clusterConfigList.value = list
+  const allSame = list.every(i => i.value === list[0]?.value)
+  clusterConsistent.value = allSame
+  // 一致显示共同值；不一致时单值无意义，改由「不一致」标签呈现
+  configValue.value = allSame ? (list[0]?.value ?? '') : ''
 }
 
 function enableNotify() {
@@ -118,7 +168,10 @@ function enableNotify() {
       configLoading.value = true
       try {
         await meCommands.configSet(share.conn!.id, 'notify-keyspace-events', flags, setNode.value)
+        // 集群以 * 广播所有节点（AllSucceeded），成功后各 master 必然一致
         configValue.value = flags
+        clusterConfigList.value = []
+        clusterConsistent.value = share.conn?.cluster ? true : null
         meOk(isDisable ? t('redisNotify.disableOk') : t('redisNotify.enableOk'))
         editShow.value = false
       } finally {
@@ -274,9 +327,25 @@ onUnmounted(() => unlisten?.())
       <div class="notify-edit">
         <el-form label-width="80px">
           <el-form-item :label="t('redisNotify.configStatus')">
-            <el-tag :type="configValue ? 'success' : 'danger'" v-loading="configLoading">
-              {{ configValue || t('redisNotify.configEmpty') }}
-            </el-tag>
+            <div class="me-flex config-status" v-loading="configLoading">
+              <!-- 集群各 master 配置不一致：仅提示不一致，悬浮查看逐节点明细 -->
+              <el-tooltip
+                v-if="clusterConsistent === false"
+                raw-content
+                :content="clusterConfigTip"
+                placement="top">
+                <el-tag type="warning">{{ t('redisNotify.configInconsistent') }}</el-tag>
+              </el-tooltip>
+              <!-- 单机 / 集群一致：展示配置值，集群一致时附 info 标签 -->
+              <template v-else>
+                <el-tag :type="configValue ? 'success' : 'danger'">
+                  {{ configValue || t('redisNotify.configEmpty') }}
+                </el-tag>
+                <el-tag v-if="clusterConsistent === true" type="info">
+                  {{ t('redisNotify.configConsistent') }}
+                </el-tag>
+              </template>
+            </div>
           </el-form-item>
           <el-form-item :label="t('redisNotify.preset')">
             <el-button @click="customFlags = 'AKE'">
@@ -358,6 +427,13 @@ onUnmounted(() => unlisten?.())
 .notify-edit {
   :deep(.el-input-group__append) {
     width: 42px;
+  }
+
+  // 当前配置状态行：值标签与集群一致性标签并排，预留高度避免 loading 遮罩抖动
+  .config-status {
+    gap: 8px;
+    align-items: center;
+    min-height: 24px;
   }
 }
 </style>

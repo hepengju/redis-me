@@ -897,6 +897,8 @@ export default {
     preset: 'Presets',
     configStatus: 'Current',
     configEmpty: 'Disabled',
+    configConsistent: 'All masters consistent',
+    configInconsistent: 'Master configs differ',
     presetAll: 'All',
     presetExpired: 'Expired only',
     presetDisable: 'Disable',

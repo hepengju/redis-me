@@ -880,6 +880,8 @@ export default {
     preset: '预设',
     configStatus: '当前配置',
     configEmpty: '未开启',
+    configConsistent: '主节点配置一致',
+    configInconsistent: '主节点配置不一致',
     presetAll: '全部',
     presetExpired: '仅过期',
     presetDisable: '禁用',
