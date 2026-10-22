@@ -339,7 +339,13 @@ const logColumns = computed<MeColumn<CommandLogEntry>[]>(() => [
   { key: 'dbIndex', prop: 'dbIndex', title: t('commandLog.db'), width: 56, align: 'center' },
   // 命令列取值即 prop 原值（单元格经 #cell-command 附加错误/慢命令标记）
   // 关闭排序：表头内含清空按钮与搜索框，点击会冒泡触发表头排序
-  { key: 'command', prop: 'fullCommand', title: t('commandLog.command'), minWidth: 360, sortable: false },
+  {
+    key: 'command',
+    prop: 'fullCommand',
+    title: t('commandLog.command'),
+    minWidth: 360,
+    sortable: false,
+  },
 ])
 
 // 高亮最近 1 秒内的命令：行类由 MeTable rowClass 提供，颜色经包裹层 --me-log-new 变量下发

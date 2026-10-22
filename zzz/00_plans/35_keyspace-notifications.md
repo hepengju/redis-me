@@ -27,16 +27,16 @@ PUBLISH __keyevent@0__:del foo      # 键事件视角：以「事件名」为频
 
 配置串由若干字符组成，**必须至少含 K 或 E 之一，且至少含一个事件类别**，否则什么都不发。
 
-| 字符 | 含义 | 字符 | 含义 |
-| ---- | ---- | ---- | ---- |
-| `K` | 开启 `__keyspace@<db>__` 前缀频道 | `x` | 过期事件（key 到期删除） |
-| `E` | 开启 `__keyevent@<db>__` 前缀频道 | `e` | 驱逐事件（maxmemory 淘汰） |
-| `g` | 通用命令（DEL / EXPIRE / RENAME …） | `n` | 新键事件（**不在** `A` 内） |
-| `$` | String 命令 | `m` | key-miss 事件（**不在** `A` 内） |
-| `l` | List 命令 | `t` | Stream 命令 |
-| `s` | Set 命令 | `d` | 模块键类型事件 |
-| `h` | Hash 命令 | `z` | Sorted Set 命令 |
-| `A` | `g$lshzxetd` 的别名（所有类别，不含 n/m） | | |
+| 字符 | 含义                                      | 字符 | 含义                             |
+| ---- | ----------------------------------------- | ---- | -------------------------------- |
+| `K`  | 开启 `__keyspace@<db>__` 前缀频道         | `x`  | 过期事件（key 到期删除）         |
+| `E`  | 开启 `__keyevent@<db>__` 前缀频道         | `e`  | 驱逐事件（maxmemory 淘汰）       |
+| `g`  | 通用命令（DEL / EXPIRE / RENAME …）       | `n`  | 新键事件（**不在** `A` 内）      |
+| `$`  | String 命令                               | `m`  | key-miss 事件（**不在** `A` 内） |
+| `l`  | List 命令                                 | `t`  | Stream 命令                      |
+| `s`  | Set 命令                                  | `d`  | 模块键类型事件                   |
+| `h`  | Hash 命令                                 | `z`  | Sorted Set 命令                  |
+| `A`  | `g$lshzxetd` 的别名（所有类别，不含 n/m） |      |                                  |
 
 > Redis 8.x 起还新增 `o`（覆写）、`c`（类型变更）以及 Subkeyspace 系列 `S/T/I/V`（见 [`Redis8.8.conf`](../../src/assets/conf/Redis8.8.conf)）。首版预设不覆盖这些，走「自定义」输入即可。
 
@@ -44,13 +44,13 @@ PUBLISH __keyevent@0__:del foo      # 键事件视角：以「事件名」为频
 
 ### 1.3 与发布订阅 Tab 的关系与差异
 
-| 维度 | 发布订阅 Tab | 通知 Tab |
-| ---- | ---- | ---- |
-| 频道 | 用户任意输入的 glob | 固定 `__keyspace@` / `__keyevent@` 两族 |
-| 前置条件 | 无 | 服务端 `notify-keyspace-events` 必须非空 |
-| 展示 | 原始 channel / message | 解析后的 DB / 键 / 事件 |
-| 集群 | 只连**种子节点**一条（[`me_cluster.rs`](../../src-tauri/src/client/me_cluster.rs) `subscribe`） | 事件按**节点本地**产生，需订阅**所有主节点** |
-| 是否可写 | 有「发布」footer | 只读观测，无发布 |
+| 维度     | 发布订阅 Tab                                                                                    | 通知 Tab                                     |
+| -------- | ----------------------------------------------------------------------------------------------- | -------------------------------------------- |
+| 频道     | 用户任意输入的 glob                                                                             | 固定 `__keyspace@` / `__keyevent@` 两族      |
+| 前置条件 | 无                                                                                              | 服务端 `notify-keyspace-events` 必须非空     |
+| 展示     | 原始 channel / message                                                                          | 解析后的 DB / 键 / 事件                      |
+| 集群     | 只连**种子节点**一条（[`me_cluster.rs`](../../src-tauri/src/client/me_cluster.rs) `subscribe`） | 事件按**节点本地**产生，需订阅**所有主节点** |
+| 是否可写 | 有「发布」footer                                                                                | 只读观测，无发布                             |
 
 结论：**不复用** `subscribe` 通道。两者共用一个 `subscribe_running` 会互相顶掉、且集群单节点订阅收不全通知。走独立通道后二者可同时开。
 
@@ -65,31 +65,31 @@ flowchart LR
 
 ## 二、竞品 / 参考
 
-| 产品 | 是否支持 | 怎么做 | 对 RedisME 的启示 |
-| ---- | ---- | ---- | ---- |
-| **Redisee** | 有 | 独立通知视图，展示键事件流 | `future.md` L3 直接点名对标，形态参照 |
-| **RedisInsight** | 有（工作区内） | 键空间通知的订阅与展示 | 交互参照，但不照搬其重工作区 |
-| **Redisson** | 有（SDK 侧） | `RTopic` + `__keyevent@` 监听过期/删除，做本地缓存失效 | `future.md` L17 的「参考实现」，属**客户端库**用法，非 GUI；35.3 再看是否借鉴其事件分类 |
-| **本仓库发布订阅** | 已有 | `PSUBSCRIBE` + 后台线程 emit | **直接参照**其线程/事件/停止机制 |
+| 产品               | 是否支持       | 怎么做                                                 | 对 RedisME 的启示                                                                       |
+| ------------------ | -------------- | ------------------------------------------------------ | --------------------------------------------------------------------------------------- |
+| **Redisee**        | 有             | 独立通知视图，展示键事件流                             | `future.md` L3 直接点名对标，形态参照                                                   |
+| **RedisInsight**   | 有（工作区内） | 键空间通知的订阅与展示                                 | 交互参照，但不照搬其重工作区                                                            |
+| **Redisson**       | 有（SDK 侧）   | `RTopic` + `__keyevent@` 监听过期/删除，做本地缓存失效 | `future.md` L17 的「参考实现」，属**客户端库**用法，非 GUI；35.3 再看是否借鉴其事件分类 |
+| **本仓库发布订阅** | 已有           | `PSUBSCRIBE` + 后台线程 emit                           | **直接参照**其线程/事件/停止机制                                                        |
 
 ---
 
 ## 三、决策摘要
 
-| 项 | 结论 |
-| ---- | ---- |
-| 形态 | 连接页新 Tab `notify`，与 `pubsub` / `monitor` 同级；极简模式隐藏（[`TabMain.vue`](../../src/views/TabMain.vue) `v-if="!minimalMode"`） |
-| 订阅通道 | **独立**：新增 `notify_running` / `EVENT_NOTIFY` / `NotifyEvent` / `client/ops/notify.rs`，不复用 `subscribe_running`，可与发布订阅并行 |
-| 事件模型 | 后端解析成 `NotifyEvent { id, datetime, node, db, key, event }`；前端不再拆字符串 |
-| 视角 | 一次只订一族：键事件 `__keyevent@*__:*`（默认）/ 键空间 `__keyspace@*__:*`；避免 K+E 同开时同一事件重复成两行 |
-| DB 范围 | 用 `@*` 通配所有库，单列 DB 展示；切库无需重订 |
-| 配置开关 | 打开页 `config_get` 读现值并展示；预设 `AKE` / `Ex` + 自定义；「开启」二次确认 + 开销警告；「关闭」置空串 |
-| 集群配置 | `config_set(key, val, "*")` 广播所有节点（已有能力，见 [`me_cluster.rs`](../../src-tauri/src/client/me_cluster.rs) `config_set`） |
-| 集群订阅 | 遍历所有 master，各开一条专用连接、各起一个线程，共用一个 `notify_running` |
+| 项       | 结论                                                                                                                                         |
+| -------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
+| 形态     | 连接页新 Tab `notify`，与 `pubsub` / `monitor` 同级；极简模式隐藏（[`TabMain.vue`](../../src/views/TabMain.vue) `v-if="!minimalMode"`）      |
+| 订阅通道 | **独立**：新增 `notify_running` / `EVENT_NOTIFY` / `NotifyEvent` / `client/ops/notify.rs`，不复用 `subscribe_running`，可与发布订阅并行      |
+| 事件模型 | 后端解析成 `NotifyEvent { id, datetime, node, db, key, event }`；前端不再拆字符串                                                            |
+| 视角     | 一次只订一族：键事件 `__keyevent@*__:*`（默认）/ 键空间 `__keyspace@*__:*`；避免 K+E 同开时同一事件重复成两行                                |
+| DB 范围  | 用 `@*` 通配所有库，单列 DB 展示；切库无需重订                                                                                               |
+| 配置开关 | 打开页 `config_get` 读现值并展示；预设 `AKE` / `Ex` + 自定义；「开启」二次确认 + 开销警告；「关闭」置空串                                    |
+| 集群配置 | `config_set(key, val, "*")` 广播所有节点（已有能力，见 [`me_cluster.rs`](../../src-tauri/src/client/me_cluster.rs) `config_set`）            |
+| 集群订阅 | 遍历所有 master，各开一条专用连接、各起一个线程，共用一个 `notify_running`                                                                   |
 | 停止机制 | 沿用发布订阅做法：停止频道**必须并入** `PSUBSCRIBE` 模式才能唤醒阻塞的 `recv`；停止时置 flag + 向停止频道发一条；emit 前**过滤**停止频道消息 |
-| 只读连接 | 隐藏配置控制与开关（同发布订阅 footer `v-if="canEdit"`），仅可订阅查看 |
-| 能力探测 | 不新增 capability（`notify-keyspace-events` 自 Redis 2.8 起通用）；`CONFIG GET/SET` 被 ACL 限制时按错误提示降级 |
-| 延后 | 见 §十二 |
+| 只读连接 | 隐藏配置控制与开关（同发布订阅 footer `v-if="canEdit"`），仅可订阅查看                                                                       |
+| 能力探测 | 不新增 capability（`notify-keyspace-events` 自 Redis 2.8 起通用）；`CONFIG GET/SET` 被 ACL 限制时按错误提示降级                              |
+| 延后     | 见 §十二                                                                                                                                     |
 
 ---
 
@@ -110,11 +110,11 @@ flowchart LR
 
 ### 5.1 配置读写
 
-| 动作 | 命令 | 集群路由 |
-| ---- | ---- | ---- |
-| 读现值 | `CONFIG GET notify-keyspace-events` | 读一个节点即可（各节点应一致；不一致时以所读节点为准并提示） |
-| 开启 | `CONFIG SET notify-keyspace-events <flags>` | `node="*"` 广播所有节点，`ResponsePolicy::AllSucceeded` |
-| 关闭 | `CONFIG SET notify-keyspace-events ""` | 同上广播 |
+| 动作   | 命令                                        | 集群路由                                                     |
+| ------ | ------------------------------------------- | ------------------------------------------------------------ |
+| 读现值 | `CONFIG GET notify-keyspace-events`         | 读一个节点即可（各节点应一致；不一致时以所读节点为准并提示） |
+| 开启   | `CONFIG SET notify-keyspace-events <flags>` | `node="*"` 广播所有节点，`ResponsePolicy::AllSucceeded`      |
+| 关闭   | `CONFIG SET notify-keyspace-events ""`      | 同上广播                                                     |
 
 > `CONFIG SET` 只改运行时，不写配置文件，重启失效——文档需向用户点明。`CONFIG REWRITE` 不在首版范围。
 
@@ -132,12 +132,12 @@ PSUBSCRIBE <perspective-pattern> REDIS_ME_NOTIFY_STOP_CHANNEL
 
 解析规则（纯函数 `parse_notify_channel`，需单元测试）：
 
-| 频道形态 | payload | 解析结果 |
-| ---- | ---- | ---- |
-| `__keyspace@<db>__:<key>` | `<event>` | `db=<db>`, `key=<key>`, `event=<payload>` |
-| `__keyevent@<db>__:<event>` | `<key>` | `db=<db>`, `event=<event>`, `key=<payload>` |
-| `REDIS_ME_NOTIFY_STOP_CHANNEL` | 任意 | 返回 `None`（不 emit，仅唤醒） |
-| 其它无法识别 | — | 返回 `None`（丢弃，不污染表格） |
+| 频道形态                       | payload   | 解析结果                                    |
+| ------------------------------ | --------- | ------------------------------------------- |
+| `__keyspace@<db>__:<key>`      | `<event>` | `db=<db>`, `key=<key>`, `event=<payload>`   |
+| `__keyevent@<db>__:<event>`    | `<key>`   | `db=<db>`, `event=<event>`, `key=<payload>` |
+| `REDIS_ME_NOTIFY_STOP_CHANNEL` | 任意      | 返回 `None`（不 emit，仅唤醒）              |
+| 其它无法识别                   | —         | 返回 `None`（丢弃，不污染表格）             |
 
 - `<db>` 从频道 `@` 与 `__` 之间截取，解析失败按 0。
 - `<key>` 可能是二进制/非 UTF-8：走 `vec8_to_display_string`（同发布订阅 payload 处理），不强行 UTF-8。
@@ -159,6 +159,7 @@ PSUBSCRIBE <perspective-pattern> REDIS_ME_NOTIFY_STOP_CHANNEL
 ## 六、后端设计（逐文件）
 
 1. **[`model.rs`](../../src-tauri/src/model.rs)**：新增
+
    ```rust
    api_model!(NotifyEvent {
        id: String,        // 连接 id，前端按此过滤
@@ -169,7 +170,9 @@ PSUBSCRIBE <perspective-pattern> REDIS_ME_NOTIFY_STOP_CHANNEL
        event: String,     // 事件名，如 del / set / expired
    });
    ```
+
    可选新增订阅参数模型：
+
    ```rust
    api_model!(NotifySubscribeParam {
        perspective: String,   // keyevent | keyspace
@@ -188,6 +191,7 @@ PSUBSCRIBE <perspective-pattern> REDIS_ME_NOTIFY_STOP_CHANNEL
    - `parse_notify_channel(channel, payload) -> Option<(u16, String, String)>`：纯函数 + `#[cfg(test)]` 覆盖 keyspace / keyevent / 停止频道 / 非法频道 / 二进制键。
 
 5. **[`client/me_client.rs`](../../src-tauri/src/client/me_client.rs)**：trait 增
+
    ```rust
    fn notify_subscribe(&self, param: NotifySubscribeParam) -> AnyResult<()>;
    fn notify_subscribe_stop(&self) -> AnyResult<()>;
@@ -200,6 +204,7 @@ PSUBSCRIBE <perspective-pattern> REDIS_ME_NOTIFY_STOP_CHANNEL
 8. **[`support/macros.rs`](../../src-tauri/src/support/macros.rs)** `me_client_forwards!`：加 `notify_subscribe_stop`（单机/集群一致：置 flag + 发停止频道，用 `get_conn()`）。`notify_subscribe` 两端不同，**不进宏**，各自 impl。
 
 9. **[`api.rs`](../../src-tauri/src/api.rs)** `api_commands!`：加
+
    ```rust
    notify_subscribe(param: NotifySubscribeParam) -> ();   // 需要 app_handle，放宏的下半区
    notify_subscribe_stop() -> ();
@@ -212,11 +217,13 @@ PSUBSCRIBE <perspective-pattern> REDIS_ME_NOTIFY_STOP_CHANNEL
 ## 七、前端设计（逐文件）
 
 1. **[`TabMain.vue`](../../src/views/TabMain.vue)**：在 `pubsub` 之后加
+
    ```vue
    <me-tab-pane name="notify" icon="me-icon-notify" lazy>
      <RedisNotify />
    </me-tab-pane>
    ```
+
    置于 `v-if="!minimalMode"` 的 `<template>` 内。
 
 2. **新建 `src/views/tab/RedisNotify.vue`**（镜像 [`RedisPubsub.vue`](../../src/views/tab/RedisPubsub.vue)）：
@@ -229,6 +236,7 @@ PSUBSCRIBE <perspective-pattern> REDIS_ME_NOTIFY_STOP_CHANNEL
    - `me-website to="notify"`。
 
 3. **[`components/MeWebsite.vue`](../../src/components/MeWebsite.vue)**：`DOC_PATHS` 加
+
    ```ts
    notify: {
      redis: '/docs/latest/develop/use/keyspace-notifications/',

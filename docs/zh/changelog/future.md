@@ -1,7 +1,9 @@
 ## Future
 
 - 通知: 新的标签页，键空间通知和键事件通知（方案见 zzz/00_plans/35_keyspace-notifications.md）
+
 > 参考: Redisee 和 [文档](https://redis.ac.cn/docs/latest/develop/use/keyspace-notifications/)
+
 - 终端需要新建了连接吗？比如当前连接开启订阅会怎么样
 - 标题栏显示连接信息，右键：可以关闭连接信息和扩展菜单
 - 消息内容的编码放在输入框左边
