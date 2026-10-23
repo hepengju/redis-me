@@ -2,6 +2,7 @@
 // #region 导入
 import { computed, inject, nextTick, onUnmounted, ref, useTemplateRef, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { readText } from '@tauri-apps/plugin-clipboard-manager'
 
 import MeIcon from '@/components/MeIcon.vue'
 import MeSelectUpDownIcon from '@/components/MeSelectUpDownIcon.vue'
@@ -312,8 +313,8 @@ function onContextMenu(event: MouseEvent): void {
   }
   const root = event.currentTarget
   if (!(root instanceof HTMLElement)) return
-  void navigator.clipboard
-    .readText()
+  // macOS WKWebView 会拦截 navigator.clipboard.readText（NotAllowedError），改用 Tauri 剪贴板插件
+  void readText()
     .then(text => {
       if (!text || enqueueMultiPaste(text)) return
       enqueue(() => insertAtCursor(root, text))

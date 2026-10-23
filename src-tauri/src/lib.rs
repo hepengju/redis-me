@@ -42,6 +42,7 @@ pub fn run() {
         .plugin(tauri_plugin_dialog::init())                  // 弹框选择文件
         .plugin(tauri_plugin_opener::init())                  // 打开外部链接
         .plugin(tauri_plugin_shell::init())                   // 自定义 Formatter 执行外部脚本
+        .plugin(tauri_plugin_clipboard_manager::init())       // 剪贴板读写（终端右键粘贴，绕开 WKWebView 权限限制）
         .plugin(init_logger().build())                        // 日志
         .setup(app_setup(specta_builder))                     // 挂上 specta 事件并显示主窗口
         .manage(AppState::default())                          // 状态管理，保持 Redis 连接

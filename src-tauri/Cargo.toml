@@ -68,6 +68,7 @@ tauri-plugin-fs = "2"
 tauri-plugin-process = "2"
 tauri-plugin-os = "2"
 tauri-plugin-system-fonts = "2"
+tauri-plugin-clipboard-manager = "2"
 
 # 支持TS类型
 specta = { version = "2.0.0-rc.25", features = ["derive", "chrono", "serde_json"] }
