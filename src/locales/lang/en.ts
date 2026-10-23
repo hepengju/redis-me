@@ -1071,6 +1071,7 @@ export default {
       complete: 'Command Completion',
       history: 'History',
       toggleWrap: 'Toggle Line Wrap',
+      paste: 'Paste Clipboard',
       clearScreen: 'Clear Screen',
       clearInput: 'Clear Input',
       cursorStart: 'Move Cursor to line start',

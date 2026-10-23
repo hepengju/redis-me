@@ -1049,6 +1049,7 @@ export default {
       complete: '命令补全',
       history: '历史记录',
       toggleWrap: '切换自动换行',
+      paste: '粘贴剪贴板',
       clearScreen: '清屏',
       clearInput: '清除输入',
       cursorStart: '光标到行首',

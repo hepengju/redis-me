@@ -1,8 +1,8 @@
 <script setup lang="ts">
+import { readText } from '@tauri-apps/plugin-clipboard-manager'
 // #region 导入
 import { computed, inject, nextTick, onUnmounted, ref, useTemplateRef, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { readText } from '@tauri-apps/plugin-clipboard-manager'
 
 import MeIcon from '@/components/MeIcon.vue'
 import MeSelectUpDownIcon from '@/components/MeSelectUpDownIcon.vue'
@@ -11,7 +11,7 @@ import { commandHelp, isReadonlyCommand, parseCommandName } from '@/locales/cmd'
 import { shareProvideKey } from '@/types/me-interface'
 import type { CliOutputMode } from '@/types/tauri-specta'
 import { getTerminalShortcuts } from '@/utils/shortcut'
-import { bus, DB_SWITCH, formatSpectaErrorForUser, meCopy, meCommands, isZh } from '@/utils/util'
+import { bus, DB_SWITCH, formatSpectaErrorForUser, meCopy, meCommands } from '@/utils/util'
 
 import CommandHelp from '../ext/CommandHelp.vue'
 import NodeList from '../ext/NodeList.vue'
@@ -23,8 +23,6 @@ const { t } = useI18n()
 // 共享数据
 const share = inject(shareProvideKey)!
 const canEdit = computed(() => !share.readonly)
-// 只读列表头：英文 Read-only 较宽，中文只读可窄一些
-const readonlyColWidth = computed(() => (isZh.value ? 88 : 120))
 
 // 终端输出格式（对齐 redis-cli --raw / --json / --csv；每次进入默认 TTY）
 const outputModeOptions: { value: CliOutputMode; labelKey: string }[] = [
@@ -299,6 +297,27 @@ function insertAtCursor(root: HTMLElement, text: string): void {
   term.setCommand(current.slice(0, at) + text.trim() + current.slice(at))
 }
 
+// 读取剪贴板并粘贴：多行走弹框判断，单行插入光标处
+// macOS WKWebView 会拦截 navigator.clipboard.readText（NotAllowedError），改用 Tauri 剪贴板插件
+function pasteFromClipboard(root: HTMLElement): void {
+  void readText()
+    .then(text => {
+      if (!text || enqueueMultiPaste(text)) return
+      enqueue(() => insertAtCursor(root, text))
+    })
+    .catch((error: unknown) => console.error(error))
+}
+
+// 终端 textarea 在 WKWebView 下收不到 Cmd+V 的 paste 事件，这里拦截快捷键统一走插件读取
+function onKeydown(event: KeyboardEvent): void {
+  if ((event.metaKey || event.ctrlKey) && event.key.toUpperCase() === 'V') {
+    const root = event.currentTarget
+    if (!(root instanceof HTMLElement)) return
+    event.preventDefault()
+    pasteFromClipboard(root)
+  }
+}
+
 function onContextMenu(event: MouseEvent): void {
   const selected = (document.getSelection()?.toString() || selectedOnPointer).replaceAll(
     '\u00a0',
@@ -313,13 +332,7 @@ function onContextMenu(event: MouseEvent): void {
   }
   const root = event.currentTarget
   if (!(root instanceof HTMLElement)) return
-  // macOS WKWebView 会拦截 navigator.clipboard.readText（NotAllowedError），改用 Tauri 剪贴板插件
-  void readText()
-    .then(text => {
-      if (!text || enqueueMultiPaste(text)) return
-      enqueue(() => insertAtCursor(root, text))
-    })
-    .catch((error: unknown) => console.error(error))
+  pasteFromClipboard(root)
 }
 
 onUnmounted(() => {
@@ -335,6 +348,7 @@ onUnmounted(() => {
     <div
       v-if="showCode"
       class="terminal"
+      @keydown.capture="onKeydown"
       @paste.capture="onPaste"
       @mousedown.capture="onMouseDown"
       @contextmenu.capture="onContextMenu">

@@ -147,6 +147,7 @@ export function getTerminalShortcuts(t: ComposerTranslation): ShortcutItem[] {
     { label: t('redisTerminal.keyShort.cursorStart'), keys: ['mod', 'A'] },
     { label: t('redisTerminal.keyShort.cursorEnd'), keys: ['mod', 'E'] },
     { label: t('redisTerminal.keyShort.toggleWrap'), keys: ['mod', 'B'] },
+    { label: t('redisTerminal.keyShort.paste'), keys: ['mod', 'V'] },
     { label: t('redisTerminal.keyShort.cmdClear'), keys: ['clear'], gapBefore: true },
     { label: t('redisTerminal.keyShort.cmdHelp'), keys: ['help'] },
     { label: t('redisTerminal.keyShort.cmdOpen'), keys: ['open'] },
