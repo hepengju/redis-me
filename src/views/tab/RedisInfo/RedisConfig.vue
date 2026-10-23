@@ -305,7 +305,7 @@ async function configSet() {
           </div>
         </el-form-item>
         <el-form-item :label="t('redisConfig.command')">
-          <el-text :style="{ color: share.color }" @click="meCopy(command)">
+          <el-text style="cursor: pointer" :style="{ color: share.color }" @click="meCopy(command)">
             {{ command }}
           </el-text>
         </el-form-item>
