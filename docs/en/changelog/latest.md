@@ -1,5 +1,28 @@
 # 5.x Changelog
 
+## [v5.5.0](https://mp.weixin.qq.com/s/bZYPBXn3KLDF0ex-Ox8aSQ) (2026-10-24)
+
+### ✨ Improvements
+
+- New **keyspace notifications** tab
+  - Subscribe / stop, edit notification parameters and pattern
+  - Message list: keyword matches keys only, event header filter, flags legend grouped
+  - In cluster mode, shows **config consistency** across primary nodes, with per-node details on hover
+- Terminal: **blocks blocking subscribe commands**; `SELECT` switches database in sync; Ctrl+V pastes from the clipboard
+- PubSub: message content supports a **multi-line edit dialog**
+- Table: data columns are **sortable by default**, with a third header click clearing the sort
+- Other details
+  - Monitor / PubSub / Notify: **batched buffering** eases jank at high message rates, with a 10k row cap
+  - Monitor / PubSub: clearing data now asks for confirmation; removed the low-value action column
+  - Update check endpoint now uses release latest.json with a shorter timeout
+  - Upgraded front-end and back-end dependencies (Vite+ 1.3.0, Tauri 2.12.4, etc.)
+
+### 🐞 Bug Fixes
+
+- Fixed a permission error when right-click pasting in the macOS terminal (now uses the Tauri clipboard plugin)
+- Fixed cluster connections hanging when the announced address is unreachable (falls back to the configured timeout)
+- Fixed clicking a column-filter header accidentally triggering sorting
+
 ## [v5.4.3](https://mp.weixin.qq.com/s/eeDPDhU_nVnVuScOzApK6g) (2026-10-18)
 
 ### ✨ Improvements
