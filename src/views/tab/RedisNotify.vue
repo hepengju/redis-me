@@ -328,23 +328,24 @@ onUnmounted(() => unlisten?.())
         <el-form label-width="80px">
           <el-form-item :label="t('redisNotify.configStatus')">
             <div class="me-flex config-status" v-loading="configLoading">
-              <!-- 集群各 master 配置不一致：仅提示不一致，悬浮查看逐节点明细 -->
+              <!-- 配置值标签：不一致时单值无意义，不展示 -->
+              <el-tag v-if="clusterConsistent !== false" :type="configValue ? 'success' : 'danger'">
+                {{ configValue || t('redisNotify.configEmpty') }}
+              </el-tag>
+              <!-- 集群状态标签：一致/不一致均可悬浮查看逐 master 配置明细 -->
               <el-tooltip
-                v-if="clusterConsistent === false"
+                v-if="clusterConsistent !== null"
                 raw-content
                 :content="clusterConfigTip"
                 placement="top">
-                <el-tag type="warning">{{ t('redisNotify.configInconsistent') }}</el-tag>
+                <el-tag :type="clusterConsistent ? 'info' : 'warning'">
+                  {{
+                    clusterConsistent
+                      ? t('redisNotify.configConsistent')
+                      : t('redisNotify.configInconsistent')
+                  }}
+                </el-tag>
               </el-tooltip>
-              <!-- 单机 / 集群一致：展示配置值，集群一致时附 info 标签 -->
-              <template v-else>
-                <el-tag :type="configValue ? 'success' : 'danger'">
-                  {{ configValue || t('redisNotify.configEmpty') }}
-                </el-tag>
-                <el-tag v-if="clusterConsistent === true" type="info">
-                  {{ t('redisNotify.configConsistent') }}
-                </el-tag>
-              </template>
             </div>
           </el-form-item>
           <el-form-item :label="t('redisNotify.preset')">
