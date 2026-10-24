@@ -578,6 +578,11 @@ export default {
     placeholder: '指定节点【可选】',
     slotsTooltip: '槽位：{slots}',
     slotsReplicaTooltip: '所属主节点槽位：{slots}',
+    all: '全部节点',
+    masterOnly: '仅主节点',
+    slaveOnly: '仅从节点',
+    groupQuick: '快捷筛选',
+    groupNode: '指定节点',
   },
 
   keyBatch: {

@@ -590,6 +590,11 @@ export default {
     placeholder: 'Node [Optional]',
     slotsTooltip: 'Slots: {slots}',
     slotsReplicaTooltip: "Master's slots: {slots}",
+    all: 'All nodes',
+    masterOnly: 'Masters',
+    slaveOnly: 'Replicas',
+    groupQuick: 'Quick filter',
+    groupNode: 'Nodes',
   },
 
   keyBatch: {
