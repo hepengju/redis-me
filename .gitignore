@@ -37,3 +37,7 @@ RedisME_*.AppImage
 **/__pycache__/
 *.pyc
 .vitest/
+
+
+# Java
+*.class
