@@ -226,14 +226,15 @@ function defaultPayload(cmd: CommandKey): Record<string, unknown> {
     case 'connect':
     case 'disconnect':
     case 'dbList':
-    case 'infoList':
-    case 'chartList':
     case 'nodeList':
     case 'subscribeStop':
     case 'monitorStop':
     case 'flushDb':
     case 'flushAll':
       return { id: connIdForDefaults() }
+    case 'infoList':
+    case 'chartList':
+      return { id: connIdForDefaults(), nodeFilter: 'all' }
     case 'selectDb':
       return { id: connIdForDefaults(), db: 0 }
     case 'info':

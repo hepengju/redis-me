@@ -21,7 +21,9 @@ pub trait MeClient: Send + Sync {
 
     // 信息与节点
     fn info(&self, node: Option<String>) -> AnyResult<RedisInfo>;
-    fn info_list(&self) -> AnyResult<Vec<RedisInfo>>;
+    /// 各节点 INFO 列表。`node_filter`：**仅 `"all"`=全部节点**、
+    /// `"master"`/`"slave"`=按角色过滤、`"ip:port"`=仅指定节点；`None`/空串=不匹配（返回空）。单机忽略该参数。
+    fn info_list(&self, node_filter: Option<String>) -> AnyResult<Vec<RedisInfo>>;
     fn node_list(&self) -> AnyResult<Vec<RedisNode>>;
 
     // 扫描
@@ -143,9 +145,9 @@ pub trait MeClient: Send + Sync {
         info_to_chart(self.info(node)?)
     }
 
-    /// 各节点监控图，由 INFO 列表换算。
-    fn chart_list(&self) -> AnyResult<Vec<RedisChart>> {
-        let info_list = self.info_list()?;
+    /// 各节点监控图，由 INFO 列表换算；`node_filter` 语义见 `info_list`。
+    fn chart_list(&self, node_filter: Option<String>) -> AnyResult<Vec<RedisChart>> {
+        let info_list = self.info_list(node_filter)?;
         info_list.into_iter().map(info_to_chart).collect()
     }
 

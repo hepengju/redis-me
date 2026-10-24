@@ -103,10 +103,25 @@ impl MeClient for MeCluster {
         })
     }
 
-    fn info_list(&self) -> AnyResult<Vec<RedisInfo>> {
+    fn info_list(&self, node_filter: Option<String>) -> AnyResult<Vec<RedisInfo>> {
+        // node_filter：仅 "all"=全部；含':'按地址精确匹配单节点，否则按角色（master/slave）子串匹配；
+        // None/空串/未识别值一律不匹配（调用方须传显式 token）
+        let Some(filter) = node_filter.as_deref().filter(|s| !s.is_empty()) else {
+            return Ok(vec![]);
+        };
         let mut conn = self.get_conn()?;
         let mut infos = vec![];
         for redis_node in &self.node_list {
+            if filter != "all" {
+                let hit = if filter.contains(':') {
+                    redis_node.node == filter
+                } else {
+                    redis_node.flags.contains(filter)
+                };
+                if !hit {
+                    continue;
+                }
+            }
             let node = redis_node.node.clone();
             let (route, _) = self.get_node_route(Some(node.clone()))?;
             let value = conn.route_command(&redis::cmd("info"), route)?;

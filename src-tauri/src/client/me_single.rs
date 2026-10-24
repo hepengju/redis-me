@@ -111,7 +111,7 @@ impl MeClient for MeSingle {
         })
     }
 
-    fn info_list(&self) -> AnyResult<Vec<RedisInfo>> {
+    fn info_list(&self, _node_filter: Option<String>) -> AnyResult<Vec<RedisInfo>> {
         let info = self.info(None)?;
         Ok(vec![info])
     }

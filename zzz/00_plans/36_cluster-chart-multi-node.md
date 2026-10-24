@@ -39,7 +39,7 @@
 | 选择器形态 | 复用 `NodeList`，新增 opt-in prop `filterable`；仅图表页开启，其它页零影响                                                                                                                                        |
 | 四态取值   | `node` 值均用**显式 token**：`'all'`=全部、`'master'`=仅主、`'slave'`=仅从、`'ip:port'`=指定单节点；**不用空串**（空串保留传统语义=默认/随机路由，仅服务于终端等非 filterable 页）；下拉用 `el-option-group` 分组 |
 | 默认       | 集群进入图表页默认 `node='master'`（仅主：从节点与主节点高度重叠，线条最少最清晰）；单机 `node='all'`（`info_list` 恒返回 1 个→单条线）；下拉仍可切「全部/仅从/单节点」                                           |
-| 后端参数   | `chart_list` 与 `info_list` **均**加可选 `node_filter: Option<String>`（`"all"`/`None`/`""`=全部、`"master"`/`"slave"`=按角色、`"ip:port"`=单节点）                                                               |
+| 后端参数   | `chart_list` 与 `info_list` **均**加可选 `node_filter: Option<String>`（**仅 `"all"`=全部**、`"master"`/`"slave"`=按角色、`"ip:port"`=单节点；`None`/空串=不匹配返回空）                                          |
 | 取数路径   | **统一走 `chartList(id, filter)`**：返回节点列表逐条成线，单机/单节点时列表长度为 1，**无需 `if (multi)` 分支**（`chart` 命令前端不再使用）                                                                       |
 | 折线配色   | 扩色板 + **按节点稳定映射**（`node → color` Map），切筛选同一节点不跳色                                                                                                                                           |
 | 历史数据   | 切筛选 `watch(node) → resetData()` 清缓冲重建（现有逻辑，扩展到 filter 值变化即触发）                                                                                                                             |
@@ -57,7 +57,7 @@
 
 无需新模型。约定 `node_filter` 语义（写进注释，前端 §4 对齐）：
 
-- `Some("all")` / `None` / `Some("")` → 全部节点（图表页始终传显式 `"all"`，不依赖空串）
+- `Some("all")` → 全部节点（图表页唯一表示“全部”的取值；**`None`/`Some("")` 不再代表全部，而是返回空**，契约唯一无歧义）
 - `Some("master")` → 仅 `flags` 含 `master`
 - `Some("slave")` → 仅 `flags` 含 `slave`
 - `Some("ip:port")` → 仅该地址（等价单节点）
@@ -82,14 +82,19 @@ fn chart_list(&self, node_filter: Option<String>) -> AnyResult<Vec<RedisChart>> 
 
 ```rust
 fn info_list(&self, node_filter: Option<String>) -> AnyResult<Vec<RedisInfo>> {
+    // node_filter：仅 "all"=全部；含':'按地址精确匹配单节点，否则按角色（master/slave）子串匹配；
+    // None/空串/未识别值一律不匹配（调用方须传显式 token）
+    let Some(filter) = node_filter.as_deref().filter(|s| !s.is_empty()) else {
+        return Ok(vec![]);
+    };
     let mut conn = self.get_conn()?;
     let mut infos = vec![];
     for redis_node in &self.node_list {
-        if let Some(f) = node_filter.as_deref().filter(|s| !s.is_empty() && *s != "all") {
+        if filter != "all" {
             // 角色过滤（master/slave）或指定地址；两者都不匹配则跳过
-            let hit = f.contains(':')
-                ? redis_node.node == f
-                : redis_node.flags.contains(f);
+            let hit = filter.contains(':')
+                ? redis_node.node == filter
+                : redis_node.flags.contains(filter);
             if !hit { continue; }
         }
         let node = redis_node.node.clone();
