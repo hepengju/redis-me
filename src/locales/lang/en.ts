@@ -1285,8 +1285,7 @@ Once an operation prevents Redis from keeping the space-saving encoding, special
   redisChart: {
     command: 'Commands / Sec',
     memory: 'Used Memory',
-    networkIn: 'Network Input（Kb/s）',
-    networkOut: 'Network Output（Kb/s）',
+    network: 'Network Traffic (Kb/s)',
 
     keyTotal: 'Key Count',
     connectedClients: 'Connected Clients',
@@ -1303,6 +1302,8 @@ Once an operation prevents Redis from keeping the space-saving encoding, special
     maxPointCount: 'Max Point Count',
     pointUnit: '',
     points: 'Points',
+    noMatchedNode: 'No matching nodes',
+    networkLineHint: 'solid = input / dashed = output',
     moreChart: 'More Charts',
     clearData: 'Clear Data',
     clearConfirm: 'Clear chart data?',

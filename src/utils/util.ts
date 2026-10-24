@@ -82,6 +82,22 @@ export const PREDEFINE_COLORS = [
   '#f56c6c', // danger
   '#909399', // info
 ] as const
+
+// 图表多折线专用色板（与连接颜色选择器解耦，节点数多时循环取色）
+export const CHART_COLORS: string[] = [
+  '#409eff', // blue
+  '#67c23a', // green
+  '#e6a23c', // amber
+  '#f56c6c', // red
+  '#13c2c2', // cyan
+  '#9254de', // purple
+  '#eb2f96', // pink
+  '#faad14', // gold
+  '#52c41a', // lime
+  '#2f54eb', // geekblue
+  '#fa541c', // volcano
+  '#73d13d', // grass
+]
 // #endregion
 
 // #region 开发日志、界面语言、暗色主题

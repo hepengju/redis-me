@@ -182,7 +182,11 @@ pub fn parse_client_info(client_info: &str) -> AnyResult<RedisClientInfo> {
 
 // info 信息转换成图表数据
 pub fn info_to_chart(redis_info: RedisInfo) -> AnyResult<RedisChart> {
-    let mut chart = RedisChart::default();
+    // 保留来源节点地址，供前端多节点折线区分（单机为空串）
+    let mut chart = RedisChart {
+        node: redis_info.node,
+        ..Default::default()
+    };
 
     let mut key_total = 0;
     for line in redis_info.info.lines() {
