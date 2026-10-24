@@ -595,10 +595,11 @@ const networkTooltipExtra = {
         ])
       const valOf = (addr: string, field: keyof RedisChart) =>
         fmtOpt(findSeries(all, addr, field)?.data[i])
-      // 仅对齐输入列（↓）：输出列（↑）是末列无需补齐
+      // ↓↑ 两列都要补齐：主从合并同行后，主的 ↑ 后面还跟着从节点，并非末列（行尾多余空格不可见，无影响）
       const wDown = Math.max(...addrs.map(a => valOf(a, 'instantaneousInputKbps').length), 1)
+      const wUp = Math.max(...addrs.map(a => valOf(a, 'instantaneousOutputKbps').length), 1)
       const netPair = (addr: string) =>
-        `↓ ${padEnd2(valOf(addr, 'instantaneousInputKbps'), wDown)}  ↑ ${valOf(addr, 'instantaneousOutputKbps')}`
+        `↓ ${padEnd2(valOf(addr, 'instantaneousInputKbps'), wDown)}  ↑ ${padEnd2(valOf(addr, 'instantaneousOutputKbps'), wUp)}`
       const name = nodeDisplayName(inDs._addr)
       const parts: string[] = []
       if (name || !isPairedSlave(item)) {
