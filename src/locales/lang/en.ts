@@ -590,11 +590,6 @@ export default {
     placeholder: 'Node [Optional]',
     slotsTooltip: 'Slots: {slots}',
     slotsReplicaTooltip: "Master's slots: {slots}",
-    all: 'All nodes',
-    masterOnly: 'Masters',
-    slaveOnly: 'Replicas',
-    groupQuick: 'Quick filter',
-    groupNode: 'Nodes',
   },
 
   keyBatch: {
@@ -1303,6 +1298,8 @@ Once an operation prevents Redis from keeping the space-saving encoding, special
     pointUnit: '',
     points: 'Points',
     noMatchedNode: 'No matching nodes',
+    masters: 'Masters',
+    slaves: 'Replicas',
     networkLineHint: 'solid = input / dashed = output',
     moreChart: 'More Charts',
     clearData: 'Clear Data',

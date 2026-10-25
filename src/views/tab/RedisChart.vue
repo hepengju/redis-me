@@ -42,7 +42,6 @@ import {
   meCommands,
   meLog,
 } from '@/utils/util'
-import NodeList from '@/views/ext/NodeList.vue'
 // #endregion
 
 // #region Chart.js 初始化
@@ -65,7 +64,6 @@ ChartJS.register(
 const { t } = useI18n()
 
 const share = inject(shareProvideKey)!
-const node = ref<string>(share.conn?.cluster ? 'master' : 'all') // 节点过滤：显式 token（all/master/slave/ip:port）
 const autoRefresh = ref(true) // 自动刷新
 const refreshInterval = ref(5) // 刷新间隔（秒）
 const keepMinutes = ref(60) // 保留N分钟的数据
@@ -73,7 +71,16 @@ const maxPointCount = ref(100) // 最多保存N个数据
 const nowPointCount = ref(0) // 当前数据条数
 const showMoreChart = ref(false) // 显示更多图表
 const loaded = ref(false) // 首次取数是否完成（避免加载前闪现空态）
-const hiddenNodes = ref<Record<string, boolean>>({}) // 共享图例点击隐藏的节点（addr -> true）
+const hiddenNodes = ref<Record<string, boolean>>({}) // 用户显式覆盖的显隐（addr -> true 强制隐藏 / false 强制显示；未设置=按角色默认）
+
+// 默认显隐：从节点默认隐藏、主节点默认显示；用户点击图例后走显式覆盖
+function isSlaveAddr(addr: string): boolean {
+  return share.nodeList.find(n => n.node === addr)?.isSlave ?? false
+}
+function effHidden(addr: string): boolean {
+  const override = hiddenNodes.value[addr]
+  return override === undefined ? isSlaveAddr(addr) : override
+}
 
 // 与 chartData 各块 key 一致
 type ChartBlockKey =
@@ -255,7 +262,7 @@ function ensureSeries(block: ChartBlock, addr: string, spec: SeriesSpec): Series
       pointBorderColor: c,
       data: Array.from({ length: Math.max(0, block.labels.length - 1) }, () => null),
       tension: 0.4,
-      hidden: !!hiddenNodes.value[addr],
+      hidden: effHidden(addr),
     }
     if (spec.dash) ds.borderDash = [6, 3]
     block.datasets.push(ds)
@@ -263,10 +270,10 @@ function ensureSeries(block: ChartBlock, addr: string, spec: SeriesSpec): Series
   return ds
 }
 
-// 从后台获取原始数据（统一按列表取数：单机/单节点时长度为 1）
+// 从后台获取原始数据（统一拉全部节点：单机/集群均一次取全，筛选改为纯前端显隐）
 async function getData() {
   try {
-    const list = await meCommands.chartList(share.conn!.id, node.value)
+    const list = await meCommands.chartList(share.conn!.id, 'all')
     const label = Date.now()
     // 各块先推进同一个 label（时间轴对齐），再逐节点逐系列落点
     for (const key of BLOCK_KEYS) chartData.value[key].labels.push(label)
@@ -484,7 +491,7 @@ function chartOptions(titleKey: string, opt: BlockOpt = {}): ChartOptions<'line'
     dark ? merge(cloneDeep(baseOptions), darkOptions) : merge(cloneDeep(baseOptions), lightOptions)
   ) as ChartOptions<'line'>
   if (opt.scale) merge(themed, opt.scale)
-  const titleText = opt.hintKey ? `${t(titleKey)} · ${t(opt.hintKey)}` : t(titleKey)
+  const titleText = opt.hintKey ? `${t(titleKey)} ${t(opt.hintKey)}` : t(titleKey)
   merge(themed, {
     plugins: {
       title: {
@@ -492,7 +499,7 @@ function chartOptions(titleKey: string, opt: BlockOpt = {}): ChartOptions<'line'
         text: titleText,
         color: dark ? '#A3A6AD' : '#909399', // 用 Element Plus 次要（secondary）文字色
         font: { size: 13 },
-        padding: { top: 4, bottom: 8 },
+        padding: { top: 0, bottom: 8 }, // top 取 0 让标题尽量上移（再负会顶出 canvas 上沿被裁）
       },
     },
   })
@@ -507,11 +514,12 @@ function isPairedSlave(item: TooltipItem<'line'>): boolean {
   return isPairedSlaveAddr(item.dataset as Series, item.chart.data.datasets as Series[])
 }
 
-// 地址是否为「配对主节点折线在场」的从节点（dataset 级判断，不依赖 tooltip item）
+// 地址是否为「配对主节点折线在场且可见」的从节点（dataset 级判断，不依赖 tooltip item）
 function isPairedSlaveAddr(ds: Series, all: Series[]): boolean {
   const hit = share.nodeList.find(n => n.node === ds._addr)
   if (!hit || hit.isMaster || !hit.slaveOfNode) return false
-  return all.some(d => d._addr === hit.slaveOfNode && d._field === ds._field)
+  // 主节点折线被隐藏时不再算配对：否则从节点会被 filter 丢弃而主行又缺席 → tooltip 空白
+  return all.some(d => d._addr === hit.slaveOfNode && d._field === ds._field && !d.hidden)
 }
 
 // 在同图折线中找「某节点的某指标」dataset（主从/输入输出拼行时取配对值）
@@ -564,7 +572,7 @@ function mergedTooltip(field: keyof RedisChart, fmt: (v: number) => string): obj
         for (const slave of share.nodeList) {
           if (slave.slaveOfNode !== ds._addr) continue
           const sDs = findSeries(item.chart.data.datasets, slave.node, field)
-          if (!sDs) continue // 折线不在图中（如「仅主」筛选）则不拼
+          if (!sDs || sDs.hidden) continue // 从节点折线不在图或被隐藏则不拼
           parts.push(`${slave.shortLabel}: ${fmtOptVal(sDs.data[i], fmt)}`)
         }
         return parts.join('  ')
@@ -591,7 +599,9 @@ const networkTooltipExtra = {
         )
         .flatMap(ds => [
           ds._addr,
-          ...share.nodeList.filter(s => s.slaveOfNode === ds._addr).map(s => s.node),
+          ...share.nodeList
+            .filter(s => s.slaveOfNode === ds._addr && !effHidden(s.node))
+            .map(s => s.node),
         ])
       const valOf = (addr: string, field: keyof RedisChart) =>
         fmtOpt(findSeries(all, addr, field)?.data[i])
@@ -607,7 +617,8 @@ const networkTooltipExtra = {
       }
       for (const slave of share.nodeList) {
         if (slave.slaveOfNode !== inDs._addr) continue
-        if (!findSeries(all, slave.node, 'instantaneousInputKbps')) continue // 「仅主」筛选下不拼
+        const sIn = findSeries(all, slave.node, 'instantaneousInputKbps')
+        if (!sIn || sIn.hidden) continue // 从节点不在图或被隐藏则不拼
         parts.push(`${slave.shortLabel}: ${netPair(slave.node)}`)
       }
       return parts.join('  ')
@@ -670,44 +681,79 @@ const initData = computed((): Record<ChartBlockKey, ChartBlock> => {
 // 避免vue的响应式更新和chartjs的响应式更新冲突（无限循环），使用shallowRef
 let chartData = shallowRef(cloneDeep(initData.value))
 
-// 重置数据
+// 重置数据（清空按钮：重新拉取并清空显隐态；不再有节点切换，故无 watch）
 function resetData() {
   chartData.value = cloneDeep(initData.value)
-  hiddenNodes.value = {} // 切筛选/清空时重置隐藏态
+  hiddenNodes.value = {}
   getData()
 }
-watch(node, resetData)
 
-// 已加载但无任何折线（如「仅从」但从节点为空）时显示空态
+// 已加载但无任何折线时显示空态
 const noSeries = computed(() => loaded.value && chartData.value.command.datasets.length === 0)
 
-// 顶部共享图例：节点名 + 稳定色，只展示一次；按 share.nodeList（已排序）次序排列，与 M1/M2/S1 编号一致
-const nodeLegend = computed(() =>
-  chartData.value.command.datasets
+// 图例项：从 command 块折线派生（节点名 + 稳定色），按 isMaster 分主/从两组，组内按编号排序
+function legendItems(isMasterNode: boolean) {
+  return chartData.value.command.datasets
+    .filter(ds => share.nodeList.find(n => n.node === ds._addr)?.isMaster === isMasterNode)
     .map(ds => ({
       addr: ds._addr,
       label: String(ds.label ?? ''),
       color: String(ds.borderColor ?? ''),
-      hidden: !!hiddenNodes.value[ds._addr],
+      hidden: effHidden(ds._addr),
     }))
-    .sort((a, b) => compareNodeOrder(a.addr, b.addr)),
+    .sort((a, b) => compareNodeOrder(a.addr, b.addr))
+}
+const masterLegend = computed(() => legendItems(true))
+const slaveLegend = computed(() => legendItems(false))
+
+// 组标题点击态：整组是否已全部隐藏
+const allMastersHidden = computed(
+  () => masterLegend.value.length > 0 && masterLegend.value.every(i => i.hidden),
+)
+const allSlavesHidden = computed(
+  () => slaveLegend.value.length > 0 && slaveLegend.value.every(i => i.hidden),
 )
 
-// 点击图例：切换该节点在所有图表块中折线的显隐
-function toggleNode(addr: string) {
-  const willHide = !hiddenNodes.value[addr]
-  if (willHide) hiddenNodes.value[addr] = true
-  else delete hiddenNodes.value[addr]
+// 「?」明细文本：主/从格式一致 标签→地址（异常场景槽位可能极多会撞屏，故不展示）
+function nodeDetailText(isMasterNode: boolean): string {
+  return share.nodeList
+    .filter(n => (isMasterNode ? n.isMaster : n.isSlave))
+    .map(n => `${n.shortLabel}  ${n.node}`)
+    .join('\n')
+}
+const masterDetail = computed(() => nodeDetailText(true))
+const slaveDetail = computed(() => nodeDetailText(false))
+
+// 把显隐状态（默认+覆盖）同步到各块折线的 hidden 并触发重绘
+function applyHidden() {
   for (const key of BLOCK_KEYS) {
     for (const ds of chartData.value[key].datasets) {
-      if (ds._addr === addr) ds.hidden = willHide
+      ds.hidden = effHidden(ds._addr)
     }
   }
   chartData.value = cloneDeep(chartData.value)
 }
 
+// 点击单个图例：切换该节点显隐（写入显式覆盖）
+function toggleNode(addr: string) {
+  hiddenNodes.value[addr] = !effHidden(addr)
+  applyHidden()
+}
+
+// 点击组标题：整组显隐（有可见则全隐藏，否则全显示）
+function toggleGroup(items: { addr: string }[]) {
+  const anyVisible = items.some(i => !effHidden(i.addr))
+  for (const i of items) hiddenNodes.value[i.addr] = anyVisible
+  applyHidden()
+}
+
 // 语言/主题切换：块标题与配色在 options computed 内（依赖 t / isDark），刷新实例让 chart.js 应用
 watch([() => meTauri.settings.language, () => meTauri.settings.theme], () => refreshInstance())
+// 节点列表异步就绪后同步一次默认显隐（确保早于 nodeList 创建的从节点折线也能默认隐藏）
+watch(
+  () => share.nodeList,
+  () => applyHidden(),
+)
 // #endregion
 </script>
 
@@ -780,22 +826,59 @@ watch([() => meTauri.settings.language, () => meTauri.settings.theme], () => ref
             </el-dropdown-menu>
           </template>
         </el-dropdown>
-        <node-list v-model="node" filterable />
       </div>
     </div>
 
     <!-- 全屏容器：图例 + 图表 + 点数一并进入全屏 -->
     <div ref="charts" class="charts-area">
-      <!-- 共享图例（仅集群）：节点色块+名称只列一次，可点击隐藏对应折线 -->
-      <div v-if="!noSeries && share.conn?.cluster && nodeLegend.length" class="node-legend">
-        <span
-          v-for="n in nodeLegend"
-          :key="n.addr"
-          class="node-legend-item"
-          :class="{ 'is-hidden': n.hidden }"
-          @click="toggleNode(n.addr)">
-          <i class="node-legend-swatch" :style="{ backgroundColor: n.color }"></i>{{ n.label }}
-        </span>
+      <!-- 共享图例（仅集群）：主/从两组左右对齐；组标题（含 ? 图标，悬停看节点明细）点=整组显隐，单项点=单个显隐 -->
+      <div v-if="!noSeries && share.conn?.cluster" class="node-legend">
+        <div v-if="masterLegend.length" class="legend-group">
+          <me-button
+            class="legend-group-title"
+            :class="{ 'is-hidden': allMastersHidden }"
+            text
+            type="primary"
+            icon="el-icon-sunny"
+            placement="left"
+            @click="toggleGroup(masterLegend)">
+            <template #content>
+              <span style="white-space: pre-line">{{ masterDetail }}</span>
+            </template>
+            {{ t('redisChart.masters') }}
+          </me-button>
+          <span
+            v-for="n in masterLegend"
+            :key="n.addr"
+            class="node-legend-item"
+            :class="{ 'is-hidden': n.hidden }"
+            @click="toggleNode(n.addr)">
+            <i class="node-legend-swatch" :style="{ backgroundColor: n.color }"></i>{{ n.label }}
+          </span>
+        </div>
+        <div v-if="slaveLegend.length" class="legend-group">
+          <me-button
+            class="legend-group-title"
+            :class="{ 'is-hidden': allSlavesHidden }"
+            text
+            type="info"
+            icon="el-icon-moon"
+            placement="left"
+            @click="toggleGroup(slaveLegend)">
+            <template #content>
+              <span style="white-space: pre-line">{{ slaveDetail }}</span>
+            </template>
+            {{ t('redisChart.slaves') }}
+          </me-button>
+          <span
+            v-for="n in slaveLegend"
+            :key="n.addr"
+            class="node-legend-item"
+            :class="{ 'is-hidden': n.hidden }"
+            @click="toggleNode(n.addr)">
+            <i class="node-legend-swatch" :style="{ backgroundColor: n.color }"></i>{{ n.label }}
+          </span>
+        </div>
       </div>
 
       <el-empty v-if="noSeries" :description="t('redisChart.noMatchedNode')" />
@@ -872,11 +955,30 @@ watch([() => meTauri.settings.language, () => meTauri.settings.theme], () => ref
   .node-legend {
     display: flex;
     flex-wrap: wrap;
+    justify-content: space-between; // 主节点组居左、从节点组居右
     align-items: center;
-    gap: 4px 14px;
-    padding: 15px 10px 0 10px;
+    gap: 6px 20px;
+    padding: 10px 10px 0 0;
     font-size: 14px;
     color: var(--el-text-color-regular);
+
+    .legend-group {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 4px 14px;
+    }
+
+    :deep(.legend-group-title) {
+      // 图例组标题（me-button text 变体，颜色交给 type）：加粗、整组隐藏时置灰
+      // class 经 v-bind="$attrs" 落在内层 el-button 上，拿不到本组件 scoped 作用域，必须用 :deep 穿透
+      font-weight: 600;
+
+      &.is-hidden {
+        opacity: 0.4;
+        text-decoration: line-through;
+      }
+    }
 
     .node-legend-item {
       display: inline-flex;

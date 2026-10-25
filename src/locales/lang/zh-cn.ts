@@ -578,11 +578,6 @@ export default {
     placeholder: '指定节点【可选】',
     slotsTooltip: '槽位：{slots}',
     slotsReplicaTooltip: '所属主节点槽位：{slots}',
-    all: '全部节点',
-    masterOnly: '主节点',
-    slaveOnly: '从节点',
-    groupQuick: '快捷筛选',
-    groupNode: '指定节点',
   },
 
   keyBatch: {
@@ -1279,6 +1274,8 @@ export default {
     pointUnit: '个',
     points: '点数',
     noMatchedNode: '无匹配节点',
+    masters: '主节点',
+    slaves: '从节点',
     networkLineHint: '实线 输入 / 虚线 输出',
     moreChart: '更多图表',
     clearData: '清空数据',
