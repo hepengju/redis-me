@@ -19,13 +19,44 @@ redisson/
 ├── redisson-codec.jar          编解码入口（无需改动）
 ├── run-redisson-codec.cmd      Windows 启动脚本（RedisME 命令填这个）
 ├── run-redisson-codec.sh       Linux / macOS 启动脚本
+├── setup.cmd                   Windows 一键组装脚本（收集依赖 + 安装，见下）
+├── setup.sh                    Linux / macOS 一键组装脚本
 ├── lib/                        ← 你需要填充：
 │   ├── *.jar                   项目的全部运行依赖 jar
 │   └── classes/                项目的业务 classes（含包目录）
 └── source/                     源码工程（仅在需要重新构建时使用）
 ```
 
-## 使用步骤
+## 快速上手（推荐：一键脚本）
+
+换机器 / 新同事接入，两步即可，不用再手动凑 jar 和路径：
+
+```bat
+:: 1) 在你的 Java 项目根目录执行，自动收集依赖 jar 到 lib\、编译并拷贝业务 classes
+cd /d C:\path\to\your-project
+C:\path\to\redisson\setup.cmd --collect --with-classes
+
+:: 2) 安装到固定目录，并打印可直接粘贴到 RedisME 的命令路径
+C:\path\to\redisson\setup.cmd --install
+```
+
+Linux / macOS 用 `setup.sh`，用法一致（安装目录默认 `~/redis/custom/redisson`）。
+
+**约定**：所有机器沿用同一安装目录（Windows 默认 `%USERPROFILE%\redis\custom\redisson`），
+RedisME 里填的命令路径每台机器都一样，配置粘贴一次即可长期复用。
+
+`setup` 选项：
+
+| 选项             | 作用                                                                                                                               |
+| ---------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
+| `--collect`      | 在当前目录执行 `mvn dependency:copy-dependencies`，把运行期依赖 jar 收进 `lib/`；`jackson-databind` 不在依赖树时自动从本地仓库补入 |
+| `--with-classes` | 额外 `mvn compile`，并把 `target/classes` 拷进 `lib/classes`                                                                       |
+| `--install`      | 把 jar、启动脚本、`lib/` 内容装到固定目录，末尾打印要粘贴的 RedisME 命令                                                           |
+| `--dest <目录>`  | 覆盖默认安装目录                                                                                                                   |
+
+> 下面是手动流程，供 Gradle 项目或想精确控制 jar 时参考。
+
+## 使用步骤（手动）
 
 ### 1. 填充 lib 目录
 
