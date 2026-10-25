@@ -222,6 +222,13 @@ function nodeColor(addr: string): string {
   return c
 }
 
+// 折线取色：集群按节点稳定着色（多节点区分）；单机只有一条线，改按图表块取不同色避免整页同色显平
+// （网络块 in/out 两系列同属一块→同色，靠实/虚线区分，与集群下「同节点共用色」一致）
+function seriesColor(key: ChartBlockKey, addr: string): string {
+  if (share.conn?.cluster) return nodeColor(addr)
+  return CHART_COLORS[BLOCK_KEYS.indexOf(key) % CHART_COLORS.length]
+}
+
 // 折线/图例文案：优先短标签（M1/S1），集群未匹配退回地址，单机（addr 为空）返回空串
 function nodeDisplayName(addr: string): string {
   const hit = share.nodeList.find(item => item.node === addr)
@@ -248,10 +255,15 @@ function chartNumber(res: RedisChart, key: keyof RedisChart): number {
 }
 
 // 找到（或惰性创建）某节点在某块的 dataset；新建时用 null 补齐历史点对齐
-function ensureSeries(block: ChartBlock, addr: string, spec: SeriesSpec): Series {
+function ensureSeries(
+  block: ChartBlock,
+  key: ChartBlockKey,
+  addr: string,
+  spec: SeriesSpec,
+): Series {
   let ds = block.datasets.find(d => d._addr === addr && d._field === spec.field)
   if (!ds) {
-    const c = nodeColor(addr)
+    const c = seriesColor(key, addr)
     ds = {
       _addr: addr,
       _field: spec.field,
@@ -281,7 +293,9 @@ async function getData() {
       const addr = res.node
       for (const key of BLOCK_KEYS) {
         for (const spec of BLOCK_SERIES[key]) {
-          ensureSeries(chartData.value[key], addr, spec).data.push(chartNumber(res, spec.field))
+          ensureSeries(chartData.value[key], key, addr, spec).data.push(
+            chartNumber(res, spec.field),
+          )
         }
       }
     }
