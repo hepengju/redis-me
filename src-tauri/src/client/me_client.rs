@@ -273,6 +273,18 @@ where
     }
 }
 
+/// RESP 回复解析被中断（如回复行含非法 UTF-8：Redis 回显被截断的多字节参数）时，
+/// redis-rs 只在 EOF 时关连接，解析错误却会留着内部 parser 缓存的半条回复，
+/// 导致同一条长连接后续命令全部错位。命中这类协议/IO 错误就该重建连接。
+///
+/// TODO: 这里是「出错后重建连接」的兜底恢复。更彻底的修复在 fork 侧——
+/// 把 redis-rs parser 对回复行的严格 `str::from_utf8` 改为 `from_utf8_lossy`，
+/// 从源头不再中断解析、不再残留半条回复。计划先改自有 fork（hepengju/redis-rs
+/// 分支 redis-me），验证后再向 redis-rs 原作者提 issue。
+pub fn is_protocol_desync_error(e: &redis::RedisError) -> bool {
+    matches!(e.kind(), redis::ErrorKind::Parse | redis::ErrorKind::Io)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -298,5 +310,18 @@ mod tests {
         assert_eq!(conn_reuse(false, 0), ConnReuse::Reconnect);
         // 时钟回拨时按仍在检查间隔内处理，不因为负数空闲去探活
         assert_eq!(conn_reuse(true, -5), ConnReuse::Keep);
+    }
+
+    /// 解析/IO 错误判为连接错位需重建；普通服务端应答错误（如 unknown command）不重连。
+    #[test]
+    fn protocol_desync_only_matches_parse_and_io() {
+        use redis::ErrorKind;
+        let parse = redis::RedisError::from((ErrorKind::Parse, "invalid utf-8 sequence"));
+        let io = redis::RedisError::from((ErrorKind::Io, "connection reset"));
+        assert!(is_protocol_desync_error(&parse));
+        assert!(is_protocol_desync_error(&io));
+
+        let server = redis::RedisError::from((ErrorKind::UnexpectedReturnType, "type mismatch"));
+        assert!(!is_protocol_desync_error(&server));
     }
 }

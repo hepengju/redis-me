@@ -174,7 +174,17 @@ impl MeClient for MeSingle {
         };
 
         let mut conn = self.get_conn()?;
-        let value = redis::cmd(cmd.as_str()).arg(&args).query(&mut conn)?;
+        let value = match redis::cmd(cmd.as_str()).arg(&args).query(&mut conn) {
+            Ok(value) => value,
+            Err(e) => {
+                // 解析类错误说明共享连接已错位（见 is_protocol_desync_error），重建后再抛错，避免污染后续命令
+                if is_protocol_desync_error(&e) {
+                    drop(conn);
+                    let _ = self.reconnect();
+                }
+                return Err(e.into());
+            }
+        };
         Ok(redis_value_to_cli_display(
             value,
             param.output_mode,

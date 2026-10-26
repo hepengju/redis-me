@@ -267,10 +267,21 @@ impl MeClient for MeCluster {
         let value = if param.node.as_deref().unwrap_or("").is_empty()
             && param.auto_broadcast.unwrap_or(false)
         {
-            conn.req_command(&cmd)?
+            conn.req_command(&cmd)
         } else {
             let (route, _) = self.get_node_route(param.node)?;
-            conn.route_command(&cmd, route)?
+            conn.route_command(&cmd, route)
+        };
+        let value = match value {
+            Ok(value) => value,
+            Err(e) => {
+                // 解析类错误说明共享连接已错位（见 is_protocol_desync_error），重建后再抛错，避免污染后续命令
+                if is_protocol_desync_error(&e) {
+                    drop(conn);
+                    let _ = self.reconnect();
+                }
+                return Err(e.into());
+            }
         };
         Ok(redis_value_to_cli_display(
             value,
