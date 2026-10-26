@@ -24,6 +24,9 @@ export default {
   deleteOk: 'Deleted',
   actionOk: 'Success',
 
+  clusterUpdateAllTip: 'Note: Updates all nodes',
+  nodeScopedUpdateTip: 'Note: Selected node only',
+
   timeUnit: {
     second: 'Second | Seconds',
     minute: 'Minute | Minutes',
@@ -899,7 +902,6 @@ export default {
     configEmpty: 'Disabled',
     configConsistent: 'All nodes consistent',
     configInconsistent: 'Node configs differ',
-    clusterBroadcastTip: 'Note: Will update all nodes in cluster mode',
     presetAll: 'All',
     presetExpired: 'Expired only',
     presetDisable: 'Disable',

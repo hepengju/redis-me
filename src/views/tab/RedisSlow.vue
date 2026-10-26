@@ -248,7 +248,8 @@ const rules = computed(() => ({
       v-model="editShow"
       align-center
       width="450px"
-      destroy-on-close>
+      destroy-on-close
+      draggable>
       <el-form ref="formRef" :model="form" :rules="rules" label-width="80px">
         <el-form-item :label="t('redisSlow.slowerThan')" prop="slowerThan">
           <div style="width: 100%">
@@ -284,10 +285,20 @@ const rules = computed(() => ({
       </el-form>
 
       <template #footer>
-        <el-button @click="editShow = false">{{ t('cancel') }}</el-button>
-        <el-button type="primary" :loading="editLoading" @click="saveSlowParam">{{
-          t('save')
-        }}</el-button>
+        <div class="me-dialog-footer">
+          <!-- 慢参数 CONFIG SET 固定广播所有节点（仅集群显示） -->
+          <me-icon
+            v-if="share.conn?.cluster"
+            class="footer-tip"
+            icon="el-icon-info-filled"
+            :name="t('clusterUpdateAllTip')" />
+          <div class="footer-btns">
+            <el-button @click="editShow = false">{{ t('cancel') }}</el-button>
+            <el-button type="primary" :loading="editLoading" @click="saveSlowParam">{{
+              t('save')
+            }}</el-button>
+          </div>
+        </div>
       </template>
     </el-dialog>
   </div>

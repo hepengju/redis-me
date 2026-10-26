@@ -24,6 +24,9 @@ export default {
   deleteOk: '删除成功',
   actionOk: '操作成功',
 
+  clusterUpdateAllTip: '说明：集群下将更新所有节点',
+  nodeScopedUpdateTip: '说明：仅更新所选节点',
+
   timeUnit: { second: '秒', minute: '分', hour: '时', day: '天' },
 
   meTtl: {
@@ -882,7 +885,6 @@ export default {
     configEmpty: '未开启',
     configConsistent: '节点配置一致',
     configInconsistent: '节点配置不一致',
-    clusterBroadcastTip: '说明：集群下将更新所有节点',
     presetAll: '全部',
     presetExpired: '仅过期',
     presetDisable: '禁用',

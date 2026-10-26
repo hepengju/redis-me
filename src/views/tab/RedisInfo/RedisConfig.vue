@@ -280,7 +280,12 @@ async function configSet() {
       <me-code :modelValue="configRaw" mode="properties" read-only />
     </me-dialog>
 
-    <el-dialog :title="t('redisConfig.configSet')" v-model="editShow" align-center>
+    <el-dialog
+      :title="t('redisConfig.configSet')"
+      v-model="editShow"
+      align-center
+      width="480px"
+      draggable>
       <el-form ref="formRef" :model="form" :rules="rules" label-width="80px">
         <el-form-item :label="t('redisConfig.param')">
           <el-input v-model="form.param" disabled />
@@ -312,10 +317,20 @@ async function configSet() {
       </el-form>
 
       <template #footer>
-        <el-button @click="editShow = false">{{ t('cancel') }}</el-button>
-        <el-button type="primary" :loading="editLoading" @click="configSet">{{
-          t('save')
-        }}</el-button>
+        <div class="me-dialog-footer">
+          <!-- 集群下提示：勾选自动广播则更新所有节点，否则仅更新所选节点 -->
+          <me-icon
+            v-if="share.conn?.cluster"
+            class="footer-tip"
+            icon="el-icon-info-filled"
+            :name="t(form.autoBroadcast ? 'clusterUpdateAllTip' : 'nodeScopedUpdateTip')" />
+          <div class="footer-btns">
+            <el-button @click="editShow = false">{{ t('cancel') }}</el-button>
+            <el-button type="primary" :loading="editLoading" @click="configSet">{{
+              t('save')
+            }}</el-button>
+          </div>
+        </div>
       </template>
     </el-dialog>
   </div>

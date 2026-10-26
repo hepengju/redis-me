@@ -172,6 +172,23 @@ svg {
   color: var(--el-color-warning);
 }
 
+/* 弹框底部：左侧集群/范围提示，右侧按钮（无提示时按钮仍靠 margin-left:auto 右对齐） */
+.me-dialog-footer {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.me-dialog-footer .footer-tip {
+  margin-left: 20px;
+  color: var(--el-text-color-secondary);
+  line-height: 1.4;
+}
+.me-dialog-footer .footer-btns {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+}
+
 /* 覆盖所有禁用按钮 */
 *:disabled {
   cursor:

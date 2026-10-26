@@ -379,13 +379,13 @@ onUnmounted(() => unlisten?.())
         </el-form>
       </div>
       <template #footer>
-        <div class="notify-footer">
+        <div class="me-dialog-footer">
           <!-- 集群下提示：CONFIG SET 会广播到所有节点（仅集群显示） -->
           <me-icon
             v-if="share.conn?.cluster"
             class="footer-tip"
             icon="el-icon-info-filled"
-            :name="t('redisNotify.clusterBroadcastTip')" />
+            :name="t('clusterUpdateAllTip')" />
           <div class="footer-btns">
             <el-button :disabled="configLoading" @click="editShow = false">
               {{ t('cancel') }}
@@ -446,25 +446,6 @@ onUnmounted(() => unlisten?.())
     gap: 8px;
     align-items: center;
     min-height: 24px;
-  }
-}
-
-// 弹框底部：左侧集群提示，右侧按钮（margin-left:auto 保证非集群时按钮仍右对齐）
-.notify-footer {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-
-  .footer-tip {
-    margin-left: 20px;
-    color: var(--el-text-color-secondary);
-    line-height: 1.4;
-  }
-
-  .footer-btns {
-    margin-left: auto;
-    display: flex;
-    align-items: center;
   }
 }
 </style>
