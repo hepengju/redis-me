@@ -76,9 +76,9 @@ const notifyColumns = computed<MeColumn<NotifyRow>[]>(() => [
 const configValue = ref('')
 const configLoading = ref(false)
 const customFlags = ref('')
-// 集群配置一致性：null=单机/未判定，true=各 master 一致，false=不一致
+// 集群配置一致性：null=单机/未判定，true=所有节点一致，false=不一致
 const clusterConsistent = ref<boolean | null>(null)
-// 各 master 的配置明细（不一致时悬浮展示）
+// 各节点的配置明细（不一致时悬浮展示）
 const clusterConfigList = ref<{ node: string; label: string; value: string }[]>([])
 // 不一致悬浮内容（HTML，raw-content 渲染）：节点文案与节点下拉一致（host:port | M1），小标题靠加粗区分（不依赖主题色变量）
 const clusterConfigTip = computed(() =>
@@ -110,7 +110,7 @@ function openEditDialog() {
 }
 
 // 读取当前配置；CONFIG 被 ACL 限制时降级为空（不挡订阅）
-// 集群下对所有 master 各读一次并判断一致性：一致显示共同值，不一致仅提示、可悬浮看明细
+// 集群下对所有节点各读一次并判断一致性：一致显示共同值，不一致仅提示、可悬浮看明细
 async function loadConfig() {
   configLoading.value = true
   try {
@@ -131,25 +131,25 @@ async function loadConfig() {
   }
 }
 
-// 集群：逐个 master 读 notify-keyspace-events，汇总一致性并保留明细供悬浮
+// 集群：逐个主从节点读 notify-keyspace-events，汇总一致性并保留明细供悬浮
 async function loadClusterConfig() {
   const raw = await meCommands.nodeList(share.conn!.id, false)
-  const masters = enrichNodeList(raw || []).filter(n => n.isMaster)
+  const nodes = enrichNodeList(raw || []).filter(n => n.isMaster || n.isSlave)
   const list: { node: string; label: string; value: string }[] = []
-  for (const m of masters) {
+  for (const n of nodes) {
     let value = ''
     try {
       const data = await meCommands.configGet(
         share.conn!.id,
         'notify-keyspace-events',
-        m.node,
+        n.node,
         false,
       )
       value = data?.['notify-keyspace-events'] ?? ''
     } catch {
       value = ''
     }
-    list.push({ node: m.node, label: m.shortLabel, value })
+    list.push({ node: n.node, label: n.shortLabel, value })
   }
   clusterConfigList.value = list
   const allSame = list.every(i => i.value === list[0]?.value)
@@ -323,7 +323,8 @@ onUnmounted(() => unlisten?.())
       v-model="editShow"
       align-center
       width="480px"
-      destroy-on-close>
+      destroy-on-close
+      draggable>
       <div class="notify-edit">
         <el-form label-width="80px">
           <el-form-item :label="t('redisNotify.configStatus')">
@@ -378,12 +379,22 @@ onUnmounted(() => unlisten?.())
         </el-form>
       </div>
       <template #footer>
-        <el-button :disabled="configLoading" @click="editShow = false">
-          {{ t('cancel') }}
-        </el-button>
-        <el-button type="primary" :loading="configLoading" @click="enableNotify">
-          {{ enableLabel }}
-        </el-button>
+        <div class="notify-footer">
+          <!-- 集群下提示：CONFIG SET 会广播到所有节点（仅集群显示） -->
+          <me-icon
+            v-if="share.conn?.cluster"
+            class="footer-tip"
+            icon="el-icon-info-filled"
+            :name="t('redisNotify.clusterBroadcastTip')" />
+          <div class="footer-btns">
+            <el-button :disabled="configLoading" @click="editShow = false">
+              {{ t('cancel') }}
+            </el-button>
+            <el-button type="primary" :loading="configLoading" @click="enableNotify">
+              {{ enableLabel }}
+            </el-button>
+          </div>
+        </div>
       </template>
     </el-dialog>
   </div>
@@ -435,6 +446,25 @@ onUnmounted(() => unlisten?.())
     gap: 8px;
     align-items: center;
     min-height: 24px;
+  }
+}
+
+// 弹框底部：左侧集群提示，右侧按钮（margin-left:auto 保证非集群时按钮仍右对齐）
+.notify-footer {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+
+  .footer-tip {
+    margin-left: 20px;
+    color: var(--el-text-color-secondary);
+    line-height: 1.4;
+  }
+
+  .footer-btns {
+    margin-left: auto;
+    display: flex;
+    align-items: center;
   }
 }
 </style>
