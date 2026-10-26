@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { writeFile } from '@tauri-apps/plugin-fs'
 // #region 导入
 import { useIntervalFn, useNow } from '@vueuse/core'
 import {
@@ -34,6 +35,7 @@ import {
   type DetectedViewAuto,
   type DetectedViewFormat,
 } from '@/utils/detect-view-format'
+import { pickSavePath } from '@/utils/export'
 import { useFavorites, addFavorite, removeFavorite, isFavorited } from '@/utils/favorite'
 import {
   IPC_WIRE_FORMAT,
@@ -233,6 +235,7 @@ const VALUE_PREVIEW_BYTES = computed(
 )
 const forceFullValue = ref(false) // 用户确认后 GET 全量
 const valueTruncatedDismissed = ref(false)
+const valueDownloading = ref(false) // 大值下载中，防重复点击
 const valueTruncated = computed(() => redisValue.value?.valueTruncated ?? false)
 const showValueTruncatedAlert = computed(
   () => stringType.value && valueTruncated.value && !valueTruncatedDismissed.value,
@@ -904,6 +907,45 @@ async function loadFullValue() {
   if (loading.value) return
   forceFullValue.value = true
   await refreshKey(false)
+}
+
+/** base64 wire → 原始字节；大值时 atob 结果较长，for 循环比展开更稳 */
+function base64WireToBytes(wire: string): Uint8Array {
+  const binary = atob(wire)
+  const bytes = new Uint8Array(binary.length)
+  for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i)
+  return bytes
+}
+
+/** 默认文件名取键名最后一段 + .txt，过滤各系统非法字符 */
+function downloadFileName(keyName: string): string {
+  const seg = keyName.split(':').filter(Boolean).pop() ?? keyName
+  return `${seg.replace(/[\\/:*?"<>|]/g, '_').trim() || 'value'}.txt`
+}
+
+// 下载原始值：独立 fieldScan 强制全量，不改动当前展示状态；base64 解码后直接写盘
+async function downloadValue() {
+  if (!share.conn || !share.redisKey || valueDownloading.value) return
+  valueDownloading.value = true
+  try {
+    const base = buildFieldScanParam()
+    const data = await meCommands.fieldScan(share.conn.id, {
+      ...base,
+      cursor: null,
+      includeMeta: false,
+      keyType: 'string',
+      meta: { ...base.meta, forceFullValue: true },
+    })
+    const path = await pickSavePath(downloadFileName(share.redisKey.key), ['*'], 'All Files')
+    if (!path) return
+    await writeFile(path, base64WireToBytes(String(data.value)))
+    meOk(t('redisValue.valueTruncatedDownloadOk'))
+  } catch (e: unknown) {
+    // fieldScan 失败已由 meCommands 弹窗；写盘失败在这里提示
+    if (e !== null && typeof e === 'object') meErr(e, t('redisValue.valueTruncatedDownloadErr'))
+  } finally {
+    valueDownloading.value = false
+  }
 }
 
 // 内置识别落到 Hex 后，按列表顺序试勾选的自定义编码。成功的 stdout 直接当展示。
@@ -2125,6 +2167,14 @@ onUnmounted(() => {
             </el-button>
             <el-button size="small" type="warning" plain :disabled="loading" @click="loadFullValue">
               {{ t('redisValue.valueTruncatedLoadAll') }}
+            </el-button>
+            <el-button
+              size="small"
+              plain
+              :loading="valueDownloading"
+              :disabled="loading"
+              @click="downloadValue">
+              {{ t('redisValue.valueTruncatedDownload') }}
             </el-button>
           </div>
         </el-alert>
