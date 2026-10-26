@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { readText } from '@tauri-apps/plugin-clipboard-manager'
 // #region 导入
-import { computed, inject, nextTick, onUnmounted, ref, useTemplateRef, watch } from 'vue'
+import { computed, inject, nextTick, onMounted, onUnmounted, ref, useTemplateRef, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import MeIcon from '@/components/MeIcon.vue'
@@ -186,11 +186,13 @@ const keyShortcuts = computed(() => getTerminalShortcuts(t))
 
 // 多行粘贴：单条命令或每行一条。关掉弹框则取消。
 type XtermExpose = {
+  focus: () => void
   getCommand: () => string
   setCommand: (command: string) => void
   execute: (command: string) => boolean
 }
 const xtermRef = useTemplateRef<XtermExpose>('xtermRef')
+const terminalWrapRef = useTemplateRef<HTMLElement>('terminalWrapRef')
 
 type PasteMode = 'one' | 'lines'
 const pasteAskVisible = ref(false)
@@ -288,22 +290,31 @@ function onMouseDown(): void {
   selectedOnPointer = document.getSelection()?.toString() ?? ''
 }
 
-function insertAtCursor(root: HTMLElement, text: string): void {
+function insertAtCursor(text: string): void {
   const term = xtermRef.value
   if (!term) return
-  const input = root.querySelector('textarea')
+  // textarea 的 selectionStart 失焦后仍保留，限定在组件自己的 ref 子树内查
+  const input = terminalWrapRef.value?.querySelector('textarea')
   const current = term.getCommand()
   const at = input instanceof HTMLTextAreaElement ? input.selectionStart : current.length
   term.setCommand(current.slice(0, at) + text.trim() + current.slice(at))
 }
 
+// vue-web-terminal 初次挂载不会 focus 内部 textarea，Ctrl+V 的 keydown 到不了容器，
+// 需等 setCommand 等路径间接聚焦；这里点击和挂载时通过组件 ref 主动聚焦
+function focusTerminalInput(): void {
+  xtermRef.value?.focus()
+}
+
+onMounted(() => nextTick(focusTerminalInput))
+
 // 读取剪贴板并粘贴：多行走弹框判断，单行插入光标处
 // macOS WKWebView 会拦截 navigator.clipboard.readText（NotAllowedError），改用 Tauri 剪贴板插件
-function pasteFromClipboard(root: HTMLElement): void {
+function pasteFromClipboard(): void {
   void readText()
     .then(text => {
       if (!text || enqueueMultiPaste(text)) return
-      enqueue(() => insertAtCursor(root, text))
+      enqueue(() => insertAtCursor(text))
     })
     .catch((error: unknown) => console.error(error))
 }
@@ -311,10 +322,8 @@ function pasteFromClipboard(root: HTMLElement): void {
 // 终端 textarea 在 WKWebView 下收不到 Cmd+V 的 paste 事件，这里拦截快捷键统一走插件读取
 function onKeydown(event: KeyboardEvent): void {
   if ((event.metaKey || event.ctrlKey) && event.key.toUpperCase() === 'V') {
-    const root = event.currentTarget
-    if (!(root instanceof HTMLElement)) return
     event.preventDefault()
-    pasteFromClipboard(root)
+    pasteFromClipboard()
   }
 }
 
@@ -330,9 +339,7 @@ function onContextMenu(event: MouseEvent): void {
     meCopy(selected)
     return
   }
-  const root = event.currentTarget
-  if (!(root instanceof HTMLElement)) return
-  pasteFromClipboard(root)
+  pasteFromClipboard()
 }
 
 onUnmounted(() => {
@@ -347,7 +354,9 @@ onUnmounted(() => {
     <!-- 命令输入 -->
     <div
       v-if="showCode"
+      ref="terminalWrapRef"
       class="terminal"
+      @click="focusTerminalInput"
       @keydown.capture="onKeydown"
       @paste.capture="onPaste"
       @mousedown.capture="onMouseDown"

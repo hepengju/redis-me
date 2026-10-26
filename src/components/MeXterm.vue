@@ -35,6 +35,7 @@ const props = withDefaults(
 type TerminalExpose = {
   pushMessage: (message: string | Message) => void
   fullscreen: () => void
+  focus: (enforceFocus?: boolean) => void
   clearLog: () => void
   getCommand: () => string
   setCommand: (command: string) => void
@@ -69,6 +70,7 @@ const theme = computed(() => (isDark.value ? 'dark' : 'light'))
 
 // 多行粘贴由 Redis 终端决定。这里只透出命令的读写和执行。
 defineExpose({
+  focus: () => terminalRef.value?.focus(true),
   getCommand: () => terminalRef.value?.getCommand() ?? '',
   setCommand: (command: string) => terminalRef.value?.setCommand(command),
   execute: (command: string) => terminalRef.value?.execute(command) ?? false,
