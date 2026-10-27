@@ -442,16 +442,14 @@ const nodeGroups = computed(() => {
       <template #header>
         <div class="me-flex detail-header">
           <div class="me-flex">
-            <el-text size="large">{{ t('redisInfo.infoDetail') }}</el-text>
+            <!-- 标题即原始信息入口：点击打开详情弹窗（替代原先右侧孤立的笔记本图标） -->
+            <el-text class="detail-title" size="large" @click="dialog.raw = true">
+              <me-icon icon="el-icon-tickets" :name="t('redisInfo.infoDetail')" />
+            </el-text>
             <me-website to="info" />
           </div>
 
           <div class="detail-header-right">
-            <me-icon
-              :info="t('redisInfo.rawInfo')"
-              icon="el-icon-notebook"
-              class="icon-btn"
-              @click="dialog.raw = true" />
             <el-select
               v-model="tagSelected"
               :placeholder="t('redisInfo.tag')"
@@ -480,7 +478,7 @@ const nodeGroups = computed(() => {
   </div>
 
   <!-- 本域弹窗：原文 / Client / ACL / Config -->
-  <me-dialog v-model="dialog.raw" icon="el-icon-notebook" title="Info" width="60vw">
+  <me-dialog v-model="dialog.raw" icon="el-icon-tickets" title="Info" width="60vw">
     <me-code :modelValue="raw" mode="properties" read-only />
   </me-dialog>
 
@@ -643,6 +641,15 @@ const nodeGroups = computed(() => {
     .detail-header {
       font-weight: bold;
       align-items: center;
+
+      // 可点击的详情标题：打开原始信息弹窗
+      .detail-title {
+        cursor: pointer;
+
+        &:hover {
+          color: var(--el-color-primary);
+        }
+      }
 
       .detail-header-right {
         display: flex;
