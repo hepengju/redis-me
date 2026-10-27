@@ -18,6 +18,8 @@ import {
 import { useI18n } from 'vue-i18n'
 
 import {
+  markdownHeadingSyntax,
+  markdownLang,
   meBasicSetup,
   propertiesDarkSyntax,
   propertiesEagerParse,
@@ -26,6 +28,7 @@ import {
   yamlLang,
   zhPhrases,
 } from '@/plugins/codemirror'
+import { detectCodeMode } from '@/utils/detect-code-mode'
 import { redisHighlighting, redisLang } from '@/utils/redis-lang'
 import { isZh, meCopy } from '@/utils/util'
 // #endregion
@@ -110,7 +113,7 @@ const props = withDefaults(
   defineProps<{
     /** 编辑器文本 */
     modelValue?: string
-    /** `json` / `json5` 均使用 JSON5 语法高亮；`properties`/`conf` 为行式配置；`shell` / `yaml` 安装帮助产物；`redis` 为 FT.CREATE */
+    /** `json` / `json5` 均使用 JSON5 语法高亮；`properties`/`conf` 为行式配置；`shell` / `yaml` 安装帮助产物；`redis` 为 FT.CREATE；`markdown` 文档高亮；`auto` 按内容特征推断（仅外部改值时重推断） */
     mode?: string
     readOnly?: boolean
     /** 解码失败：danger 描边 */
@@ -161,12 +164,22 @@ const rootClass = computed(() => [
 ])
 
 const dark = useDark()
+
+// auto：按内容特征推断一次，外部改值（加载/刷新/remount）才重算；用户输入不重推断，避免打字过程中 mode 抖动的观感与重配置开销
+const detectedMode = ref<string>('text')
+function detectOnce(value: string) {
+  detectedMode.value = detectCodeMode(value)
+}
+const effectiveMode = computed(() => (props.mode === 'auto' ? detectedMode.value : props.mode))
+
 const lang = computed(() => {
-  if (props.mode === 'json' || props.mode === 'json5') return cmJson5()
-  if (props.mode === 'properties' || props.mode === 'conf') return propertiesLang
-  if (props.mode === 'shell') return shellLang
-  if (props.mode === 'yaml') return yamlLang
-  if (props.mode === 'redis') return redisLang
+  const m = effectiveMode.value
+  if (m === 'json' || m === 'json5') return cmJson5()
+  if (m === 'properties' || m === 'conf') return propertiesLang
+  if (m === 'shell') return shellLang
+  if (m === 'yaml') return yamlLang
+  if (m === 'markdown') return markdownLang
+  if (m === 'redis') return redisLang
   return undefined
 })
 const phrases = computed(() => (isZh.value ? zhPhrases : {}))
@@ -190,11 +203,13 @@ const extensions = computed(() => {
     list.push(cmPlaceholder(props.placeholder))
   }
 
-  if (props.mode === 'properties' || props.mode === 'conf') {
+  if (effectiveMode.value === 'properties' || effectiveMode.value === 'conf') {
     list.push(syntaxHighlighting(propertiesDarkSyntax), propertiesEagerParse)
   }
+  // markdown 标题去下划线（覆盖 default 的 underline，样式 scope 限定 markdown 语言）
+  if (effectiveMode.value === 'markdown') list.push(syntaxHighlighting(markdownHeadingSyntax))
   // 跟语言包各挂一次。只放在 LanguageSupport 里时，这个编辑器仍会落到默认高亮。
-  if (props.mode === 'redis') list.push(redisHighlighting)
+  if (effectiveMode.value === 'redis') list.push(redisHighlighting)
   return list
 })
 
@@ -237,6 +252,7 @@ function flushPendingExternal() {
 
 onMounted(() => {
   if (!containerEl.value || typeof window === 'undefined') return
+  if (props.mode === 'auto') detectOnce(props.modelValue)
   view.value = new EditorView({
     parent: containerEl.value,
     state: EditorState.create({ doc: props.modelValue, extensions: fullExtensions.value }),
@@ -268,6 +284,8 @@ watch(fullExtensions, exts => {
 watch(
   () => props.modelValue,
   value => {
+    // auto：外部改值重推断一次；用户输入经 v-model 回灌的那次跳过（同 applyExternalValue 的抑制）
+    if (props.mode === 'auto' && value !== lastEmitted) detectOnce(value)
     if (view.value?.composing) {
       pendingExternal = value
       return

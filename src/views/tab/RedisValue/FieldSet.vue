@@ -661,6 +661,7 @@ onUnmounted(() => window.removeEventListener('keydown', onEscapeKey, true))
         :label="vectorsetType ? t('fieldSet.vector') : t('fieldSet.value')"
         class="field-value-item">
         <me-code
+          mode="auto"
           :loading="!!fieldProbeName"
           :loading-text="t('customCodec.probing', { name: fieldProbeName })"
           :key="codeRemountKey"

@@ -2207,9 +2207,10 @@ onUnmounted(() => {
             </el-button>
           </div>
         </el-alert>
-        <!-- json显示；识别中用半透明 loading 盖在 Hex 上 -->
+        <!-- json显示；auto 按内容特征推 json/yaml/markdown；识别中用半透明 loading 盖在 Hex 上 -->
         <me-code
           v-if="viewType === 'json'"
+          mode="auto"
           :loading="customProbePending && stringType"
           :loading-text="t('customCodec.probing', { name: customProbeName })"
           :key="valueEditorRemountKey"

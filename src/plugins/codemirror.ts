@@ -13,6 +13,7 @@ import {
 
 export { EditorView }
 import { history, defaultKeymap, historyKeymap } from '@codemirror/commands'
+import { markdown as cmMarkdown, markdownLanguage } from '@codemirror/lang-markdown'
 import {
   HighlightStyle,
   LanguageSupport,
@@ -68,10 +69,12 @@ export const meBasicSetup = [
  * 语言支持（模块级单例，供 MeCode 复用，避免每个编辑器实例各建一份）。
  * properties：Java .properties 流式解析，适配 Redis INFO/CONFIG（key:value、# 段注释、续行）；conf 亦复用。
  * shell / yaml：Redis 安装帮助产物展示用。
+ * markdown：值区 Auto 推断命中 markdown 特征时的高亮（官方语言包，legacy-modes 无 markdown）。
  */
 export const propertiesLang = new LanguageSupport(StreamLanguage.define(propertiesMode))
 export const shellLang = new LanguageSupport(StreamLanguage.define(shellMode))
 export const yamlLang = new LanguageSupport(StreamLanguage.define(yamlMode))
+export const markdownLang = cmMarkdown()
 
 /**
  * properties / Redis INFO·CONFIG 等在深色下的高亮补丁：默认 key 为 #00f 不适配暗底。
@@ -86,6 +89,25 @@ export const propertiesDarkSyntax = HighlightStyle.define(
     { tag: tags.string, color: '#e6db74' },
   ],
   { themeType: 'dark' },
+)
+
+/**
+ * markdown 标题覆盖：defaultHighlightStyle 给 heading 挂了 underline＋bold，
+ * 编辑器里整行像链接；去下划线、保留加粗、改主色。scope 限定 markdown 语言，
+ * 不影响 json/yaml/properties 等模式的 heading 着色。
+ * 多 highlighter 命中标题时样式是类名并集、同优先级，default 的模块后挂载会赢层叠，
+ * 故两条声明需 !important（与暗色选区覆盖同一手法）。
+ */
+export const markdownHeadingSyntax = HighlightStyle.define(
+  [
+    {
+      tag: tags.heading,
+      textDecoration: 'none !important',
+      fontWeight: 'bold',
+      color: 'var(--el-color-primary) !important',
+    },
+  ],
+  { scope: markdownLanguage },
 )
 
 /**
