@@ -25,6 +25,7 @@ import {
   propertiesEagerParse,
   propertiesLang,
   shellLang,
+  xmlLang,
   yamlLang,
   zhPhrases,
 } from '@/plugins/codemirror'
@@ -113,7 +114,7 @@ const props = withDefaults(
   defineProps<{
     /** 编辑器文本 */
     modelValue?: string
-    /** `json` / `json5` 均使用 JSON5 语法高亮；`properties`/`conf` 为行式配置；`shell` / `yaml` 安装帮助产物；`redis` 为 FT.CREATE；`markdown` 文档高亮；`auto` 按内容特征推断（仅外部改值时重推断） */
+    /** `json` / `json5` 均使用 JSON5 语法高亮；`properties`/`conf` 为行式配置（含 INI）；`shell` / `yaml` 安装帮助产物；`redis` 为 FT.CREATE；`xml`/`markdown` 文档高亮；`auto` 按内容特征推断（仅外部改值时重推断） */
     mode?: string
     readOnly?: boolean
     /** 解码失败：danger 描边 */
@@ -178,6 +179,7 @@ const lang = computed(() => {
   if (m === 'properties' || m === 'conf') return propertiesLang
   if (m === 'shell') return shellLang
   if (m === 'yaml') return yamlLang
+  if (m === 'xml') return xmlLang
   if (m === 'markdown') return markdownLang
   if (m === 'redis') return redisLang
   return undefined

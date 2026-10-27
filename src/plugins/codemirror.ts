@@ -28,6 +28,7 @@ import {
 } from '@codemirror/language'
 import { properties as propertiesMode } from '@codemirror/legacy-modes/mode/properties'
 import { shell as shellMode } from '@codemirror/legacy-modes/mode/shell'
+import { xml as xmlMode } from '@codemirror/legacy-modes/mode/xml'
 import { yaml as yamlMode } from '@codemirror/legacy-modes/mode/yaml'
 import { highlightSelectionMatches, searchKeymap } from '@codemirror/search'
 import { EditorState } from '@codemirror/state'
@@ -69,11 +70,13 @@ export const meBasicSetup = [
  * 语言支持（模块级单例，供 MeCode 复用，避免每个编辑器实例各建一份）。
  * properties：Java .properties 流式解析，适配 Redis INFO/CONFIG（key:value、# 段注释、续行）；conf 亦复用。
  * shell / yaml：Redis 安装帮助产物展示用。
+ * xml：值区 Auto 推断命中报文/配置片段时的高亮（legacy-modes 现成，零新依赖）。
  * markdown：值区 Auto 推断命中 markdown 特征时的高亮（官方语言包，legacy-modes 无 markdown）。
  */
 export const propertiesLang = new LanguageSupport(StreamLanguage.define(propertiesMode))
 export const shellLang = new LanguageSupport(StreamLanguage.define(shellMode))
 export const yamlLang = new LanguageSupport(StreamLanguage.define(yamlMode))
+export const xmlLang = new LanguageSupport(StreamLanguage.define(xmlMode))
 export const markdownLang = cmMarkdown()
 
 /**
