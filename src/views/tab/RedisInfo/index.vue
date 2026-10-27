@@ -484,7 +484,7 @@ const nodeGroups = computed(() => {
 
   <me-dialog
     v-model="dialog.client"
-    icon="el-icon-mic"
+    icon="me-icon-conn"
     :title="t('redisInfo.client')"
     width="80vw"
     :close-on-press-escape="false"

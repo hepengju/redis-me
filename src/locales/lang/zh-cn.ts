@@ -672,6 +672,7 @@ export default {
     age: '持续时间',
     idle: '空闲时间',
     cmd: '最后命令',
+    copyClientHint: '复制原始信息',
     killClientHint: '关闭客户端',
     killClientConfirm: '确定关闭客户端【{client}】吗？',
     killClientOk: '关闭成功',

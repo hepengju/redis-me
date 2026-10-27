@@ -411,6 +411,7 @@ export type RedisClientInfo = {
 	rbp?: number,
 	rbs?: number,
 	ioThread?: number,
+	raw?: string,
 };
 
 export type RedisCommand = {

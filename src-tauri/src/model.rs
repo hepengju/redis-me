@@ -1035,6 +1035,7 @@ api_model!(
         rbp: u64,       // 客户端连接以来其读取缓冲区的峰值大小。在 Redis 7.0 中添加
         rbs: u64,       // 客户端读取缓冲区当前大小（字节）。在 Redis 7.0 中添加
         io_thread: u64, // 分配给客户端的 I/O 线程 ID。在 Redis 8.0 中添加
+        raw: String,    // CLIENT LIST 原始行，供前端复制
     }
 );
 

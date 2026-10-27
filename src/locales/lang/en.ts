@@ -688,6 +688,7 @@ export default {
     age: 'Age',
     idle: 'Idle',
     cmd: 'Last Cmd',
+    copyClientHint: 'Copy Raw',
     killClientHint: 'Kill Client',
     killClientConfirm: 'Confirm Kill Client【{client}】?',
     killClientOk: 'Killed',

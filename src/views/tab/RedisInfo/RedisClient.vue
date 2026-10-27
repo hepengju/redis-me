@@ -7,7 +7,7 @@ import type { MeColumn } from '@/components/me-table-column'
 import { clientTip as tips } from '@/locales/client'
 import { shareProvideKey } from '@/types/me-interface'
 import type { RedisClientInfo, RedisCommand } from '@/types/tauri-specta'
-import { meConfirm, meHumanSeconds, meCommands, meOk } from '@/utils/util'
+import { meConfirm, meCopy, meHumanSeconds, meCommands, meOk } from '@/utils/util'
 import NodeList from '@/views/ext/NodeList.vue'
 // `client_list` 实际载荷字段齐全；`Required` 与 specta 在 `#[serde(default)]` 下生成的可选字段对齐
 type RedisClientListRow = Required<RedisClientInfo>
@@ -50,6 +50,11 @@ async function refresh() {
   }
 }
 refresh()
+
+// 复制 CLIENT LIST 原始行（后端 raw 字段）
+function copyClient(row: RedisClientListRow) {
+  meCopy(row.raw)
+}
 
 async function killClient(row: RedisClientListRow) {
   meConfirm(t('redisClient.killClientConfirm', { client: row.addr }), async () => {
@@ -141,17 +146,14 @@ const clientColumns = computed<MeColumn<RedisClientListRow>[]>(() => [
   }),
   fieldCol('cmd', t('redisClient.cmd'), { minWidth: 200 }),
   ...otherProps.map(prop => fieldCol(prop, prop, { width: propWidth(prop), align: 'right' })),
-  ...(canEdit.value
-    ? [
-        {
-          key: 'action',
-          title: t('action'),
-          width: 80,
-          align: 'center' as const,
-          fixed: 'right' as const,
-        },
-      ]
-    : []),
+  // 操作列常驻：只读下仍保留「复制原始行」，仅「关闭客户端」随 canEdit 隐藏
+  {
+    key: 'action',
+    title: t('action'),
+    width: 80,
+    align: 'center' as const,
+    fixed: 'right' as const,
+  },
 ])
 // #endregion
 </script>
@@ -193,12 +195,19 @@ const clientColumns = computed<MeColumn<RedisClientListRow>[]>(() => [
         :default-sort="{ prop: 'id', order: 'ascending' }"
         export-name="client">
         <template #cell-action="{ row }">
-          <me-icon
-            :info="t('redisClient.killClientHint')"
-            icon="el-icon-CircleCloseFilled"
-            class="icon-btn"
-            style="justify-content: center"
-            @click="killClient(row)" />
+          <div class="action-icons">
+            <me-icon
+              :info="t('redisClient.copyClientHint')"
+              icon="el-icon-document-copy"
+              class="icon-btn"
+              @click="copyClient(row)" />
+            <me-icon
+              v-if="canEdit"
+              :info="t('redisClient.killClientHint')"
+              icon="el-icon-CircleCloseFilled"
+              class="icon-btn"
+              @click="killClient(row)" />
+          </div>
         </template>
       </me-table>
     </div>
@@ -224,5 +233,13 @@ const clientColumns = computed<MeColumn<RedisClientListRow>[]>(() => [
     flex-grow: 1;
     height: 0;
   }
+}
+
+// 操作列多图标水平均布（与 RedisACL 同域约定一致）
+.action-icons {
+  display: flex;
+  align-items: center;
+  justify-content: space-evenly;
+  flex-wrap: nowrap;
 }
 </style>

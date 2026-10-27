@@ -175,6 +175,11 @@ pub fn parse_client_info(client_info: &str) -> AnyResult<RedisClientInfo> {
     for k in ["addr", "laddr", "name", "flags", "events", "cmd", "user"] {
         redis_client_put_str(&mut obj, &raw, k);
     }
+    // 原始行整行保留，供前端「复制」操作展示完整信息
+    obj.insert(
+        "raw".into(),
+        JsonValue::String(client_info.trim().to_string()),
+    );
 
     let client: RedisClientInfo = serde_json::from_value(JsonValue::Object(obj))?;
     Ok(client)
