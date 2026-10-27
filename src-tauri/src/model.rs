@@ -425,6 +425,12 @@ api_model!(FieldScanResult {
     vector_dim: Option<u64>,
 });
 
+// 大值下载：把 STRING 键的原始字节分块写到前端选好的本地路径
+api_model!(RedisValueDownload {
+    key: RedisKey,
+    file: String,
+});
+
 // Redis键: 由于键是字节存储的，考虑转换为utf-8字符串显示后可能会丢失信息，因此封装为对象
 // 备注: bytes 序列化为 base64。合法 UTF-8 键可省略 bytes（空 Vec），to_bytes 回退 key.as_bytes()；
 //       非法 UTF-8 / 二进制键必须带 bytes，key 仅作 lossy 展示。

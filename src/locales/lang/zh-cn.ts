@@ -1203,7 +1203,6 @@ export default {
     valueTruncatedLoadAll: '仍要加载全部',
     valueTruncatedDownload: '下载到本地',
     valueTruncatedDownloadOk: '下载完成',
-    valueTruncatedDownloadErr: '下载失败',
     viewCodec: '数据编码',
     autoDetected: '自动识别的编码',
     commandHelp: '命令帮助',

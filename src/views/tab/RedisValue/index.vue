@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { writeFile } from '@tauri-apps/plugin-fs'
 // #region 导入
 import { useIntervalFn, useNow } from '@vueuse/core'
 import {
@@ -909,40 +908,23 @@ async function loadFullValue() {
   await refreshKey(false)
 }
 
-/** base64 wire → 原始字节；大值时 atob 结果较长，for 循环比展开更稳 */
-function base64WireToBytes(wire: string): Uint8Array {
-  const binary = atob(wire)
-  const bytes = new Uint8Array(binary.length)
-  for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i)
-  return bytes
-}
-
 /** 默认文件名取键名最后一段 + .txt，过滤各系统非法字符 */
 function downloadFileName(keyName: string): string {
   const seg = keyName.split(':').filter(Boolean).pop() ?? keyName
   return `${seg.replace(/[\\/:*?"<>|]/g, '_').trim() || 'value'}.txt`
 }
 
-// 下载原始值：独立 fieldScan 强制全量，不改动当前展示状态；base64 解码后直接写盘
+// 下载到本地：先选路径（取消则不拉数据），再交后端 STRLEN+分块 GETRANGE 直写盘，不占前端内存
 async function downloadValue() {
   if (!share.conn || !share.redisKey || valueDownloading.value) return
+  const path = await pickSavePath(downloadFileName(share.redisKey.key), ['*'], 'All Files')
+  if (!path) return
   valueDownloading.value = true
   try {
-    const base = buildFieldScanParam()
-    const data = await meCommands.fieldScan(share.conn.id, {
-      ...base,
-      cursor: null,
-      includeMeta: false,
-      keyType: 'string',
-      meta: { ...base.meta, forceFullValue: true },
-    })
-    const path = await pickSavePath(downloadFileName(share.redisKey.key), ['*'], 'All Files')
-    if (!path) return
-    await writeFile(path, base64WireToBytes(String(data.value)))
+    await meCommands.valueDownload(share.conn.id, { key: share.redisKey, file: path })
     meOk(t('redisValue.valueTruncatedDownloadOk'))
-  } catch (e: unknown) {
-    // fieldScan 失败已由 meCommands 弹窗；写盘失败在这里提示
-    if (e !== null && typeof e === 'object') meErr(e, t('redisValue.valueTruncatedDownloadErr'))
+  } catch {
+    // 失败（类型不支持 / 写盘错误等）已由 meCommands 统一弹窗
   } finally {
     valueDownloading.value = false
   }

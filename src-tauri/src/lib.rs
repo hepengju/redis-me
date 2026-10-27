@@ -175,6 +175,7 @@ fn tauri_specta_commands() -> Commands<tauri::Wry> {
         node_list,
         scan,
         field_scan,
+        value_download,
         ttl,
         set,
         del,

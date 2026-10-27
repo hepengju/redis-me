@@ -1226,7 +1226,6 @@ export default {
     valueTruncatedLoadAll: 'Load Full Value',
     valueTruncatedDownload: 'Download Value',
     valueTruncatedDownloadOk: 'Download complete',
-    valueTruncatedDownloadErr: 'Download failed',
     viewCodec: 'Codec',
     autoDetected: 'Auto-detected codec',
     commandHelp: 'Command Help',

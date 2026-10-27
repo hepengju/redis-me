@@ -209,6 +209,41 @@ pub fn handle_other_value_type(
     }
 }
 
+/// GETRANGE 单块字节数。分块拉取写盘，峰值内存只占一块，不受值大小影响。
+const VALUE_DOWNLOAD_CHUNK: usize = 4 * 1024 * 1024;
+
+/// 下载 STRING 原始值：STRLEN + 分块 GETRANGE 直写本地文件，不经前端展示链路。
+/// 每块一次命令往返，单块远小于命令超时，GB 级也不会撞超时。
+pub fn value_download0(
+    mut conn: MutexGuard<impl Commands>,
+    param: RedisValueDownload,
+) -> AnyResult<()> {
+    let key_type: ValueType = conn.key_type(&param.key)?;
+    if key_type != ValueType::String {
+        return handle_other_value_type(&key_type, &param.key).map(|_| ());
+    }
+    let strlen: usize = conn.strlen(&param.key)?;
+    let mut file =
+        std::fs::File::create(&param.file).map_err(|e| AppError::FileWriteFailed {
+            filename: param.file.clone(),
+            detail: e.to_string(),
+        })?;
+    let mut written = 0usize;
+    while written < strlen {
+        let end = (written + VALUE_DOWNLOAD_CHUNK - 1).min(strlen - 1) as isize;
+        let chunk: Vec<u8> = conn.getrange(&param.key, written as isize, end)?;
+        if chunk.is_empty() {
+            break; // 防御：值被并发删除/截短时提前结束
+        }
+        std::io::Write::write_all(&mut file, &chunk).map_err(|e| AppError::FileWriteFailed {
+            filename: param.file.clone(),
+            detail: e.to_string(),
+        })?;
+        written += chunk.len();
+    }
+    Ok(())
+}
+
 // ------------------------------ 仅本文件使用 ------------------------------
 
 /// fieldScan 单次 HSCAN/SSCAN/ZSCAN/LRANGE 的 COUNT，来自 settings.fieldScanCount

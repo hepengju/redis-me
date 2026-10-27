@@ -27,6 +27,7 @@ export const commands = {
 	nodeList: (id: string) => typedError<RedisNode[], string>(__TAURI_INVOKE("node_list", { id })),
 	scan: (id: string, param: ScanParam_Deserialize) => typedError<ScanResult_Serialize, string>(__TAURI_INVOKE("scan", { id, param })),
 	fieldScan: (id: string, param: FieldScanParam_Deserialize) => typedError<FieldScanResult_Serialize, string>(__TAURI_INVOKE("field_scan", { id, param })),
+	valueDownload: (id: string, param: RedisValueDownload_Deserialize) => typedError<null, string>(__TAURI_INVOKE("value_download", { id, param })),
 	ttl: (id: string, key: RedisKey_Deserialize, ttl: number) => typedError<null, string>(__TAURI_INVOKE("ttl", { id, key, ttl })),
 	set: (id: string, param: RedisSetParam_Deserialize) => typedError<null, string>(__TAURI_INVOKE("set", { id, param })),
 	del: (id: string, key: RedisKey_Deserialize) => typedError<null, string>(__TAURI_INVOKE("del", { id, key })),
@@ -856,6 +857,18 @@ export type RedisVSim_Serialize = {
 	/**  EF；None=不加 */
 	ef: number | null,
 	valFmt: BytesFormat | null,
+};
+
+export type RedisValueDownload = RedisValueDownload_Serialize | RedisValueDownload_Deserialize;
+
+export type RedisValueDownload_Deserialize = {
+	key: RedisKey_Deserialize,
+	file: string,
+};
+
+export type RedisValueDownload_Serialize = {
+	key: RedisKey_Serialize,
+	file: string,
 };
 
 export type RedisZsetRange = RedisZsetRange_Serialize | RedisZsetRange_Deserialize;

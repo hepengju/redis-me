@@ -29,6 +29,7 @@ pub trait MeClient: Send + Sync {
     // 扫描
     fn scan(&self, param: ScanParam) -> AnyResult<ScanResult>;
     fn field_scan(&self, param: FieldScanParam) -> AnyResult<FieldScanResult>;
+    fn value_download(&self, param: RedisValueDownload) -> AnyResult<()>;
 
     // 键
     fn ttl(&self, key: RedisKey, ttl: i64) -> AnyResult<()>;
