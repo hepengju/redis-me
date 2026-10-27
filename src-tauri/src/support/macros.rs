@@ -69,7 +69,8 @@ macro_rules! me_client_forwards {
         }
 
         fn value_download(&self, param: RedisValueDownload) -> AnyResult<()> {
-            $crate::client::ops::field_scan::value_download0(self.get_conn()?, param)
+            let app_handle = self.base().get_app_handle()?;
+            $crate::client::ops::field_scan::value_download0(self.get_conn()?, param, app_handle)
         }
 
         fn ttl(&self, key: RedisKey, ttl: i64) -> AnyResult<()> {

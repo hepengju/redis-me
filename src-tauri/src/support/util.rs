@@ -49,6 +49,7 @@ pub const EVENT_NOTIFY: &str = "notify";
 pub const EVENT_EXPORT: &str = "export";
 pub const EVENT_IMPORT: &str = "import";
 pub const EVENT_COMMAND_LOG: &str = "command-log";
+pub const EVENT_VALUE_DOWNLOAD: &str = "value-download";
 
 pub const ME_JSON_TYPE_NAME: &str = "json";
 pub const REDIS_JSON_TYPE_NAME: &str = "ReJSON-RL";

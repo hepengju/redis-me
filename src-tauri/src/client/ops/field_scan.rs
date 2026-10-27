@@ -8,6 +8,7 @@ use redis::streams::StreamRangeReply;
 use redis::vector_sets::{EmbeddingInput, VectorAddInput};
 use redis::{Cmd, Commands, FromRedisValue, IntegerReplyOrNoOp, Value, ValueType};
 use std::collections::HashSet;
+use tauri::{AppHandle, Emitter};
 
 /// 是否执行 HTTL/HEXPIRE：须同时满足服务端能力与调用方 opt（默认 false）
 pub fn resolve_include_field_ttl(opt: Option<bool>, httl_supported: bool) -> bool {
@@ -209,14 +210,15 @@ pub fn handle_other_value_type(
     }
 }
 
-/// GETRANGE 单块字节数。分块拉取写盘，峰值内存只占一块，不受值大小影响。
-const VALUE_DOWNLOAD_CHUNK: usize = 4 * 1024 * 1024;
+/// GETRANGE 单块字节数。分块拉取写盘，峰值内存只占一块；Redis 字符串上限 512MB，1MB 分片兼顾进度平滑与往返开销。
+const VALUE_DOWNLOAD_CHUNK: usize = 1024 * 1024;
 
 /// 下载 STRING 原始值：STRLEN + 分块 GETRANGE 直写本地文件，不经前端展示链路。
-/// 每块一次命令往返，单块远小于命令超时，GB 级也不会撞超时。
+/// 每写完一块 emit 一次百分比进度（前端监听 EVENT_VALUE_DOWNLOAD 显示）。
 pub fn value_download0(
     mut conn: MutexGuard<impl Commands>,
     param: RedisValueDownload,
+    app_handle: AppHandle,
 ) -> AnyResult<()> {
     let key_type: ValueType = conn.key_type(&param.key)?;
     if key_type != ValueType::String {
@@ -240,6 +242,8 @@ pub fn value_download0(
             detail: e.to_string(),
         })?;
         written += chunk.len();
+        let percent = ((written as f64 / strlen as f64) * 100.0).min(100.0) as u8;
+        let _ = app_handle.emit(EVENT_VALUE_DOWNLOAD, serde_json::json!({ "percent": percent }));
     }
     Ok(())
 }

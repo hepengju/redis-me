@@ -1,5 +1,6 @@
 <script setup lang="ts">
 // #region 导入
+import { listen } from '@tauri-apps/api/event'
 import { useIntervalFn, useNow } from '@vueuse/core'
 import {
   computed,
@@ -235,6 +236,7 @@ const VALUE_PREVIEW_BYTES = computed(
 const forceFullValue = ref(false) // 用户确认后 GET 全量
 const valueTruncatedDismissed = ref(false)
 const valueDownloading = ref(false) // 大值下载中，防重复点击
+const valueDownloadPercent = ref(0) // 下载进度百分比，后端每块 emit 更新
 const valueTruncated = computed(() => redisValue.value?.valueTruncated ?? false)
 const showValueTruncatedAlert = computed(
   () => stringType.value && valueTruncated.value && !valueTruncatedDismissed.value,
@@ -920,12 +922,18 @@ async function downloadValue() {
   const path = await pickSavePath(downloadFileName(share.redisKey.key), ['*'], 'All Files')
   if (!path) return
   valueDownloading.value = true
+  valueDownloadPercent.value = 0
+  // 只在本次下载期间监听进度，结束后立即卸载；事件名为后端 EVENT_VALUE_DOWNLOAD 的 "value-download"
+  const unlisten = await listen<{ percent: number }>('value-download', e => {
+    valueDownloadPercent.value = e.payload.percent
+  })
   try {
     await meCommands.valueDownload(share.conn.id, { key: share.redisKey, file: path })
     meOk(t('redisValue.valueTruncatedDownloadOk'))
   } catch {
     // 失败（类型不支持 / 写盘错误等）已由 meCommands 统一弹窗
   } finally {
+    unlisten()
     valueDownloading.value = false
   }
 }
@@ -2144,10 +2152,19 @@ onUnmounted(() => {
             }}
           </p>
           <div class="value-truncated-actions">
-            <el-button size="small" @click="dismissValueTruncated">
+            <el-button
+              size="small"
+              :disabled="loading || valueDownloading"
+              @click="dismissValueTruncated">
               {{ t('redisValue.valueTruncatedDismiss') }}
             </el-button>
-            <el-button size="small" type="warning" plain :disabled="loading" @click="loadFullValue">
+            <el-button
+              size="small"
+              type="warning"
+              plain
+              :loading="loading"
+              :disabled="valueDownloading"
+              @click="loadFullValue">
               {{ t('redisValue.valueTruncatedLoadAll') }}
             </el-button>
             <el-button
@@ -2158,6 +2175,9 @@ onUnmounted(() => {
               @click="downloadValue">
               {{ t('redisValue.valueTruncatedDownload') }}
             </el-button>
+            <span v-if="valueDownloading" class="value-download-progress"
+              >{{ valueDownloadPercent }}%</span
+            >
           </div>
         </el-alert>
         <!-- 部分加载提示：JSON 只含已加载字段，说明并提供加载入口（与大值截断提示同模式） -->
@@ -2933,6 +2953,13 @@ onUnmounted(() => {
       .value-truncated-actions {
         display: flex;
         gap: 8px;
+      }
+
+      .value-download-progress {
+        align-self: center;
+        font-size: 12px;
+        color: var(--el-text-color-secondary);
+        font-variant-numeric: tabular-nums;
       }
     }
 
