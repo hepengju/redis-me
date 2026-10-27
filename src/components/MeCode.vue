@@ -24,6 +24,7 @@ import {
   propertiesDarkSyntax,
   propertiesEagerParse,
   propertiesLang,
+  propertiesLightSyntax,
   shellLang,
   xmlLang,
   yamlLang,
@@ -206,7 +207,11 @@ const extensions = computed(() => {
   }
 
   if (effectiveMode.value === 'properties' || effectiveMode.value === 'conf') {
-    list.push(syntaxHighlighting(propertiesDarkSyntax), propertiesEagerParse)
+    list.push(
+      syntaxHighlighting(propertiesLightSyntax),
+      syntaxHighlighting(propertiesDarkSyntax),
+      propertiesEagerParse,
+    )
   }
   // markdown 标题去下划线（覆盖 default 的 underline，样式 scope 限定 markdown 语言）
   if (effectiveMode.value === 'markdown') list.push(syntaxHighlighting(markdownHeadingSyntax))

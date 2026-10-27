@@ -82,16 +82,32 @@ export const markdownLang = cmMarkdown()
 /**
  * properties / Redis INFO·CONFIG 等在深色下的高亮补丁：默认 key 为 #00f 不适配暗底。
  * themeType: dark 会禁用 fallback，须覆盖本模式用到的 token；key 与 Element Plus 主色一致。
+ * heading（INI `[section]`）用青绿 #4ec9b0 + 加粗，与亮色 propertiesLightSyntax 的 #0e7490 对称（顶掉 default 后本就无下划线）。
  */
 export const propertiesDarkSyntax = HighlightStyle.define(
   [
     { tag: tags.definition(tags.variableName), color: 'var(--el-color-primary)' },
-    { tag: tags.heading, color: '#c678dd' },
+    { tag: tags.heading, color: '#4ec9b0', fontWeight: 'bold' },
     { tag: tags.comment, color: '#75715e' },
     { tag: tags.quote, color: '#e6db74' },
     { tag: tags.string, color: '#e6db74' },
   ],
   { themeType: 'dark' },
+)
+
+/**
+ * properties / conf 亮色补丁：亮色下无专属高亮器时会落到 defaultHighlightStyle，
+ * 而 default 给 heading（INI 的 `[section]`）挂了 underline，编辑器里像链接。
+ * themeType: light 仅亮色生效（与 dark 版对称，各自顶掉对应主题的 fallback）；
+ * 复刻 default 对 key(#00f)/comment(#940) 的配色；heading 去下划线、加粗、用青绿 #0e7490（避开 key蓝/value黄/comment橙 撞色）。
+ */
+export const propertiesLightSyntax = HighlightStyle.define(
+  [
+    { tag: tags.definition(tags.variableName), color: '#00f' },
+    { tag: tags.comment, color: '#940' },
+    { tag: tags.heading, color: '#0e7490', textDecoration: 'none !important', fontWeight: 'bold' },
+  ],
+  { themeType: 'light' },
 )
 
 /**
