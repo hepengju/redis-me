@@ -82,6 +82,18 @@ function effHidden(addr: string): boolean {
   return override === undefined ? isSlaveAddr(addr) : override
 }
 
+// 网络图方向显隐（输入/输出各一个整体开关）；与节点显隐独立：节点 × 方向任一隐藏即折线隐藏
+const hiddenDirs = ref({ instantaneousInputKbps: false, instantaneousOutputKbps: false })
+type NetworkDir = keyof typeof hiddenDirs.value
+function dirHidden(field: keyof RedisChart): boolean {
+  return field === 'instantaneousInputKbps' || field === 'instantaneousOutputKbps'
+    ? hiddenDirs.value[field as NetworkDir]
+    : false
+}
+function effSeriesHidden(addr: string, field: keyof RedisChart): boolean {
+  return effHidden(addr) || dirHidden(field)
+}
+
 // 与 chartData 各块 key 一致
 type ChartBlockKey =
   | 'command'
@@ -274,7 +286,7 @@ function ensureSeries(
       pointBorderColor: c,
       data: Array.from({ length: Math.max(0, block.labels.length - 1) }, () => null),
       tension: 0.4,
-      hidden: effHidden(addr),
+      hidden: effSeriesHidden(addr, spec.field),
     }
     if (spec.dash) ds.borderDash = [6, 3]
     block.datasets.push(ds)
@@ -496,7 +508,6 @@ const fmtOpt = (v: number | null | undefined) => (v == null ? '-' : fmtCount(v))
 // 统一构建图表配置（标题走 i18n，随语言切换的 computed 自动更新）
 type BlockOpt = {
   scale?: object | null // Y 轴刻度覆写
-  hintKey?: string // 追加在标题后的线型说明（网络图）
   tooltipExtra?: object // 直接深合并进 tooltip（主从合并行 / 网络输入输出合并行）
 }
 function chartOptions(titleKey: string, opt: BlockOpt = {}): ChartOptions<'line'> {
@@ -505,12 +516,11 @@ function chartOptions(titleKey: string, opt: BlockOpt = {}): ChartOptions<'line'
     dark ? merge(cloneDeep(baseOptions), darkOptions) : merge(cloneDeep(baseOptions), lightOptions)
   ) as ChartOptions<'line'>
   if (opt.scale) merge(themed, opt.scale)
-  const titleText = opt.hintKey ? `${t(titleKey)} ${t(opt.hintKey)}` : t(titleKey)
   merge(themed, {
     plugins: {
       title: {
         display: true,
-        text: titleText,
+        text: t(titleKey),
         color: dark ? '#A3A6AD' : '#909399', // 用 Element Plus 次要（secondary）文字色
         font: { size: 13 },
         padding: { top: 0, bottom: 8 }, // top 取 0 让标题尽量上移（再负会顶出 canvas 上沿被裁）
@@ -598,19 +608,27 @@ const fmtOptVal = (v: number | null | undefined, fmt: (v: number) => string) =>
   v == null ? '-' : fmt(v)
 
 // 网络图 tooltip：同节点的输入/输出合并成一行，从节点再并入主节点行（丢弃输出项与配对从节点项）
+// 方向隐藏时对应列显示 '-'；输入全部隐藏时由输出项承载行，避免 tooltip 整空
 const networkTooltipExtra = {
-  filter: (item: TooltipItem<'line'>) =>
-    (item.dataset as Series)._field !== 'instantaneousOutputKbps' && !isPairedSlave(item),
+  filter: (item: TooltipItem<'line'>) => {
+    const all = item.chart.data.datasets as Series[]
+    const hasIn = all.some(ds => ds._field === 'instantaneousInputKbps' && !ds.hidden)
+    if ((item.dataset as Series)._field === 'instantaneousOutputKbps' && hasIn) return false
+    return !isPairedSlave(item)
+  },
   callbacks: {
     label: (item: TooltipItem<'line'>) => {
-      const inDs = item.dataset as Series
+      const rowDs = item.dataset as Series
       const i = item.dataIndex
       const all = item.chart.data.datasets as Series[]
+      const hasIn = all.some(ds => ds._field === 'instantaneousInputKbps' && !ds.hidden)
+      // 行承载字段：输入优先，输入全部隐藏时由输出承载
+      const anchorField: keyof RedisChart = hasIn
+        ? 'instantaneousInputKbps'
+        : 'instantaneousOutputKbps'
       // 本次悬停参与拼行的各节点（主 + 在图的从）的输入/输出格式化值，用于列宽对齐
       const addrs = all
-        .filter(
-          ds => ds._field === 'instantaneousInputKbps' && !ds.hidden && !isPairedSlaveAddr(ds, all),
-        )
+        .filter(ds => ds._field === anchorField && !ds.hidden && !isPairedSlaveAddr(ds, all))
         .flatMap(ds => [
           ds._addr,
           ...share.nodeList
@@ -618,21 +636,21 @@ const networkTooltipExtra = {
             .map(s => s.node),
         ])
       const valOf = (addr: string, field: keyof RedisChart) =>
-        fmtOpt(findSeries(all, addr, field)?.data[i])
+        dirHidden(field) ? '-' : fmtOpt(findSeries(all, addr, field)?.data[i])
       // ↓↑ 两列都要补齐：主从合并同行后，主的 ↑ 后面还跟着从节点，并非末列（行尾多余空格不可见，无影响）
       const wDown = Math.max(...addrs.map(a => valOf(a, 'instantaneousInputKbps').length), 1)
       const wUp = Math.max(...addrs.map(a => valOf(a, 'instantaneousOutputKbps').length), 1)
       const netPair = (addr: string) =>
         `↓ ${padEnd2(valOf(addr, 'instantaneousInputKbps'), wDown)}  ↑ ${padEnd2(valOf(addr, 'instantaneousOutputKbps'), wUp)}`
-      const name = nodeDisplayName(inDs._addr)
+      const name = nodeDisplayName(rowDs._addr)
       const parts: string[] = []
       if (name || !isPairedSlave(item)) {
-        parts.push(name ? `${name}: ${netPair(inDs._addr)}` : netPair(inDs._addr))
+        parts.push(name ? `${name}: ${netPair(rowDs._addr)}` : netPair(rowDs._addr))
       }
       for (const slave of share.nodeList) {
-        if (slave.slaveOfNode !== inDs._addr) continue
-        const sIn = findSeries(all, slave.node, 'instantaneousInputKbps')
-        if (!sIn || sIn.hidden) continue // 从节点不在图或被隐藏则不拼
+        if (slave.slaveOfNode !== rowDs._addr) continue
+        const sRow = findSeries(all, slave.node, anchorField)
+        if (!sRow || sRow.hidden) continue // 从节点承载折线不在图或被隐藏则不拼
         parts.push(`${slave.shortLabel}: ${netPair(slave.node)}`)
       }
       return parts.join('  ')
@@ -653,10 +671,7 @@ const memoryOptions = computed(() =>
   }),
 )
 const networkOptions = computed(() =>
-  chartOptions('redisChart.network', {
-    hintKey: 'redisChart.networkLineHint',
-    tooltipExtra: networkTooltipExtra,
-  }),
+  chartOptions('redisChart.network', { tooltipExtra: networkTooltipExtra }),
 )
 const keyTotalOptions = computed(() =>
   chartOptions('redisChart.keyTotal', { tooltipExtra: mergedTooltip('keyTotal', fmtCount) }),
@@ -699,6 +714,7 @@ let chartData = shallowRef(cloneDeep(initData.value))
 function resetData() {
   chartData.value = cloneDeep(initData.value)
   hiddenNodes.value = {}
+  hiddenDirs.value = { instantaneousInputKbps: false, instantaneousOutputKbps: false }
   getData()
 }
 
@@ -738,11 +754,11 @@ function nodeDetailText(isMasterNode: boolean): string {
 const masterDetail = computed(() => nodeDetailText(true))
 const slaveDetail = computed(() => nodeDetailText(false))
 
-// 把显隐状态（默认+覆盖）同步到各块折线的 hidden 并触发重绘
+// 把显隐状态（节点默认+覆盖 × 方向开关）同步到各块折线的 hidden 并触发重绘
 function applyHidden() {
   for (const key of BLOCK_KEYS) {
     for (const ds of chartData.value[key].datasets) {
-      ds.hidden = effHidden(ds._addr)
+      ds.hidden = effSeriesHidden(ds._addr, ds._field)
     }
   }
   chartData.value = cloneDeep(chartData.value)
@@ -758,6 +774,12 @@ function toggleNode(addr: string) {
 function toggleGroup(items: { addr: string }[]) {
   const anyVisible = items.some(i => !effHidden(i.addr))
   for (const i of items) hiddenNodes.value[i.addr] = anyVisible
+  applyHidden()
+}
+
+// 点击方向图例：切换网络图所有节点的输入/输出折线显隐
+function toggleDir(dir: NetworkDir) {
+  hiddenDirs.value[dir] = !hiddenDirs.value[dir]
   applyHidden()
 }
 
@@ -903,8 +925,23 @@ watch(
         <div class="chart">
           <Line ref="memory" :data="chartData.memory" :options="memoryOptions" />
         </div>
-        <div class="chart">
+        <!-- 网络图：方向图例叠加在标题行右侧（canvas 标题不响应点击，用 HTML chip），点击切所有节点 in/out 显隐 -->
+        <div class="chart chart-network">
           <Line ref="network" :data="chartData.network" :options="networkOptions" />
+          <div class="dir-legend">
+            <span
+              class="dir-legend-item"
+              :class="{ 'is-hidden': hiddenDirs.instantaneousInputKbps }"
+              @click="toggleDir('instantaneousInputKbps')">
+              <i class="dir-swatch"></i>{{ t('redisChart.networkIn') }}
+            </span>
+            <span
+              class="dir-legend-item"
+              :class="{ 'is-hidden': hiddenDirs.instantaneousOutputKbps }"
+              @click="toggleDir('instantaneousOutputKbps')">
+              <i class="dir-swatch dashed"></i>{{ t('redisChart.networkOut') }}
+            </span>
+          </div>
         </div>
 
         <template v-if="showMoreChart">
@@ -1068,6 +1105,54 @@ watch(
     .chart {
       height: min(28vh, 33%);
       padding: 10px;
+    }
+
+    .chart-network {
+      position: relative;
+
+      .dir-legend {
+        position: absolute;
+        top: 12px;
+        right: 16px;
+        display: flex;
+        gap: 6px;
+        font-size: 12px;
+        color: var(--el-text-color-secondary);
+      }
+
+      .dir-legend-item {
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        cursor: pointer;
+        user-select: none;
+        padding: 4px 6px;
+        margin: -4px -6px; // 扩大点击热区而不影响排布
+        border-radius: 4px;
+        transition:
+          opacity 0.15s,
+          background-color 0.15s;
+
+        &:hover {
+          background-color: var(--el-fill-color-light);
+        }
+
+        &.is-hidden {
+          opacity: 0.4;
+          text-decoration: line-through;
+        }
+      }
+
+      // 线型样本：实线=流入、虚线=流出，与折线 borderDash 一致
+      .dir-swatch {
+        display: inline-block;
+        width: 14px;
+        border-top: 2px solid currentColor;
+
+        &.dashed {
+          border-top-style: dashed;
+        }
+      }
     }
   }
 
