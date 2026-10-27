@@ -419,6 +419,9 @@ export function meFormatDisplayValue(raw: string, pretty: boolean): string {
   const trimmed = raw.trim()
   if (trimmed.startsWith('{') || trimmed.startsWith('[')) {
     try {
+      // jsonc format 是容错格式化器，对 `[server]` 这类「以 [ 开头的非 JSON」（ini/日志等）
+      // 不报错反而会插换行破坏内容，保存时会固化损坏。先 JSON5.parse 验证确为合法 JSON 再美化。
+      JSON5.parse(trimmed)
       return meJsonFormat(raw)
     } catch {
       return raw
