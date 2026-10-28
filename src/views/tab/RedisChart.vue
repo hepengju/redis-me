@@ -595,7 +595,7 @@ function mergedTooltip(field: keyof RedisChart, fmt: (v: number) => string): obj
         }
         for (const slave of share.nodeList) {
           if (slave.slaveOfNode !== ds._addr) continue
-          const sDs = findSeries(item.chart.data.datasets, slave.node, field)
+          const sDs = findSeries(item.chart.data.datasets as Series[], slave.node, field)
           if (!sDs || sDs.hidden) continue // 从节点折线不在图或被隐藏则不拼
           parts.push(`${slave.shortLabel}: ${fmtOptVal(sDs.data[i], fmt)}`)
         }
