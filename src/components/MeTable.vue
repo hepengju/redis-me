@@ -1,6 +1,7 @@
 <script setup lang="ts">
 // 说明: 虚拟滚动表（el-table-v2）：连续滚动、无分页，千行级以上的大数据表（内存分析、命令日志等）不卡顿。
 // 列描述 columns 为单一来源：同时驱动渲染、排序、导出矩阵与具名插槽（cell-${key} / header-${key}）。
+// showOverflowTooltip 开时单元格/气泡用全文；关时默认插槽进 DOM 才截断（避免悬停看到截断「假缺失」）。
 // 排序与 el-table 的 default-sort、列 sortable / sort-method / sort-by 一致；
 // sortable="custom" 时不改行顺序，由父组件在 sort-change 中自行更新 :data。
 // 未显式指定 sortable 的数据列（有 prop/formatter、非勾选/序号列）默认可排序，免去逐列手写。
@@ -36,6 +37,7 @@ import {
   exportMatrixFromColumns,
   isExportableColumn,
   toCellText,
+  truncateCellDisplay,
 } from './me-table-column'
 
 defineOptions({ inheritAttrs: false })
@@ -62,8 +64,13 @@ const props = withDefaults(
     keyword?: string
     /** 行谓词：如「全部/差异」「分类下拉」等业务预筛；在关键词/列头筛选前先过一遍，页面据此把全量 data 交给 MeTable 而不必自行 reduce */
     filter?: (row: unknown, index: number) => boolean
+    /**
+     * 溢出悬停提示（对齐 el-table show-overflow-tooltip）。默认开；
+     * 值区字段表关：大值靠双击/点行进 FieldSet 看，避免 MB 级气泡。
+     */
+    showOverflowTooltip?: boolean
   }>(),
-  { data: () => [], exportName: 'table', keyword: '' },
+  { data: () => [], exportName: 'table', keyword: '', showOverflowTooltip: true },
 )
 
 const attrs = useAttrs()
@@ -370,7 +377,7 @@ function isPlainSlotColumn(key: unknown): boolean {
   return !!col && !isExportableColumn(col)
 }
 
-// 单元格文本统一取法：formatter 优先，否则按 prop 取值（复用已取好的 cellData）
+// 单元格文本统一取法：formatter 优先，否则按 prop 取值（复用已取好的 cellData）；导出与关键词过滤走全文
 function cellText(
   col: MeColumn | undefined,
   row: unknown,
@@ -387,6 +394,17 @@ function cellText(
         ? (row as Record<string, unknown>)?.[col.prop]
         : ''
   return toCellText(value)
+}
+
+// 仅 showOverflowTooltip=false 时截断进 DOM（无悬停全文可看，大值靠详情）；开 tooltip 时保持全文，避免气泡/单元格被截成「假缺失」
+function displayCellText(
+  col: MeColumn | undefined,
+  row: unknown,
+  index: number,
+  cellData?: unknown,
+): string {
+  const full = cellText(col, row, index, cellData)
+  return props.showOverflowTooltip ? full : truncateCellDisplay(full)
 }
 
 // 溢出提示：全列统一，与 el-table show-overflow-tooltip 一致，mouseenter 时检测截断才显示；
@@ -534,8 +552,9 @@ defineExpose({
                   :index="rowIndex"
                   :value="cellData" />
               </div>
+              <!-- 开 tooltip：全文进 DOM/气泡（CSS 省略号只藏视觉）；关时默认插槽才截断，自定义插槽自行 truncateCellDisplay -->
               <el-tooltip
-                v-else
+                v-else-if="showOverflowTooltip"
                 :content="cellText(meColumnOf(column.key), rowData, rowIndex, cellData)"
                 placement="top"
                 :persistent="false"
@@ -551,6 +570,15 @@ defineExpose({
                   </slot>
                 </div>
               </el-tooltip>
+              <div v-else class="me-cell-ellipsis">
+                <slot
+                  :name="`cell-${String(column.key)}`"
+                  :row="rowData"
+                  :index="rowIndex"
+                  :value="cellData">
+                  {{ displayCellText(meColumnOf(column.key), rowData, rowIndex, cellData) }}
+                </slot>
+              </div>
             </template>
             <template #header-cell="{ column }">
               <el-checkbox

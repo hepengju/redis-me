@@ -15,7 +15,7 @@ import {
 } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import type { MeColumn } from '@/components/me-table-column'
+import { type MeColumn, truncateCellDisplay } from '@/components/me-table-column'
 import MeSelectUpDownIcon from '@/components/MeSelectUpDownIcon.vue'
 import { shareProvideKey, connUiProvideKey } from '@/types/me-interface'
 import type {
@@ -2442,11 +2442,13 @@ onUnmounted(() => {
           </div>
           <div class="table-view">
             <!-- 类型或键变化时重建：滚动位置与排序回到初始 -->
+            <!-- 溢出 tooltip 关闭：大值靠点行/双击进 FieldSet→me-code 查看（迁 MeTable 前即如此） -->
             <me-table
               :key="`${redisValue?.type ?? ''}\0${share.redisKey?.key ?? ''}`"
               :data="tableDisplayList"
               :columns="valueColumns"
               :default-sort="tableDefaultSort"
+              :show-overflow-tooltip="false"
               export-name="value"
               :total-text="fieldFooterTotalText"
               :row-class="rowClassName"
@@ -2492,7 +2494,7 @@ onUnmounted(() => {
                 </div>
               </template>
 
-              <!-- Hash 键 / TimeSeries 时间戳（附带可读时间） -->
+              <!-- Hash 键 / TimeSeries 时间戳（附带可读时间）；Hash 键可能很大，进 DOM 须截断 -->
               <template #cell-key="{ row }">
                 <div v-if="timeseriesType" class="me-flex" style="width: 100%">
                   <span>{{ row.key }}</span>
@@ -2502,7 +2504,7 @@ onUnmounted(() => {
                     {{ tsTimestampToDate(String(row.key ?? '')) }}
                   </span>
                 </div>
-                <template v-else>{{ formatTableCell(row.key) }}</template>
+                <template v-else>{{ truncateCellDisplay(formatTableCell(row.key)) }}</template>
               </template>
 
               <!-- TTL：悬浮展开绝对时间 -->

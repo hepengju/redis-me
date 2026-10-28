@@ -55,6 +55,18 @@ export function toCellText(value: unknown): string {
   return typeof value === 'object' ? JSON.stringify(value) : ''
 }
 
+/**
+ * 关溢出 tooltip 时进 DOM 的展示上限（字符）。超出只截前缀 + …，避免 MB 级全文进文本节点。
+ * 开 tooltip 时不要截：悬停应能看到完整溢出内容。导出矩阵始终走 formatter/prop 全文。
+ */
+export const CELL_DISPLAY_MAX_CHARS = 1024
+
+/** 仅配合 showOverflowTooltip=false；自定义 #cell-* 插槽在关 tooltip 时若自行拼长文本也应走此函数 */
+export function truncateCellDisplay(text: string, max = CELL_DISPLAY_MAX_CHARS): string {
+  if (text.length <= max) return text
+  return `${text.slice(0, max)}…`
+}
+
 /** 能算出导出文本的列：跳过勾选列与无取值源的纯插槽列（如操作列） */
 export function isExportableColumn(col: MeColumn): boolean {
   return !col.selection && (col.index || !!col.formatter || !!col.prop)
