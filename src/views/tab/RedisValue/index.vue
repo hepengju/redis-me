@@ -680,15 +680,40 @@ const dataList = computed(() => {
   return data
 })
 
+/**
+ * 字段表 wire→展示文本：随 dataList / 编码（及 formatTableCell 同源依赖）整表解一次，
+ * 渲染 / 过滤 / 排序只查表，避免每格反复解码 MB 级值。Stream 的 value 是对象，不进此缓存。
+ */
+const fieldWireDisplayText = computed(() => {
+  const map = new Map<string, string>()
+  const put = (raw: unknown) => {
+    if (raw == null || raw === '') return
+    const wire = String(raw)
+    if (map.has(wire)) return
+    map.set(wire, formatTableCell(wire))
+  }
+  for (const row of dataList.value) {
+    put(row.key)
+    if (typeof row.value === 'string') put(row.value)
+  }
+  return map
+})
+
+function wireDisplay(raw: unknown): string {
+  const wire = String(raw ?? '')
+  if (!wire) return ''
+  return fieldWireDisplayText.value.get(wire) ?? formatTableCell(wire)
+}
+
 // List/Stream：关键词本地包含过滤（TimeSeries 无本地过滤框，靠时间/数值区间）
 const filterDataList = computed(() => {
   const key = fieldKeyword.value.toLowerCase()
   return dataList.value.filter(row => {
     if (!key) return true
     if (timeseriesType.value) return true
-    if ((formatTableCell(row.key).toLowerCase() ?? '').indexOf(key) > -1) return true
+    if ((wireDisplay(row.key).toLowerCase() ?? '').indexOf(key) > -1) return true
     if ((row.id?.toLowerCase() ?? '').indexOf(key) > -1) return true
-    const cell = streamType.value ? JSON.stringify(row.value) : formatTableCell(row.value)
+    const cell = streamType.value ? JSON.stringify(row.value) : wireDisplay(row.value)
     if (cell.toLowerCase().indexOf(key) > -1) return true
     if ((row.score?.toString() ?? '').indexOf(key) > -1) return true
     if (String(row.index ?? '').indexOf(key) > -1) return true
@@ -707,15 +732,15 @@ const filterFieldList = computed(() => {
   // Vector Set：按元素名（row.value）本地过滤（向量浮点无检索意义；相似度走 VSIM）
   if (vectorsetType.value) {
     return dataList.value.filter(
-      row => row.value != null && row.value !== '' && matchFn(formatTableCell(row.value)),
+      row => row.value != null && row.value !== '' && matchFn(wireDisplay(row.value)),
     )
   }
   return dataList.value.filter(row => {
     if (row.key != null && row.key !== '') {
-      if (matchFn(formatTableCell(row.key))) return true
+      if (matchFn(wireDisplay(row.key))) return true
     }
     if (row.value != null && row.value !== '') {
-      if (matchFn(formatTableCell(row.value))) return true
+      if (matchFn(wireDisplay(row.value))) return true
     }
     if (row.score != null && matchFn(String(row.score))) {
       return true
@@ -1276,7 +1301,7 @@ function fieldRowDisplayValue(row: ValueTableRow): string {
   if (streamType.value) return JSON.stringify(row.value)
   // TimeSeries value 为数值明文，不做 base64 wire 解码
   if (timeseriesType.value) return String(row.value ?? '')
-  return formatTableCell(row.value)
+  return wireDisplay(row.value)
 }
 function compareFieldRowValue(a: ValueTableRow, b: ValueTableRow): number {
   return fieldRowDisplayValue(a).localeCompare(fieldRowDisplayValue(b), undefined, {
@@ -1312,7 +1337,7 @@ const valueColumns = computed<MeColumn<ValueTableRow>[]>(() => {
       ...(timeseriesType.value ? { width: 350 } : { minWidth: 180 }),
       formatter: row => {
         const key = row.key
-        if (!timeseriesType.value) return formatTableCell(key)
+        if (!timeseriesType.value) return wireDisplay(key)
         const ts = String(key ?? '')
         const date = tsTimestampToDate(ts)
         return date ? `${ts} ${date}` : ts
@@ -1547,7 +1572,7 @@ function onFieldRowMoreCommand(command: string, row: ValueTableRow) {
   } else if (command === 'refreshRow') {
     void refreshFieldRow(row)
   } else if (command === 'copyKey') {
-    meCopy(timeseriesType.value ? String(row.key ?? '') : formatTableCell(row.key ?? ''))
+    meCopy(timeseriesType.value ? String(row.key ?? '') : wireDisplay(row.key ?? ''))
   } else if (command === 'copyValue') {
     meCopy(fieldRowDisplayValue(row))
   } else if (command === 'copyAttrs') {
@@ -2504,7 +2529,7 @@ onUnmounted(() => {
                     {{ tsTimestampToDate(String(row.key ?? '')) }}
                   </span>
                 </div>
-                <template v-else>{{ truncateCellDisplay(formatTableCell(row.key)) }}</template>
+                <template v-else>{{ truncateCellDisplay(wireDisplay(row.key)) }}</template>
               </template>
 
               <!-- TTL：悬浮展开绝对时间 -->
