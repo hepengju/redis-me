@@ -5,6 +5,7 @@ import type { FailedFunc, Message, SuccessFunc } from 'vue-web-terminal'
 
 import { handleInputTipsSearch } from '@/plugins/ternimal'
 import type { MeXtermCommandItem } from '@/types/me-interface'
+import { matchAppFullscreenHotkey } from '@/utils/shortcut'
 import { isDark } from '@/utils/util'
 // #endregion
 
@@ -84,7 +85,8 @@ function onKeydown(e: KeyboardEvent): void {
 
   const key = e.key.toUpperCase()
 
-  if (e.key === 'F11') {
+  if (matchAppFullscreenHotkey(e)) {
+    e.preventDefault()
     term.fullscreen()
     return
   }

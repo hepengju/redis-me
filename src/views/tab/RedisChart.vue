@@ -33,6 +33,7 @@ import { useI18n } from 'vue-i18n'
 
 import { shareProvideKey } from '@/types/me-interface'
 import type { RedisChart } from '@/types/tauri-specta'
+import { matchAppFullscreenHotkey } from '@/utils/shortcut'
 import {
   CHART_COLORS,
   isDark,
@@ -191,7 +192,9 @@ async function toggleChartsFullscreen() {
 }
 
 function onChartsFullscreenKey(e: KeyboardEvent) {
-  if (e.key !== 'F11') return
+  // 图表页离开后组件仍挂着，只在当前页响应，避免抢走编辑器 / 终端的全屏键
+  if (share.tabName !== 'chart') return
+  if (!matchAppFullscreenHotkey(e)) return
   e.preventDefault()
   void toggleChartsFullscreen()
 }

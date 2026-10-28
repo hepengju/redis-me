@@ -10,6 +10,7 @@ import {
   isOptionalShortcutKey,
   matchAppFullscreenHotkey,
   matchConnShortcutAction,
+  shortcutItemKeys,
   shortcutKbdClass,
 } from '@/utils/shortcut'
 
@@ -118,9 +119,15 @@ describe('shortcut display', () => {
       ['shortcuts', 'mod+[shift]+?'],
     ])
     const value = getValueShortcuts(t)
+    expect(shortcutItemKeys(value[0], false).join('+')).toBe('F11')
+    expect(shortcutItemKeys(value[0], true).join('+')).toBe('mod+shift+F')
     expect(value.find(item => item.keys.includes('='))?.gapBefore).toBe(true)
     expect(value.find(item => item.keys.includes('F'))?.gapBefore).toBe(true)
     const terminal = getTerminalShortcuts(t)
+    expect(shortcutItemKeys(terminal[0], false).join('+')).toBe('F11')
+    expect(shortcutItemKeys(terminal[0], true).join('+')).toBe('mod+shift+F')
+    const appFullscreen = getConnGlobalShortcuts(t).find(item => item.id === 'fullscreen')
+    expect(shortcutItemKeys(appFullscreen!, true).join('+')).toBe('mod+shift+F')
     expect(terminal.find(item => item.keys.includes('L'))?.gapBefore).toBe(true)
     expect(terminal.find(item => item.keys.includes('clear'))?.gapBefore).toBe(true)
   })
@@ -181,11 +188,16 @@ describe('fullscreen hotkey', () => {
     fullscreenNode = null
   })
 
-  it('只认单独的 F11', () => {
+  it('F11，以及 macOS 的 ⌘⇧F', () => {
     expect(matchAppFullscreenHotkey(key({ key: 'F11' }))).toBe(true)
     expect(matchAppFullscreenHotkey(key({ key: 'F11', ctrl: true }))).toBe(false)
     expect(matchAppFullscreenHotkey(key({ key: 'F11', shift: true }))).toBe(false)
     expect(matchAppFullscreenHotkey(key({ key: 'f11' }))).toBe(false)
+    const macChord = { key: 'f', code: 'KeyF', meta: true, shift: true }
+    expect(matchAppFullscreenHotkey(key(macChord), true)).toBe(true)
+    expect(matchAppFullscreenHotkey(key(macChord), false)).toBe(false)
+    expect(matchAppFullscreenHotkey(key({ ...macChord, ctrl: true }), true)).toBe(false)
+    expect(matchAppFullscreenHotkey(key({ key: 'f', code: 'KeyF', meta: true }), true)).toBe(false)
   })
 
   it('焦点拦截：编辑器、终端、图表页、已经全屏的编辑区', () => {

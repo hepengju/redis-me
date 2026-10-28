@@ -36,7 +36,8 @@ import { isZh, meCopy } from '@/utils/util'
 // #endregion
 
 // #region 核心状态
-// 在编辑器聚焦时 F11：对 `.cm-editor` 调用 Fullscreen API（再按 F11 或 Esc 退出）
+// 编辑器聚焦时全屏 `.cm-editor`（再按同一快捷键或 Esc 退出）
+// macOS 的 F11 被系统「显示桌面」占用，另认 ⌘⇧F；F11 仍保留
 function toggleCmEditorFullscreen(el: HTMLElement) {
   const doc = el.ownerDocument
   if (doc.fullscreenElement === el) {
@@ -68,6 +69,14 @@ const meCodePrecKeymap = Prec.highest(
   keymap.of([
     {
       key: 'F11',
+      run: view => {
+        toggleCmEditorFullscreen(view.dom)
+        return true
+      },
+    },
+    {
+      // 仅 macOS。`mac` 会盖掉同条里的 key，所以不跟 F11 写在一起
+      mac: 'Mod-Shift-f',
       run: view => {
         toggleCmEditorFullscreen(view.dom)
         return true

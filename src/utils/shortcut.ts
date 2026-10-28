@@ -13,6 +13,8 @@ export interface ShortcutItem {
   id?: string
   label: string
   keys: ShortcutKey[]
+  /** macOS 上改展示这组。全屏的 F11 被系统占用时改为 ⌘⇧F */
+  macKeys?: ShortcutKey[]
   /** 与上一项之间加大间距，用于分组 */
   gapBefore?: boolean
 }
@@ -31,6 +33,11 @@ export function displayShortcutKey(key: ShortcutKey, isMacOS: boolean): string {
   if (key === '?') return '?'
   if (key.length === 1 && /[a-zA-Z]/.test(key)) return key.toUpperCase()
   return key
+}
+
+/** 快捷键列表在 macOS 上优先展示 macKeys */
+export function shortcutItemKeys(item: ShortcutItem, isMacOS: boolean): ShortcutKey[] {
+  return isMacOS && item.macKeys?.length ? item.macKeys : item.keys
 }
 
 /** kbd 样式类名；MeShortcut 渲染按键时调用 */
@@ -81,12 +88,24 @@ export function matchConnShortcutAction(e: KeyboardEvent): ConnShortcutAction | 
   return null
 }
 
-/** F11 全屏应用；AppMain 全局 keydown 匹配 */
-export function matchAppFullscreenHotkey(e: KeyboardEvent): boolean {
-  return e.key === 'F11' && !e.ctrlKey && !e.metaKey && !e.altKey && !e.shiftKey
+/** macOS「显示桌面」占用 F11，全屏另认 ⌘⇧F。不用 ⌃⌘F，那是系统菜单的整窗全屏 */
+const MAC_FULLSCREEN_KEYS: ShortcutKey[] = ['mod', 'shift', 'F']
+
+function isMacOsPlatform(): boolean {
+  if (typeof navigator === 'undefined') return false
+  const platform = navigator.platform || ''
+  if (/^Mac/i.test(platform)) return true
+  return /Mac OS X|Macintosh/i.test(navigator.userAgent || '')
 }
 
-/** Editor / Terminal / Chart 自行处理 F11 时不触发窗口全屏 */
+/** F11 全屏；macOS 另认 ⌘⇧F。应用窗口、编辑器、终端、图表共用 */
+export function matchAppFullscreenHotkey(e: KeyboardEvent, isMac = isMacOsPlatform()): boolean {
+  if (e.key === 'F11' && !e.ctrlKey && !e.metaKey && !e.altKey && !e.shiftKey) return true
+  if (!isMac || !e.metaKey || !e.shiftKey || e.ctrlKey || e.altKey) return false
+  return e.code === 'KeyF' || e.key === 'f' || e.key === 'F'
+}
+
+/** 编辑器 / 终端 / 图表页自行处理全屏键时不触发窗口全屏 */
 export function isAppFullscreenHotkeyBlocked(
   e: KeyboardEvent,
   ctx?: { tabName?: string },
@@ -110,7 +129,12 @@ export function isAppFullscreenHotkeyBlocked(
 /** 连接页/设置页全局快捷键列表；ConnEmpty、Setting → MeShortcut */
 export function getConnGlobalShortcuts(t: ComposerTranslation): ShortcutItem[] {
   return [
-    { id: 'fullscreen', label: t('setting.appFullscreen'), keys: ['F11'] },
+    {
+      id: 'fullscreen',
+      label: t('setting.appFullscreen'),
+      keys: ['F11'],
+      macKeys: MAC_FULLSCREEN_KEYS,
+    },
     { id: 'add', label: t('conn.add'), keys: ['mod', 'shift', 'N'] },
     { id: 'import', label: t('conn.import'), keys: ['mod', 'shift', 'O'] },
     { id: 'newWindow', label: t('conn.emptyNewWindow'), keys: ['mod', 'shift', 'W'] },
@@ -122,7 +146,7 @@ export function getConnGlobalShortcuts(t: ComposerTranslation): ShortcutItem[] {
 /** 键值页编辑器快捷键列表；RedisValue 快捷键弹窗 → MeShortcut */
 export function getValueShortcuts(t: ComposerTranslation): ShortcutItem[] {
   return [
-    { label: t('redisValue.keyShort.fullscreen'), keys: ['F11'] },
+    { label: t('redisValue.keyShort.fullscreen'), keys: ['F11'], macKeys: MAC_FULLSCREEN_KEYS },
     { label: t('redisValue.keyShort.toggleWrap'), keys: ['mod', 'B'] },
     { label: t('redisValue.keyShort.toggleLineNumbers'), keys: ['mod', 'N'] },
     { label: t('redisValue.keyShort.fontIncrease'), keys: ['mod', '='], gapBefore: true },
@@ -138,7 +162,7 @@ export function getValueShortcuts(t: ComposerTranslation): ShortcutItem[] {
 /** 终端页快捷键列表；RedisTerminal 快捷键弹窗 → MeShortcut */
 export function getTerminalShortcuts(t: ComposerTranslation): ShortcutItem[] {
   return [
-    { label: t('redisTerminal.keyShort.fullscreen'), keys: ['F11'] },
+    { label: t('redisTerminal.keyShort.fullscreen'), keys: ['F11'], macKeys: MAC_FULLSCREEN_KEYS },
     { label: t('redisTerminal.keyShort.execute'), keys: ['Enter'] },
     { label: t('redisTerminal.keyShort.complete'), keys: ['Tab'] },
     { label: t('redisTerminal.keyShort.history'), keys: ['↑', '↓'] },
