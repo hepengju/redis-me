@@ -684,7 +684,7 @@ function onOverviewRowClick(row: OverviewRow) {
                 <me-icon
                   class="icon-btn info-footer-icon"
                   icon="el-icon-data-line"
-                  :name="t('tab.chart')"
+                  :name="t('tabMain.chart')"
                   hint
                   placement="top"
                   @click="openTab('chart')" />
