@@ -234,6 +234,7 @@ const VALUE_PREVIEW_BYTES = computed(
   () => (window.meTauri.settings.valuePreviewBytes as number) ?? defaultSettings.valuePreviewBytes,
 )
 const forceFullValue = ref(false) // 用户确认后 GET 全量
+const fullValueLoading = ref(false) // 「仍要加载全部」专用，与换键 loading 分离
 const valueTruncatedDismissed = ref(false)
 const valueDownloading = ref(false) // 大值下载中，防重复点击
 const valueDownloadPercent = ref(0) // 下载进度百分比，后端每块 emit 更新
@@ -930,9 +931,14 @@ function prepareManualKeyRefresh() {
   valueTruncatedDismissed.value = false // 手动刷新重新展示大值提示
 }
 async function loadFullValue() {
-  if (loading.value) return
+  if (loading.value || fullValueLoading.value) return
   forceFullValue.value = true
-  await refreshKey(false)
+  fullValueLoading.value = true
+  try {
+    await refreshKey(false)
+  } finally {
+    fullValueLoading.value = false
+  }
 }
 
 /** 默认文件名取键名最后一段 + .txt，过滤各系统非法字符 */
@@ -1131,6 +1137,9 @@ async function refreshKey(
   restart: boolean = false,
 ) {
   if (!share.conn || !share.redisKey) return
+
+  // 换键：立刻停掉「仍要加载全部」转圈（提示条不收起，等新结果自然替换）
+  if (reset) fullValueLoading.value = false
 
   if (loading.value) {
     if (!restart) return
@@ -2187,7 +2196,7 @@ onUnmounted(() => {
               size="small"
               type="warning"
               plain
-              :loading="loading"
+              :loading="fullValueLoading"
               :disabled="valueDownloading"
               @click="loadFullValue">
               {{ t('redisValue.valueTruncatedLoadAll') }}
