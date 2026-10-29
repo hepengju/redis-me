@@ -169,7 +169,7 @@ svg {
 }
 
 .icon-btn:hover {
-  color: var(--el-color-warning);
+  color: var(--el-color-primary);
 }
 
 /* 弹框底部：左侧集群/范围提示，右侧按钮（无提示时按钮仍靠 margin-left:auto 右对齐） */

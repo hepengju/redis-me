@@ -89,7 +89,7 @@ function handleCommand(cmd: string): void {
 <template>
   <el-dropdown @command="handleCommand" trigger="hover" :placement :style="{ marginLeft }">
     <el-link v-if="label" type="primary" :underline="false">{{ label }}</el-link>
-    <me-icon v-else icon="me-icon-link" style="font-size: 14px; color: var(--el-color-success)" />
+    <me-icon v-else class="icon-btn" icon="me-icon-link" style="font-size: 14px" />
     <template #dropdown>
       <el-dropdown-menu>
         <el-dropdown-item command="redis">

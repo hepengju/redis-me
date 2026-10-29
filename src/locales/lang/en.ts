@@ -832,6 +832,12 @@ export default {
     runConfig: 'Run Config',
     cacheRatio: 'Cache Hit Ratio',
     clusterTopology: 'Cluster Topology',
+    nodeOverview: 'Node Overview',
+    node: 'Node',
+    networkUp: '↑ kb/s',
+    networkDown: '↓ kb/s',
+    summaryMasterKeys: 'Master keys',
+    summaryClients: 'Clients',
   },
 
   redisMemory: {

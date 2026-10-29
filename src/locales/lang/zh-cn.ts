@@ -816,6 +816,12 @@ export default {
     runConfig: '运行配置',
     cacheRatio: '缓存命中率',
     clusterTopology: '集群拓扑',
+    nodeOverview: '节点概览',
+    node: '节点',
+    networkUp: '↑ kb/s',
+    networkDown: '↓ kb/s',
+    summaryMasterKeys: '主节点键合计',
+    summaryClients: '连接',
   },
 
   redisMemory: {

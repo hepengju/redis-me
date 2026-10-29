@@ -10,7 +10,7 @@
 // 列描述 searchable + 顶层 keyword prop 声明关键词搜索：MeTable 在排序前列筛选前按展示文本（含 formatter）包含匹配，页面直接传全量 data 即可。
 // 顶层 filter prop 传入行谓词：承接「全部/差异」「分类下拉」等对同一批行的业务预筛；配合 data 传全量，总数默认取 data.length，页面无需再传 total。
 // 表头点击三态循环 asc → desc → 无（对齐 el-table）；v2 原生仅 asc↔desc，取消态由本组件拦下。
-// 表内 footer 固定行：总数 + #footer 插槽（调用方主动作，右侧紧邻导出）+「…」导出菜单贴右（RAW 项直接序列化数据永远可用，其余格式由列描述计算矩阵、不渲染 DOM）。
+// 表内 footer 固定行：总数 + 可选 #footer-center（居中摘要）+ #footer 插槽（调用方主动作，右侧紧邻导出）+「…」导出菜单贴右。
 import type { TableV2Instance } from 'element-plus'
 import { orderBy } from 'element-plus/es/components/table/src/util.mjs'
 import type { StyleValue } from 'vue'
@@ -596,8 +596,15 @@ defineExpose({
               <el-empty :description="emptyText" />
             </template>
             <template #footer>
-              <div v-if="sortedData.length" class="me-table-footer">
+              <div
+                v-if="sortedData.length"
+                class="me-table-footer"
+                :class="{ 'has-center': !!$slots['footer-center'] }">
                 <span class="me-table-total">{{ footerTotalText }}</span>
+                <!-- 居中摘要：有内容时总数与右侧操作不再抢中间空位 -->
+                <div v-if="$slots['footer-center']" class="me-table-footer-center">
+                  <slot name="footer-center" />
+                </div>
                 <div class="me-table-footer-right">
                   <!-- 主动作区：调用方经 #footer 插槽注入（如键值页「加载更多 / 加载全部」），右侧紧邻导出菜单 -->
                   <div class="me-table-footer-actions">
@@ -661,6 +668,23 @@ defineExpose({
     .me-table-total {
       flex: 1;
       min-width: 0;
+    }
+
+    // 有居中摘要时，总数和右区按内容收缩，中间槽占满剩余宽度并居中省略
+    &.has-center {
+      .me-table-total,
+      .me-table-footer-right {
+        flex: 0 0 auto;
+      }
+    }
+
+    .me-table-footer-center {
+      flex: 1;
+      min-width: 0;
+      text-align: center;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
     }
 
     // 主动作区：与右区导出菜单统一 20px 节奏；字号继承表格（14px）不另设
