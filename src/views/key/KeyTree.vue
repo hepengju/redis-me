@@ -681,8 +681,14 @@ function folderIconName(node: TreeNode): string {
           <el-dropdown-item command="copyKey">
             <me-icon icon="el-icon-document-copy" :name="t('keyTree.copyKey')" />
           </el-dropdown-item>
-          <el-dropdown-item v-if="canEdit && !showCheckbox && !favoriteMode" command="deleteKey">
-            <me-icon icon="el-icon-delete" :name="t('keyTree.deleteKey')" />
+          <el-dropdown-item command="copyAsCommand">
+            <me-icon icon="me-icon-copy-command" :name="t('redisValue.copyAsCommand')" />
+          </el-dropdown-item>
+          <el-dropdown-item v-if="canEdit" command="renameKey">
+            <me-icon icon="el-icon-edit" :name="t('redisValue.renameKey')" />
+          </el-dropdown-item>
+          <el-dropdown-item v-if="canEdit" command="duplicateKey">
+            <me-icon icon="el-icon-copy-document" :name="t('redisValue.duplicateKey')" />
           </el-dropdown-item>
           <el-dropdown-item :command="isContextNodeFavorited ? 'unfavoriteKey' : 'favoriteKey'">
             <me-icon
@@ -690,6 +696,13 @@ function folderIconName(node: TreeNode): string {
               :name="
                 isContextNodeFavorited ? t('keyTree.unfavoriteKey') : t('keyTree.favoriteKey')
               " />
+          </el-dropdown-item>
+          <!-- 删除置底并用分割线与上方操作区分 -->
+          <el-dropdown-item
+            v-if="canEdit && !showCheckbox && !favoriteMode"
+            command="deleteKey"
+            divided>
+            <me-icon icon="el-icon-delete" :name="t('keyTree.deleteKey')" />
           </el-dropdown-item>
         </template>
 

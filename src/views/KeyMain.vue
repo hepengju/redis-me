@@ -674,6 +674,16 @@ function contextKey(command: string, redisKey: RedisKey_Deserialize): void {
     addKey()
   } else if (command === 'copyKey') {
     meCopy(redisKey.key)
+  } else if (command === 'copyAsCommand') {
+    // 与键值页「复制为命令」同逻辑，右键不必先打开该键
+    void (async () => {
+      const text = await meCommands.getKeyAsCommand(share.conn!.id, redisKey)
+      if (!text.trim()) {
+        meWarn(t('redisValue.copyCommandEmpty'))
+        return
+      }
+      meCopy(text, t('redisValue.copyCommandOk'))
+    })()
   } else if (command === 'deleteKey') {
     meDeleteKey(share.conn!.id, redisKey)
   } else if (command === 'renameKey') {
