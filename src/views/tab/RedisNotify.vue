@@ -5,7 +5,6 @@ import { computed, inject, onMounted, onUnmounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import type { MeColumn } from '@/components/me-table-column'
-import MeWebsite from '@/components/MeWebsite.vue'
 import { shareProvideKey } from '@/types/me-interface'
 import { createRealtimeStream } from '@/utils/realtime-stream'
 import { enrichNodeList } from '@/utils/redis-display'
@@ -294,7 +293,6 @@ onUnmounted(() => unlisten?.())
               :show-after="200" />
           </template>
         </el-input>
-        <me-website to="notify" />
       </div>
       <div>
         <el-input
@@ -314,6 +312,10 @@ onUnmounted(() => unlisten?.())
     <div class="table">
       <me-table :data="dataList" :keyword="keyword" :columns="notifyColumns" export-name="notify">
         <template #cell-datetime="{ row }">{{ row.datetime?.slice(11) }}</template>
+        <!-- 官网：紧挨合计行「更多」左侧 -->
+        <template #footer>
+          <me-website to="notify" />
+        </template>
       </me-table>
     </div>
 

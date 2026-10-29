@@ -175,7 +175,6 @@ const clientColumns = computed<MeColumn<RedisClientListRow>[]>(() => [
           <el-option value="REPLICA" />
           <el-option value="PUBSUB" />
         </el-select>
-        <me-website to="client" />
       </div>
       <div>
         <el-input
@@ -208,6 +207,10 @@ const clientColumns = computed<MeColumn<RedisClientListRow>[]>(() => [
               class="icon-btn"
               @click="killClient(row)" />
           </div>
+        </template>
+        <!-- 官网：紧挨合计行「更多」左侧 -->
+        <template #footer>
+          <me-website to="client" />
         </template>
       </me-table>
     </div>

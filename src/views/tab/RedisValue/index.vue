@@ -3115,6 +3115,14 @@ onUnmounted(() => {
         height: 100%;
       }
 
+      // 加载更多 / 加载全部：文字链接间距与右侧「更多」都略疏于图标簇默认 8px
+      :deep(.me-table-footer-actions) {
+        gap: 16px;
+      }
+      :deep(.me-table-footer-right) {
+        gap: 16px;
+      }
+
       // footer 加载链接（el-link）：文字加粗，在 footer 信息文字中突出动作
       .footer-load-link {
         font-weight: bold;

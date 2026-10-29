@@ -659,7 +659,6 @@ function onOverviewRowClick(row: OverviewRow) {
         <el-tab-pane v-if="isCluster" name="overview" :label="t('redisInfo.nodeOverview')">
           <div class="pane-table node-overview-table">
             <me-table
-              class="info-footer-tight"
               :data="overviewRows"
               :columns="overviewColumns"
               export-name="cluster-nodes"
@@ -730,7 +729,6 @@ function onOverviewRowClick(row: OverviewRow) {
             <div class="pane-table">
               <me-table
                 ref="table"
-                class="info-footer-tight"
                 :data="tagTable"
                 :filter="tagFilter"
                 :keyword="keyword"
@@ -738,7 +736,7 @@ function onOverviewRowClick(row: OverviewRow) {
                 export-name="info">
                 <!-- 官网在左、原文在右，紧挨更多菜单 -->
                 <template #footer>
-                  <me-website to="info" margin-left="0" placement="top" />
+                  <me-website to="info" />
                   <me-icon
                     class="icon-btn info-footer-icon"
                     icon="el-icon-tickets"
@@ -886,12 +884,6 @@ function onOverviewRowClick(row: OverviewRow) {
   // 说明列灰色：加在单元格节点，省略号与文字同色
   :deep(.col-tip-info) {
     color: var(--el-color-info);
-  }
-
-  // 底栏图标间距：默认 20px 收到 8px（选择器要比 MeTable 自己的更具体）
-  .info-footer-tight.me-table:deep(.me-table-footer .me-table-footer-actions),
-  .info-footer-tight.me-table:deep(.me-table-footer .me-table-footer-right) {
-    gap: 8px;
   }
 
   // 底栏图标字号与「更多」对齐；悬停色走全局 .icon-btn

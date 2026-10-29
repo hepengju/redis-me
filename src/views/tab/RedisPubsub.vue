@@ -6,7 +6,6 @@ import { useI18n } from 'vue-i18n'
 
 import type { MeColumn } from '@/components/me-table-column'
 import MeSelectUpDownIcon from '@/components/MeSelectUpDownIcon.vue'
-import MeWebsite from '@/components/MeWebsite.vue'
 import { shareProvideKey } from '@/types/me-interface'
 import { BYTES_FORMAT, IPC_WIRE_FORMAT, meViewToWire, type ViewBytesFormat } from '@/utils/format'
 import { createRealtimeStream } from '@/utils/realtime-stream'
@@ -172,7 +171,6 @@ onUnmounted(() => tauriUnlisten())
               :show-after="200" />
           </template>
         </el-input>
-        <me-website to="pubsub" />
       </div>
       <div>
         <el-input
@@ -192,6 +190,10 @@ onUnmounted(() => tauriUnlisten())
     <div class="table">
       <me-table :data="dataList" :keyword="keyword" :columns="pubsubColumns" export-name="pubsub">
         <template #cell-datetime="{ row }">{{ row.datetime?.slice(11) }}</template>
+        <!-- 官网：紧挨合计行「更多」左侧 -->
+        <template #footer>
+          <me-website to="pubsub" />
+        </template>
       </me-table>
     </div>
     <div class="footer" v-if="canEdit">

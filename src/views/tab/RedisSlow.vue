@@ -5,7 +5,6 @@ import { computed, inject, nextTick, reactive, ref, useTemplateRef, watchEffect 
 import { useI18n } from 'vue-i18n'
 
 import type { MeColumn } from '@/components/me-table-column'
-import MeWebsite from '@/components/MeWebsite.vue'
 import { shareProvideKey } from '@/types/me-interface'
 import type { RedisSlowLog } from '@/types/tauri-specta'
 // 官网参考: https://redis.ac.cn/docs/latest/commands/slowlog-get/
@@ -220,7 +219,6 @@ const rules = computed(() => ({
           placement="top"
           @click="openEditDialog" />
         <node-list v-model="node" clearable style="margin-left: 10px" @change="refresh" />
-        <me-website to="slowlog" />
       </div>
 
       <div>
@@ -239,7 +237,12 @@ const rules = computed(() => ({
         :keyword="keyword"
         :columns="slowColumns"
         :default-sort="{ prop: 'time', order: 'descending' }"
-        export-name="slowlog" />
+        export-name="slowlog">
+        <!-- 官网：紧挨合计行「更多」左侧 -->
+        <template #footer>
+          <me-website to="slowlog" />
+        </template>
+      </me-table>
     </div>
 
     <!-- 编辑慢参数弹框 -->

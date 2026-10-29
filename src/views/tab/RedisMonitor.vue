@@ -5,7 +5,6 @@ import { computed, inject, onUnmounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import type { MeColumn } from '@/components/me-table-column'
-import MeWebsite from '@/components/MeWebsite.vue'
 import { shareProvideKey } from '@/types/me-interface'
 import { createRealtimeStream } from '@/utils/realtime-stream'
 import { meConfirm, meCommands, meOk } from '@/utils/util'
@@ -106,7 +105,6 @@ onUnmounted(() => tauriUnlisten())
           :disabled="dataList.length === 0"
           placement="top" />
         <node-list v-model="node" init-node :disabled="monitoring" style="margin-left: 10px" />
-        <me-website to="monitor" />
       </div>
       <div>
         <el-input
@@ -126,6 +124,10 @@ onUnmounted(() => tauriUnlisten())
     <div class="table">
       <me-table :data="dataList" :keyword="keyword" :columns="monitorColumns" export-name="monitor">
         <template #cell-datetime="{ row }">{{ row.datetime?.slice(11) }}</template>
+        <!-- 官网：紧挨合计行「更多」左侧 -->
+        <template #footer>
+          <me-website to="monitor" />
+        </template>
       </me-table>
     </div>
   </div>

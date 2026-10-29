@@ -4,7 +4,6 @@ import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import type { MeColumn, MeFilterValue } from '@/components/me-table-column'
-import MeWebsite from '@/components/MeWebsite.vue'
 import { commandHelp, type CommandHelpRow } from '@/locales/cmd'
 import { sortVersionsDesc } from '@/utils/redis-version'
 import { isZh } from '@/utils/util'
@@ -128,7 +127,6 @@ defineExpose({ open, close })
             filterable>
             <el-option v-for="item in groupList" :key="item" :value="item">{{ item }}</el-option>
           </el-select>
-          <me-website to="command" />
         </div>
         <el-input
           v-model="keyword"
@@ -147,7 +145,7 @@ defineExpose({ open, close })
           :default-sort="{ prop: 'key', order: 'ascending' }">
           <!-- 命令名为文档链接（路径统一为小写+空格转连字符） -->
           <template #cell-key="{ row }">
-            <me-website to="command" :command="row.key" :label="row.key" margin-left="0" />
+            <me-website to="command" :command="row.key" :label="row.key" />
           </template>
           <!-- 列头筛选：标题 + 下拉面板（v2 无内置筛选 UI） -->
           <template #header-since>
@@ -162,6 +160,10 @@ defineExpose({ open, close })
               :title="t('redisTerminal.readonly')"
               :options="readonlyFilters"
               center />
+          </template>
+          <!-- 官网：紧挨合计行「更多」左侧 -->
+          <template #footer>
+            <me-website to="command" />
           </template>
         </me-table>
       </div>

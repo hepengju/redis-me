@@ -48,7 +48,8 @@ const props = withDefaults(
     placement?: string
     marginLeft?: string
   }>(),
-  { placement: 'right', marginLeft: '10px' },
+  // 默认贴合表格底栏图标簇；跟在文案后时再显式传 margin-left
+  { placement: 'top', marginLeft: '0' },
 )
 
 // 下拉项 command，与模板中 el-dropdown-item 一致

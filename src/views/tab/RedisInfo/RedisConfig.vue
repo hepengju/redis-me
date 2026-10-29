@@ -5,7 +5,6 @@ import { computed, inject, nextTick, reactive, ref, useTemplateRef, watch, watch
 import { useI18n } from 'vue-i18n'
 
 import type { MeColumn } from '@/components/me-table-column'
-import MeWebsite from '@/components/MeWebsite.vue'
 import { configTip as tips, redisConfDict, valkeyConfDict } from '@/locales/config'
 import { shareProvideKey } from '@/types/me-interface'
 import { pickVersionAtOrBelow, sortVersionsDesc } from '@/utils/redis-version'
@@ -235,7 +234,6 @@ async function configSet() {
               </el-dropdown-menu>
             </template>
           </el-dropdown>
-          <me-website to="config" />
         </div>
       </div>
       <div class="me-flex">
@@ -268,6 +266,10 @@ async function configSet() {
             class="icon-btn"
             style="justify-content: center"
             @click="editConfig(row)" />
+        </template>
+        <!-- 官网：紧挨合计行「更多」左侧 -->
+        <template #footer>
+          <me-website to="config" />
         </template>
       </me-table>
     </div>

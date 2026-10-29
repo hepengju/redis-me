@@ -348,7 +348,6 @@ void refresh()
           {{ t('redisACL.addUser') }}
         </el-button>
         <el-text type="info">{{ t('redisACL.currentUser') }}: {{ whoami || '--' }}</el-text>
-        <me-website to="acl" margin-left="0" />
       </div>
       <div class="me-flex">
         <el-dropdown
@@ -436,6 +435,10 @@ void refresh()
               </template>
             </el-dropdown>
           </div>
+        </template>
+        <!-- 官网：紧挨合计行「更多」左侧 -->
+        <template #footer>
+          <me-website to="acl" />
         </template>
       </me-table>
     </div>

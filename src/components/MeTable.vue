@@ -190,7 +190,7 @@ const sortedData = computed(() => {
 })
 // #endregion
 
-// #region 底部状态：总数与导出菜单（无数据时都不显示，footer 高度收为 0）
+// #region 底部状态：总数与导出菜单（空表也常显，方便官网等底栏入口）
 // totalText 优先（调用方自算文案）；否则传了 total 覆盖且与筛选后数量不一致时显示「共 筛选 / 总数 条」
 const footerTotalText = computed(() => {
   if (props.totalText) return props.totalText
@@ -261,8 +261,8 @@ const v2SortState = computed(() => {
   return { [sortCol.value.key]: sortOrder.value === 'ascending' ? 'asc' : 'desc' }
 })
 
-// v2 的 #footer 为表内固定行：高度从主体扣除、空态底部也让位；无数据时收为 0 让空态占满整表
-const v2FooterHeight = computed(() => (sortedData.value.length ? V2_ROW_HEIGHT : 0))
+// v2 的 #footer 为表内固定行：高度从主体扣除；空表也保留，底栏入口（官网等）始终可点
+const v2FooterHeight = V2_ROW_HEIGHT
 
 // v2 原生只有 asc/desc 两态；在 desc 后下一次点击（v2 循环回 asc）视为第三次点击，取消排序，对齐 el-table 三态；
 // 对外按 el-table 的 sort-change 签名回传，order 可为 null
@@ -596,10 +596,7 @@ defineExpose({
               <el-empty :description="emptyText" />
             </template>
             <template #footer>
-              <div
-                v-if="sortedData.length"
-                class="me-table-footer"
-                :class="{ 'has-center': !!$slots['footer-center'] }">
+              <div class="me-table-footer" :class="{ 'has-center': !!$slots['footer-center'] }">
                 <span class="me-table-total">{{ footerTotalText }}</span>
                 <!-- 居中摘要：有内容时总数与右侧操作不再抢中间空位 -->
                 <div v-if="$slots['footer-center']" class="me-table-footer-center">
@@ -610,12 +607,17 @@ defineExpose({
                   <div class="me-table-footer-actions">
                     <slot name="footer" />
                   </div>
+                  <!-- 空表禁用：避免点开复制/导出再提示无数据 -->
                   <el-dropdown
                     class="me-table-more-wrap"
+                    :disabled="!sortedData.length"
                     trigger="click"
                     placement="top-end"
                     @command="handleExportCommand">
-                    <me-icon icon="el-icon-more-filled" class="icon-btn me-table-more" />
+                    <me-icon
+                      icon="el-icon-more-filled"
+                      class="me-table-more"
+                      :class="{ 'icon-btn': !!sortedData.length }" />
                     <template #dropdown>
                       <el-dropdown-menu>
                         <el-dropdown-item
@@ -687,27 +689,32 @@ defineExpose({
       white-space: nowrap;
     }
 
-    // 主动作区：与右区导出菜单统一 20px 节奏；字号继承表格（14px）不另设
+    // 主动作区：图标簇紧凑 8px（官网 / 原文等）；字号继承表格（14px）不另设
     .me-table-footer-actions {
       flex-shrink: 0;
       display: flex;
       align-items: center;
-      gap: 20px;
+      gap: 8px;
     }
 
-    // 右区：主动作 + 导出菜单贴右，相邻间距均 20px；无主动作时导出照旧贴右
+    // 右区：主动作 + 导出「更多」贴右，间距同 8px；无主动作时导出照旧贴右
     .me-table-footer-right {
       flex: 1;
       min-width: 0;
       display: flex;
       align-items: center;
       justify-content: flex-end;
-      gap: 20px;
+      gap: 8px;
     }
 
     .me-table-more-wrap {
       flex-shrink: 0;
       font-size: 16px;
+      line-height: 1;
+
+      &.is-disabled .me-table-more {
+        opacity: 0.45;
+      }
     }
   }
 }

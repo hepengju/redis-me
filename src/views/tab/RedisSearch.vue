@@ -689,8 +689,6 @@ onUnmounted(() => {
           <el-button v-if="canEdit" icon="el-icon-document-add" @click="openSample">
             {{ t('redisSearch.sample') }}
           </el-button>
-          <!-- 列表上就能进官网，不必先打开某个索引的查询 -->
-          <me-website to="search" />
         </div>
         <div>
           <el-input
@@ -766,6 +764,10 @@ onUnmounted(() => {
                 </template>
               </el-dropdown>
             </div>
+          </template>
+          <!-- 官网：紧挨合计行「更多」左侧 -->
+          <template #footer>
+            <me-website to="search" />
           </template>
         </me-table>
       </div>
@@ -998,7 +1000,7 @@ onUnmounted(() => {
       <div class="create-body">
         <div style="margin-bottom: 12px">
           <el-text type="info">{{ t('redisSearch.createHint') }}</el-text>
-          <me-website to="ftCreate" />
+          <me-website to="ftCreate" margin-left="10px" />
         </div>
         <me-code
           v-model="createDraft"
@@ -1032,7 +1034,7 @@ onUnmounted(() => {
       <div class="create-body">
         <div style="margin-bottom: 12px">
           <el-text type="info">{{ t('redisSearch.alterHint') }}</el-text>
-          <me-website to="ftAlter" />
+          <me-website to="ftAlter" margin-left="10px" />
         </div>
         <me-code
           v-model="alterDraft"
