@@ -4,7 +4,8 @@ export const enInfoTip = {
 
   server: 'General information about the Redis server',
   clients: 'Client connections section',
-  memory: 'Memory consumption related information',
+  memory:
+    'Memory consumption related information (Ideally, used_memory_rss should be only slightly higher than used_memory. When rss >> used, a large difference may mean external memory fragmentation, which can be evaluated via allocator_frag_ratio and allocator_frag_bytes. When used >> rss, part of Redis memory has been swapped by the OS: expect significant latencies.)',
   persistence: 'RDB and AOF related information',
   threads: 'I/O threads information',
   stats: 'General statistics',

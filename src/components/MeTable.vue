@@ -1,7 +1,7 @@
 <script setup lang="ts">
 // 说明: 虚拟滚动表（el-table-v2）：连续滚动、无分页，千行级以上的大数据表（内存分析、命令日志等）不卡顿。
 // 列描述 columns 为单一来源：同时驱动渲染、排序、导出矩阵与具名插槽（cell-${key} / header-${key}）。
-// showOverflowTooltip 开时单元格/气泡用全文（溢出 disabled 按格在 MeTableOverflowCell）；关时进 DOM 才截断。
+// showOverflowTooltip 开时单元格/气泡用全文（溢出 disabled 按格在 MeOverflowText）；关时进 DOM 才截断。
 // 排序与 el-table 的 default-sort、列 sortable / sort-method / sort-by 一致；
 // sortable="custom" 时不改行顺序，由父组件在 sort-change 中自行更新 :data。
 // 未显式指定 sortable 的数据列（有 prop/formatter、非勾选/序号列）默认可排序，免去逐列手写。
@@ -39,7 +39,7 @@ import {
   toCellText,
   truncateCellDisplay,
 } from './me-table-column'
-import MeTableOverflowCell from './MeTableOverflowCell.vue'
+import MeOverflowText from './MeOverflowText.vue'
 
 defineOptions({ inheritAttrs: false })
 
@@ -407,7 +407,7 @@ function displayCellText(
   const full = cellText(col, row, index, cellData)
   return props.showOverflowTooltip ? full : truncateCellDisplay(full)
 }
-// 溢出 tooltip 的 disabled 在 MeTableOverflowCell 内按格维护，避免全表共用 ref 悬停刷可见格
+// 溢出 tooltip 的 disabled 在 MeOverflowText 内按格维护，避免全表共用 ref 悬停刷可见格
 // #endregion
 
 // #region 导出：RAW 直接序列化数据；其余格式由列描述从数据层计算矩阵，不渲染 DOM
@@ -546,7 +546,7 @@ defineExpose({
                   :value="cellData" />
               </div>
               <!-- 开 tooltip：全文进 DOM/气泡；disabled 按格隔离。具名插槽须自带回退文本（空 slot 传给子组件时其子默认插槽不生效） -->
-              <me-table-overflow-cell
+              <me-overflow-text
                 v-else-if="showOverflowTooltip"
                 :content="cellText(meColumnOf(column.key), rowData, rowIndex, cellData)">
                 <slot
@@ -556,7 +556,7 @@ defineExpose({
                   :value="cellData">
                   {{ cellText(meColumnOf(column.key), rowData, rowIndex, cellData) }}
                 </slot>
-              </me-table-overflow-cell>
+              </me-overflow-text>
               <div v-else class="me-cell-ellipsis">
                 <slot
                   :name="`cell-${String(column.key)}`"

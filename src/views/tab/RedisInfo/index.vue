@@ -13,6 +13,7 @@ import {
 import { useI18n } from 'vue-i18n'
 
 import type { MeColumn } from '@/components/me-table-column'
+import MeOverflowText from '@/components/MeOverflowText.vue'
 import { infoTip as tips } from '@/locales/info'
 import { shareProvideKey } from '@/types/me-interface'
 import type { RedisInfo } from '@/types/tauri-specta'
@@ -152,6 +153,13 @@ watchEffect(() => {
 // 分类下拉预筛交给 MeTable filter 谓词（页面传全量 tagTable，MeTable 内部过滤）；关键词 key/value/tip 由 searchable + keyword 处理
 const tagFilter = (row: unknown): boolean =>
   !tagSelected.value || (row as InfoRow).tag === tagSelected.value
+
+/** 当前选中分类的官网说明；清空后 tag 可能是 undefined；无 tip 则不展示 */
+const tagSectionTip = computed(() => {
+  const tag = (tagSelected.value ?? '').trim()
+  if (!tag) return ''
+  return tipMap.value[tag.toLowerCase()] || tipMap.value[tag] || ''
+})
 
 // MeTable 列描述：单一来源，表格与导出共用（说明列文本由 formatter 计算，与界面展示一致）；关键词搜索 key/value/tip 由 MeTable 内部处理（tip 走 formatter 展示文本）
 const infoColumns = computed<MeColumn<InfoRow>[]>(() => [
@@ -705,14 +713,18 @@ function onOverviewRowClick(row: OverviewRow) {
                 v-model="tagSelected"
                 :placeholder="t('redisInfo.tag')"
                 clearable
-                style="width: 150px"
+                style="width: 150px; flex-shrink: 0"
                 @change="tagChange">
                 <el-option v-for="tag in tagList" :key="tag" :label="tag" :value="tag" />
               </el-select>
+              <!-- 中间靠左：有说明才显示；超出省略 + el-tooltip -->
+              <div v-if="tagSectionTip" class="tag-section-tip">
+                <me-overflow-text :content="tagSectionTip" />
+              </div>
               <el-input
                 v-model="keyword"
                 clearable
-                style="width: 226px"
+                style="width: 226px; flex-shrink: 0"
                 :placeholder="t('redisInfo.keyword')" />
             </div>
             <div class="pane-table">
@@ -962,9 +974,19 @@ function onOverviewRowClick(row: OverviewRow) {
   .pane-header {
     align-items: center;
     flex-shrink: 0;
+    gap: 10px;
     // 左侧贴齐表格外边，右侧筛选仍留一点空隙；上下各 8px（单机上间距改由 info-lower 承担）
     padding: 8px 10px 8px 0;
     font-weight: bold;
+  }
+
+  // 分类与筛选之间：靠左吃剩余宽度；省略与悬停全文交给 MeOverflowText
+  .tag-section-tip {
+    flex: 1;
+    min-width: 0;
+    font-size: 13px;
+    font-weight: normal;
+    color: var(--el-text-color-secondary);
   }
 
   .pane-table {
