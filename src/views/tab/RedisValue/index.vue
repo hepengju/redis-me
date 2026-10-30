@@ -1,6 +1,7 @@
 <script setup lang="ts">
 // #region 导入
 import { listen } from '@tauri-apps/api/event'
+import { save } from '@tauri-apps/plugin-dialog'
 import { useIntervalFn, useNow } from '@vueuse/core'
 import {
   computed,
@@ -35,7 +36,6 @@ import {
   type DetectedViewAuto,
   type DetectedViewFormat,
 } from '@/utils/detect-view-format'
-import { pickSavePath } from '@/utils/export'
 import { useFavorites, addFavorite, removeFavorite, isFavorited } from '@/utils/favorite'
 import {
   IPC_WIRE_FORMAT,
@@ -950,7 +950,8 @@ function downloadFileName(keyName: string): string {
 // 下载到本地：先选路径（取消则不拉数据），再交后端 STRLEN+分块 GETRANGE 直写盘，不占前端内存
 async function downloadValue() {
   if (!share.conn || !share.redisKey || valueDownloading.value) return
-  const path = await pickSavePath(downloadFileName(share.redisKey.key), ['*'], 'All Files')
+  // 不限定扩展名时不传 filters：macOS 保存面板会把 `*` 过滤器追加成 `name.txt.*`
+  const path = await save({ defaultPath: downloadFileName(share.redisKey.key) })
   if (!path) return
   valueDownloading.value = true
   valueDownloadPercent.value = 0
