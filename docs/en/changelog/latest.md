@@ -1,5 +1,29 @@
 # 5.x Changelog
 
+## [v5.6.0](https://mp.weixin.qq.com/s/SsA5C0glDYzg040-jn1c-w) (2026-10-31)
+
+### ✨ Improvements
+
+- Info: cluster mode adds a **node overview** table; selecting a row switches to that node's details
+- Chart: cluster **multi-node lines on one chart**, primaries shown by default, shared legend toggles series
+- Value area: truncated STRING previews can be **downloaded locally**, written in chunks with a progress indicator
+- Value area: code highlighting adds yaml/md/xml/ini and **infers the format from the content**
+- Keys panel: context menu adds **copy as command, rename, and duplicate**; delete moved to the bottom with a divider
+- Clients: the action column can copy the raw CLIENT LIST line
+- Other details
+  - Cluster config writes now note that the change is broadcast to all nodes
+  - In cluster mode, notification settings are shown for both primary and replica nodes
+  - Links to the official site moved into the table summary row; empty tables still show the bottom bar, with export disabled
+  - Field tables stay responsive with very large values (cells are truncated instead of putting the full text on the page)
+  - Dialogs can be dragged outside the window, without overlay scrollbars
+  - macOS fullscreen shortcut is now ⌘⇧F, avoiding the system-reserved F11
+
+### 🐞 Bug Fixes
+
+- Fixed Ctrl+V not pasting in the terminal before it was focused
+- Fixed a RESP parse error corrupting later terminal commands (the connection is rebuilt after the error)
+- Fixed non-JSON values starting with `[` or `{` getting line breaks inserted when prettified
+
 ## [v5.5.0](https://mp.weixin.qq.com/s/bZYPBXn3KLDF0ex-Ox8aSQ) (2026-10-24)
 
 ### ✨ Improvements
