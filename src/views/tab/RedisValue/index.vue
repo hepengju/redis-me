@@ -79,6 +79,7 @@ import {
   meCopy,
   meDeleteKey,
   meErr,
+  formatSpectaErrorForUser,
   meHumanSeconds,
   estimateStringMemory,
   meHumanSize,
@@ -947,23 +948,45 @@ function downloadFileName(keyName: string): string {
   return `${seg.replace(/[\\/:*?"<>|]/g, '_').trim() || 'value'}.txt`
 }
 
+/** 与后端 ValueDownloadEvent 一致；后台线程 emit，命令立即返回 */
+interface ValueDownloadProgressPayload {
+  id: string
+  percent: number
+  finished: boolean
+  error?: string
+}
+
 // 下载到本地：先选路径（取消则不拉数据），再交后端 STRLEN+分块 GETRANGE 直写盘，不占前端内存
 async function downloadValue() {
   if (!share.conn || !share.redisKey || valueDownloading.value) return
   // 不限定扩展名时不传 filters：macOS 保存面板会把 `*` 过滤器追加成 `name.txt.*`
   const path = await save({ defaultPath: downloadFileName(share.redisKey.key) })
   if (!path) return
+  const connId = share.conn.id
   valueDownloading.value = true
   valueDownloadPercent.value = 0
+  let resolveDone!: () => void
+  let rejectDone!: (reason: Error) => void
+  const waitFinished = new Promise<void>((resolve, reject) => {
+    resolveDone = resolve
+    rejectDone = reject
+  })
   // 只在本次下载期间监听进度，结束后立即卸载；事件名为后端 EVENT_VALUE_DOWNLOAD 的 "value-download"
-  const unlisten = await listen<{ percent: number }>('value-download', e => {
-    valueDownloadPercent.value = e.payload.percent
+  const unlisten = await listen<ValueDownloadProgressPayload>('value-download', e => {
+    const p = e.payload
+    if (p.id !== connId) return
+    valueDownloadPercent.value = p.percent
+    if (!p.finished) return
+    if (p.error) rejectDone(new Error(p.error))
+    else resolveDone()
   })
   try {
-    await meCommands.valueDownload(share.conn.id, { key: share.redisKey, file: path })
+    await meCommands.valueDownload(connId, { key: share.redisKey, file: path })
+    await waitFinished
     meOk(t('redisValue.valueTruncatedDownloadOk'))
-  } catch {
-    // 失败（类型不支持 / 写盘错误等）已由 meCommands 统一弹窗
+  } catch (e) {
+    // 线程内失败经 rejectDone；invoke 失败为 string 且已由 meCommands 弹窗
+    if (e instanceof Error && e.message) meErr(formatSpectaErrorForUser(e.message))
   } finally {
     unlisten()
     valueDownloading.value = false

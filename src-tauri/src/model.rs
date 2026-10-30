@@ -431,6 +431,15 @@ api_model!(RedisValueDownload {
     file: String,
 });
 
+// STRING 大值下载进度（后台线程 emit，避免阻塞 Tauri 命令线程导致 macOS UI 不刷新）
+api_model!(ValueDownloadEvent {
+    id: String,
+    percent: u8,
+    finished: bool,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    error: Option<String>,
+});
+
 // Redis键: 由于键是字节存储的，考虑转换为utf-8字符串显示后可能会丢失信息，因此封装为对象
 // 备注: bytes 序列化为 base64。合法 UTF-8 键可省略 bytes（空 Vec），to_bytes 回退 key.as_bytes()；
 //       非法 UTF-8 / 二进制键必须带 bytes，key 仅作 lossy 展示。

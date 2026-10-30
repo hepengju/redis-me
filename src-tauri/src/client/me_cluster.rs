@@ -1,6 +1,7 @@
 use crate::client::me_client::*;
 use crate::client::ops::acl::build_acl_setuser_cmd;
 use crate::client::ops::exp::{export_cmd_0_thread, export_csv_0_thread};
+use crate::client::ops::field_scan::value_download_0_thread;
 use crate::client::ops::imp::{import_cmd_0_thread, import_csv_0_thread};
 use crate::client::ops::info::{parse_client_info, redis_value_to_log};
 use crate::client::ops::key_scan::{batch_key0, scan_0_batch_count, scan_0_exact, scan_1_cmd};
@@ -766,6 +767,14 @@ impl MeClient for MeCluster {
         let mut conn = self.get_conn()?;
         // 命令条数随 mock 字段数变化，汇总日志用估算值即可
         let _: () = conn.cluster_pipe_query(&pipe, count as usize * 50)?;
+        Ok(())
+    }
+
+    fn value_download(&self, param: RedisValueDownload) -> AnyResult<()> {
+        let conn = self.get_new_conn()?;
+        let id = self.id.clone();
+        let app_handle = self.base().get_app_handle()?;
+        thread::spawn(move || value_download_0_thread(conn, param, app_handle, id));
         Ok(())
     }
 
