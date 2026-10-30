@@ -802,7 +802,7 @@ export default {
     persistence: '持久化',
     memory: '内存',
     peak: '峰值',
-    system: '系统',
+    system: '操作系统',
     executable: '执行程序',
     config: '配置',
     infoDetail: '参数详情',

@@ -889,7 +889,7 @@ function onOverviewRowClick(row: OverviewRow) {
     margin-right: 15px;
   }
 
-  // 英文标签（Network / Commands / Executable）比中文略长，13% 会挤
+  // 英文标签（Network / Commands）比中文略长，13% 会挤
   :deep(.el-descriptions__body tr:first-child > .el-descriptions__label) {
     width: 14%;
   }
