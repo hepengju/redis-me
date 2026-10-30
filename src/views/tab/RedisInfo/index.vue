@@ -364,10 +364,11 @@ const overviewColumns = computed<MeColumn<OverviewRow>[]>(() => [
     width: 80,
     align: 'right',
   },
+  // 与图表一致：↓ 流入(input) / ↑ 流出(output)
   {
     key: 'netIn',
     prop: 'netIn',
-    title: t('redisInfo.networkUp'),
+    title: t('redisInfo.networkDown'),
     width: 100,
     align: 'right',
     formatter: row => formatKbps(row.netIn),
@@ -375,7 +376,7 @@ const overviewColumns = computed<MeColumn<OverviewRow>[]>(() => [
   {
     key: 'netOut',
     prop: 'netOut',
-    title: t('redisInfo.networkDown'),
+    title: t('redisInfo.networkUp'),
     width: 100,
     align: 'right',
     formatter: row => formatKbps(row.netOut),
@@ -415,7 +416,7 @@ const overviewSummaryParts = computed(() => {
     `${t('redisInfo.summaryMasterKeys')} ${sum.keys}`,
     `${t('redisInfo.summaryClients')} ${sum.clients}`,
     `${t('redisInfo.command')} ${formatOps(sum.ops)}/s`,
-    `${t('redisInfo.network')} ↑ ${formatKbps(sum.netIn)} ↓ ${formatKbps(sum.netOut)} kb/s`,
+    `${t('redisInfo.network')} ↓ ${formatKbps(sum.netIn)} ↑ ${formatKbps(sum.netOut)} kb/s`,
     `${t('redisInfo.memory')} ${meHumanSize(sum.memory)}`,
   ]
 })
@@ -569,8 +570,8 @@ function onOverviewRowClick(row: OverviewRow) {
         </template>
         <span v-if="networkUnavailable">--</span>
         <span v-else class="network-throughput">
-          <span>↑ {{ networkInKbps }}</span>
-          <span class="network-throughput-gap">↓ {{ networkOutKbps }}</span>
+          <span>↓ {{ networkInKbps }}</span>
+          <span class="network-throughput-gap">↑ {{ networkOutKbps }}</span>
         </span>
       </el-descriptions-item>
 
@@ -865,6 +866,22 @@ function onOverviewRowClick(row: OverviewRow) {
   :deep(.el-descriptions__table) {
     table-layout: fixed;
     width: 100%;
+  }
+
+  // 标签与值均不换行（窄列时宁可溢出/截断，避免「]」单独掉行）
+  :deep(.el-descriptions__label),
+  :deep(.el-descriptions__content) {
+    white-space: nowrap;
+  }
+
+  :deep(.el-descriptions__content) {
+    overflow: hidden;
+    text-overflow: ellipsis;
+
+    .me-flex {
+      flex-wrap: nowrap;
+      min-width: 0;
+    }
   }
 
   // RDB / AOF：Element Plus 默认间距 30px，收成一半
