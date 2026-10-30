@@ -19,6 +19,7 @@ const props = withDefaults(defineProps<{ title?: string; icon?: string; bodyHeig
     class="me-dialog"
     align-center
     draggable
+    overflow
     :show-close="false"
     :fullscreen="fullscreen"
     @closed="fullscreen = false"
@@ -107,6 +108,12 @@ const props = withDefaults(defineProps<{ title?: string; icon?: string; bodyHeig
 
 <!-- append-to-body 后改 EP 全屏容器布局 -->
 <style lang="scss">
+/* overflow 拖出视口时 transform 会撑开蒙层；两层都是 overflow:auto，右下角会各出滚动条 */
+.el-overlay:has(.me-dialog),
+.el-overlay-dialog:has(.me-dialog) {
+  overflow: hidden;
+}
+
 .me-dialog.el-dialog.is-fullscreen {
   display: flex;
   flex-direction: column;
