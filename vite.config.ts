@@ -63,6 +63,17 @@ export default defineConfig({
     }),
   ],
 
+  build: {
+    // 单位是 kB。桌面端本地加载，主包约 2700kB；默认 500 是网页分包阈值
+    chunkSizeWarningLimit: 4096,
+    rolldownOptions: {
+      checks: {
+        // Vue 插件耗时占构建大部分，release 日志每次都会打 PLUGIN_TIMINGS
+        bundlerTimings: false,
+      },
+    },
+  },
+
   // Vite options tailored for Tauri development and only applied in `tauri dev` or `tauri build`
   //
   // 1. prevent vite from obscuring rust errors

@@ -3064,24 +3064,22 @@ onUnmounted(() => {
         width: 250px;
         flex-shrink: 0;
 
-        // 左侧精确勾选；右侧暂停/继续和查询
-        :deep(.el-input__prefix) {
-          :deep(.suffix-exact-checkbox) {
-            height: auto;
+        // 左侧精确勾选。内层再写 :deep() 时 Vue 不会改写，lightningcss 会当成非法伪类
+        :deep(.el-input__prefix .suffix-exact-checkbox) {
+          height: auto;
 
-            .el-checkbox__inner {
-              border-color: var(--el-text-color-secondary);
-              background-color: transparent;
-            }
+          .el-checkbox__inner {
+            border-color: var(--el-text-color-secondary);
+            background-color: transparent;
+          }
 
-            &:hover .el-checkbox__inner {
-              border-color: var(--el-color-primary);
-            }
+          &:hover .el-checkbox__inner {
+            border-color: var(--el-color-primary);
+          }
 
-            &.is-checked .el-checkbox__inner {
-              background-color: var(--el-color-primary);
-              border-color: var(--el-color-primary);
-            }
+          &.is-checked .el-checkbox__inner {
+            background-color: var(--el-color-primary);
+            border-color: var(--el-color-primary);
           }
         }
 

@@ -12,6 +12,7 @@ use rustls::crypto::ring::default_provider;
 #[cfg(any(debug_assertions, test))]
 use specta_typescript::Typescript;
 use std::fmt::Arguments;
+#[cfg(any(debug_assertions, test))]
 use std::path::PathBuf;
 use tauri::{Manager, TitleBarStyle};
 use tauri_plugin_log::fern::{
@@ -257,6 +258,8 @@ fn tauri_specta_commands() -> Commands<tauri::Wry> {
 }
 
 /// 生成前端 TS 绑定路径（相对 `src-tauri` 的 `CARGO_MANIFEST_DIR`）。
+/// release 构建不导出类型，避免 `dead_code`。
+#[cfg(any(debug_assertions, test))]
 fn tauri_specta_typescript_path() -> PathBuf {
     PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../src/types/tauri-specta.ts")
 }

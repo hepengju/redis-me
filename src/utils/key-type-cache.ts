@@ -1,4 +1,5 @@
 import type { RedisKey_Deserialize } from '@/types/tauri-specta'
+import { meCommands } from '@/utils/me-commands'
 import { redisKeyId } from '@/utils/redis-key'
 
 /** 连接 + db + 键身份 → TYPE 结果；UTF-8 省略 bytes 时用 key 作缓存键 */
@@ -36,7 +37,6 @@ async function fetchKeyType(
   connId: string,
   redisKey: RedisKey_Deserialize,
 ): Promise<string | undefined> {
-  const { meCommands } = await import('@/utils/util')
   try {
     return (await meCommands.keyType(connId, redisKey, false))?.toUpperCase()
   } catch {

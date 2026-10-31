@@ -11,11 +11,12 @@ import mitt from 'mitt'
 import { computed } from 'vue'
 
 import i18n from '@/locales'
-import type { MeCommands } from '@/types/me-interface'
-import { commands as spectaCommands } from '@/types/tauri-specta'
 import type { RedisKey_Deserialize } from '@/types/tauri-specta'
 import { invalidateKeyMemory } from '@/utils/key-memory-cache'
 import { invalidateKeyType } from '@/utils/key-type-cache'
+import { formatSpectaErrorForUser, meCommands, meErr, meLog } from '@/utils/me-commands'
+
+export { formatSpectaErrorForUser, meCommands, meErr, meLog }
 
 /** 全局 `bus` 事件载荷（与 `bus.emit` / `bus.on` 一致） */
 export type MeBusEvents = {
@@ -33,15 +34,6 @@ export type MeBusEvents = {
   /** 终端里 SELECT 成功：终端 emit（载荷为切到的库号），KeyMain 监听后重载键区 */
   DB_SWITCH: number
 }
-
-// #region 本文件内部类型（Specta / 应用错误载荷）
-type SpectaResult<T> = { status: 'ok'; data: T } | { status: 'error'; error: unknown }
-
-interface AppErrorPayload {
-  code: string
-  [key: string]: unknown
-}
-// #endregion
 
 // #region 全局总线与常量
 // 全局事件总线：setup 直接导入，app 全局属性也添加
@@ -100,16 +92,8 @@ export const CHART_COLORS: string[] = [
 ]
 // #endregion
 
-// #region 开发日志、界面语言、暗色主题
-const isDev = import.meta.env.DEV
+// #region 界面语言、暗色主题
 const t = i18n.global.t
-
-// 打印日志（仅开发环境）
-export function meLog(...args: unknown[]): void {
-  if (isDev) {
-    console.log(...args)
-  }
-}
 
 // 是否是中文模式
 export const isZh = computed(() => {
@@ -120,100 +104,6 @@ export const isZh = computed(() => {
 
 // 是否黑色主题
 export const isDark = useDark()
-// #endregion
-
-// #region Specta 命令包装（meCommands）
-// 流程：Specta Result → 解包 → 成功则记日志并重置 EOF 计数；失败则 EOF 有限重试，否则弹窗（可静默）并抛出字符串化错误。
-const SPECTA_EOF_MESSAGE = 'unexpected end of file'
-/** 与原先 `spectaEofRetries <= 3` 一致：最多额外重试 4 次 */
-const SPECTA_EOF_MAX_RETRY = 3
-
-let spectaEofRetryCount = 0
-
-function errString(e: unknown): string {
-  if (e instanceof Error) return e.message
-  if (typeof e === 'string') return e
-  try {
-    return JSON.stringify(e)
-  } catch {
-    return Object.prototype.toString.call(e)
-  }
-}
-
-/** 若 `errorStr` 为带 `code` 的应用错误 JSON 则走 i18n，否则原样返回（供弹窗/终端内联复用） */
-export function formatSpectaErrorForUser(errorStr: string): string {
-  try {
-    const parsed = JSON.parse(errorStr) as unknown
-    if (
-      !parsed ||
-      typeof parsed !== 'object' ||
-      !('code' in parsed) ||
-      typeof (parsed as AppErrorPayload).code !== 'string'
-    ) {
-      return errorStr
-    }
-    const { code, ...params } = parsed as AppErrorPayload
-    const key = `errors.${code}`
-    const message = t(key, params as Record<string, unknown>)
-    return message === key ? `${code}: ${JSON.stringify(params)}` : message
-  } catch {
-    return errorStr
-  }
-}
-
-function unwrapSpecta<T>(raw: SpectaResult<T>): T {
-  if (raw.status === 'ok') return raw.data
-  throw raw.error
-}
-
-async function invokeSpectaCommand<T>(
-  name: string,
-  args: readonly unknown[],
-  run: () => Promise<SpectaResult<T>>,
-  alert: boolean,
-): Promise<T> {
-  const t0 = Date.now()
-  try {
-    const data = unwrapSpecta(await run())
-    meLog(`命令：${name}, 耗时：${Date.now() - t0}ms, 参数：`, args, '结果：', data)
-    spectaEofRetryCount = 0
-    return data
-  } catch (e) {
-    const msg = errString(e)
-    if (msg === SPECTA_EOF_MESSAGE && spectaEofRetryCount <= SPECTA_EOF_MAX_RETRY) {
-      spectaEofRetryCount++
-      meLog(`第${spectaEofRetryCount}次重试：${name}`)
-      return invokeSpectaCommand(name, args, run, alert)
-    }
-    if (alert) {
-      const title = t('error') + (isDev ? ': ' + name : '')
-      meErr(formatSpectaErrorForUser(msg), title)
-    }
-    meLog(`命令：${name}, 耗时：${Date.now() - t0}ms, 参数:`, args, `, 错误：${msg}`)
-    throw msg
-  }
-}
-
-type SpectaCommandFn = (...a: unknown[]) => Promise<SpectaResult<unknown>>
-
-/**
- * 与 Specta `commands` 同键。比原函数多传一个末尾 `false` 时失败不弹窗。
- * 原参数本身是 `false`（如 deleteDocs）时不能剥掉，否则 Tauri 会报缺参。
- */
-function bindMeCommand(name: string, fn: unknown): unknown {
-  if (typeof fn !== 'function') return fn
-  const spectaFn = fn as SpectaCommandFn
-  const arity = spectaFn.length
-  return (...args: unknown[]) => {
-    const silent = args.length > arity && args[args.length - 1] === false
-    const pass = silent ? args.slice(0, -1) : args
-    return invokeSpectaCommand(String(name), pass, () => spectaFn(...pass), !silent)
-  }
-}
-
-export const meCommands = Object.fromEntries(
-  Object.entries(spectaCommands).map(([name, fn]) => [name, bindMeCommand(name, fn)]),
-) as MeCommands
 // #endregion
 
 // #region Element Plus 提示、确认框、剪贴板
@@ -235,17 +125,6 @@ export function meOk(
 
 export function meWarn(message: string): void {
   ElMessage.warning(message)
-}
-
-export function meErr(message: unknown, title: string = t('error')): void {
-  const raw =
-    message instanceof Error
-      ? message.message
-      : typeof message === 'string'
-        ? message
-        : errString(message)
-  const text = formatSpectaErrorForUser(raw)
-  void ElMessageBox.alert(text, title, { type: 'error', draggable: true }).then(DoNothing)
 }
 
 /** 错误弹窗（HTML 换行，用于自定义编解码测试等） */
