@@ -10,3 +10,5 @@
 ![chart.png](../../../public/images/detail/chart.png)
 ![client.png](../../../public/images/detail/client.png)
 ![config.png](../../../public/images/detail/config.png)
+![search.png](../../../public/images/detail/search.png)
+![notify.png](../../../public/images/detail/notify.png)
