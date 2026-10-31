@@ -6,10 +6,10 @@
 | 功能/特性  | RedisME                   | TinyRDM                | AnotherRDM              |
 | ---------- | ------------------------- | ---------------------- | ----------------------- |
 | 项目启动   | 2025-06                   | 2023-06                | 2019-01                 |
-| Stars      | 9                         | 12.6K                  | 34.1K                   |
+| Stars      | 129                       | 13.1K                  | 34.8K                   |
 | 技术栈     | Tauri(WebView + Rust)     | Wails(WebView + Go)    | Electron(Chrome + Node) |
 | 前端框架   | ElementPlus/Vue3          | NativeUI/Vue3          | ElementUI/Vue2          |
-| 安装包     | 5~9M                      | 7~12M                  | 59~83M                  |
+| 安装包     | 8~14M                     | 7~13M                  | 59~83M                  |
 | 启动速度   | 极快                      | 极快                   | 快                      |
 | 内存占用   | 100M                      | 120M                   | 230M                    |
 | 界面美观   | 简洁美观                  | 中规中矩               | 略有逊色                |

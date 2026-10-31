@@ -7,10 +7,10 @@ comparison, **RedisME is still quite competitive**.
 | Feature         | RedisME                    | TinyRDM             | AnotherRDM              |
 | --------------- | -------------------------- | ------------------- | ----------------------- |
 | Start           | 2025-06                    | 2023-06             | 2019-01                 |
-| Stars           | 9                          | 12.6K               | 34.1K                   |
+| Stars           | 129                        | 13.1K               | 34.8K                   |
 | Frame1          | Tauri(WebView + Rust)      | Wails(WebView + Go) | Electron(Chrome + Node) |
 | Frame2          | ElementPlus/Vue3           | NativeUI/Vue3       | ElementUI/Vue2          |
-| Install         | 5~9M                       | 7~12M               | 59~83M                  |
+| Install         | 8~14M                      | 7~13M               | 59~83M                  |
 | Startup         | Super Fast                 | Super Fast          | Fast                    |
 | Memory          | 100M                       | 120M                | 230M                    |
 | UI              | Simple Pretty              | Normal              | Just Soso               |
