@@ -46,10 +46,37 @@
 # Mac: Xcode
 # Linux: libwebkit2gtk, build-essential 等
 
+# 环境变量（配置rust和vp从国内镜像下载）
+```
+
+export RUSTUP_DIST_SERVER="https://rsproxy.cn"
+export RUSTUP_UPDATE_ROOT="https://rsproxy.cn/rustup"
+export VP_NODE_DIST_MIRROR="https://npmmirror.com/mirrors/node"
+export NPM_CONFIG_REGISTRY="https://registry.npmmirror.com"
+
+```
+
 # 安装 Rust （国内镜像 https://rsproxy.cn/）
 curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
 
-# 安装vite+: 自动管理node/pnpm （国内镜像 https://npmmirror.com, 环境变量: NPM_CONFIG_REGISTRY）
+vim ~/.cargo/config.toml
+```
+
+[source.crates-io]
+replace-with = 'rsproxy-sparse'
+[source.rsproxy]
+registry = "https://rsproxy.cn/crates.io-index"
+[source.rsproxy-sparse]
+registry = "sparse+https://rsproxy.cn/index/"
+[registries.rsproxy]
+index = "https://rsproxy.cn/crates.io-index"
+[net]
+git-fetch-with-cli = true
+
+```
+
+
+# 安装vite+: 自动管理node/pnpm
 curl -fsSL https://vite.plus | bash
 
 # 克隆项目
