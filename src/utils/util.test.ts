@@ -36,6 +36,18 @@ describe('meFormatDisplayValue', () => {
     expect(meFormatDisplayValue(raw, true)).toBe(raw)
   })
 
+  it('单行 [server] 与以段头结尾的 ini 不美化', () => {
+    expect(meFormatDisplayValue('[server]', true)).toBe('[server]')
+    expect(meFormatDisplayValue('{server}', true)).toBe('{server}')
+    const ini = '[server]\nhost = 127.0.0.1\n[client]'
+    expect(meFormatDisplayValue(ini, true)).toBe(ini)
+  })
+
+  it('数字数组与 JSON 字面量仍美化', () => {
+    expect(meFormatDisplayValue('[1,2]', true)).toContain('\n')
+    expect(meFormatDisplayValue('[true]', true)).toContain('\n')
+  })
+
   it('短字符串与空白原样返回，不抛错', () => {
     expect(meFormatDisplayValue('', true)).toBe('')
     expect(meFormatDisplayValue(' ', true)).toBe(' ')

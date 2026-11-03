@@ -302,6 +302,12 @@ export function meFormatDisplayValue(raw: string, pretty: boolean): string {
   // jsonc format 容错，会给 `[server]` 这类 ini/日志插换行，保存时固化损坏。
   // 只要求首尾括号成对，不再 JSON5.parse：Fastjson 的 Set[...] 等非标准 JSON 也能美化（只动空白）。
   if ((open === '{' && close === '}') || (open === '[' && close === ']')) {
+    const nl = trimmed.indexOf('\n')
+    const firstLine = (nl === -1 ? trimmed : trimmed.slice(0, nl)).trim()
+    // 首行整行只是 [名字] / {名字}：单行 [server]，或以段头开头、以 ] 结尾的 ini。true/false/null 是合法 JSON。
+    const bareName = firstLine.match(/^[{[]\s*([A-Za-z_][\w .-]*)\s*[}\]]$/)
+    if (bareName && bareName[1] !== 'true' && bareName[1] !== 'false' && bareName[1] !== 'null')
+      return raw
     try {
       return meJsonFormat(raw)
     } catch {
