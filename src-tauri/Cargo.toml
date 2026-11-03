@@ -25,8 +25,8 @@ tauri-plugin-log = "2"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 
-# 项目添加依赖
-redis = { version = "1", features = [
+# 项目添加依赖。redis-me-rs 是 redis-rs 1.8.1 的 fork，crate 名仍是 redis。
+redis = { package = "redis-me-rs", version = "1.8.1", features = [
   "acl",
   "cluster",
   "sentinel",
@@ -88,7 +88,3 @@ tauri-plugin-window-state = "2"
 [[bin]]
 name = "RedisME"
 path = "src/main.rs"
-
-# RedisME 的 redis-rs fork（X.509 v1、后续 ConnectionDialer 等都叠在这条分支）
-[patch.crates-io]
-redis = { git = "https://github.com/hepengju/redis-rs.git", branch = "redis-me" }

@@ -1,6 +1,6 @@
 ## Future
 
-- redis-rs库的更新，发布上去，避免每次都要github拉取
+- redis-rs库的更新，发布上去，避免每次都要github拉取 ✅
 - Unix Socket 支持
 - deepin应用商店的上架
 - 多个Redis连接之间的键迁移
