@@ -26,6 +26,7 @@ use tauri_specta::{Builder, Commands, collect_commands};
 /// 启动应用：安装 rustls、注册命令、挂上插件，并显示主窗口。
 #[rustfmt::skip] // 行尾注释按列对齐，rustfmt 会把多余空格收成一个
 pub fn run() {
+    disable_webkit_dmabuf_renderer();
     install_rustls();
 
     let specta_builder = specta_builder();
@@ -51,6 +52,25 @@ pub fn run() {
         .run(tauri::generate_context!())                      // 按 tauri.conf 启动
         .expect("error while running tauri application");     // 启动失败时退出
 }
+
+/// Linux 上关掉 WebKitGTK 的 DMA-BUF 渲染器，避免窗口白屏。
+///
+/// WebKit 2.42 起默认把页面画进一块 GPU 缓冲，再交给桌面合成器零拷贝上屏。
+/// Deepin 25 的 DDE、部分 Wayland 合成器和 NVIDIA 不接受这块缓冲的格式，合成失败后窗口停在白底。
+/// 改为共享内存上屏后页面能画出来。必须在创建 WebView 之前设置，这样 deb / rpm / AppImage 进程自己带上。
+/// 环境里已经有 `WEBKIT_DISABLE_DMABUF_RENDERER` 时不覆盖。
+#[cfg(target_os = "linux")]
+fn disable_webkit_dmabuf_renderer() {
+    if std::env::var_os("WEBKIT_DISABLE_DMABUF_RENDERER").is_none() {
+        // SAFETY: 此时还没有 tauri / tokio 线程，没有并发的环境变量读取。
+        unsafe {
+            std::env::set_var("WEBKIT_DISABLE_DMABUF_RENDERER", "1");
+        }
+    }
+}
+
+#[cfg(not(target_os = "linux"))]
+fn disable_webkit_dmabuf_renderer() {}
 
 /// 单实例。再次启动时聚焦已经在跑的窗口。
 /// https://tauri.app/zh-cn/plugin/single-instance/
