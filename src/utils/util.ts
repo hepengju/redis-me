@@ -296,11 +296,13 @@ export function meJsonFormat(jsonString: string): string {
 export function meFormatDisplayValue(raw: string, pretty: boolean): string {
   if (!pretty || !raw) return raw
   const trimmed = raw.trim()
-  if (trimmed.startsWith('{') || trimmed.startsWith('[')) {
+  // 下标越界是 undefined，不抛错。空串、长度为 1 时 open/close 为空或同一个字符，成对判断为 false。
+  const open = trimmed[0]
+  const close = trimmed[trimmed.length - 1]
+  // jsonc format 容错，会给 `[server]` 这类 ini/日志插换行，保存时固化损坏。
+  // 只要求首尾括号成对，不再 JSON5.parse：Fastjson 的 Set[...] 等非标准 JSON 也能美化（只动空白）。
+  if ((open === '{' && close === '}') || (open === '[' && close === ']')) {
     try {
-      // jsonc format 是容错格式化器，对 `[server]` 这类「以 [ 开头的非 JSON」（ini/日志等）
-      // 不报错反而会插换行破坏内容，保存时会固化损坏。先 JSON5.parse 验证确为合法 JSON 再美化。
-      JSON5.parse(trimmed)
       return meJsonFormat(raw)
     } catch {
       return raw

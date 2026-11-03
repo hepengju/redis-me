@@ -22,4 +22,25 @@ describe('meFormatDisplayValue', () => {
   it('pretty=false 一律原样', () => {
     expect(meFormatDisplayValue('{"a":1}', false)).toBe('{"a":1}')
   })
+
+  it('Fastjson Set[...]：首尾成对即可美化，并保留 Set 标记', () => {
+    const raw = '{"@type":"com.example.Foo","accountSet":Set[{"orgCode":"03017"}],}'
+    const out = meFormatDisplayValue(raw, true)
+    expect(out).toContain('\n')
+    expect(out).toContain('Set[')
+    expect(out).toMatch(/"orgCode":\s*"03017"/)
+  })
+
+  it('以 { 开头但不以 } 结尾的文本原样返回', () => {
+    const raw = '{"a":1} trailing'
+    expect(meFormatDisplayValue(raw, true)).toBe(raw)
+  })
+
+  it('短字符串与空白原样返回，不抛错', () => {
+    expect(meFormatDisplayValue('', true)).toBe('')
+    expect(meFormatDisplayValue(' ', true)).toBe(' ')
+    expect(meFormatDisplayValue('1', true)).toBe('1')
+    expect(meFormatDisplayValue('{', true)).toBe('{')
+    expect(meFormatDisplayValue('[', true)).toBe('[')
+  })
 })
