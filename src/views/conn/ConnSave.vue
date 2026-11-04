@@ -3,7 +3,7 @@
 import { ElLoading, ElMessage, type FormItemRule } from 'element-plus'
 import { cloneDeep } from 'lodash'
 import { nanoid } from 'nanoid'
-import { computed, inject, reactive, ref, useTemplateRef, watch } from 'vue'
+import { computed, inject, nextTick, reactive, ref, useTemplateRef, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { shareProvideKey, type UiConn } from '@/types/me-interface'
@@ -489,7 +489,7 @@ async function autoDiscover(alert: boolean = false) {
   }
 }
 
-/** 切到 Unix 时关掉不能一起用的模式。SSH 保留。 */
+/** 切到 Unix 时关掉不能一起用的模式。SSH 保留。切换本身不报校验。 */
 function onNetworkChange(val: string | number | boolean) {
   if (val === 'unix') {
     form.cluster = false
@@ -497,6 +497,10 @@ function onNetworkChange(val: string | number | boolean) {
     form.ssl = false
     form.proxy = false
   }
+  // 点击分段器会让地址框失焦，表单项 prop 也跟着换，这两下都会带出校验
+  const clearAddr = () => formRef.value?.clearValidate(['host', 'port', 'socketPath'])
+  clearAddr()
+  nextTick(clearAddr)
 }
 
 /** 集群 / 哨兵互斥：勾选其一则取消另一项 */
@@ -700,6 +704,7 @@ function applyAdvanced() {
           <div class="conn-addr-line">
             <el-segmented
               v-model="form.network"
+              :validate-event="false"
               :options="[
                 { label: 'TCP', value: 'tcp' },
                 { label: 'Unix', value: 'unix' },
