@@ -104,6 +104,14 @@ pub enum AppError {
     SshTimeout,
     /// 同一连接不能同时开 SSH 与代理
     SshAndProxyMutuallyExclusive,
+    /// Unix 套接字未填路径
+    UnixSocketPathRequired,
+    /// 路径不是绝对路径
+    UnixSocketPathInvalid,
+    /// Unix 套接字不能与集群、哨兵、SSL、代理同时使用
+    UnixSocketIncompatible,
+    /// 当前系统不能本机直连 Unix 套接字（需改走 SSH）
+    UnixSocketPlatformUnsupported,
 
     // 网络代理
     ProxyModeNotSupported {

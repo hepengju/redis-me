@@ -83,6 +83,8 @@ function emptyConn(overrides: Partial<UiConn>): UiConn {
     },
     proxy: false,
     proxyOption: { ...DEFAULT_PROXY_OPTION },
+    network: 'tcp',
+    socketPath: '',
     meta: {},
   }
   return { ...base, ...overrides }
@@ -142,7 +144,11 @@ function validateRedisMeConnList(connList: unknown): UiConn[] {
     if (looksLikeRedisInsightExportItem(conn)) {
       throw new ConnImportParseError('conn.importWrongSourceInsight')
     }
-    if (!conn.id || !conn.name || !conn.host || !conn.port) {
+    const unix = (conn.network ?? 'tcp').toLowerCase() === 'unix'
+    const addrOk = unix
+      ? !!conn.socketPath && conn.socketPath.startsWith('/')
+      : !!(conn.host && conn.port)
+    if (!conn.id || !conn.name || !addrOk) {
       throw new ConnImportParseError('conn.importFormatErr')
     }
   }
@@ -481,7 +487,7 @@ interface TinyRdmClusterYaml {
 interface TinyRdmYamlNode {
   type?: unknown
   connections?: unknown
-  /** 原始：`tcp` / `unix` 等。→ RedisME：unix 跳过 */
+  /** 原始：`tcp` / `unix` 等。→ RedisME：`network` + `socketPath` */
   network?: unknown
   sock?: unknown
   name?: unknown
@@ -550,9 +556,9 @@ function flattenTinyConnections(items: unknown[]): TinyRaw[] {
 function mapTinyItemToUiConn(o: TinyRaw): UiConn | 'skip-unix' {
   const network = getStr(o, 'network').toLowerCase() || 'tcp'
   const sock = getStr(o, 'sock')
-  if (network === 'unix' || (sock && !getStr(o, 'addr'))) {
-    return 'skip-unix'
-  }
+  // 有 sock 且没有 TCP 地址，或显式 unix：导入为套接字。没有路径的才跳过。
+  const unix = network === 'unix' || (!!sock && !getStr(o, 'addr'))
+  if (unix && !sock) return 'skip-unix'
 
   const name = getStr(o, 'name').trim() || 'imported'
   const host = getStr(o, 'addr', 'host').trim() || '127.0.0.1'
@@ -570,7 +576,7 @@ function mapTinyItemToUiConn(o: TinyRaw): UiConn | 'skip-unix' {
 
   const id = `tinyrdm-${name}`
 
-  return emptyConn({
+  const conn = emptyConn({
     id,
     name,
     host,
@@ -617,6 +623,15 @@ function mapTinyItemToUiConn(o: TinyRaw): UiConn | 'skip-unix' {
           passphrase: '',
         },
   })
+  if (!unix) return conn
+  // 套接字与集群 / 哨兵 / SSL / 代理互斥；SSH 保留，用来从 Windows 连远端路径
+  conn.network = 'unix'
+  conn.socketPath = sock
+  conn.cluster = false
+  conn.ssl = false
+  conn.sentinel = false
+  conn.proxy = false
+  return conn
 }
 
 const TINY_YAML_NAMES = ['connections.yaml']

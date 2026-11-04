@@ -8,7 +8,7 @@ import { useI18n } from 'vue-i18n'
 
 import { shareProvideKey, type UiConn } from '@/types/me-interface'
 import type { SystemProxyDetect } from '@/types/tauri-specta'
-import { buildRedisUrl } from '@/utils/conn'
+import { buildRedisUrl, isUnixNetwork } from '@/utils/conn'
 import {
   getConnCommandMap,
   getConnGroup,
@@ -42,6 +42,8 @@ const form = reactive({
 
   host: '',
   port: 6379,
+  network: 'tcp',
+  socketPath: '',
   username: '',
   password: '',
   db: 0,
@@ -83,9 +85,57 @@ const form = reactive({
   },
 })
 
+const isUnix = computed(() => isUnixNetwork(form.network))
+const canDial = computed(() =>
+  isUnix.value ? !!form.socketPath.trim() : !!(form.host && form.port),
+)
+
 const rules = {
-  host: [{ required: true, message: t('conn.nameRequired') }],
-  port: [{ required: true, message: t('conn.portRequired') }],
+  host: [
+    {
+      trigger: 'blur',
+      validator: (
+        _rule: FormItemRule,
+        value: unknown,
+        callback: (error?: string | Error) => void,
+      ) => {
+        if (!isUnix.value && !value) callback(new Error(t('conn.nameRequired')))
+        else callback()
+      },
+    },
+  ],
+  port: [
+    {
+      trigger: 'blur',
+      validator: (
+        _rule: FormItemRule,
+        value: unknown,
+        callback: (error?: string | Error) => void,
+      ) => {
+        if (!isUnix.value && !value) callback(new Error(t('conn.portRequired')))
+        else callback()
+      },
+    },
+  ],
+  socketPath: [
+    {
+      trigger: 'blur',
+      validator: (
+        _rule: FormItemRule,
+        value: unknown,
+        callback: (error?: string | Error) => void,
+      ) => {
+        if (!isUnix.value) {
+          callback()
+          return
+        }
+        const path = String(value ?? '').trim()
+        if (!path) callback(new Error(t('conn.socketPathRequired')))
+        else if (!path.startsWith('/')) callback(new Error(t('conn.socketPathAbs')))
+        else callback()
+      },
+    },
+  ],
   'sshOption.host': [
     {
       required: true,
@@ -236,6 +286,15 @@ function open(modeValue: 'add' | 'edit', data?: UiConn) {
     }
     if (newData.ssh && newData.proxy) newData.proxy = false
     Object.assign(form, newData)
+    // 旧连接没有 network；套接字与集群 / 哨兵 / SSL / 代理互斥，SSH 保留
+    form.network = isUnixNetwork(newData.network) ? 'unix' : 'tcp'
+    form.socketPath = typeof newData.socketPath === 'string' ? newData.socketPath : ''
+    if (form.network === 'unix') {
+      form.cluster = false
+      form.sentinel = false
+      form.ssl = false
+      form.proxy = false
+    }
     form.proxy = !!form.proxy
     form.proxyOption = { ...DEFAULT_PROXY_OPTION, ...form.proxyOption }
   }
@@ -269,7 +328,7 @@ function submit() {
 // 自动生成名称
 function autoGenName() {
   if (!form.name) {
-    form.name = form.host + ':' + form.port
+    form.name = isUnix.value ? form.socketPath : form.host + ':' + form.port
   }
 
   if (share.connList.find(c => c.name === form.name && c.id !== form.id)) {
@@ -279,12 +338,46 @@ function autoGenName() {
 
 /**
  * 主机输入框粘贴解析：自动提取连接信息。
- * 支持完整 URL（redis[s]://[user[:pass]@]host[:port][/db]）、
- * host:port、[IPv6]:port 格式；无合法端口时仅填充主机。
+ * 支持 unix://、redis+unix://、redis[s]://、host:port、[IPv6]:port。
  */
+/** 粘贴 unix:// 或 redis+unix:// 时切到套接字，并清掉不能一起用的模式。 */
+function applyUnixPaste(text: string, e: ClipboardEvent): boolean {
+  if (!/^(?:unix|redis\+unix|valkey\+unix):\/\//i.test(text)) return false
+  let url: URL
+  try {
+    url = new URL(text)
+  } catch {
+    return false
+  }
+  const path = decodeURIComponent(url.pathname || '')
+  if (!path.startsWith('/')) return false
+  e.preventDefault()
+  form.network = 'unix'
+  form.socketPath = path
+  form.cluster = false
+  form.sentinel = false
+  form.ssl = false
+  form.proxy = false
+  const user =
+    url.searchParams.get('user') || (url.username ? decodeURIComponent(url.username) : '')
+  const pass =
+    url.searchParams.get('pass') || (url.password ? decodeURIComponent(url.password) : '')
+  if (user) form.username = user
+  if (pass) form.password = pass
+  const dbRaw = url.searchParams.get('db')
+  if (dbRaw) {
+    const db = Number(dbRaw)
+    if (Number.isInteger(db) && db >= 0) form.db = db
+  }
+  const protocol = (url.searchParams.get('protocol') || '').toLowerCase()
+  if (protocol === 'resp3' || protocol === '3') setConnProtocol(form as UiConn, 'resp3')
+  return true
+}
+
 function onHostPaste(e: ClipboardEvent): void {
   const text = e.clipboardData?.getData('text')?.trim()
   if (!text) return
+  if (applyUnixPaste(text, e)) return
 
   // 完整 URL 解析
   if (/^rediss?:\/\//i.test(text)) {
@@ -296,6 +389,7 @@ function onHostPaste(e: ClipboardEvent): void {
       const port = url.port ? Number(url.port) : isSsl ? 6379 : 6379
       if (!Number.isInteger(port) || port < 1 || port > 65535) return
       e.preventDefault()
+      form.network = 'tcp'
       form.host = host
       form.port = port
       if (url.username) form.username = decodeURIComponent(url.username)
@@ -329,12 +423,14 @@ function onHostPaste(e: ClipboardEvent): void {
   }
   if (!portPart) {
     e.preventDefault()
+    form.network = 'tcp'
     form.host = hostPart
     return
   }
   const port = Number(portPart)
   if (!Number.isInteger(port) || port < 1 || port > 65535) return
   e.preventDefault()
+  form.network = 'tcp'
   form.host = hostPart
   form.port = port
 }
@@ -349,6 +445,8 @@ const redisUrl = computed(() =>
     ssl: form.ssl,
     db: form.db,
     protocol: getConnProtocol(form as UiConn),
+    network: form.network,
+    socketPath: form.socketPath,
   }),
 )
 
@@ -388,6 +486,16 @@ async function autoDiscover(alert: boolean = false) {
     if (alert) {
       meErr(e instanceof Error ? e : String(e), t('error'))
     }
+  }
+}
+
+/** 切到 Unix 时关掉不能一起用的模式。SSH 保留。 */
+function onNetworkChange(val: string | number | boolean) {
+  if (val === 'unix') {
+    form.cluster = false
+    form.sentinel = false
+    form.ssl = false
+    form.proxy = false
   }
 }
 
@@ -578,30 +686,53 @@ function applyAdvanced() {
         </el-col>
       </el-row>
 
-      <!-- 主机、端口 -->
-      <el-row :gutter="24">
-        <el-col :span="12">
-          <el-form-item :label="t('conn.host')" prop="host">
+      <!-- TCP：主机拉满，端口贴在后面且不占标签。Unix：这一行整段是路径 -->
+      <div class="conn-addr-row">
+        <el-form-item class="conn-addr-main" required :prop="isUnix ? 'socketPath' : 'host'">
+          <template #label>
+            <el-tooltip
+              v-if="isUnix"
+              placement="top"
+              raw-content
+              :show-after="tipShowAfter"
+              :content="t('conn.socketPathTip')">
+              <span>{{ t('conn.socketPath') }}</span>
+            </el-tooltip>
+            <span v-else>{{ t('conn.host') }}</span>
+          </template>
+          <div class="conn-addr-line">
+            <el-segmented
+              v-model="form.network"
+              :options="[
+                { label: 'TCP', value: 'tcp' },
+                { label: 'Unix', value: 'unix' },
+              ]"
+              @change="onNetworkChange" />
             <el-input
+              v-if="isUnix"
+              v-model.trim="form.socketPath"
+              placeholder="/var/run/redis/redis.sock"
+              clearable
+              @paste="onHostPaste" />
+            <el-input
+              v-else
               v-model.trim="form.host"
               placeholder="IP or paste redis://URL"
               clearable
               @paste="onHostPaste" />
-          </el-form-item>
-        </el-col>
-        <el-col :span="12">
-          <el-form-item :label="t('conn.port')" prop="port">
-            <el-input-number
-              :min="1"
-              :max="65535"
-              v-model="form.port"
-              :controls="false"
-              align="left"
-              style="width: 100%"
-              placeholder="6379" />
-          </el-form-item>
-        </el-col>
-      </el-row>
+          </div>
+        </el-form-item>
+        <span v-if="!isUnix" class="conn-addr-colon">:</span>
+        <el-form-item v-if="!isUnix" class="conn-addr-port" prop="port" label-width="0">
+          <el-input-number
+            :min="1"
+            :max="65535"
+            v-model="form.port"
+            :controls="false"
+            align="left"
+            placeholder="6379" />
+        </el-form-item>
+      </div>
 
       <!-- 用户名、密码 -->
       <el-row :gutter="24">
@@ -645,7 +776,7 @@ function applyAdvanced() {
                 placeholder="0" />
             </div>
             <div class="conn-mode-checkboxes">
-              <el-checkbox v-model="form.cluster" @change="onClusterChange">
+              <el-checkbox v-model="form.cluster" :disabled="isUnix" @change="onClusterChange">
                 <el-tooltip
                   placement="top"
                   raw-content
@@ -654,7 +785,7 @@ function applyAdvanced() {
                   <span>{{ t('conn.cluster') }}</span>
                 </el-tooltip>
               </el-checkbox>
-              <el-checkbox v-model="form.sentinel" @change="onSentinelChange">
+              <el-checkbox v-model="form.sentinel" :disabled="isUnix" @change="onSentinelChange">
                 <el-tooltip
                   placement="top"
                   raw-content
@@ -663,7 +794,7 @@ function applyAdvanced() {
                   <span>{{ t('conn.sentinel') }}</span>
                 </el-tooltip>
               </el-checkbox>
-              <el-checkbox v-model="form.ssl">
+              <el-checkbox v-model="form.ssl" :disabled="isUnix">
                 <el-tooltip
                   placement="top"
                   raw-content
@@ -681,7 +812,7 @@ function applyAdvanced() {
                   <span>SSH</span>
                 </el-tooltip>
               </el-checkbox>
-              <el-checkbox v-model="form.proxy">
+              <el-checkbox v-model="form.proxy" :disabled="isUnix">
                 <el-tooltip
                   placement="top"
                   raw-content
@@ -980,7 +1111,7 @@ function applyAdvanced() {
     <template #footer>
       <div class="conn-footer">
         <div class="conn-footer-left">
-          <el-button type="success" :disabled="!(form.host && form.port)" @click="testConn">{{
+          <el-button type="success" :disabled="!canDial" @click="testConn">{{
             t('conn.testConn')
           }}</el-button>
           <el-checkbox v-model="form.readonly" border>
@@ -1003,10 +1134,7 @@ function applyAdvanced() {
           </el-checkbox>
         </div>
         <div>
-          <me-button
-            :info="redisUrl"
-            :disabled="!(form.host && form.port)"
-            @click="meCopy(redisUrl)">
+          <me-button :info="redisUrl" :disabled="!canDial" @click="meCopy(redisUrl)">
             URL
           </me-button>
           <el-button @click="visible = false">{{ t('cancel') }}</el-button>
@@ -1018,6 +1146,45 @@ function applyAdvanced() {
 </template>
 
 <style scoped lang="scss">
+.conn-addr-row {
+  display: flex;
+  align-items: flex-start;
+}
+
+.conn-addr-colon {
+  display: flex;
+  align-items: center;
+  height: 32px;
+  padding: 0 6px;
+  color: var(--el-text-color-regular);
+}
+
+.conn-addr-main {
+  flex: 1;
+  min-width: 0;
+}
+
+.conn-addr-line {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+}
+
+.conn-addr-line .el-input {
+  flex: 1;
+  min-width: 0;
+}
+
+.conn-addr-port {
+  width: 96px;
+  flex: none;
+}
+
+.conn-addr-port :deep(.el-input-number) {
+  width: 100%;
+}
+
 .conn-other-row {
   display: flex;
   align-items: center;

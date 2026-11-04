@@ -171,6 +171,8 @@ export type ConnConfig = {
 	name: string,
 	host: string,
 	port: number,
+	network?: string,
+	socketPath?: string,
 	username: string,
 	password: string,
 	db: number,

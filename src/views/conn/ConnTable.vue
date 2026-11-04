@@ -4,7 +4,7 @@ import { nextTick, onMounted, useTemplateRef, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import type { UiConn } from '@/types/me-interface'
-import { getConnIcon } from '@/utils/conn'
+import { connEndpoint, getConnIcon } from '@/utils/conn'
 import { PREDEFINE_COLORS } from '@/utils/util'
 
 const props = defineProps<{ data: UiConn[]; groupKey?: string }>()
@@ -73,7 +73,7 @@ defineExpose({
       class-name="conn-host">
       <template #default="scope">
         <div style="color: var(--el-color-info)">
-          {{ scope.row.host + ':' + scope.row.port }}
+          {{ connEndpoint(scope.row) }}
         </div>
       </template>
     </el-table-column>

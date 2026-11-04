@@ -192,8 +192,8 @@ export default {
     importZipErr: 'Failed to extract ZIP',
     importYamlErr: 'Invalid connections.yaml',
     importYamlMissing: 'connections.yaml not found in ZIP',
-    importSkippedUnix: 'Skipped {n} Unix socket connection(s) (TCP only)',
-    importAllUnixErr: 'No TCP connections to import (only Unix sockets)',
+    importSkippedUnix: 'Skipped {n} Unix socket connection(s) with no path',
+    importAllUnixErr: 'No connections to import (Unix sockets are missing a path)',
 
     // 新增编辑
     labelWidth: '80',
@@ -203,6 +203,11 @@ export default {
     deleteConn: 'Delete Connection 【{name}】?',
     host: 'Host',
     port: 'Port',
+    socketPath: 'Path',
+    socketPathTip:
+      'Without SSH: a local socket path (Linux / macOS only).<br/>With SSH: the socket path on the remote Redis host. Windows can connect this way.',
+    socketPathRequired: 'Please input the socket path',
+    socketPathAbs: 'Path must start with /',
     username: 'User',
     password: 'Password',
     ssl: 'SSL Options',
@@ -1447,6 +1452,11 @@ Once an operation prevents Redis from keeping the space-saving encoding, special
     ssh_auth_failed: 'SSH authentication failed',
     ssh_timeout: 'SSH connection timed out',
     ssh_and_proxy_mutually_exclusive: 'SSH and network proxy cannot be enabled together',
+    unix_socket_path_required: 'Unix socket path is required',
+    unix_socket_path_invalid: 'Unix socket path must be absolute (start with /)',
+    unix_socket_incompatible: 'Unix socket cannot be used with cluster, sentinel, SSL, or proxy',
+    unix_socket_platform_unsupported:
+      'This system cannot connect to a local Unix socket. Use SSH to reach a remote socket path',
     proxy_mode_not_supported: 'Unsupported proxy mode: {mode}',
     proxy_type_not_supported: 'Unsupported proxy type: {proxy_type}',
     proxy_host_required: 'Proxy host and port are required',

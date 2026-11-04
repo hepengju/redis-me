@@ -51,6 +51,11 @@ api_model!(
 
         host: String,
         port: u16,
+        // 传输：缺省 tcp。unix 时用 socket_path；未开 SSH 为本机套接字，开了 SSH 则由跳板在远端打开
+        #[serde(default)]
+        network: String,
+        #[serde(default)]
+        socket_path: String,
         username: String,
         password: String,
         db: u16,
@@ -115,6 +120,11 @@ impl ConnConfig {
     /// meta.protocol 是否为 resp3
     pub fn is_resp3(&self) -> bool {
         self.protocol_version().supports_resp3()
+    }
+
+    /// 仅 `network=unix` 走套接字。空串和其它值都当 TCP，兼容旧连接。
+    pub fn is_unix(&self) -> bool {
+        self.network.eq_ignore_ascii_case("unix")
     }
 
     /// 极简模式（meta.uiMode=minimal）：仅键值与终端；连接时跳过 CLIENT SETNAME

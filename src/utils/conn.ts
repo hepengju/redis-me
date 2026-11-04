@@ -163,8 +163,38 @@ export function folderKeyPrefix(folder: string, sep: string): string {
   return folder + (sep || DEFAULT_KEY_SEPARATOR)
 }
 
+/** 仅 network=unix 走套接字。缺省和其它值都当 TCP。 */
+export function isUnixNetwork(network?: string): boolean {
+  return (network ?? '').toLowerCase() === 'unix'
+}
+
+/** 列表和信息页上的地址：套接字显示路径，TCP 显示 host:port。 */
+export function connEndpoint(conn: {
+  network?: string
+  socketPath?: string
+  host?: string
+  port?: number
+}): string {
+  if (isUnixNetwork(conn.network)) {
+    const path = conn.socketPath?.trim()
+    if (path) return path
+  }
+  const host = conn.host ?? ''
+  if (conn.port == null || conn.port === 0) return host
+  return `${host}:${conn.port}`
+}
+
+/** 套接字路径保留 `/`，其余百分号编码。 */
+function encodeUnixPath(path: string): string {
+  return path
+    .split('/')
+    .map(seg => encodeURIComponent(seg))
+    .join('/')
+}
+
 /**
  * 从连接参数构建 Redis URL（redis[s]://[user[:pass]@]host[:port][/db][?protocol=resp3]）。
+ * Unix 套接字为 unix:///path?user=&pass=&db=&protocol=resp3，与 redis-rs 的解析方式一致。
  * IPv6 地址自动加方括号；密码中的特殊字符自动编码。
  */
 export function buildRedisUrl(params: {
@@ -175,7 +205,19 @@ export function buildRedisUrl(params: {
   ssl?: boolean
   db?: number
   protocol?: string
+  network?: string
+  socketPath?: string
 }): string {
+  if (isUnixNetwork(params.network)) {
+    const path = encodeUnixPath((params.socketPath ?? '').trim() || '/tmp/redis.sock')
+    const q = new URLSearchParams()
+    if (params.username) q.set('user', params.username)
+    if (params.password) q.set('pass', params.password)
+    if (params.db && params.db > 0) q.set('db', String(params.db))
+    if (params.protocol === 'resp3') q.set('protocol', 'resp3')
+    const qs = q.toString()
+    return qs ? `unix://${path}?${qs}` : `unix://${path}`
+  }
   const scheme = params.ssl ? 'rediss' : 'redis'
   let host = params.host || '127.0.0.1'
   if (host.includes(':') && !host.startsWith('[')) host = `[${host}]`
@@ -198,7 +240,8 @@ export function connMatchesKeyword(conn: UiConn, keyword: string): boolean {
   if (!key) return true
   return (
     (conn.name?.toLowerCase().includes(key) ?? false) ||
-    (conn.host?.toLowerCase().includes(key) ?? false)
+    (conn.host?.toLowerCase().includes(key) ?? false) ||
+    (conn.socketPath?.toLowerCase().includes(key) ?? false)
   )
 }
 

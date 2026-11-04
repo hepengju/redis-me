@@ -187,8 +187,8 @@ export default {
     importZipErr: 'ZIP 解压失败',
     importYamlErr: 'connections.yaml 格式错误',
     importYamlMissing: 'ZIP 内未找到 connections.yaml',
-    importSkippedUnix: '已跳过 {n} 个 Unix 套接字连接（当前仅支持 TCP）',
-    importAllUnixErr: '没有可导入的 TCP 连接（均为 Unix 套接字）',
+    importSkippedUnix: '已跳过 {n} 个缺少路径的 Unix 套接字连接',
+    importAllUnixErr: '没有可导入的连接（Unix 套接字缺少路径）',
 
     // 新增编辑
     labelWidth: '60',
@@ -198,6 +198,11 @@ export default {
     deleteConn: '确认删除连接【{name}】吗？',
     host: '主机',
     port: '端口',
+    socketPath: '路径',
+    socketPathTip:
+      '未开 SSH：本机套接字路径，仅 Linux / macOS 可连。<br/>已开 SSH：远端 Redis 机器上的路径，Windows 也可以连。',
+    socketPathRequired: '请输入套接字路径',
+    socketPathAbs: '路径须以 / 开头',
     username: '用户',
     password: '密码',
     ssl: 'SSL设置',
@@ -1420,6 +1425,10 @@ export default {
     ssh_auth_failed: 'SSH 认证失败',
     ssh_timeout: 'SSH 连接超时',
     ssh_and_proxy_mutually_exclusive: 'SSH 与网络代理不能同时开启',
+    unix_socket_path_required: '请填写 Unix 套接字路径',
+    unix_socket_path_invalid: 'Unix 套接字路径须为绝对路径（以 / 开头）',
+    unix_socket_incompatible: 'Unix 套接字不能与集群、哨兵、SSL 或代理同时使用',
+    unix_socket_platform_unsupported: '当前系统不能直连 Unix 套接字，请改用 SSH 连接远端路径',
     proxy_mode_not_supported: '不支持的代理模式: {mode}',
     proxy_type_not_supported: '不支持的代理类型: {proxy_type}',
     proxy_host_required: '请填写代理主机和端口',

@@ -106,6 +106,11 @@ export function checkConnList(connList: ConnFromStore[]): void {
     conn.proxyOption = { ...DEFAULT_PROXY_OPTION, ...poObj }
     if (!conn.proxyOption.port) conn.proxyOption.port = DEFAULT_PROXY_OPTION.port
 
+    // Unix 套接字：旧连接没有这两个字段，缺省当 TCP
+    conn.network =
+      typeof conn.network === 'string' && conn.network.toLowerCase() === 'unix' ? 'unix' : 'tcp'
+    conn.socketPath = typeof conn.socketPath === 'string' ? conn.socketPath.trim() : ''
+
     // db 未填或为 null 时默认赋值 0
     if (conn.db == null) conn.db = 0
   })

@@ -21,6 +21,7 @@ use url::Url;
 
 /// 按连接配置试连一次。集群走集群客户端，其余走单机客户端。
 pub fn test_conn(conf: &ConnConfig, connect_timeout: Duration) -> AnyResult<()> {
+    reject_unix_combo(conf)?;
     if conf.cluster {
         get_client_cluster(conf, connect_timeout, true)?;
     } else {
@@ -35,6 +36,7 @@ pub fn sentinel_masters(
     connect_timeout: Duration,
     command_timeout: Duration,
 ) -> AnyResult<Vec<HashMap<String, String>>> {
+    reject_unix_combo(conf)?;
     let mut conf = conf.clone();
     conf.sentinel = false;
     let (client, _) = get_client_single(&conf, connect_timeout, false, None)?;
@@ -53,6 +55,7 @@ pub fn get_client_single(
     verify: bool,
     existing: Option<Arc<dyn ConnectionDialer>>,
 ) -> AnyResult<(Client, Option<Arc<dyn ConnectionDialer>>)> {
+    reject_unix_combo(conf)?;
     if conf.sentinel && conf.sentinel_option.master_name.is_empty() {
         bail!(AppError::SentinelMasterNotFound {
             name: conf.sentinel_option.master_name.clone()
@@ -93,6 +96,7 @@ pub fn get_client_cluster(
     connect_timeout: Duration,
     verify: bool,
 ) -> AnyResult<ClusterClient> {
+    reject_unix_combo(conf)?;
     let dialer = resolve_dialer(conf, connect_timeout, None)?;
     if conf.ssl {
         reject_if_plaintext_redis(conf, connect_timeout, dialer.clone())?;
@@ -177,7 +181,13 @@ fn resolve_dialer(
         bail!(AppError::SshAndProxyMutuallyExclusive);
     }
     if conf.ssh {
-        Ok(Some(SshDialer::connect(&conf.ssh_option, connect_timeout)?))
+        // unix + SSH：路径留在 Dialer 上，开 channel 时走 direct-streamlocal，不经过本机套接字
+        let socket_path = conf.is_unix().then(|| conf.socket_path.trim().to_string());
+        Ok(Some(SshDialer::connect(
+            &conf.ssh_option,
+            connect_timeout,
+            socket_path,
+        )?))
     } else if conf.proxy {
         build_proxy_dialer(conf, connect_timeout)
     } else {
@@ -185,19 +195,53 @@ fn resolve_dialer(
     }
 }
 
+/// Unix 套接字只支持单机直连，或经 SSH 打开远端路径。集群 / 哨兵 / SSL / 代理在拨号前拒绝。
+fn reject_unix_combo(conf: &ConnConfig) -> AnyResult<()> {
+    if !conf.is_unix() {
+        return Ok(());
+    }
+    let path = conf.socket_path.trim();
+    if path.is_empty() {
+        bail!(AppError::UnixSocketPathRequired);
+    }
+    if !path.starts_with('/') {
+        bail!(AppError::UnixSocketPathInvalid);
+    }
+    if conf.cluster || conf.sentinel || conf.ssl || conf.proxy {
+        bail!(AppError::UnixSocketIncompatible);
+    }
+    // 本机 UnixStream 只在 unix 平台可用；Windows 要连远端套接字必须走 SSH
+    if !conf.ssh && !cfg!(unix) {
+        bail!(AppError::UnixSocketPlatformUnsupported);
+    }
+    Ok(())
+}
+
 /// 拼 redis-rs 用的连接 URL。裸 IPv6 加方括号；SSL 带 `#insecure`；RESP3 写在 query 里。
+///
+/// unix 且开了 SSH 时仍返回普通 `redis://` 占位地址：redis-rs 对 `unix://` 会丢掉 Dialer。
+/// 真正的远端路径在 `SshDialer` 上。
 fn redis_url(conf: &ConnConfig) -> AnyResult<Url> {
+    if conf.is_unix() && conf.ssh {
+        return redis_tcp_url(conf, "127.0.0.1", 6379);
+    }
+    if conf.is_unix() {
+        return redis_unix_url(conf);
+    }
+    redis_tcp_url(conf, &conf.host, conf.port)
+}
+
+/// TCP / TLS 地址。占位的 SSH+unix 也走这里，账号和 RESP3 与直连 TCP 相同。
+fn redis_tcp_url(conf: &ConnConfig, host: &str, port: u16) -> AnyResult<Url> {
     // 与前端 buildRedisUrl 一致：裸 IPv6 必须加 []，否则 Url 解析失败；哨兵发现的 master 常是无括号地址
-    let host = if conf.host.contains(':') && !conf.host.starts_with('[') {
-        format!("[{}]", conf.host)
+    let host = if host.contains(':') && !host.starts_with('[') {
+        format!("[{host}]")
     } else {
-        conf.host.clone()
+        host.to_string()
     };
     let mut url = Url::parse(&format!(
-        "{}://{}:{}",
+        "{}://{host}:{port}",
         if conf.ssl { "rediss" } else { "redis" },
-        host,
-        conf.port
     ))?;
     url.set_username(&conf.username).unwrap_or(());
     url.set_password(Some(&conf.password)).unwrap_or(());
@@ -210,18 +254,63 @@ fn redis_url(conf: &ConnConfig) -> AnyResult<Url> {
     Ok(url)
 }
 
-/// 打连接 URL 日志。密码固定打成 `******`。
+/// 本机套接字。redis-rs 从 query 读 `user` / `pass` / `protocol`，路径用 `to_file_path`。
+fn redis_unix_url(conf: &ConnConfig) -> AnyResult<Url> {
+    let path = encode_unix_path(conf.socket_path.trim());
+    let mut url = Url::parse(&format!("unix://{path}"))?;
+    {
+        let mut pairs = url.query_pairs_mut();
+        if !conf.username.is_empty() {
+            pairs.append_pair("user", &conf.username);
+        }
+        if !conf.password.is_empty() {
+            pairs.append_pair("pass", &conf.password);
+        }
+        if conf.is_resp3() {
+            pairs.append_pair("protocol", "resp3");
+        }
+    }
+    Ok(url)
+}
+
+/// 保留 `/`，其余按百分号编码，避免空格等字符让 `Url::parse` 失败。
+fn encode_unix_path(path: &str) -> String {
+    let mut out = String::new();
+    for b in path.bytes() {
+        match b {
+            b'A'..=b'Z' | b'a'..=b'z' | b'0'..=b'9' | b'/' | b'-' | b'_' | b'.' | b'~' => {
+                out.push(b as char);
+            }
+            _ => out.push_str(&format!("%{b:02X}")),
+        }
+    }
+    out
+}
+
+/// 打连接 URL 日志。密码固定打成 `******`。unix 打路径，不打 SSH 占位的 127.0.0.1。
 fn log_redis_url(conf: &ConnConfig, url: &Url) {
+    if conf.is_unix() {
+        info!(
+            "redis_url: unix {} user={} ssh={}{}",
+            conf.socket_path.trim(),
+            conf.username,
+            conf.ssh,
+            if conf.is_resp3() {
+                " protocol=resp3"
+            } else {
+                ""
+            }
+        );
+        return;
+    }
     info!(
         "redis_url: {}://{}:******@{}:{}{}{}",
         url.scheme(),
         conf.username,
         conf.host,
         conf.port,
-        url.query().map(|q| format!("?{}", q)).unwrap_or_default(),
-        url.fragment()
-            .map(|f| format!("#{}", f))
-            .unwrap_or_default()
+        url.query().map(|q| format!("?{q}")).unwrap_or_default(),
+        url.fragment().map(|f| format!("#{f}")).unwrap_or_default()
     );
 }
 
@@ -374,7 +463,8 @@ fn hint_if_ssl_required(
     peer: Option<(String, u16)>,
     err: anyhow::Error,
 ) -> anyhow::Error {
-    if conf.ssl || !looks_like_reset_or_parse(&error_chain_text(&err)) {
+    // 套接字不支持 SSL。SSH 场景的地址是占位 TCP，不能拿去探测 TLS。
+    if conf.is_unix() || conf.ssl || !looks_like_reset_or_parse(&error_chain_text(&err)) {
         return err;
     }
     let (host, port) = peer.unwrap_or_else(|| (conf.host.clone(), conf.port));
@@ -818,5 +908,114 @@ mod tests {
         assert_eq!(url.username(), "u");
         assert_eq!(url.fragment(), Some("insecure"));
         assert!(url.query().unwrap_or("").contains("protocol=resp3"));
+    }
+
+    fn unix_conf(path: &str) -> ConnConfig {
+        ConnConfig {
+            network: "unix".into(),
+            socket_path: path.into(),
+            ..ConnConfig::default()
+        }
+    }
+
+    /// 本机套接字走 unix://，账号和协议在 query 里，路径里的空格要编码。
+    #[test]
+    fn local_unix_url_uses_query_credentials() {
+        let mut conf = unix_conf("/var/run/my redis.sock");
+        conf.username = "u".into();
+        conf.password = "p@ss".into();
+        conf.meta.insert(
+            "protocol".into(),
+            crate::model::ConnMetaValue::String("resp3".into()),
+        );
+        let url = redis_url(&conf).unwrap();
+        assert_eq!(url.scheme(), "unix");
+        assert!(
+            url.path().contains("my%20redis.sock") || url.as_str().contains("my%20redis.sock"),
+            "unexpected url: {}",
+            url.as_str()
+        );
+        let pairs: Vec<(String, String)> = url.query_pairs().into_owned().collect();
+        assert!(pairs.iter().any(|(k, v)| k == "user" && v == "u"));
+        assert!(pairs.iter().any(|(k, v)| k == "pass" && v == "p@ss"));
+        assert!(pairs.iter().any(|(k, v)| k == "protocol" && v == "resp3"));
+    }
+
+    /// SSH + unix 必须仍是 redis://，否则 redis-rs 会丢掉 Dialer 并在本机 connect。
+    #[test]
+    fn ssh_unix_url_stays_tcp() {
+        let mut conf = unix_conf("/var/run/redis/redis.sock");
+        conf.ssh = true;
+        conf.username = "u".into();
+        let url = redis_url(&conf).unwrap();
+        assert_eq!(url.scheme(), "redis");
+        assert!(
+            !url.as_str().contains("redis.sock"),
+            "unexpected url: {}",
+            url.as_str()
+        );
+        assert_eq!(url.username(), "u");
+    }
+
+    /// 套接字不能和集群一起用，而且在拨号前就拒绝。
+    #[test]
+    fn unix_cluster_rejected_before_io() {
+        let mut conf = unix_conf("/tmp/redis.sock");
+        conf.cluster = true;
+        let err = get_client_cluster(&conf, Duration::from_secs(1), false).unwrap_err();
+        assert!(
+            err.to_string().contains("unix_socket_incompatible"),
+            "unexpected error: {err}"
+        );
+    }
+
+    fn expect_err<T>(result: AnyResult<T>) -> String {
+        match result {
+            Ok(_) => panic!("expected error"),
+            Err(e) => e.to_string(),
+        }
+    }
+
+    /// 相对路径、空路径同样在拨号前拒绝。
+    #[test]
+    fn unix_path_must_be_absolute() {
+        let empty = expect_err(get_client_single(
+            &unix_conf(""),
+            Duration::from_secs(1),
+            false,
+            None,
+        ));
+        assert!(empty.contains("unix_socket_path_required"), "{empty}");
+        let rel = expect_err(get_client_single(
+            &unix_conf("tmp/redis.sock"),
+            Duration::from_secs(1),
+            false,
+            None,
+        ));
+        assert!(rel.contains("unix_socket_path_invalid"), "{rel}");
+    }
+
+    /// 非 unix 平台不能本机直连套接字。
+    #[cfg(not(unix))]
+    #[test]
+    fn local_unix_rejected_on_this_platform() {
+        let err = expect_err(get_client_single(
+            &unix_conf("/tmp/redis.sock"),
+            Duration::from_secs(1),
+            false,
+            None,
+        ));
+        assert!(
+            err.contains("unix_socket_platform_unsupported"),
+            "unexpected error: {err}"
+        );
+    }
+
+    /// redis-rs 能把本机 unix URL 解析成套接字地址（不发起连接）。
+    #[cfg(unix)]
+    #[test]
+    fn local_unix_url_parses() {
+        let url = redis_url(&unix_conf("/tmp/redis.sock")).unwrap();
+        redis::Client::open(url.to_string()).expect("unix url should parse");
     }
 }

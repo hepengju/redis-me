@@ -9,6 +9,7 @@ import type { UiConn } from '@/types/me-interface'
 import type { ConnGroupSection } from '@/utils/conn'
 import {
   applyConnGroupOrder,
+  connEndpoint,
   getConnGroup,
   getConnIcon,
   moveConnInGroup,
@@ -258,7 +259,7 @@ onBeforeUnmount(() => destroySortables())
             class="conn-host"
             :icon-left="false"
             icon="el-icon-rank"
-            :name="conn.host + ':' + conn.port" />
+            :name="connEndpoint(conn)" />
           <span class="conn-actions row-actions" @click.stop>
             <el-color-picker
               size="small"

@@ -17,6 +17,7 @@ import MeOverflowText from '@/components/MeOverflowText.vue'
 import { infoTip as tips } from '@/locales/info'
 import { shareProvideKey } from '@/types/me-interface'
 import type { RedisInfo } from '@/types/tauri-specta'
+import { connEndpoint } from '@/utils/conn'
 import { enrichNodeList } from '@/utils/redis-display'
 import { bus, INFO_REFRESH, meCommands, meHumanSize } from '@/utils/util'
 
@@ -197,7 +198,7 @@ async function refresh(withConfigGet: boolean = false) {
     const data = await meCommands.info(share.conn!.id, node.value)
     raw.value = data.info || ''
     const conn = share.conn
-    infoNode.value = data.node || (conn ? `${conn.host}:${conn.port}` : '')
+    infoNode.value = data.node || (conn ? connEndpoint(conn) : '')
 
     if (withConfigGet) {
       const snap = await fetchSaveConfig(node.value)

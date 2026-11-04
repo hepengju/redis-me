@@ -219,4 +219,27 @@ describe('parseRedisMeConnections', () => {
     expect(round[0]!.proxyOption?.port).toBe(1080)
     expect(round[0]!.proxyOption?.password).toBe('secret')
   })
+
+  it('Unix 套接字只要求路径，不要求主机端口', () => {
+    const list = parseRedisMeConnections(
+      JSON.stringify([
+        {
+          id: 'id-unix',
+          name: 'local-sock',
+          network: 'unix',
+          socketPath: '/var/run/redis/redis.sock',
+        },
+      ]),
+    )
+    expect(list[0]!.network).toBe('unix')
+    expect(list[0]!.socketPath).toBe('/var/run/redis/redis.sock')
+  })
+
+  it('Unix 套接字相对路径视为格式错误', () => {
+    expect(() =>
+      parseRedisMeConnections(
+        JSON.stringify([{ id: 'id-unix', name: 'bad', network: 'unix', socketPath: 'redis.sock' }]),
+      ),
+    ).toThrow(ConnImportParseError)
+  })
 })

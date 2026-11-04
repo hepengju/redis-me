@@ -69,6 +69,27 @@ describe('buildRedisUrl', () => {
       'redis://127.0.0.1:6379',
     )
   })
+
+  it('Unix 套接字：路径、账号和协议走 query', () => {
+    expect(
+      buildRedisUrl({
+        host: '',
+        port: 6379,
+        network: 'unix',
+        socketPath: '/var/run/redis.sock',
+        username: 'u',
+        password: 'p@ss',
+        db: 2,
+        protocol: 'resp3',
+      }),
+    ).toBe('unix:///var/run/redis.sock?user=u&pass=p%40ss&db=2&protocol=resp3')
+  })
+
+  it('路径中的空格会被编码', () => {
+    expect(
+      buildRedisUrl({ host: '', port: 6379, network: 'unix', socketPath: '/tmp/my redis.sock' }),
+    ).toBe('unix:///tmp/my%20redis.sock')
+  })
 })
 
 describe('isConnMinimalMode', () => {

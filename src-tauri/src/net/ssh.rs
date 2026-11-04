@@ -1,4 +1,5 @@
-//! SSH 传输：一条 russh 会话，每条 Redis 连接一个 `direct_tcpip` channel。
+//! SSH 传输：一条 russh 会话，每条 Redis 连接一个 channel。
+//! TCP 目标用 `direct-tcpip`；Unix 套接字目标用 `direct-streamlocal`（远端路径）。
 //!
 //! # 为什么看起来绕
 //!
@@ -14,6 +15,7 @@
 //!
 //! 数据流：`SshDialer::connect` 认证一次 → `dial(host, port)` 开 channel →
 //! `SshRedisStream` 交给 redis-rs。集群/哨兵子连接复用同一 `Arc<SshDialer>`。
+//! `socket_path` 有值时忽略 dial 传来的 host/port，在跳板上打开该套接字。
 
 use crate::model::SshOption;
 use crate::support::error::AppError;
@@ -59,6 +61,8 @@ pub struct SshDialer {
     ssh_option: SshOption,
     /// `dial(..., timeout: None)` 时用（redis-rs `get_connection` 会传 None）
     connect_timeout: Duration,
+    /// 有值时开 `direct-streamlocal`，目标是远端套接字而不是 TCP 端口
+    socket_path: Option<String>,
     /// 只串行化「重连」，不挡正常开 channel
     reconnect_lock: Mutex<()>,
     session: Mutex<Option<client::Handle<ClientHandler>>>,
@@ -77,12 +81,20 @@ impl SshDialer {
     }
 
     /// 连跳板并认证。失败不留下半开 Runtime（局部 `runtime` 随 `?` 析构）。
-    pub fn connect(ssh_option: &SshOption, connect_timeout: Duration) -> AnyResult<Arc<Self>> {
+    pub fn connect(
+        ssh_option: &SshOption,
+        connect_timeout: Duration,
+        socket_path: Option<String>,
+    ) -> AnyResult<Arc<Self>> {
         info!(
-            "SSH 会话 {}:{}，超时 {}s",
+            "SSH 会话 {}:{}，超时 {}s{}",
             ssh_option.host,
             ssh_option.port,
-            connect_timeout.as_secs()
+            connect_timeout.as_secs(),
+            socket_path
+                .as_deref()
+                .map(|p| format!("，远端套接字 {p}"))
+                .unwrap_or_default()
         );
         let runtime = new_ssh_runtime()?;
         let handle =
@@ -90,6 +102,7 @@ impl SshDialer {
         Ok(Arc::new(Self {
             ssh_option: ssh_option.clone(),
             connect_timeout,
+            socket_path,
             reconnect_lock: Mutex::new(()),
             session: Mutex::new(Some(handle)),
             runtime: Some(runtime),
@@ -171,10 +184,62 @@ impl SshDialer {
             }
         })
     }
+
+    /// 在跳板上打开 Unix 套接字。失败信息带上路径，便于区分「文件不存在」和「sshd 禁止转发」。
+    fn open_streamlocal(
+        &self,
+        path: &str,
+        open_timeout: Duration,
+    ) -> RedisResult<russh::Channel<client::Msg>> {
+        off_ui_redis(|| {
+            let guard = self.session.lock();
+            let handle = guard.as_ref().ok_or_else(|| {
+                RedisError::from(io::Error::new(
+                    io::ErrorKind::NotConnected,
+                    "SSH session missing",
+                ))
+            })?;
+            if handle.is_closed() {
+                return Err(RedisError::from(io::Error::new(
+                    io::ErrorKind::NotConnected,
+                    "SSH session closed",
+                )));
+            }
+            match self.runtime().block_on(async {
+                timeout(open_timeout, handle.channel_open_direct_streamlocal(path)).await
+            }) {
+                Ok(Ok(ch)) => Ok(ch),
+                Ok(Err(e)) => Err(streamlocal_err(path, e.to_string())),
+                Err(_) => Err(RedisError::from(io::Error::new(
+                    io::ErrorKind::TimedOut,
+                    format!(
+                        "SSH streamlocal {path} timed out ({}s). If sshd disables Unix forwarding, set AllowStreamLocalForwarding yes",
+                        open_timeout.as_secs()
+                    ),
+                ))),
+            }
+        })
+    }
+}
+
+/// streamlocal 被 sshd 拒绝时补一句配置提示；路径不存在则只保留原始错误。
+fn streamlocal_err(path: &str, detail: String) -> RedisError {
+    let lower = detail.to_lowercase();
+    let hint = if lower.contains("prohibit")
+        || lower.contains("not allowed")
+        || lower.contains("administratively")
+    {
+        ". If sshd disables Unix forwarding, set AllowStreamLocalForwarding yes"
+    } else {
+        ""
+    };
+    RedisError::from(io::Error::other(format!(
+        "SSH streamlocal {path}: {detail}{hint}"
+    )))
 }
 
 impl ConnectionDialer for SshDialer {
-    /// 开一条到 Redis 的 `direct-tcpip`。会话断了会重连一次。
+    /// TCP 走 `direct-tcpip`；配置了套接字路径则走 `direct-streamlocal`。会话断了会重连一次。
     fn dial(
         &self,
         host: &str,
@@ -186,13 +251,24 @@ impl ConnectionDialer for SshDialer {
             self.reconnect()?;
         }
         // 开 channel 失败且会话已断：重连一次再试（计划：最多一次）
-        let channel = match self.open_channel(host, port, open_timeout) {
-            Ok(ch) => ch,
-            Err(_) if self.session_closed() => {
-                self.reconnect()?;
-                self.open_channel(host, port, open_timeout)?
+        let channel = if let Some(path) = self.socket_path.clone() {
+            match self.open_streamlocal(&path, open_timeout) {
+                Ok(ch) => ch,
+                Err(_) if self.session_closed() => {
+                    self.reconnect()?;
+                    self.open_streamlocal(&path, open_timeout)?
+                }
+                Err(e) => return Err(e),
             }
-            Err(e) => return Err(e),
+        } else {
+            match self.open_channel(host, port, open_timeout) {
+                Ok(ch) => ch,
+                Err(_) if self.session_closed() => {
+                    self.reconnect()?;
+                    self.open_channel(host, port, open_timeout)?
+                }
+                Err(e) => return Err(e),
+            }
         };
         Ok(Box::new(SshRedisStream {
             rt: self.rt_handle(),
