@@ -592,9 +592,7 @@ watch(
 
 // #region 计算属性
 
-// 分组展示模式下，分组选择与名称 input 并排；值写入 form.meta.group
-const connShowGroup = computed(() => meTauri.settings.connShow === 'group')
-
+// 名称旁始终可选分组，值写入 form.meta.group
 const connGroups = computed(() => {
   const list = meTauri.settings.connGroups
   return Array.isArray(list) ? list.map(normalizeGroupName).filter(Boolean) : []
@@ -662,7 +660,7 @@ function applyAdvanced() {
       :rules="rules"
       label-position="right"
       :label-width="t('conn.labelWidth')">
-      <!-- 连接名称（分组展示时，分组选择与名称 input 并排，间距 10px） -->
+      <!-- 连接名称与分组并排 -->
       <el-row :gutter="24">
         <el-col :span="24">
           <el-form-item :label="t('conn.name')" prop="name">
@@ -673,7 +671,6 @@ function applyAdvanced() {
                 clearable
                 class="conn-name-input" />
               <el-select
-                v-if="connShowGroup"
                 v-model="connGroup"
                 clearable
                 :placeholder="t('conn.ungrouped')"

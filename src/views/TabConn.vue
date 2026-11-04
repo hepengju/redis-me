@@ -1,18 +1,7 @@
 <script setup lang="ts">
 // #region 导入
 import { debounce } from 'lodash'
-import { Sortable, type SortableEvent } from 'sortablejs'
-import {
-  computed,
-  inject,
-  nextTick,
-  onBeforeUnmount,
-  onMounted,
-  ref,
-  toRaw,
-  useTemplateRef,
-  watch,
-} from 'vue'
+import { computed, inject, ref, toRaw } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import {
@@ -31,10 +20,9 @@ import {
 } from '@/utils/conn'
 import { buildExportFileName, saveTextExport } from '@/utils/export'
 import { encodeRedisMeConnectionsToMec } from '@/utils/rdm'
-import { meConfirm, meErr, meOk, mePrompt, meWarn } from '@/utils/util'
+import { meConfirm, meOk, mePrompt, meWarn } from '@/utils/util'
 import ConnEmpty from '@/views/conn/ConnEmpty.vue'
 import ConnGroup from '@/views/conn/ConnGroup.vue'
-import ConnTable from '@/views/conn/ConnTable.vue'
 // #endregion
 
 // #region 核心状态
@@ -52,40 +40,21 @@ const connGroups = computed(() => {
   return list
 })
 
-// 平铺 ConnTable / 分组 ConnGroup，由 settings.connShow 切换
-const connShowGroup = computed({
-  get: () => meTauri.settings.connShow === 'group',
-  set: (v: boolean) => {
-    meTauri.settings.connShow = v ? 'group' : 'flat'
-  },
-})
-
 const keyword = ref('')
-const filterDataList = computed(() => {
-  const key = keyword.value.toLowerCase()
-  return share.connList.filter(
-    row =>
-      !key ||
-      row.name?.toLowerCase().indexOf(key) > -1 ||
-      row.host?.toLowerCase().indexOf(key) > -1,
-  )
-})
 
 // 分组视图数据源：按 connGroups 顺序拆 section，并应用 keyword 筛选
 const groupSections = computed(() =>
   buildConnGroupSections(share.connList, connGroups.value, keyword.value),
 )
 
-const flatTableRef = useTemplateRef<InstanceType<typeof ConnTable>>('flatTableRef')
-
 const connListEmpty = computed(() => share.connList.length === 0)
 
 const hasNamedConnGroups = computed(() => connGroups.value.some(g => !!normalizeGroupName(g)))
 
-/** 无连接时：分组模式且已有空 folder 则仍显示分组树，避免「新建分组」看起来没生效 */
+/** 无连接但已有空 folder 时仍显示分组树，避免「新建分组」看起来没生效 */
 const showConnEmpty = computed(() => {
   if (share.loading) return true
-  if (connListEmpty.value && connShowGroup.value && hasNamedConnGroups.value) return false
+  if (connListEmpty.value && hasNamedConnGroups.value) return false
   return connListEmpty.value
 })
 
@@ -103,45 +72,6 @@ function deleteConn(conn: UiConn): void {
 const selectConn = debounce(async (conn: UiConn) => {
   share.conn = conn
 }, 200)
-
-let sortables: Sortable[] = []
-
-function destroySortables(): void {
-  for (const s of sortables) s.destroy()
-  sortables = []
-}
-
-function setupFlatDrag(): void {
-  const tbody = flatTableRef.value?.getTbody()
-  if (!tbody) return
-  sortables.push(
-    Sortable.create(tbody, {
-      handle: '.drag-handle, .conn-host',
-      onEnd: ({ oldIndex, newIndex }: SortableEvent) => {
-        if (oldIndex === undefined || newIndex === undefined) return
-        const list = filterDataList.value
-        const dragRow = list[oldIndex]
-        const target = list[newIndex]
-        if (!dragRow || !target) return
-        const from = share.connList.indexOf(dragRow)
-        const to = share.connList.indexOf(target)
-        if (from < 0 || to < 0) return
-        const [item] = share.connList.splice(from, 1)
-        if (item) share.connList.splice(to, 0, item)
-      },
-    }),
-  )
-}
-
-function refreshFlatSortable(): void {
-  if (connShowGroup.value) return
-  destroySortables()
-  void nextTick(() => setupFlatDrag())
-}
-
-onMounted(refreshFlatSortable)
-onBeforeUnmount(destroySortables)
-watch([connShowGroup, filterDataList], () => refreshFlatSortable())
 // #endregion
 
 // #region 面板操作
@@ -150,15 +80,23 @@ const isDev = import.meta.env.DEV
 function handleCommand(command: string): void {
   if (command === 'export') void exportConn()
   else if (command === 'import') connUi.openConnImport()
-  else if (command === 'connShowFlat') connShowGroup.value = false
-  else if (command === 'connShowGroup') connShowGroup.value = true
   else if (command === 'clear' && isDev) clearAllConnections()
 }
 
 function promptFolderName(title: string, inputValue: string, onOk: (name: string) => void): void {
   mePrompt(
     title,
-    { inputValue, inputValidator: v => !!normalizeGroupName(v) || t('conn.folderNameRequired') },
+    {
+      inputValue,
+      inputPlaceholder: t('conn.folderNamePlaceholder'),
+      inputValidator: v => {
+        const name = normalizeGroupName(v)
+        if (!name) return t('conn.folderNameRequired')
+        // 空分组在界面上就叫这个名字，再建一个同名文件夹会对不上
+        if (name === t('conn.ungrouped')) return t('conn.folderNameReserved', { name })
+        return true
+      },
+    },
     ({ value }) => {
       const name = normalizeGroupName(value)
       if (name) onOk(name)
@@ -166,7 +104,7 @@ function promptFolderName(title: string, inputValue: string, onOk: (name: string
   )
 }
 
-// —— 分组文件夹 CRUD（仅分组模式下显示） ——
+// —— 分组文件夹 CRUD ——
 
 function addFolder(): void {
   promptFolderName(t('conn.newFolder'), '', name => {
@@ -250,7 +188,7 @@ function clickNew(): void {
         <el-button icon="el-icon-plus" type="primary" @click="connUi.openConnSave('add')">{{
           t('conn.add')
         }}</el-button>
-        <el-button v-if="connShowGroup" icon="el-icon-folder-add" @click="addFolder">
+        <el-button icon="el-icon-folder-add" @click="addFolder">
           {{ t('conn.newFolder') }}
         </el-button>
       </div>
@@ -260,13 +198,7 @@ function clickNew(): void {
           <el-button>...</el-button>
           <template #dropdown>
             <el-dropdown-menu>
-              <el-dropdown-item v-if="connShowGroup" command="connShowFlat">
-                <me-icon :name="t('conn.showFlat')" icon="me-icon-list" />
-              </el-dropdown-item>
-              <el-dropdown-item v-if="!connShowGroup" command="connShowGroup">
-                <me-icon :name="t('conn.showGroup')" icon="el-icon-folder" />
-              </el-dropdown-item>
-              <el-dropdown-item command="export" divided>
+              <el-dropdown-item command="export">
                 <me-icon :name="t('conn.export')" icon="me-icon-export" />
               </el-dropdown-item>
               <el-dropdown-item command="import">
@@ -288,30 +220,18 @@ function clickNew(): void {
 
     <ConnEmpty v-if="showConnEmpty" class="conn-empty-wrap" @action="onEmptyAction" />
 
-    <template v-else>
-      <ConnTable
-        v-if="!connShowGroup"
-        ref="flatTableRef"
-        class="conn-table-wrap"
-        :data="filterDataList"
-        @select="selectConn"
-        @copy="(c: UiConn) => connUi.openConnSave('add', c)"
-        @edit="(c: UiConn) => connUi.openConnSave('edit', c)"
-        @delete="deleteConn" />
-
-      <ConnGroup
-        v-else
-        class="group-list"
-        :sections="groupSections"
-        :conn-groups="connGroups"
-        :conn-list="share.connList"
-        @select="selectConn"
-        @copy="(c: UiConn) => connUi.openConnSave('add', c)"
-        @edit="(c: UiConn) => connUi.openConnSave('edit', c)"
-        @delete="deleteConn"
-        @rename-folder="renameFolder"
-        @delete-folder="deleteFolder" />
-    </template>
+    <ConnGroup
+      v-else
+      class="group-list"
+      :sections="groupSections"
+      :conn-groups="connGroups"
+      :conn-list="share.connList"
+      @select="selectConn"
+      @copy="(c: UiConn) => connUi.openConnSave('add', c)"
+      @edit="(c: UiConn) => connUi.openConnSave('edit', c)"
+      @delete="deleteConn"
+      @rename-folder="renameFolder"
+      @delete-folder="deleteFolder" />
 
     <el-progress
       class="downloading"
@@ -346,34 +266,10 @@ function clickNew(): void {
   }
 
   .conn-empty-wrap,
-  .conn-table-wrap,
   .group-list {
     flex: 1;
     min-height: 0;
     overflow: auto;
-  }
-
-  :deep(.el-checkbox) {
-    margin-right: 10px;
-  }
-
-  :deep(.drag-handle),
-  :deep(.conn-host) {
-    user-select: none;
-    cursor: grab;
-
-    &:active {
-      cursor: grabbing;
-    }
-  }
-
-  :deep(.sortable-chosen .drag-handle),
-  :deep(.sortable-chosen .conn-host) {
-    cursor: grabbing;
-  }
-
-  :deep(.sortable-ghost) {
-    background-color: var(--el-color-primary-light-8);
   }
 
   .downloading {

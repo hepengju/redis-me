@@ -1,7 +1,12 @@
 import { describe, expect, it } from 'vite-plus/test'
 
 import type { UiConn } from '@/types/me-interface'
-import { buildConnGroupSections, buildRedisUrl, isConnMinimalMode } from '@/utils/conn'
+import {
+  buildConnGroupSections,
+  buildRedisUrl,
+  connsInGroupOrder,
+  isConnMinimalMode,
+} from '@/utils/conn'
 
 describe('buildRedisUrl', () => {
   it('基本单机：redis://host:port', () => {
@@ -115,5 +120,14 @@ describe('buildConnGroupSections', () => {
 
   it('无连接且未登记分组时不出现默认分组', () => {
     expect(buildConnGroupSections([], [], '')).toEqual([])
+  })
+})
+
+describe('connsInGroupOrder', () => {
+  const c = (id: string, group = '') => ({ id, meta: group ? { group } : {} }) as UiConn
+
+  it('按分组顺序展开，组内保持原相对顺序，默认分组在最后', () => {
+    const list = [c('d'), c('b', 'ValKey'), c('a', '常用'), c('e', '常用')]
+    expect(connsInGroupOrder(list, ['常用', 'ValKey']).map(x => x.id)).toEqual(['a', 'e', 'b', 'd'])
   })
 })

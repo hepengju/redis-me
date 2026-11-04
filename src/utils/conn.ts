@@ -7,8 +7,7 @@
  * - 树形键分隔符存在 `conn.meta.keySeparator`（默认 `:`，等于默认时不写入；连续分隔符视为一次）
  * - 通信协议存在 `conn.meta.protocol`（`resp2`/`resp3`，默认 resp2 不写入；resp3 需 Redis ≥ 6.0）
  * - `settings.connGroups` 为分组名的有序列表（可含空分组占位，用于控制展示顺序）
- * - `settings.connShow`：`'flat'` 平铺表格 | `'group'` 分组树形列表
- * - `connList` 在分组模式下按「分组顺序 + 组内顺序」扁平存储，拖拽后需写回此顺序
+ * - `connList` 按「分组顺序 + 组内顺序」扁平存储，拖拽后需写回此顺序
  */
 import type { UiConn } from '@/types/me-interface'
 
@@ -292,6 +291,11 @@ export function buildConnGroupSections(
       if (!key) return s.conns.length > 0 || groupNames.has(s.key)
       return s.conns.length > 0
     })
+}
+
+/** 下拉框的顺序：与分组视图相同（分组顺序 + 组内原相对顺序） */
+export function connsInGroupOrder(connList: UiConn[], connGroups: string[]): UiConn[] {
+  return buildConnGroupSections(connList, connGroups, '').flatMap(s => s.conns)
 }
 
 /** 跨分组拖放连接后，更新 meta.group 并按分组顺序重排 connList */

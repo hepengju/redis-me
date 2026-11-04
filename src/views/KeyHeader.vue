@@ -1,11 +1,11 @@
 <script setup lang="ts">
 // #region 导入
-import { inject, nextTick, onMounted, onUnmounted, reactive, ref } from 'vue'
+import { computed, inject, nextTick, onMounted, onUnmounted, reactive, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { shareProvideKey, connUiProvideKey } from '@/types/me-interface'
 import { openNewWindow } from '@/utils/app-window'
-import { getConnIcon } from '@/utils/conn'
+import { connsInGroupOrder, getConnIcon } from '@/utils/conn'
 import { bus, CONN_REFRESH, meCommands, meOk, OPEN_SETTING } from '@/utils/util'
 import AppAbout from '@/views/ext/AppAbout.vue'
 import AppSetting from '@/views/ext/AppSetting.vue'
@@ -17,6 +17,14 @@ import CommandLog from '@/views/ext/CommandLog.vue'
 const share = inject(shareProvideKey)!
 const connUi = inject(connUiProvideKey)!
 const { t } = useI18n()
+
+// 下拉顺序与分组视图一致，不跟 connList 的原始存放顺序
+const orderedConnList = computed(() =>
+  connsInGroupOrder(
+    share.connList,
+    Array.isArray(meTauri.settings.connGroups) ? meTauri.settings.connGroups : [],
+  ),
+)
 
 const dialog = reactive({ commandLog: false })
 const settingRef = ref<InstanceType<typeof AppSetting>>()
@@ -84,7 +92,7 @@ async function handleCommand(command: string): Promise<void> {
       filterable
       :disabled="share.connList.length === 0"
       value-key="id">
-      <el-option v-for="item in share.connList" :label="item.name" :value="item" :key="item.id">
+      <el-option v-for="item in orderedConnList" :label="item.name" :value="item" :key="item.id">
         <div :style="{ color: item?.color }">
           <me-icon :icon="getConnIcon(item)" :name="item.name" />
         </div>
