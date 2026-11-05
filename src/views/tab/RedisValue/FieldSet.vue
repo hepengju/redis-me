@@ -704,13 +704,11 @@ onUnmounted(() => window.removeEventListener('keydown', onEscapeKey, true))
       <div class="field-set-footer me-flex">
         <div class="field-set-footer-left">
           <me-icon
+            v-if="prettyEnabled"
             placement="top-start"
             :info="t('fieldSet.prettyHint')"
-            :class="['icon-btn', { 'is-pretty': prettyEnabled && fieldPretty }]"
-            :style="{
-              opacity: prettyEnabled ? 1 : 0.2,
-              cursor: prettyEnabled ? 'pointer' : 'default',
-            }"
+            class="icon-btn"
+            :style="{ opacity: fieldPretty ? 1 : 0.5 }"
             icon="el-icon-magic-stick"
             @click="togglePretty" />
           <me-icon

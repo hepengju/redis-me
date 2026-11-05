@@ -168,8 +168,7 @@ svg {
   cursor: pointer;
 }
 
-.icon-btn:hover,
-.icon-btn.is-pretty {
+.icon-btn:hover {
   color: var(--el-color-primary);
 }
 

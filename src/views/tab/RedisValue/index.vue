@@ -2703,17 +2703,15 @@ onUnmounted(() => {
       <!-- 底栏 -->
       <div class="value-footer me-flex" @click="onFieldPanelOutsideClick">
         <div class="me-flex" style="align-items: center">
-          <!-- 美化/复制 -->
+          <!-- 美化/复制：不可美化时不展示，避免与「关闭」同色混淆 -->
           <me-icon
+            v-if="prettyEnabled"
             placement="top-start"
             :info="t('redisValue.prettyHint')"
-            :class="['icon-btn', { 'is-pretty': prettyEnabled && isPretty }]"
-            :style="{
-              opacity: prettyEnabled ? 1 : 0.2,
-              cursor: prettyEnabled ? 'pointer' : 'default',
-            }"
+            class="icon-btn"
+            :style="{ opacity: isPretty ? 1 : 0.5 }"
             icon="el-icon-magic-stick"
-            @click="prettyEnabled && (isPretty = !isPretty)" />
+            @click="isPretty = !isPretty" />
 
           <me-icon
             style="font-size: 18px; margin-left: 5px"
