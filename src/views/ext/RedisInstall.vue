@@ -16,9 +16,14 @@ const emit = defineEmits<{ 'update:modelValue': [value: boolean] }>()
 const visible = ref(true)
 const activeTab = ref('guide')
 
+// UI 部署模式不含 socket；单机下用 network=unix 映射到生成器 socket 模式
+type UiInstallMode = 'single' | 'cluster' | 'sentinel'
+
 // 表单状态（默认值即推荐配置：host 网络、持久化与配置外置默认开）
 const form = reactive({
-  mode: 'single' as RedisInstallOptions['mode'],
+  mode: 'single' as UiInstallMode,
+  // 仅单机可选：TCP / Unix（与新增连接一致）
+  network: 'tcp' as 'tcp' | 'unix',
   image: 'redis:8',
   alpine: false,
   ipsText: '',
@@ -34,6 +39,11 @@ const form = reactive({
   timezone: 'Asia/Shanghai',
 })
 
+const isUnixSingle = computed(() => form.mode === 'single' && form.network === 'unix')
+const genMode = computed<RedisInstallOptions['mode']>(() =>
+  isUnixSingle.value ? 'socket' : form.mode,
+)
+
 // 证书生成弹框引用
 const certGenRef = ref<InstanceType<typeof TlsCertGen>>()
 
@@ -48,10 +58,10 @@ watch(visible, v => {
 const ips = computed(() => form.ipsText.split(/[;,，\s]+/).filter(ip => ip.trim().length > 0))
 
 const options = computed<RedisInstallOptions>(() => ({
-  mode: form.mode,
+  mode: genMode.value,
   image: form.image,
   alpine: form.alpine,
-  // 单机部署在本机，无需 IP 输入
+  // 单机（含 Unix）部署在本机，无需 IP 输入
   ips: form.mode === 'single' ? [] : ips.value,
   basePort: form.basePort,
   password: form.password,
@@ -60,8 +70,10 @@ const options = computed<RedisInstallOptions>(() => ({
   sentinelReplicas: form.sentinelReplicas,
   sentinelCount: form.sentinelCount,
   mountData: form.mountData,
-  mountConf: form.mountConf,
-  ssl: form.ssl,
+  // Unix 套接字必须挂载 conf 才能写 unixsocket
+  mountConf: isUnixSingle.value ? true : form.mountConf,
+  // Unix 套接字不支持 TLS
+  ssl: isUnixSingle.value ? false : form.ssl,
   timezone: form.timezone,
 }))
 
@@ -79,11 +91,19 @@ const labels = computed<RedisInstallLabels>(() => ({
 
 const output = computed(() => genRedisInstall(options.value, labels.value))
 
-// 切换模式或 TLS 时跟随推荐起始端口（明文 6379/7001/7701，TLS 6380/8001/8801）
+// 切换模式 / 网络 / TLS 时跟随推荐起始端口；Unix 强制关 TLS / 开配置外置
 watch(
-  () => [form.mode, form.ssl] as const,
-  ([mode, ssl]) => {
-    form.basePort = genInstallDefaultPort(mode, ssl)
+  () => [form.mode, form.network, form.ssl] as const,
+  ([mode, network, ssl]) => {
+    if (mode !== 'single') form.network = 'tcp'
+    const unix = mode === 'single' && network === 'unix'
+    form.basePort = genInstallDefaultPort(unix ? 'socket' : mode, ssl)
+    if (unix) {
+      form.ssl = false
+      form.mountConf = true
+    } else if (mode === 'sentinel') {
+      form.mountConf = true
+    }
   },
 )
 
@@ -118,6 +138,7 @@ const timezoneOptions = [
     :title="t('redisInstall.title')"
     icon="me-icon-redis"
     width="85%"
+    body-height="80vh"
     :close-on-press-escape="false"
     :close-on-click-modal="false"
     class="redis-install-dialog">
@@ -154,15 +175,6 @@ const timezoneOptions = [
             </el-radio-group>
           </el-form-item>
 
-          <el-form-item :label="t('redisInstall.ssl')">
-            <div class="ri-ssl-row">
-              <el-switch v-model="form.ssl" />
-              <el-button v-if="form.ssl" link type="primary" @click="certGenRef?.open()">
-                {{ t('redisInstall.genCert') }}
-              </el-button>
-            </div>
-          </el-form-item>
-
           <el-form-item :label="t('redisInstall.image')">
             <div class="ri-image-row">
               <el-select
@@ -177,11 +189,31 @@ const timezoneOptions = [
             </div>
           </el-form-item>
 
+          <!-- 单机：TCP / Unix（与新增连接一致） -->
+          <el-form-item v-if="form.mode === 'single'" :label="t('redisInstall.network')">
+            <el-segmented
+              v-model="form.network"
+              :options="[
+                { label: 'TCP', value: 'tcp' },
+                { label: 'Unix', value: 'unix' },
+              ]" />
+          </el-form-item>
+
+          <el-form-item v-if="!isUnixSingle" :label="t('redisInstall.ssl')">
+            <div class="ri-ssl-row">
+              <el-switch v-model="form.ssl" />
+              <el-button v-if="form.ssl" link type="primary" @click="certGenRef?.open()">
+                {{ t('redisInstall.genCert') }}
+              </el-button>
+            </div>
+          </el-form-item>
+
           <el-form-item v-if="form.mode !== 'single'" :label="t('redisInstall.ips')">
             <el-input v-model="form.ipsText" :placeholder="t('redisInstall.ipsPlaceholder')" />
           </el-form-item>
 
           <el-form-item
+            v-if="!isUnixSingle"
             :label="form.mode === 'single' ? t('redisInstall.port') : t('redisInstall.basePort')">
             <el-input-number v-model="form.basePort" :min="1024" :max="45000" />
           </el-form-item>
@@ -218,7 +250,9 @@ const timezoneOptions = [
           </el-form-item>
 
           <el-form-item :label="t('redisInstall.mountConf')">
-            <el-switch v-model="form.mountConf" :disabled="form.mode === 'sentinel'" />
+            <el-switch
+              v-model="form.mountConf"
+              :disabled="form.mode === 'sentinel' || isUnixSingle" />
           </el-form-item>
 
           <el-form-item :label="t('redisInstall.timezone')">
@@ -329,12 +363,5 @@ const timezoneOptions = [
   :deep(.el-tab-pane) {
     height: 100%;
   }
-}
-</style>
-
-<!-- append-to-body 的 dialog 脱离组件作用域，需全局样式覆盖 -->
-<style lang="scss">
-.redis-install-dialog .me-dialog-body {
-  height: 80vh;
 }
 </style>

@@ -447,6 +447,7 @@ export default {
     modeSingle: '单机',
     modeCluster: '集群',
     modeSentinel: '哨兵',
+    network: '网络',
     image: '镜像',
     alpine: 'Alpine',
     ips: '节点 IP',

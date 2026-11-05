@@ -458,6 +458,7 @@ export default {
     modeSingle: 'Single',
     modeCluster: 'Cluster',
     modeSentinel: 'Sentinel',
+    network: 'Network',
     image: 'Image',
     alpine: 'Alpine',
     ips: 'Node IPs',

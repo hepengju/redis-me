@@ -66,13 +66,45 @@ describe('genInstallNodes / genRedisInstall', () => {
     expect(out.compose[0].code).not.toContain('network_mode: host')
   })
 
-  it('默认起始端口：明文 6379/7001/7701，TLS 6380/8001/8801', () => {
+  it('默认起始端口：明文 6379/7001/7701，TLS 6380/8001/8801；Socket 为 0', () => {
     expect(genInstallDefaultPort('single')).toBe(6379)
+    expect(genInstallDefaultPort('socket')).toBe(0)
     expect(genInstallDefaultPort('cluster')).toBe(7001)
     expect(genInstallDefaultPort('sentinel')).toBe(7701)
     expect(genInstallDefaultPort('single', true)).toBe(6380)
     expect(genInstallDefaultPort('cluster', true)).toBe(8001)
     expect(genInstallDefaultPort('sentinel', true)).toBe(8801)
+  })
+
+  it('Socket：固定 redis-socket，仅 Unix 套接字，无 TCP 端口映射', () => {
+    const out = genRedisInstall(baseOptions({ mode: 'socket', mountConf: false }), labels)
+    expect(out.nodes).toEqual([{ name: 'redis-socket', ip: '127.0.0.1', port: 0, role: 'master' }])
+    const compose = out.compose[0].code
+    expect(compose).toContain('  redis-socket:')
+    expect(compose).toContain('container_name: redis-socket')
+    expect(compose).toContain('/data/redis-socket/data:/data')
+    expect(compose).toContain('/data/redis-socket/conf:/etc/redis/conf')
+    expect(compose).toContain('/data/redis-socket/socket:/run/redis-socket')
+    expect(compose).toContain('command: redis-server /etc/redis/conf/redis.conf')
+    expect(compose).not.toContain('ports:')
+    expect(compose).not.toContain('network_mode: host')
+
+    const cmd = out.commands[0].code
+    expect(cmd).toContain('--name redis-socket')
+    expect(cmd).toContain('-v /data/redis-socket/socket:/run/redis-socket')
+    expect(cmd).not.toContain('-p ')
+    expect(cmd).not.toContain('--network host')
+
+    const guideCode = out.guide[0].code
+    expect(guideCode).toContain('mkdir -p')
+    expect(guideCode).toContain('/data/redis-socket/conf')
+    expect(guideCode).toContain('/data/redis-socket/socket')
+    expect(guideCode).toContain('port 0')
+    expect(guideCode).toContain('unixsocket /run/redis-socket/redis.sock')
+    expect(guideCode).toContain('unixsocketperm 777')
+    expect(guideCode).toContain('redis-cli -s /run/redis-socket/redis.sock ping')
+    expect(guideCode).not.toContain('-p 0 ping')
+    expect(guideCode).not.toMatch(/\/data\/redis-socket-ssl/)
   })
 
   it('集群三主三从：默认 7001~7006，端口全局递增，IP 轮询分配，宿主机网络', () => {
