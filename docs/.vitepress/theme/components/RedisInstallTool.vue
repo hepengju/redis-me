@@ -8,10 +8,13 @@ import { computed, reactive, ref, watch } from 'vue'
 
 import type {
   RedisInstallLabels,
-  RedisInstallMode,
   RedisInstallOptions,
 } from '../../../../src/utils/redis-install-gen'
-import { genInstallDefaultPort, genRedisInstall } from '../../../../src/utils/redis-install-gen'
+import {
+  genInstallDefaultPort,
+  genInstallPassword,
+  genRedisInstall,
+} from '../../../../src/utils/redis-install-gen'
 import ComboInput from './ComboInput.vue'
 
 const { lang } = useData()
@@ -22,6 +25,7 @@ const ZH = {
   modeSingle: '单机',
   modeCluster: '集群',
   modeSentinel: '哨兵',
+  network: '网络',
   image: '镜像',
   alpine: 'Alpine',
   ips: '节点 IP',
@@ -30,6 +34,7 @@ const ZH = {
   port: '端口',
   password: '密码',
   passwordPlaceholder: '留空则无密码',
+  genPassword: '生成',
   clusterMasters: '主节点数',
   clusterReplicas: '每主从数',
   sentinelReplicas: '从节点数',
@@ -58,6 +63,7 @@ const EN = {
   modeSingle: 'Single',
   modeCluster: 'Cluster',
   modeSentinel: 'Sentinel',
+  network: 'Network',
   image: 'Image',
   alpine: 'Alpine',
   ips: 'Node IPs',
@@ -66,6 +72,7 @@ const EN = {
   port: 'Port',
   password: 'Password',
   passwordPlaceholder: 'Empty for no password',
+  genPassword: 'Gen',
   clusterMasters: 'Masters',
   clusterReplicas: 'Repl./Master',
   sentinelReplicas: 'Replicas',
@@ -91,8 +98,12 @@ const EN = {
 
 const t = computed(() => (isZh.value ? ZH : EN))
 
+// UI 部署模式不含 socket；单机下用 network=unix 映射到生成器 socket 模式
+type UiInstallMode = 'single' | 'cluster' | 'sentinel'
+
 const form = reactive({
-  mode: 'single' as RedisInstallMode,
+  mode: 'single' as UiInstallMode,
+  network: 'tcp' as 'tcp' | 'unix',
   image: 'redis:8',
   alpine: false,
   ipsText: '',
@@ -108,31 +119,42 @@ const form = reactive({
   timezone: 'Asia/Shanghai',
 })
 
+const isUnixSingle = computed(() => form.mode === 'single' && form.network === 'unix')
+const genMode = computed<RedisInstallOptions['mode']>(() =>
+  isUnixSingle.value ? 'socket' : form.mode,
+)
+
 watch(
-  () => [form.mode, form.ssl] as const,
-  ([mode, ssl]) => {
-    form.basePort = genInstallDefaultPort(mode, ssl)
-    // 哨兵必须挂载 sentinel.conf，禁用开关时保持勾选以免和实际产物不一致
-    if (mode === 'sentinel') form.mountConf = true
+  () => [form.mode, form.network, form.ssl] as const,
+  ([mode, network, ssl]) => {
+    if (mode !== 'single') form.network = 'tcp'
+    const unix = mode === 'single' && network === 'unix'
+    form.basePort = genInstallDefaultPort(unix ? 'socket' : mode, ssl)
+    if (unix) {
+      form.ssl = false
+      form.mountConf = true
+    } else if (mode === 'sentinel') {
+      form.mountConf = true
+    }
   },
 )
 
 const ips = computed(() => form.ipsText.split(/[;,，\s]+/).filter(ip => ip.trim().length > 0))
 
 const options = computed<RedisInstallOptions>(() => ({
-  mode: form.mode,
+  mode: genMode.value,
   image: form.image.trim() || 'redis:8',
   alpine: form.alpine,
   ips: form.mode === 'single' ? [] : ips.value,
-  basePort: Number(form.basePort) || genInstallDefaultPort(form.mode, form.ssl),
+  basePort: Number(form.basePort) || genInstallDefaultPort(genMode.value, form.ssl),
   password: form.password,
   clusterMasters: Number(form.clusterMasters) || 1,
   clusterReplicasPerMaster: Math.max(0, Number(form.clusterReplicasPerMaster) || 0),
   sentinelReplicas: Math.max(0, Number(form.sentinelReplicas) || 0),
   sentinelCount: Number(form.sentinelCount) || 1,
   mountData: form.mountData,
-  mountConf: form.mountConf,
-  ssl: form.ssl,
+  mountConf: isUnixSingle.value ? true : form.mountConf,
+  ssl: isUnixSingle.value ? false : form.ssl,
   timezone: form.timezone,
 }))
 
@@ -150,6 +172,10 @@ const labels = computed<RedisInstallLabels>(() => ({
 
 const output = computed(() => genRedisInstall(options.value, labels.value))
 const activeTab = ref('guide')
+
+function fillPassword() {
+  form.password = genInstallPassword()
+}
 
 /** 多机时 compose / docker run 各有一块，官网拼在一起避免只看到第一台 */
 function joinSteps(steps: { title: string; code: string }[]): string {
@@ -222,11 +248,6 @@ const timezoneOptions = [
           </button>
         </div>
 
-        <span class="ri-label">{{ t.ssl }}</span>
-        <label class="ri-check">
-          <input v-model="form.ssl" type="checkbox" />
-        </label>
-
         <span class="ri-label">{{ t.image }}</span>
         <div class="ri-image-row">
           <ComboInput v-model="form.image" :options="imageOptions" />
@@ -235,6 +256,31 @@ const timezoneOptions = [
             {{ t.alpine }}
           </label>
         </div>
+
+        <template v-if="form.mode === 'single'">
+          <span class="ri-label">{{ t.network }}</span>
+          <div class="ri-seg" role="group">
+            <button
+              type="button"
+              :class="{ on: form.network === 'tcp' }"
+              @click="form.network = 'tcp'">
+              TCP
+            </button>
+            <button
+              type="button"
+              :class="{ on: form.network === 'unix' }"
+              @click="form.network = 'unix'">
+              Unix
+            </button>
+          </div>
+        </template>
+
+        <template v-if="!isUnixSingle">
+          <span class="ri-label">{{ t.ssl }}</span>
+          <label class="ri-check">
+            <input v-model="form.ssl" type="checkbox" />
+          </label>
+        </template>
 
         <template v-if="form.mode !== 'single'">
           <span class="ri-label">{{ t.ips }}</span>
@@ -245,15 +291,22 @@ const timezoneOptions = [
             spellcheck="false" />
         </template>
 
-        <span class="ri-label">{{ form.mode === 'single' ? t.port : t.basePort }}</span>
-        <input v-model.number="form.basePort" type="number" min="1024" max="45000" />
+        <template v-if="!isUnixSingle">
+          <span class="ri-label">{{ form.mode === 'single' ? t.port : t.basePort }}</span>
+          <input v-model.number="form.basePort" type="number" min="1024" max="45000" />
+        </template>
 
         <span class="ri-label">{{ t.password }}</span>
-        <input
-          v-model="form.password"
-          type="password"
-          autocomplete="new-password"
-          :placeholder="t.passwordPlaceholder" />
+        <div class="ri-password-row">
+          <input
+            v-model="form.password"
+            type="password"
+            autocomplete="new-password"
+            :placeholder="t.passwordPlaceholder" />
+          <button type="button" class="ri-gen-pass" @click="fillPassword">
+            {{ t.genPassword }}
+          </button>
+        </div>
 
         <template v-if="form.mode === 'cluster'">
           <span class="ri-label">{{ t.clusterMasters }}</span>
@@ -276,7 +329,10 @@ const timezoneOptions = [
 
         <span class="ri-label">{{ t.mountConf }}</span>
         <label class="ri-check">
-          <input v-model="form.mountConf" type="checkbox" :disabled="form.mode === 'sentinel'" />
+          <input
+            v-model="form.mountConf"
+            type="checkbox"
+            :disabled="form.mode === 'sentinel' || isUnixSingle" />
         </label>
 
         <span class="ri-label">{{ t.timezone }}</span>
@@ -379,6 +435,31 @@ const timezoneOptions = [
 
 .ri-image-row :deep(.ri-combo) {
   flex: 1;
+}
+
+.ri-password-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.ri-password-row input {
+  flex: 1;
+  min-width: 0;
+}
+
+.ri-gen-pass {
+  flex-shrink: 0;
+  margin: 0;
+  padding: 5px 10px;
+  border: 1px solid var(--vp-c-divider);
+  border-radius: 6px;
+  background: var(--vp-c-bg-soft);
+  color: var(--vp-c-text-1);
+  font-size: 13px;
+  cursor: pointer;
+  white-space: nowrap;
 }
 
 .ri-check {
