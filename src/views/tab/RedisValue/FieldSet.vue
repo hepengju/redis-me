@@ -317,8 +317,22 @@ function togglePretty() {
     if (attrs.ok) {
       attrsText.value = meFormatDisplayValue(attrs.json, fieldPretty.value)
     }
-  } else {
-    void syncFieldEditor()
+  } else if (!timeseriesType.value) {
+    // 同步重算展示即可，不走 syncFieldEditor（会开 editorLoading，保存钮闪一下）
+    const wire =
+      fieldViewFmt.value === 'auto' && detectedAuto.value.gzip
+        ? detectedAuto.value.wire
+        : srcFieldWire.value
+    const fmt = effectiveFieldViewFmt.value
+    if (!wire) {
+      form.value.fieldValue = ''
+    } else if (!fieldPretty.value && fmt === 'strjson') {
+      form.value.fieldValue = base64WireToUtf8Display(wire)
+    } else if (fmt === 'utf8' || fmt === 'vector32') {
+      form.value.fieldValue = meFormatDisplayValue(meFormatViewValue(wire, fmt), fieldPretty.value)
+    } else {
+      form.value.fieldValue = meFormatViewValue(wire, fmt)
+    }
   }
   codeRemountKey.value++
 }
@@ -692,9 +706,9 @@ onUnmounted(() => window.removeEventListener('keydown', onEscapeKey, true))
           <me-icon
             placement="top-start"
             :info="t('fieldSet.prettyHint')"
-            class="icon-btn"
+            :class="['icon-btn', { 'is-pretty': prettyEnabled && fieldPretty }]"
             :style="{
-              opacity: prettyEnabled && fieldPretty ? 1 : 0.2,
+              opacity: prettyEnabled ? 1 : 0.2,
               cursor: prettyEnabled ? 'pointer' : 'default',
             }"
             icon="el-icon-magic-stick"

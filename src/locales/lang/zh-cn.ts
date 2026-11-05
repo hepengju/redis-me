@@ -577,7 +577,7 @@ export default {
     index: '索引',
     score: '分数',
     value: '值',
-    prettyHint: '默认与键值区美化设置同步；可临时切换以查看原始字段值',
+    prettyHint: '默认与键值区 JSON 美化同步；可临时切换以查看原始字段值',
   },
 
   nodeList: {
@@ -1084,7 +1084,7 @@ export default {
     ttlUtc: 'UTC：{time}',
     ttlSeconds: 'TTL：{n} {unit}',
     deleteKey: '删除键',
-    prettyHint: '默认开启美化，开启后针对hash/list/set/json等进行格式化，关闭后显示原始值toString',
+    prettyHint: 'JSON 美化（默认开启）：对 JSON 文本做缩进格式化；关闭则显示原始内容',
     locationHint: '查看键所在集群节点',
     locationTitle: '集群节点',
     slotHint: '查看键所在集群槽位',

@@ -589,7 +589,7 @@ export default {
     score: 'Score',
     value: 'Value',
     prettyHint:
-      'Defaults to the key view pretty setting; toggle temporarily to view the raw field value',
+      'Defaults to the key view JSON pretty setting; toggle temporarily to view the raw field value',
   },
 
   nodeList: {
@@ -1107,7 +1107,7 @@ export default {
     ttlSeconds: 'TTL: {n} {unit}',
     deleteKey: 'Delete',
     prettyHint:
-      'Pretty is enabled by default. When enabled, it formats hash/list/set/json, etc. When disabled, it displays the raw value toString.',
+      'JSON pretty-print (on by default): indent JSON text; when off, show the raw content.',
     locationHint: 'View the cluster node where this key is located',
     locationTitle: 'Cluster Node',
     slotHint: 'View the cluster slot where the key is located',

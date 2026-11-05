@@ -2701,8 +2701,7 @@ onUnmounted(() => {
           <me-icon
             placement="top-start"
             :info="t('redisValue.prettyHint')"
-            class="icon-btn"
-            :style="{ opacity: isPretty ? 1 : 0.2 }"
+            :class="['icon-btn', { 'is-pretty': isPretty }]"
             icon="el-icon-magic-stick"
             @click="isPretty = !isPretty" />
 
