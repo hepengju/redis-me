@@ -333,6 +333,12 @@ const effectiveViewFormat = computed<ViewBytesFormat>(() => {
   if (detectedCustomName.value) return customFormatValue(detectedCustomName.value)
   return detectedView.value
 })
+// 非 STRING 始终可切（JSON 视图缩进 / 同步字段面板初始值）；STRING 仅 utf8·strjson·vector32
+const prettyEnabled = computed(() => {
+  if (!stringType.value) return true
+  const fmt = effectiveViewFormat.value
+  return fmt === 'utf8' || fmt === 'strjson' || fmt === 'vector32'
+})
 const gzipReadonly = computed(
   () => bytesFormat.value === 'auto' && stringType.value && detectedGzip.value,
 )
@@ -2701,9 +2707,13 @@ onUnmounted(() => {
           <me-icon
             placement="top-start"
             :info="t('redisValue.prettyHint')"
-            :class="['icon-btn', { 'is-pretty': isPretty }]"
+            :class="['icon-btn', { 'is-pretty': prettyEnabled && isPretty }]"
+            :style="{
+              opacity: prettyEnabled ? 1 : 0.2,
+              cursor: prettyEnabled ? 'pointer' : 'default',
+            }"
             icon="el-icon-magic-stick"
-            @click="isPretty = !isPretty" />
+            @click="prettyEnabled && (isPretty = !isPretty)" />
 
           <me-icon
             style="font-size: 18px; margin-left: 5px"

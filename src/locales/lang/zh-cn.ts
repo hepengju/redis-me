@@ -577,7 +577,7 @@ export default {
     index: '索引',
     score: '分数',
     value: '值',
-    prettyHint: '默认与键值区 JSON 美化同步；可临时切换以查看原始字段值',
+    prettyHint: 'JSON 美化：开启后缩进格式化，关闭则显示原始内容',
   },
 
   nodeList: {

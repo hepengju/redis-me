@@ -588,8 +588,7 @@ export default {
     index: 'Index',
     score: 'Score',
     value: 'Value',
-    prettyHint:
-      'Defaults to the key view JSON pretty setting; toggle temporarily to view the raw field value',
+    prettyHint: 'Pretty-print JSON: indent when on; show raw content when off',
   },
 
   nodeList: {
