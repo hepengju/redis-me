@@ -7,6 +7,7 @@ import type {
 } from '@/utils/redis-install-gen'
 import {
   genInstallDefaultPort,
+  genInstallPassword,
   genInstallSans,
   genOpensslCertScript,
   genRedisInstall,
@@ -64,6 +65,18 @@ describe('genInstallNodes / genRedisInstall', () => {
     expect(out.commands[0].code).not.toContain('--network host')
     expect(out.compose[0].code).toContain("- '6379:6379'")
     expect(out.compose[0].code).not.toContain('network_mode: host')
+  })
+
+  it('genInstallPassword：默认 20 位，含大小写数字与特殊符号', () => {
+    const pwd = genInstallPassword()
+    expect(pwd).toHaveLength(20)
+    expect(pwd).toMatch(/[A-Z]/)
+    expect(pwd).toMatch(/[a-z]/)
+    expect(pwd).toMatch(/[0-9]/)
+    expect(pwd).toMatch(/[!@#%^&*()\-_=+[\]{}]/)
+    expect(pwd).not.toMatch(/[0O1Il'"\\`$ ]/)
+    expect(genInstallPassword(12)).toHaveLength(12)
+    expect(genInstallPassword(8)).not.toBe(genInstallPassword(8))
   })
 
   it('默认起始端口：明文 6379/7001/7701，TLS 6380/8001/8801；Socket 为 0', () => {

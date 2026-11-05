@@ -467,6 +467,7 @@ export default {
     port: 'Port',
     password: 'Password',
     passwordPlaceholder: 'Empty for no password',
+    genPassword: 'Gen',
     clusterMasters: 'Masters',
     clusterReplicas: 'Repl./Master',
     sentinelReplicas: 'Replicas',

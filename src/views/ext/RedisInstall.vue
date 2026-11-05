@@ -4,7 +4,12 @@ import { computed, reactive, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import type { RedisInstallLabels, RedisInstallOptions } from '@/utils/redis-install-gen'
-import { genInstallDefaultPort, genInstallSans, genRedisInstall } from '@/utils/redis-install-gen'
+import {
+  genInstallDefaultPort,
+  genInstallPassword,
+  genInstallSans,
+  genRedisInstall,
+} from '@/utils/redis-install-gen'
 import { meOpenUrl } from '@/utils/util'
 import TlsCertGen from '@/views/ext/TlsCertGen.vue'
 // #endregion
@@ -90,6 +95,10 @@ const labels = computed<RedisInstallLabels>(() => ({
 }))
 
 const output = computed(() => genRedisInstall(options.value, labels.value))
+
+function fillPassword() {
+  form.password = genInstallPassword()
+}
 
 // 切换模式 / 网络 / TLS 时跟随推荐起始端口；Unix 强制关 TLS / 开配置外置
 watch(
@@ -219,12 +228,15 @@ const timezoneOptions = [
           </el-form-item>
 
           <el-form-item :label="t('redisInstall.password')">
-            <el-input
-              v-model="form.password"
-              type="password"
-              show-password
-              clearable
-              :placeholder="t('redisInstall.passwordPlaceholder')" />
+            <div class="ri-password-row">
+              <el-input
+                v-model="form.password"
+                type="password"
+                show-password
+                clearable
+                :placeholder="t('redisInstall.passwordPlaceholder')" />
+              <el-button @click="fillPassword">{{ t('redisInstall.genPassword') }}</el-button>
+            </div>
           </el-form-item>
 
           <template v-if="form.mode === 'cluster'">
@@ -326,6 +338,18 @@ const timezoneOptions = [
     display: flex;
     align-items: center;
     gap: 6px;
+  }
+
+  .ri-password-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+
+    .el-input {
+      flex: 1;
+      min-width: 0;
+    }
   }
 }
 

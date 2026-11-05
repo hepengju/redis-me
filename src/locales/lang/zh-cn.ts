@@ -456,6 +456,7 @@ export default {
     port: '端口',
     password: '密码',
     passwordPlaceholder: '留空则无密码',
+    genPassword: '生成',
     clusterMasters: '主节点数',
     clusterReplicas: '每主从数',
     sentinelReplicas: '从节点数',

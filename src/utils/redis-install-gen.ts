@@ -101,6 +101,47 @@ export function genInstallDefaultPort(mode: RedisInstallMode, ssl = false): numb
   return ssl ? 6380 : 6379
 }
 
+/** 安装脚本随机密码字符集：满足常见「大小写+数字+特殊符号」策略；去掉易混与易破坏引号的字符 */
+const INSTALL_PASSWORD_UPPER = 'ABCDEFGHJKLMNPQRSTUVWXYZ'
+const INSTALL_PASSWORD_LOWER = 'abcdefghijkmnopqrstuvwxyz'
+const INSTALL_PASSWORD_DIGIT = '23456789'
+// 避开 ' " \ ` $ 空格，减少 conf/shell/YAML 踩坑；仍属常见特殊符号
+const INSTALL_PASSWORD_SYMBOL = '!@#%^&*()-_=+[]{}'
+const INSTALL_PASSWORD_ALPHABET =
+  INSTALL_PASSWORD_UPPER + INSTALL_PASSWORD_LOWER + INSTALL_PASSWORD_DIGIT + INSTALL_PASSWORD_SYMBOL
+
+function pickFromAlphabet(alphabet: string): string {
+  const max = alphabet.length
+  const limit = 256 - (256 % max)
+  for (;;) {
+    const bytes = new Uint8Array(1)
+    crypto.getRandomValues(bytes)
+    const b = bytes[0]!
+    if (b >= limit) continue
+    return alphabet[b % max]!
+  }
+}
+
+/** 生成满足常见网站复杂度要求的密码（默认 20 位，四类字符各至少 1 个） */
+export function genInstallPassword(length = 20): string {
+  const n = Math.max(8, Math.min(64, Math.floor(length)))
+  const chars: string[] = [
+    pickFromAlphabet(INSTALL_PASSWORD_UPPER),
+    pickFromAlphabet(INSTALL_PASSWORD_LOWER),
+    pickFromAlphabet(INSTALL_PASSWORD_DIGIT),
+    pickFromAlphabet(INSTALL_PASSWORD_SYMBOL),
+  ]
+  while (chars.length < n) chars.push(pickFromAlphabet(INSTALL_PASSWORD_ALPHABET))
+  // Fisher–Yates 打乱，避免固定前缀类别
+  for (let i = chars.length - 1; i > 0; i--) {
+    const bytes = new Uint8Array(1)
+    crypto.getRandomValues(bytes)
+    const j = bytes[0]! % (i + 1)
+    ;[chars[i], chars[j]] = [chars[j]!, chars[i]!]
+  }
+  return chars.join('')
+}
+
 // 网络模式（内置约定）：单机用简单端口映射；Socket 无网络端口；集群/哨兵用宿主机网络
 function hostNetwork(mode: RedisInstallMode): boolean {
   return mode === 'cluster' || mode === 'sentinel'
