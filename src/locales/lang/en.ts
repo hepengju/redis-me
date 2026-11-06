@@ -75,7 +75,11 @@ export default {
     codeFontHint: 'Optional Choose Code Font（CodeMirror, Terminal）',
     update: 'Update',
     updateAuto: 'Auto Check',
-    nowVersion: 'Version',
+    updateSourceAuto: 'Auto',
+    updateSourceGitee: 'Gitee',
+    updateSourceGithub: 'GitHub',
+    updateSourceTip:
+      'Auto follows the timezone: mainland China tries Gitee first, everywhere else tries GitHub first. The other source is used if the first one fails',
     updateNow: 'Check Now',
     updateAppStore: 'Update By AppStore',
 

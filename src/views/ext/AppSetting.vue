@@ -42,6 +42,13 @@ const langList = computed(() => [
   { value: 'zhCN', label: '简体中文' },
 ])
 
+// 更新源。自动的具体顺序由系统时区决定，见 updateEndpoints
+const updateSourceList = computed(() => [
+  { value: 'auto', label: t('setting.updateSourceAuto') },
+  { value: 'gitee', label: t('setting.updateSourceGitee') },
+  { value: 'github', label: t('setting.updateSourceGithub') },
+])
+
 // 字体
 const fonts = ref<string[]>([])
 const loadFonts = async () => {
@@ -89,8 +96,7 @@ const app = inject(appProvideKey)!
 async function checkUpdate() {
   loading.value = true
   try {
-    // 每 endpoint 独立超时；gitee 在前，国外访问 gitee 挂起时最多等 5s 即降级到 github
-    await meCheckUpdate(false, { timeout: 5000 }, app)
+    await meCheckUpdate(false, app)
   } finally {
     loading.value = false
   }
@@ -119,6 +125,7 @@ const baseDefaultSettings = {
   uiFont: defaultSettings.uiFont,
   codeFont: defaultSettings.codeFont,
   autoUpdate: defaultSettings.autoUpdate,
+  updateSource: defaultSettings.updateSource,
 }
 
 const moreDefaultSettings = {
@@ -325,27 +332,36 @@ async function resetWindowSize() {
           </el-form-item>
         </el-row>
 
-        <!-- 更新设置 -->
-        <el-row class="me-flex">
-          <el-form-item :label="t('setting.update')">
-            <el-tag v-if="isAppStore" type="info">{{ t('setting.updateAppStore') }}</el-tag>
-            <el-checkbox v-else v-model="settings.autoUpdate" :label="t('setting.updateAuto')" />
-          </el-form-item>
-
-          <el-form-item :label="t('setting.nowVersion')">
-            <span
-              ><el-tag type="info">v{{ appVersion }}</el-tag></span
-            >
-            <el-button
-              style="margin-left: 10px"
-              plain
-              @click="checkUpdate"
-              :loading="loading"
-              icon="el-icon-check"
-              :disabled="app.downloading"
-              v-if="!isAppStore"
-              >{{ t('setting.updateNow') }}</el-button
-            >
+        <!-- 更新：自动检查、版本在左，更新源和检查按钮在右 -->
+        <el-row>
+          <el-form-item :label="t('setting.update')" style="flex: 1; margin-right: 0">
+            <div class="me-flex" style="align-items: center; width: 100%">
+              <div class="setting-row-btns">
+                <el-tag v-if="isAppStore" type="info">{{ t('setting.updateAppStore') }}</el-tag>
+                <el-checkbox
+                  v-else
+                  v-model="settings.autoUpdate"
+                  style="margin-right: 0"
+                  :label="t('setting.updateAuto')" />
+                <el-tag type="info">v{{ appVersion }}</el-tag>
+              </div>
+              <div v-if="!isAppStore" class="setting-row-btns">
+                <el-tooltip
+                  :content="t('setting.updateSourceTip')"
+                  placement="top"
+                  :show-after="400">
+                  <el-segmented v-model="settings.updateSource" :options="updateSourceList" />
+                </el-tooltip>
+                <el-button
+                  plain
+                  @click="checkUpdate"
+                  :loading="loading"
+                  icon="el-icon-check"
+                  :disabled="app.downloading"
+                  >{{ t('setting.updateNow') }}</el-button
+                >
+              </div>
+            </div>
           </el-form-item>
         </el-row>
       </el-form>

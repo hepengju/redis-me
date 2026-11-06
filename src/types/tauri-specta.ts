@@ -10,6 +10,15 @@ export const commands = {
 	isAppStore: () => __TAURI_INVOKE<boolean>("is_app_store"),
 	/**  更新安装完成后重启。macOS 上延迟 `open` 再退出，避免 single-instance 与 `relaunch()` 竞态。 */
 	restartAfterUpdate: () => typedError<null, string>(__TAURI_INVOKE("restart_after_update")),
+	/**  按给定顺序检查更新。顺序由前端按更新源设置排好，每个地址单独计超时。 */
+	checkAppUpdate: (endpoints: string[], timeoutMs: number) => typedError<{
+	rid: number,
+	currentVersion: string,
+	version: string,
+	date: string | null,
+	body: string | null,
+	rawJson: any,
+} | null, string>(__TAURI_INVOKE("check_app_update", { endpoints, timeoutMs })),
 	testConn: (conf: ConnConfig) => typedError<null, string>(__TAURI_INVOKE("test_conn", { conf })),
 	/**  勾选「使用系统代理」时检测一次，供表单只读展示。建连时会再检测。 */
 	detectSystemProxy: () => typedError<SystemProxyDetect, string>(__TAURI_INVOKE("detect_system_proxy")),
@@ -147,6 +156,16 @@ export type AclUserDetail = {
 export type AppSettings = {
 	connectionTimeoutSecs?: number,
 	commandTimeoutSecs: number,
+};
+
+/**  与插件 `check` 返回给前端 `Update` 的字段一致，下载和安装仍走插件命令。 */
+export type AppUpdateMetadata = {
+	rid: number,
+	currentVersion: string,
+	version: string,
+	date: string | null,
+	body: string | null,
+	rawJson: any,
 };
 
 /**  前后端 IPC 字节格式：utf8 文本或 base64 原始字节（hex/binary/msgpack 等视图格式在前端处理） */

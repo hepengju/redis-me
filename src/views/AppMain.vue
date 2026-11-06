@@ -1,7 +1,6 @@
 <script setup lang="ts">
 // #region 导入
 import { getCurrentWindow } from '@tauri-apps/api/window'
-import { check, type Update } from '@tauri-apps/plugin-updater'
 import {
   computed,
   inject,
@@ -27,6 +26,7 @@ import {
   type UiConn,
 } from '@/types/me-interface'
 import type { ConnConfig, RedisKey_Deserialize } from '@/types/tauri-specta'
+import { checkAppUpdate } from '@/utils/app-update'
 import { openNewWindow, toggleAppFullscreen } from '@/utils/app-window'
 import {
   collapseImportedConnGroups,
@@ -174,7 +174,7 @@ provide(appProvideKey, app)
 async function checkAutoUpdate(): Promise<void> {
   if (meTauri.isAppStore) return
   if (!meTauri.settings.autoUpdate) return
-  app.update = (await check().catch((): null => null)) as Update | null
+  app.update = await checkAppUpdate().catch((): null => null)
 }
 onMounted(checkAutoUpdate)
 // #endregion

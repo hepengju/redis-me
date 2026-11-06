@@ -10,7 +10,7 @@ use std::collections::HashMap;
 #[cfg(target_os = "macos")]
 use tauri::Manager;
 use tauri::utils::platform::current_exe;
-use tauri::{AppHandle, command};
+use tauri::{AppHandle, Webview, command};
 
 // 使用宏简化代码
 // to_api_result(app_handle.get_client(id).and_then(|client| client.$name($($param),*)))
@@ -129,6 +129,17 @@ pub fn app_dir() -> ApiResult<String> {
 #[specta]
 pub fn is_app_store() -> bool {
     app_store::detect()
+}
+
+/// 按给定顺序检查更新。顺序由前端按更新源设置排好，每个地址单独计超时。
+#[command]
+#[specta]
+pub async fn check_app_update(
+    webview: Webview,
+    endpoints: Vec<String>,
+    timeout_ms: u64,
+) -> ApiResult<Option<crate::support::app_update::AppUpdateMetadata>> {
+    crate::support::app_update::check(webview, endpoints, timeout_ms).await
 }
 
 /// 更新安装完成后重启。macOS 上延迟 `open` 再退出，避免 single-instance 与 `relaunch()` 竞态。

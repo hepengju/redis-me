@@ -1,12 +1,7 @@
 /** 应用内自动更新（Tauri updater） */
 import { type } from '@tauri-apps/plugin-os'
 import { relaunch } from '@tauri-apps/plugin-process'
-import {
-  check,
-  type CheckOptions,
-  type DownloadEvent,
-  type Update,
-} from '@tauri-apps/plugin-updater'
+import { Update, type DownloadEvent } from '@tauri-apps/plugin-updater'
 import { ElMessage } from 'element-plus'
 import type { ElMessageBoxOptions } from 'element-plus'
 import { h } from 'vue'
@@ -33,11 +28,59 @@ const manualCloseOptions: ElMessageBoxOptions = {
   type: 'info',
 }
 
-export async function meCheckUpdate(
-  quiet = true,
-  checkOptions: CheckOptions = {},
-  app: MeAppUpdateState,
-): Promise<void> {
+/** 每个更新源各自的超时。首选挂起时最多等这么久，再试另一个。 */
+const UPDATE_CHECK_TIMEOUT_MS = 5000
+
+const UPDATE_ENDPOINT_GITEE =
+  'https://gitee.com/hepengju/redis-me/releases/download/latest/latest.json'
+const UPDATE_ENDPOINT_GITHUB =
+  'https://github.com/hepengju/redis-me/releases/latest/download/latest.json'
+
+/**
+ * 中国大陆时区。香港、澳门、台湾不放进来。
+ * Asia/Beijing 不在 IANA 库里，规范名是 Asia/Shanghai；openEuler 等发行版会自行加上并链到上海。
+ */
+const MAINLAND_CHINA_TIMEZONES = new Set([
+  'Asia/Shanghai',
+  'Asia/Beijing',
+  'Asia/Urumqi',
+  'Asia/Chongqing',
+  'Asia/Harbin',
+])
+
+/**
+ * 更新检查顺序：首选在前，另一个作失败后备。
+ * `auto` 时中国大陆时区先 Gitee，其余先 GitHub。未知取值也按自动处理。
+ */
+export function updateEndpoints(source: unknown, timeZone: string): [string, string] {
+  const preferGitee =
+    source === 'gitee' || (source !== 'github' && MAINLAND_CHINA_TIMEZONES.has(timeZone))
+  return preferGitee
+    ? [UPDATE_ENDPOINT_GITEE, UPDATE_ENDPOINT_GITHUB]
+    : [UPDATE_ENDPOINT_GITHUB, UPDATE_ENDPOINT_GITEE]
+}
+
+/** 按当前更新源设置检查。没有更新时返回 null。 */
+export async function checkAppUpdate(): Promise<Update | null> {
+  const endpoints = updateEndpoints(
+    window.meTauri.settings.updateSource,
+    Intl.DateTimeFormat().resolvedOptions().timeZone,
+  )
+  meLog('检查更新端点:', endpoints)
+  // 末尾 false：失败不弹命令错误，交给调用方决定是否提示
+  const metadata = await meCommands.checkAppUpdate(endpoints, UPDATE_CHECK_TIMEOUT_MS, false)
+  if (!metadata) return null
+  return new Update({
+    rid: metadata.rid,
+    currentVersion: metadata.currentVersion,
+    version: metadata.version,
+    date: metadata.date ?? undefined,
+    body: metadata.body ?? undefined,
+    rawJson: (metadata.rawJson ?? {}) as Record<string, unknown>,
+  })
+}
+
+export async function meCheckUpdate(quiet = true, app: MeAppUpdateState): Promise<void> {
   if (window?.meTauri?.isAppStore) {
     meLog('应用商店内部的应用更新，忽略检查接口')
     return
@@ -47,7 +90,7 @@ export async function meCheckUpdate(
     ElMessage.primary(t('util.checking'))
   }
 
-  const update = await check(checkOptions).catch(DoNothing)
+  const update = await checkAppUpdate().catch(DoNothing)
   if (update) {
     await meDownloadUpdate(quiet, update, app)
   } else if (update === null) {
