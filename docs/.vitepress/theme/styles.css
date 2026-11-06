@@ -221,6 +221,21 @@ img[src='search.png'] {
   aspect-ratio: 1 / 1;
 }
 
+/* 更新日志日期：版本标题同行弱 chip */
+.vp-doc h2 .changelog-date {
+  display: inline-block;
+  margin-left: 0.55rem;
+  padding: 1px 8px;
+  font-size: 14px;
+  font-weight: 400;
+  font-variant-numeric: tabular-nums;
+  color: var(--vp-c-text-2);
+  border: 1px solid var(--vp-c-divider);
+  border-radius: 5px;
+  background: color-mix(in srgb, var(--vp-c-bg-soft) 70%, transparent);
+  vertical-align: middle;
+}
+
 /* 官网交互工具：原生表单控件，跟站点 CSS 变量 */
 .me-tool input[type='text'],
 .me-tool input[type='password'],

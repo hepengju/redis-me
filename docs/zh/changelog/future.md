@@ -1,7 +1,5 @@
 ## Future
 
-- redis-rs库的更新，发布上去，避免每次都要github拉取 ✅
-- Unix Socket 支持
 - deepin应用商店的上架
 - 多个Redis连接之间的键迁移
 - Linux其他应用商店上线的继续处理
@@ -30,6 +28,8 @@
 
 ### 已完成
 
+- Unix Socket 支持（本机直连 / SSH 远端套接字；安装帮助单机 Unix 一键生成）✅️
+- redis-rs 改为 crates.io 的 redis-me-rs，避免每次从 GitHub 拉取 ✅️
 - 复制为命令，重命名键，创建副本 可以也添加在键的右键菜单里面 ✅️
 - 客户端原始信息行的展示与复制 ✅️
 - 信息页的数量值集群表格展示：节点、键总数，内存，连接数，网络 ✅️
@@ -58,7 +58,7 @@
 - 数据编码魔数自动识别（Auto：ACED / Pickle PROTO / PhpSerial a:/O:/C: / MsgPack / StrJson / UTF-8 / Hex）✅️
 - 自定义编解码勾选 Auto：内置落到 Hex 后按顺序试解，成功输出直接展示 ✅️
 - 自定义编码测试样例不再预填；编码样例直接填编辑区明文，由程序做 Base64；取消不保留本次修改 ✅️
-- String类型阈值保护 ✅️
+- String类型峰值保护 ✅️
 - Binary格式恢复支持（setbit等场景还是需要的）✅️
 - Hash/Set/ZSet的扫描模式支持 ✅️
 - Hash仅查询键的支持 ✅️
