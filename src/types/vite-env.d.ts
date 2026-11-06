@@ -27,7 +27,7 @@ declare global {
       uiFont?: string[]
       codeFont?: string[]
       autoUpdate?: boolean
-      /** 更新源。auto 按中国大陆时区优先 Gitee，否则优先 GitHub；失败再试另一个 */
+      /** 更新源。auto 按中国大陆时区先 Gitee、否则先 GitHub，失败再试另一个；gitee / github 只用那一个 */
       updateSource?: 'auto' | 'gitee' | 'github'
       /** 自定义 STRING 值编解码脚本配置 */
       /** auto：内置识别落到 Hex 时参与试解，默认关 */

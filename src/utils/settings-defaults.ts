@@ -5,7 +5,7 @@ export const defaultSettings = {
   uiFont: [] as string[],
   codeFont: [] as string[],
   autoUpdate: true,
-  // auto：中国大陆时区先 Gitee，其余先 GitHub；gitee / github 只改首选，失败仍试另一个
+  // auto：中国大陆时区先 Gitee，其余先 GitHub，失败再试另一个。gitee / github 只用所选的那一个
   updateSource: 'auto' as 'auto' | 'gitee' | 'github',
 
   // 扩展设置

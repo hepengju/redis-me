@@ -79,7 +79,7 @@ export default {
     updateSourceGitee: 'Gitee',
     updateSourceGithub: 'GitHub',
     updateSourceTip:
-      'Auto follows the timezone: mainland China tries Gitee first, everywhere else tries GitHub first. The other source is used if the first one fails',
+      'Auto follows the timezone: mainland China tries Gitee first, everywhere else tries GitHub first, and falls back if that fails. Choosing Gitee or GitHub uses only that source',
     updateNow: 'Check Now',
     updateAppStore: 'Update By AppStore',
 

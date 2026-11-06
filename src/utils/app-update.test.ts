@@ -3,16 +3,20 @@ import { describe, expect, it } from 'vite-plus/test'
 import { updateEndpoints } from '@/utils/app-update'
 
 describe('updateEndpoints', () => {
-  it('显式选择排在前面，另一个作后备', () => {
+  it('显式选择只用那一个源', () => {
     const gitee = updateEndpoints('gitee', 'America/New_York')
     const github = updateEndpoints('github', 'Asia/Shanghai')
+    expect(gitee).toHaveLength(1)
     expect(gitee[0]).toContain('gitee.com')
-    expect(gitee[1]).toContain('github.com')
+    expect(github).toHaveLength(1)
     expect(github[0]).toContain('github.com')
-    expect(github[1]).toContain('gitee.com')
   })
 
-  it('自动时中国大陆时区先 Gitee，其余先 GitHub', () => {
+  it('自动时中国大陆时区先 Gitee，其余先 GitHub，失败再试另一个', () => {
+    const mainland = updateEndpoints('auto', 'Asia/Shanghai')
+    const overseas = updateEndpoints('auto', 'America/Los_Angeles')
+    expect(mainland.map(url => url.includes('gitee.com'))).toEqual([true, false])
+    expect(overseas.map(url => url.includes('github.com'))).toEqual([true, false])
     expect(updateEndpoints('auto', 'Asia/Shanghai')[0]).toContain('gitee.com')
     expect(updateEndpoints('auto', 'Asia/Beijing')[0]).toContain('gitee.com')
     expect(updateEndpoints('auto', 'Asia/Urumqi')[0]).toContain('gitee.com')

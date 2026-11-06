@@ -75,7 +75,7 @@ export default {
     updateSourceGitee: 'Gitee',
     updateSourceGithub: 'GitHub',
     updateSourceTip:
-      '自动按系统时区：中国大陆优先 Gitee，其他地区优先 GitHub。首选失败时再试另一个',
+      '自动按系统时区：中国大陆先 Gitee，其他地区先 GitHub，失败再试另一个。指定 Gitee 或 GitHub 时只用那一个',
     updateNow: '检查更新',
     updateAppStore: '应用商店控制更新',
 

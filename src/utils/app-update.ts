@@ -28,7 +28,7 @@ const manualCloseOptions: ElMessageBoxOptions = {
   type: 'info',
 }
 
-/** 每个更新源各自的超时。首选挂起时最多等这么久，再试另一个。 */
+/** 每个更新源各自的超时。自动模式里，前一个挂起时最多等这么久再试下一个。 */
 const UPDATE_CHECK_TIMEOUT_MS = 5000
 
 const UPDATE_ENDPOINT_GITEE =
@@ -49,12 +49,14 @@ const MAINLAND_CHINA_TIMEZONES = new Set([
 ])
 
 /**
- * 更新检查顺序：首选在前，另一个作失败后备。
- * `auto` 时中国大陆时区先 Gitee，其余先 GitHub。未知取值也按自动处理。
+ * 要请求的更新清单。
+ * 指定 Gitee 或 GitHub 时只用那一个。自动时中国大陆时区先 Gitee，其余先 GitHub，失败再试另一个。
+ * 未知取值也按自动处理。
  */
-export function updateEndpoints(source: unknown, timeZone: string): [string, string] {
-  const preferGitee =
-    source === 'gitee' || (source !== 'github' && MAINLAND_CHINA_TIMEZONES.has(timeZone))
+export function updateEndpoints(source: unknown, timeZone: string): string[] {
+  if (source === 'gitee') return [UPDATE_ENDPOINT_GITEE]
+  if (source === 'github') return [UPDATE_ENDPOINT_GITHUB]
+  const preferGitee = MAINLAND_CHINA_TIMEZONES.has(timeZone)
   return preferGitee
     ? [UPDATE_ENDPOINT_GITEE, UPDATE_ENDPOINT_GITHUB]
     : [UPDATE_ENDPOINT_GITHUB, UPDATE_ENDPOINT_GITEE]
