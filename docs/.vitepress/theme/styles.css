@@ -117,11 +117,22 @@
   z-index: 1;
 }
 
-/* 文档页侧栏透明，才能透出全页背景 */
+/* 文档页侧栏透明透出网格；顶栏高度内 mask 裁切，避免侧栏滚动文字钻到 Logo 下 */
 @media (min-width: 960px) {
-  .Layout:has(.VPContent:not(.is-home)) .VPSidebar,
-  .Layout:has(.VPContent:not(.is-home)) .VPSidebar .curtain {
+  .Layout:has(.VPContent:not(.is-home)) .VPSidebar {
     background-color: transparent;
+    -webkit-mask-image: linear-gradient(
+      to bottom,
+      transparent 0,
+      transparent var(--vp-nav-height),
+      #000 var(--vp-nav-height)
+    );
+    mask-image: linear-gradient(
+      to bottom,
+      transparent 0,
+      transparent var(--vp-nav-height),
+      #000 var(--vp-nav-height)
+    );
   }
 }
 
@@ -172,22 +183,25 @@
   margin-bottom: 32px;
 }
 
-/* 顶栏：任意页面顶部透明无分割线，滚动后毛玻璃 + 分割线（VPNavBar.top = y===0） */
-.VPNavBar.top {
+/* 顶栏背景在 ::before；任意页顶部透明，滚动后全宽毛玻璃 */
+.VPNavBar.top::before {
   background-color: transparent !important;
-  backdrop-filter: none;
+  backdrop-filter: none !important;
 }
 
-.VPNavBar.top .divider-line {
-  background-color: transparent !important;
-}
-
-.VPNavBar.top .content-body {
+.VPNavBar.top .divider-line,
+.VPNavBar.top.has-sidebar .divider::before {
   background-color: transparent !important;
 }
 
-.VPNavBar:not(.top),
-.VPNavBar.screen-open {
+/* 滚动态取消侧栏列偏移（盖过 VitePress scoped 的 has-sidebar offset） */
+.Layout .VPNavBar:not(.top).has-sidebar,
+.Layout .VPNavBar.screen-open.has-sidebar {
+  --vp-nav-col-offset: 0px;
+}
+
+.VPNavBar:not(.top)::before,
+.VPNavBar.screen-open::before {
   background-color: color-mix(in srgb, var(--vp-c-bg) 82%, transparent) !important;
   backdrop-filter: blur(14px);
 }
@@ -197,13 +211,10 @@
   background-color: var(--vp-c-divider) !important;
 }
 
-@media (min-width: 960px) {
-  .VPNavBar.top .content-body {
-    background-color: transparent !important;
-  }
-
-  .VPNavBar:not(.top) .content-body {
-    background-color: color-mix(in srgb, var(--vp-c-bg) 82%, transparent) !important;
+/* 深色：搜索钮默认用 bg-alt 比页面还深，改用 soft 抬一点 */
+@media (min-width: 48rem) {
+  .dark .VPNavBar .VPNavBarSearchButton {
+    background-color: var(--vp-c-bg-soft);
   }
 }
 
@@ -214,11 +225,26 @@
   padding: 18px;
 }
 
-/* used in reference/default-theme-search */
+/* 软件截图页：search.png 保持正方形 */
 img[src$='/search.png'],
 img[src='search.png'] {
   width: 100%;
   aspect-ratio: 1 / 1;
+}
+
+/* 更新日志日期：版本标题同行弱 chip */
+.vp-doc h2 .changelog-date {
+  display: inline-block;
+  margin-left: 0.55rem;
+  padding: 1px 8px;
+  font-size: 14px;
+  font-weight: 400;
+  font-variant-numeric: tabular-nums;
+  color: var(--vp-c-text-2);
+  border: 1px solid var(--vp-c-divider);
+  border-radius: 5px;
+  background: color-mix(in srgb, var(--vp-c-bg-soft) 70%, transparent);
+  vertical-align: middle;
 }
 
 /* 官网交互工具：原生表单控件，跟站点 CSS 变量 */

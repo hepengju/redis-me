@@ -1,6 +1,24 @@
 # 5.x 更新日志
 
-## [v5.6.0](https://mp.weixin.qq.com/s/SsA5C0glDYzg040-jn1c-w) (2026-10-31)
+## v5.7.0 - Unix套接字 <span class="changelog-date">2026-11-08</span>
+
+### ✨ 新增优化
+
+- 连接: 支持 **Unix 套接字**，本机直连或经 SSH 连接远端套接字
+- Redis 安装帮助，官网安装工具同步对齐
+  - 单机支持 Unix 套接字一键生成
+  - 密码支持 **一键生成随机值**
+- 其他细节
+  - 值区美化按钮：开启不着色、不可用时隐藏、关闭弱化；STRING 非文本编码时灰掉外层
+  - 连接首页**只保留分组模式**，顶栏连接下拉按分组顺序展示美化
+  - 后端 redis 依赖改为 crates.io 的 **redis-me-rs**（不再每次从 GitHub 拉取）
+
+### 🐞 修复问题
+
+- 修复部分 Linux 环境(比如 Deepin25) WebKit DMA-BUF 导致的**白屏**
+- 修复美化误伤非 JSON：需首尾括号成对才格式化（放行 Fastjson 的 Set 等）
+
+## [v5.6.0 - 集群操作增强](https://mp.weixin.qq.com/s/SsA5C0glDYzg040-jn1c-w) <span class="changelog-date">2026-10-31</span>
 
 ### ✨ 新增优化
 
@@ -24,7 +42,7 @@
 - 修复终端遇到 RESP 解析错误后污染后续命令（出错后重建连接）
 - 修复以 `[` 或 `{` 开头但不是 JSON 的值被美化后插入换行
 
-## [v5.5.0](https://mp.weixin.qq.com/s/bZYPBXn3KLDF0ex-Ox8aSQ) (2026-10-24)
+## [v5.5.0 - 键空间通知](https://mp.weixin.qq.com/s/bZYPBXn3KLDF0ex-Ox8aSQ) <span class="changelog-date">2026-10-24</span>
 
 ### ✨ 新增优化
 
@@ -47,7 +65,7 @@
 - 修复集群建连在通告地址不可达时卡死（按配置超时兜底）
 - 修复带列头筛选的列点击筛选时误触发排序
 
-## [v5.4.3](https://mp.weixin.qq.com/s/eeDPDhU_nVnVuScOzApK6g) (2026-10-18)
+## [v5.4.3 - 虚拟表格](https://mp.weixin.qq.com/s/eeDPDhU_nVnVuScOzApK6g) <span class="changelog-date">2026-10-18</span>
 
 ### ✨ 细节优化
 
@@ -62,7 +80,7 @@
 
 - 修复 Stream 扫描前后端默认排序不一致，续扫合并去重，条件不匹配时降级重扫
 
-## v5.4.2 (2026-10-11)
+## v5.4.2 <span class="changelog-date">2026-10-11</span>
 
 ### ✨ 细节优化
 
@@ -81,14 +99,14 @@
 - 修复连接进入等场景下标签（el-tag）过渡动画导致的闪烁
 - 修复信息概览「配置」内联链接与后面路径文本的垂直错位
 
-## v5.4.1 (2026-10-07)
+## v5.4.1 <span class="changelog-date">2026-10-07</span>
 
 - 解码: 自定义编码可勾选 **Auto识别**
 - 导出: Excel **标题加样式并流式写出**
 - 连接: 空闲超过10分钟直接重连，探活超时改为1秒
 - 其他: 自定义编码测试样例改为自己填写；编码样例填明文
 
-## [v5.4.0](https://mp.weixin.qq.com/s/h6S4mnUZvGLu85mztHzxBA) (2026-10-05)
+## [v5.4.0 - RedisSearch](https://mp.weixin.qq.com/s/h6S4mnUZvGLu85mztHzxBA) <span class="changelog-date">2026-10-05</span>
 
 ### ✨ 新增优化
 
@@ -121,7 +139,7 @@
 - 修复 List 区间扫到端点后仍多打一次空查询
 - 修复 Stream 翻页刚好满一页时被当成已结束
 
-## v5.3.1 (2026-09-25)
+## v5.3.1 <span class="changelog-date">2026-09-25</span>
 
 ### 🐞 修复问题
 
@@ -130,7 +148,7 @@
 - 修复 Mac 上表格点空白处容易误选文字
 - 修复深色主题下空状态光晕显示不好看的问题（去掉）
 
-## [v5.3.0](https://mp.weixin.qq.com/s/P691_vhcJjZATq8qbRUtBw) (2026-09-25) 中秋节
+## [v5.3.0 - 代理与时序](https://mp.weixin.qq.com/s/P691_vhcJjZATq8qbRUtBw) <span class="changelog-date">2026-09-25 中秋节</span>
 
 ### ✨ 新增优化
 
@@ -151,7 +169,7 @@
 - 修复切换键后表格页码仍停在旧页
 - 修复 Redisson 编码探测时 Kryo 把 Marshalling 数据误读出来
 
-## [v5.2.0](https://mp.weixin.qq.com/s/oMVi3OsBLD-yaMfBbpxesA) (2026-09-10)
+## [v5.2.0 - SSH隧道重写](https://mp.weixin.qq.com/s/oMVi3OsBLD-yaMfBbpxesA) <span class="changelog-date">2026-09-10</span>
 
 ### ✨ 新增优化
 
@@ -176,13 +194,13 @@
 - 修复哨兵 TLS 建连挂死，以及跳过证书校验时丢失客户端证书
 - 修复新建连接时集群与哨兵可同时勾选
 
-## v5.1.1 (2026-09-05)
+## v5.1.1 <span class="changelog-date">2026-09-05</span>
 
 ### 🐞 修复问题
 
 - 修复大库 SCAN 搜索时游标超过 JS 安全整数后卡住不结束 #163
 
-## [v5.1.0](https://mp.weixin.qq.com/s/1IS91XFgCn4nBvs6M06V7g) (2026-09-05)
+## [v5.1.0 - 兼容 X.509 v1](https://mp.weixin.qq.com/s/1IS91XFgCn4nBvs6M06V7g) <span class="changelog-date">2026-09-05</span>
 
 ### ✨ 新增优化
 
@@ -195,7 +213,7 @@
 
 - 修复键名/字段本地过滤时含斜杠路径搜不到（与 Redis MATCH 语义对齐）
 
-## v5.0.3 (2026-09-03)
+## v5.0.3 <span class="changelog-date">2026-09-03</span>
 
 ### ✨ 新增优化
 
@@ -210,7 +228,7 @@
 - 修复 AnotherRDM 1.7.2+ 带分组的 `.ano` 无法导入 #160
 - 修复空态快捷键列表中全屏行点击无效
 
-## v5.0.2 (2026-09-02)
+## v5.0.2 <span class="changelog-date">2026-09-02</span>
 
 ### ✨ 新增优化
 
@@ -218,7 +236,7 @@
 - 设置: 新增配置**连接超时** #157
 - 设置: 命令超时更名为读写超时
 
-## v5.0.1 (2026-09-01)
+## v5.0.1 <span class="changelog-date">2026-09-01</span>
 
 ### ✨ 新增优化
 
@@ -230,7 +248,7 @@
 - 修复 Mac 上空页 Logo 光晕偶发露出方框
 - 修复 Redis 5 等旧版本打开配置页崩溃
 
-## [v5.0.0](https://mp.weixin.qq.com/s/qtq9ESg-uYcR0tAyvDaCgA) (2026-08-28)
+## [v5.0.0 - Redis安装帮助](https://mp.weixin.qq.com/s/qtq9ESg-uYcR0tAyvDaCgA) <span class="changelog-date">2026-08-28</span>
 
 ### ✨ 新增优化
 

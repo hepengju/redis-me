@@ -1,6 +1,24 @@
 # 5.x Changelog
 
-## [v5.6.0](https://mp.weixin.qq.com/s/SsA5C0glDYzg040-jn1c-w) (2026-10-31)
+## v5.7.0 - Unix Socket <span class="changelog-date">2026-11-08</span>
+
+### ✨ Improvements
+
+- Connections: **Unix socket** support — local direct connect or remote sockets via SSH
+- Redis Install Helper (docs tool aligned)
+  - Standalone mode can generate a **Unix socket** Compose / run setup
+  - Password field supports **one-click random generation**
+- Other details
+  - Value-area prettify button: no color when on, hidden when unavailable, muted when off; STRING non-text encodings grey out the outer prettify control
+  - Connection home **group view only**; the top connection dropdown follows group order
+  - Backend redis crate switched to crates.io **redis-me-rs** (no more per-build GitHub fetch)
+
+### 🐞 Bug Fixes
+
+- Fixed a **blank window** on some Linux setups (e.g. Deepin 25) caused by WebKit DMA-BUF
+- Fixed prettify mangling non-JSON: only format when leading/trailing brackets pair (allows Fastjson Set, etc.)
+
+## [v5.6.0 - Cluster Enhancements](https://mp.weixin.qq.com/s/SsA5C0glDYzg040-jn1c-w) <span class="changelog-date">2026-10-31</span>
 
 ### ✨ Improvements
 
@@ -24,7 +42,7 @@
 - Fixed a RESP parse error corrupting later terminal commands (the connection is rebuilt after the error)
 - Fixed non-JSON values starting with `[` or `{` getting line breaks inserted when prettified
 
-## [v5.5.0](https://mp.weixin.qq.com/s/bZYPBXn3KLDF0ex-Ox8aSQ) (2026-10-24)
+## [v5.5.0 - Keyspace Notifications](https://mp.weixin.qq.com/s/bZYPBXn3KLDF0ex-Ox8aSQ) <span class="changelog-date">2026-10-24</span>
 
 ### ✨ Improvements
 
@@ -47,7 +65,7 @@
 - Fixed cluster connections hanging when the announced address is unreachable (falls back to the configured timeout)
 - Fixed clicking a column-filter header accidentally triggering sorting
 
-## [v5.4.3](https://mp.weixin.qq.com/s/eeDPDhU_nVnVuScOzApK6g) (2026-10-18)
+## [v5.4.3 - Virtual Table](https://mp.weixin.qq.com/s/eeDPDhU_nVnVuScOzApK6g) <span class="changelog-date">2026-10-18</span>
 
 ### ✨ Improvements
 
@@ -62,7 +80,7 @@
 
 - Fixed Stream scan: default order now consistently descending across front end and back end; continued scans merge and deduplicate; falls back to a re-scan when conditions don't match
 
-## v5.4.2 (2026-10-11)
+## v5.4.2 <span class="changelog-date">2026-10-11</span>
 
 ### ✨ Improvements
 
@@ -81,14 +99,14 @@
 - Fixed tag (el-tag) flickering caused by the transition animation when entering a connection, etc.
 - Fixed vertical misalignment between the inline "Config" link and the path text after it in the Info overview
 
-## v5.4.1 (2026-10-07)
+## v5.4.1 <span class="changelog-date">2026-10-07</span>
 
 - Codec: custom codecs can opt in to **Auto detect**
 - Export: Excel **styled headers, written as a stream**
 - Connection: idle for over 10 minutes reconnects directly; probe timeout is now 1 second
 - Other: custom codec test samples are filled in by you; encode samples are plain text
 
-## [v5.4.0](https://mp.weixin.qq.com/s/h6S4mnUZvGLu85mztHzxBA) (2026-10-05)
+## [v5.4.0 - RedisSearch](https://mp.weixin.qq.com/s/h6S4mnUZvGLu85mztHzxBA) <span class="changelog-date">2026-10-05</span>
 
 ### ✨ New Features
 
@@ -121,7 +139,7 @@
 - Fixed List range scans issuing one extra empty query after reaching the end
 - Fixed Stream paging treating a full page as the end
 
-## v5.3.1 (2026-09-25)
+## v5.3.1 <span class="changelog-date">2026-09-25</span>
 
 ### 🐞 Bug Fixes
 
@@ -130,7 +148,7 @@
 - Fixed accidental text selection when clicking blank areas in tables on Mac
 - Fixed the empty-state glow looking poor in dark theme (removed)
 
-## [v5.3.0](https://mp.weixin.qq.com/s/P691_vhcJjZATq8qbRUtBw) (2026-09-25)
+## [v5.3.0 - Proxy & TimeSeries](https://mp.weixin.qq.com/s/P691_vhcJjZATq8qbRUtBw) <span class="changelog-date">2026-09-25</span>
 
 ### ✨ New Features
 
@@ -151,7 +169,7 @@
 - Fixed the table staying on the old page after switching keys
 - Fixed Redisson codec detection where Kryo misread Marshalling data
 
-## [v5.2.0](https://mp.weixin.qq.com/s/oMVi3OsBLD-yaMfBbpxesA) (2026-09-10)
+## [v5.2.0 - SSH Tunnel Rewrite](https://mp.weixin.qq.com/s/oMVi3OsBLD-yaMfBbpxesA) <span class="changelog-date">2026-09-10</span>
 
 ### ✨ New Features
 
@@ -176,13 +194,13 @@
 - Fixed sentinel TLS connect hanging, and client certificates being dropped when certificate verification is skipped
 - Fixed cluster and sentinel both being checkable when creating a new connection
 
-## v5.1.1 (2026-09-05)
+## v5.1.1 <span class="changelog-date">2026-09-05</span>
 
 ### 🐞 Bug Fixes
 
 - Fixed SCAN search hanging when the cursor exceeds the JS safe integer range #163
 
-## [v5.1.0](https://mp.weixin.qq.com/s/1IS91XFgCn4nBvs6M06V7g) (2026-09-05)
+## [v5.1.0 - X.509 v1 Compat](https://mp.weixin.qq.com/s/1IS91XFgCn4nBvs6M06V7g) <span class="changelog-date">2026-09-05</span>
 
 ### ✨ New Features
 
@@ -195,7 +213,7 @@
 
 - Fixed local key/field filtering missing keys with slashes (aligned with Redis MATCH semantics)
 
-## v5.0.3 (2026-09-03)
+## v5.0.3 <span class="changelog-date">2026-09-03</span>
 
 ### ✨ New Features
 
@@ -210,7 +228,7 @@
 - Fixed AnotherRDM 1.7.2+ grouped `.ano` import failing #160
 - Fixed the fullscreen row in the empty-state shortcut list not responding to clicks
 
-## v5.0.2 (2026-09-02)
+## v5.0.2 <span class="changelog-date">2026-09-02</span>
 
 ### ✨ New Features
 
@@ -218,7 +236,7 @@
 - Settings: new configurable **connection timeout** #157
 - Settings: renamed Command Timeout to I/O Timeout
 
-## v5.0.1 (2026-09-01)
+## v5.0.1 <span class="changelog-date">2026-09-01</span>
 
 ### ✨ New Features
 
@@ -230,7 +248,7 @@
 - Fixed empty-page Logo glow occasionally showing a box on Mac
 - Fixed config page crash on Redis 5 and other older versions
 
-## [v5.0.0](https://mp.weixin.qq.com/s/qtq9ESg-uYcR0tAyvDaCgA) (2026-08-28)
+## [v5.0.0 - Redis Install Helper](https://mp.weixin.qq.com/s/qtq9ESg-uYcR0tAyvDaCgA) <span class="changelog-date">2026-08-28</span>
 
 ### ✨ New Features
 
