@@ -45,21 +45,22 @@
 # Windows: Microsoft C++
 # Mac: Xcode
 # Linux: libwebkit2gtk, build-essential 等
-
-# 环境变量（配置rust和vp从国内镜像下载）
 ```
 
+```bash
+# 环境变量（配置rust和vp从国内镜像下载）
 export RUSTUP_DIST_SERVER="https://rsproxy.cn"
 export RUSTUP_UPDATE_ROOT="https://rsproxy.cn/rustup"
 export VP_NODE_DIST_MIRROR="https://npmmirror.com/mirrors/node"
 export NPM_CONFIG_REGISTRY="https://registry.npmmirror.com"
-
 ```
 
 # 安装 Rust （国内镜像 https://rsproxy.cn/）
+
 curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
 
 vim ~/.cargo/config.toml
+
 ```
 
 [source.crates-io]
@@ -75,16 +76,19 @@ git-fetch-with-cli = true
 
 ```
 
-
 # 安装vite+: 自动管理node/pnpm
+
 curl -fsSL https://vite.plus | bash
 
 # 克隆项目
+
 git clone https://github.com/hepengju/redis-me.git
 
 # 安装前端依赖，然后本地启动开发模式
+
 vp install
 vp run tauri dev
+
 ```
 
 ## 微信公众号
@@ -92,3 +96,4 @@ vp run tauri dev
 定期分享 RedisME 的特色功能与图文更新日志，及其他技术疑难问题和解决方案
 
 <img src="src/assets/images/wechat.png" alt="wechat" width="400" />
+```
