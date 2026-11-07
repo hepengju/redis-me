@@ -1,22 +1,26 @@
 # 5.x 更新日志
 
-## v5.7.0 - Unix套接字 <span class="changelog-date">2026-11-08</span>
+## [v5.7.0 - Unix套接字](https://mp.weixin.qq.com/s/JoNqjj9Vb3KZZldBhwBMnQ) <span class="changelog-date">2026-11-07</span>
 
 ### ✨ 新增优化
 
-- 连接: 支持 **Unix 套接字**，本机直连或经 SSH 连接远端套接字
+- 连接: 支持 **Unix 套接字**
+  - 本机直连（仅 Linux / macOS），或经 SSH 连接远端套接字（Windows 也可）
+  - 粘贴 `unix://`、`redis+unix://` 自动切到套接字并填入路径
 - Redis 安装帮助，官网安装工具同步对齐
   - 单机支持 Unix 套接字一键生成
   - 密码支持 **一键生成随机值**
+- 设置: 更新检查可选来源 **自动 / Gitee / GitHub**
 - 其他细节
-  - 值区美化按钮：开启不着色、不可用时隐藏、关闭弱化；STRING 非文本编码时灰掉外层
-  - 连接首页**只保留分组模式**，顶栏连接下拉按分组顺序展示美化
-  - 后端 redis 依赖改为 crates.io 的 **redis-me-rs**（不再每次从 GitHub 拉取）
+  - 值区美化按钮样式优化；STRING 非文本编码时不显示
+  - 连接首页**只保留分组模式**，顶栏连接下拉按分组顺序展示
+  - 后端 redis 依赖改为 **redis-me-rs**（避免每次从 GitHub 拉取）
+  - 官网截图更新，顶栏滚动后毛玻璃铺满；深色搜索框提亮等优化
 
 ### 🐞 修复问题
 
-- 修复部分 Linux 环境(比如 Deepin25) WebKit DMA-BUF 导致的**白屏**
-- 修复美化误伤非 JSON：需首尾括号成对才格式化（放行 Fastjson 的 Set 等）
+- 修复部分 Linux 环境(比如 Deepin25) WebKit DMA-BUF 导致的**启动白屏**
+- 修复Fastjson等包含Set等集合时的非标准JSON字符串无法格式化的问题
 
 ## [v5.6.0 - 集群操作增强](https://mp.weixin.qq.com/s/SsA5C0glDYzg040-jn1c-w) <span class="changelog-date">2026-10-31</span>
 

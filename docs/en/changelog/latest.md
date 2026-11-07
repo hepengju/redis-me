@@ -1,22 +1,26 @@
 # 5.x Changelog
 
-## v5.7.0 - Unix Socket <span class="changelog-date">2026-11-08</span>
+## [v5.7.0 - Unix Socket](https://mp.weixin.qq.com/s/JoNqjj9Vb3KZZldBhwBMnQ) <span class="changelog-date">2026-11-07</span>
 
 ### ✨ Improvements
 
-- Connections: **Unix socket** support — local direct connect or remote sockets via SSH
-- Redis Install Helper (docs tool aligned)
-  - Standalone mode can generate a **Unix socket** Compose / run setup
-  - Password field supports **one-click random generation**
+- Connections: **Unix socket** support
+  - Local direct connect (Linux / macOS only), or a remote socket via SSH (Windows included)
+  - Pasting `unix://` or `redis+unix://` switches to the socket and fills in the path
+- Redis Install Helper, kept in sync with the docs install tool
+  - Standalone mode can generate a **Unix socket** setup in one click
+  - Password supports **one-click random generation**
+- Settings: update checks can use **Auto / Gitee / GitHub**
 - Other details
-  - Value-area prettify button: no color when on, hidden when unavailable, muted when off; STRING non-text encodings grey out the outer prettify control
-  - Connection home **group view only**; the top connection dropdown follows group order
-  - Backend redis crate switched to crates.io **redis-me-rs** (no more per-build GitHub fetch)
+  - Value-area prettify button styling refined; hidden for STRING non-text encodings
+  - Connection home **keeps group view only**; the top connection dropdown follows group order
+  - Backend redis dependency switched to **redis-me-rs** (no longer fetched from GitHub on every build)
+  - Docs screenshots updated; the top bar uses full-width frosted glass after scrolling; the dark search box is brighter, with similar polish
 
 ### 🐞 Bug Fixes
 
-- Fixed a **blank window** on some Linux setups (e.g. Deepin 25) caused by WebKit DMA-BUF
-- Fixed prettify mangling non-JSON: only format when leading/trailing brackets pair (allows Fastjson Set, etc.)
+- Fixed a **blank window on startup** on some Linux setups (e.g. Deepin 25) caused by WebKit DMA-BUF
+- Fixed non-standard JSON that contains sets (such as Fastjson `Set`) not being formatted
 
 ## [v5.6.0 - Cluster Enhancements](https://mp.weixin.qq.com/s/SsA5C0glDYzg040-jn1c-w) <span class="changelog-date">2026-10-31</span>
 
