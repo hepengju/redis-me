@@ -6,11 +6,13 @@ import { useI18n } from 'vue-i18n'
 import { shareProvideKey, connUiProvideKey } from '@/types/me-interface'
 import { openNewWindow } from '@/utils/app-window'
 import { connsInGroupOrder, getConnIcon } from '@/utils/conn'
-import { bus, CONN_REFRESH, meCommands, meOk, OPEN_SETTING } from '@/utils/util'
+import { bus, CONN_REFRESH, meCommands, meOk, OPEN_KEY_MIGRATE, OPEN_SETTING } from '@/utils/util'
+import type { MeBusEvents } from '@/utils/util'
 import AppAbout from '@/views/ext/AppAbout.vue'
 import AppSetting from '@/views/ext/AppSetting.vue'
 import AppShortcut from '@/views/ext/AppShortcut.vue'
 import CommandLog from '@/views/ext/CommandLog.vue'
+import KeyMigrate from '@/views/key/KeyMigrate.vue'
 // #endregion
 
 // #region 核心状态
@@ -30,6 +32,7 @@ const dialog = reactive({ commandLog: false })
 const settingRef = ref<InstanceType<typeof AppSetting>>()
 const shortcutRef = ref<InstanceType<typeof AppShortcut>>()
 const aboutRef = ref<InstanceType<typeof AppAbout>>()
+const keyMigrateRef = ref<InstanceType<typeof KeyMigrate>>()
 function openSetting(): void {
   settingRef.value?.open()
 }
@@ -38,14 +41,20 @@ function openShortcuts(): void {
   shortcutRef.value?.open()
 }
 
+function openKeyMigrate(payload: MeBusEvents['OPEN_KEY_MIGRATE'] = {}): void {
+  nextTick(() => keyMigrateRef.value?.open(payload))
+}
+
 onMounted(() => {
   connUi.openSetting = openSetting
   connUi.openShortcuts = openShortcuts
   // 顶部栏设置图标与本组件非父子关系，经 bus 通知打开本处挂载的设置弹窗
   bus.on(OPEN_SETTING, openSetting)
+  bus.on(OPEN_KEY_MIGRATE, openKeyMigrate)
 })
 onUnmounted(() => {
   bus.off(OPEN_SETTING, openSetting)
+  bus.off(OPEN_KEY_MIGRATE, openKeyMigrate)
 })
 // #endregion
 
@@ -71,6 +80,8 @@ async function handleCommand(command: string): Promise<void> {
     openSetting()
   } else if ('window' === command) {
     await openNewWindow()
+  } else if ('keyMigrate' === command) {
+    openKeyMigrate({})
   } else if ('info' === command) {
     aboutRef.value?.open()
     // } else if ('social' === command) {
@@ -124,6 +135,9 @@ async function handleCommand(command: string): Promise<void> {
           <el-dropdown-item command="window" :divided="!!share.conn">
             <me-icon :name="t('keyHeader.newWindow')" icon="me-icon-window" />
           </el-dropdown-item>
+          <el-dropdown-item command="keyMigrate">
+            <me-icon :name="t('keyHeader.keyMigrate')" icon="el-icon-switch" />
+          </el-dropdown-item>
           <el-dropdown-item command="setting" divided>
             <me-icon :name="t('keyHeader.setting')" icon="el-icon-setting" />
           </el-dropdown-item>
@@ -143,6 +157,7 @@ async function handleCommand(command: string): Promise<void> {
     <AppAbout ref="aboutRef" />
     <!-- <AppOfficial ref="officialRef" /> -->
     <CommandLog v-model="dialog.commandLog" />
+    <KeyMigrate ref="keyMigrateRef" />
   </div>
 </template>
 

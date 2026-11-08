@@ -31,6 +31,14 @@ export type MeBusEvents = {
   CONN_REFRESH: void
   /** 打开设置弹窗：顶部栏设置图标 emit，KeyHeader（挂载 AppSetting）监听 */
   OPEN_SETTING: void
+  /** 打开键迁移对话框；KeyHeader 挂载 KeyMigrate 并监听 */
+  OPEN_KEY_MIGRATE: {
+    sourceLocked?: boolean
+    sourceConnId?: string
+    sourceDb?: number
+    keyList?: RedisKey_Deserialize[]
+    match?: string
+  }
   /** 终端里 SELECT 成功：终端 emit（载荷为切到的库号），KeyMain 监听后重载键区 */
   DB_SWITCH: number
 }
@@ -62,6 +70,7 @@ export function takeSearchCreateDraft(): string | null {
 export const INFO_REFRESH = 'INFO_REFRESH'
 export const CONN_REFRESH = 'CONN_REFRESH'
 export const OPEN_SETTING = 'OPEN_SETTING'
+export const OPEN_KEY_MIGRATE = 'OPEN_KEY_MIGRATE'
 export const DB_SWITCH = 'DB_SWITCH'
 export const CONN_LIST_WINDOWS_SYNC = 'CONN_LIST_WINDOWS_SYNC'
 export const TREE_KEY_ID_PREFIX = '_TREE_KEY_ID_PREFIX_'

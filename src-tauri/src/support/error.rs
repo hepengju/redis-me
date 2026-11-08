@@ -87,12 +87,20 @@ pub enum AppError {
         node: String,
     },
 
-    // 导入导出
+    // 导入导出 / 迁移
     ExportImportRunning,
+    /// 已有键迁移任务在跑
+    MigrateRunning,
+    /// 源与目标不能是同一连接同一 DB
+    MigrateSameSourceTarget,
     EmptyKeyList,
     EmptyParameters,
     ImportInvalidLine {
         line: String,
+    },
+    /// 命令方式导出行数触达上限（Vector Set / TimeSeries），整键失败
+    MigrateCommandExportLimit {
+        key: String,
     },
 
     // SSH 相关

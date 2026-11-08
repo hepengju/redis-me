@@ -67,7 +67,7 @@ pub fn scan_1_cmd(cursor: u64, pattern: &str, batch_count: u64, scan_type: Optio
 
 /// 按 pattern 把键 SCAN 完，供批量删除和导出使用。`COUNT` 只是提示，这里会翻到游标为 0。
 pub fn batch_key0(
-    rmc: &impl MeClient,
+    rmc: &(impl MeClient + ?Sized),
     param: RedisBatchKey,
     assert_not_empty: bool,
 ) -> AnyResult<Vec<RedisKey>> {

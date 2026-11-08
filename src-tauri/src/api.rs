@@ -224,6 +224,30 @@ pub fn disconnect(app_handle: AppHandle, id: &str) -> ApiResult<()> {
     to_api_result(app_handle.disconnect(id))
 }
 
+/// 跨连接键迁移：开始前探测 DUMP/RESTORE 或 TYPE。
+#[command]
+#[specta]
+pub fn migrate_probe(app_handle: AppHandle, param: RedisMigrateProbe) -> ApiResult<MigrateProbeResult> {
+    to_api_result(crate::client::ops::migrate::migrate_probe(&app_handle, param))
+}
+
+/// 跨连接键迁移：后台新建两端连接并串行复制键；进度事件 `migrate`。
+#[command]
+#[specta]
+pub fn migrate_keys(app_handle: AppHandle, param: RedisMigrateParam) -> ApiResult<()> {
+    to_api_result(crate::client::ops::migrate::migrate_keys_start(
+        app_handle, param,
+    ))
+}
+
+/// 取消正在进行的键迁移。
+#[command]
+#[specta]
+pub fn migrate_stop(app_handle: AppHandle) -> ApiResult<()> {
+    crate::client::ops::migrate::migrate_stop(&app_handle);
+    Ok(())
+}
+
 // ------------------------------ 仅本文件使用 ------------------------------
 
 /// 从可执行文件路径往上找到 `App.app`。不在标准 bundle 布局里时返回 `None`。

@@ -27,6 +27,12 @@ export const commands = {
 	appSettings: (appSettings: AppSettings) => typedError<null, string>(__TAURI_INVOKE("app_settings", { appSettings })),
 	connect: (id: string) => typedError<ServerCapabilities, string>(__TAURI_INVOKE("connect", { id })),
 	disconnect: (id: string) => typedError<null, string>(__TAURI_INVOKE("disconnect", { id })),
+	/**  跨连接键迁移：开始前探测 DUMP/RESTORE 或 TYPE。 */
+	migrateProbe: (param: RedisMigrateProbe) => typedError<MigrateProbeResult, string>(__TAURI_INVOKE("migrate_probe", { param })),
+	/**  跨连接键迁移：后台新建两端连接并串行复制键；进度事件 `migrate`。 */
+	migrateKeys: (param: RedisMigrateParam_Deserialize) => typedError<null, string>(__TAURI_INVOKE("migrate_keys", { param })),
+	/**  取消正在进行的键迁移。 */
+	migrateStop: () => typedError<null, string>(__TAURI_INVOKE("migrate_stop")),
 	dbList: (id: string) => typedError<RedisDB[], string>(__TAURI_INVOKE("db_list", { id })),
 	selectDb: (id: string, db: number) => typedError<null, string>(__TAURI_INVOKE("select_db", { id, db })),
 	info: (id: string, node: string | null) => typedError<RedisInfo, string>(__TAURI_INVOKE("info", { id, node })),
@@ -312,6 +318,11 @@ export type FieldScanResult_Serialize = {
 	logicalLength?: number | null,
 	/**  Vector Set：VDIM（向量维度）；其它类型为 None */
 	vectorDim?: number | null,
+};
+
+export type MigrateProbeResult = {
+	ok: boolean,
+	message: string,
 };
 
 /**  通知订阅参数：一次只订一族视角，避免 K+E 同开时同一事件重复成两行 */
@@ -741,6 +752,51 @@ export type RedisMemoryResult_Serialize = {
 	cursor: ScanCursor_Serialize,
 	/**  本轮 SCAN 拿到的键数（过滤 size_limit 之前，供进度估算） */
 	scanned: number,
+};
+
+export type RedisMigrateParam = RedisMigrateParam_Serialize | RedisMigrateParam_Deserialize;
+
+export type RedisMigrateParam_Deserialize = {
+	taskId: string,
+	sourceConnId: string,
+	targetConnId: string,
+	sourceDb: number,
+	targetDb: number,
+	/**  与导出一致；有 key_list 时可不依赖 */
+	match: string,
+	keyList: RedisKey_Deserialize[],
+	/**  restore | command */
+	mode: string,
+	/**  skip | replace */
+	handleConflict: string,
+	/**  continue | stop */
+	onError: string,
+};
+
+export type RedisMigrateParam_Serialize = {
+	taskId: string,
+	sourceConnId: string,
+	targetConnId: string,
+	sourceDb: number,
+	targetDb: number,
+	/**  与导出一致；有 key_list 时可不依赖 */
+	match: string,
+	keyList: RedisKey_Serialize[],
+	/**  restore | command */
+	mode: string,
+	/**  skip | replace */
+	handleConflict: string,
+	/**  continue | stop */
+	onError: string,
+};
+
+export type RedisMigrateProbe = {
+	sourceConnId: string,
+	targetConnId: string,
+	sourceDb: number,
+	targetDb: number,
+	/**  restore | command */
+	mode: string,
 };
 
 export type RedisNode = {

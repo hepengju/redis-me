@@ -599,6 +599,39 @@ api_model!(RedisImportCsv {
     handle_conflict: String, // 冲突处理: 覆盖 replace, 忽略 ignore
 });
 
+// 跨连接键迁移参数。源/目标按配置 id 后台新建专用连接，结束后断开。
+api_model!(RedisMigrateParam {
+    task_id: String,
+    source_conn_id: String,
+    target_conn_id: String,
+    source_db: u16,
+    target_db: u16,
+    /// 与导出一致；有 key_list 时可不依赖
+    #[serde(rename = "match")]
+    pattern: String,
+    key_list: Vec<RedisKey>,
+    /// restore | command
+    mode: String,
+    /// skip | replace
+    handle_conflict: String,
+    /// continue | stop
+    on_error: String,
+});
+
+api_model!(RedisMigrateProbe {
+    source_conn_id: String,
+    target_conn_id: String,
+    source_db: u16,
+    target_db: u16,
+    /// restore | command
+    mode: String,
+});
+
+api_model!(MigrateProbeResult {
+    ok: bool,
+    message: String,
+});
+
 // Hash条目
 api_model!(RedisHashItem{
     key: String,
@@ -1104,6 +1137,18 @@ api_model!(ExportImportEvent {
     total_count: u64,
     ignore_count: u64,
     finished: bool
+});
+
+// 键迁移进度（字段对齐 ExportImportEvent，id 为 task_id）
+api_model!(MigrateEvent {
+    id: String,
+    ok_count: u64,
+    err_count: u64,
+    total_count: u64,
+    ignore_count: u64,
+    finished: bool,
+    #[serde(default)]
+    current_key: String,
 });
 
 // ACL 用户详情（由 ACL GETUSER 结构化转换而来）

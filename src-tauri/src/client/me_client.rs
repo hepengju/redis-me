@@ -119,6 +119,29 @@ pub trait MeClient: Send + Sync {
     fn import_cmd(&self, file: String) -> AnyResult<()>;
     fn mock_data(&self, count: u64) -> AnyResult<()>;
 
+    // 跨连接键迁移（供 ops/migrate 调用；一般不直接给前端）
+    fn migrate_dump(&self, key: RedisKey) -> AnyResult<(Vec<u8>, i64)>;
+    fn migrate_restore(
+        &self,
+        key: RedisKey,
+        ttl_ms: i64,
+        payload: Vec<u8>,
+        replace: bool,
+    ) -> AnyResult<()>;
+    fn migrate_exists(&self, key: RedisKey) -> AnyResult<bool>;
+    fn migrate_pttl(&self, key: RedisKey) -> AnyResult<i64>;
+    fn migrate_pexpire(&self, key: RedisKey, ms: i64) -> AnyResult<()>;
+    fn migrate_read_payload(
+        &self,
+        key: RedisKey,
+    ) -> AnyResult<crate::client::ops::migrate_payload::KeyPayload>;
+    fn migrate_write_payload(
+        &self,
+        key: RedisKey,
+        payload: crate::client::ops::migrate_payload::KeyPayload,
+    ) -> AnyResult<()>;
+    fn migrate_command_available(&self, name: &str) -> AnyResult<()>;
+
     // ACL
     fn acl_users(&self) -> AnyResult<Vec<String>>;
     fn acl_list_users(&self) -> AnyResult<Vec<AclUserDetail>>;

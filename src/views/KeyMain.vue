@@ -59,6 +59,7 @@ import {
   meOk,
   mePrompt,
   meWarn,
+  OPEN_KEY_MIGRATE,
   sleep,
 } from '@/utils/util'
 import FieldAdd from '@/views/ext/FieldAdd.vue'
@@ -862,6 +863,18 @@ const keyImportRef = useTemplateRef<InstanceType<typeof KeyImport>>('keyImportRe
 function importData(): void {
   keyImportRef.value?.open()
 }
+
+/** 连接扩展「键迁移」：源锁定当前；有勾选则带入已选键 */
+function openKeyMigrate(): void {
+  if (!share.conn) return
+  bus.emit(OPEN_KEY_MIGRATE, {
+    sourceLocked: true,
+    sourceConnId: share.conn.id,
+    sourceDb: share.conn.db,
+    keyList: checkedKeyList.value.length > 0 ? [...checkedKeyList.value] : [],
+    match: checkedKeyList.value.length > 0 ? '' : '*',
+  })
+}
 function importStart(): void {
   share.exportImportingPercentage = 0
   share.exportImporting = true
@@ -953,6 +966,8 @@ async function handleCommand(command: string): Promise<void> {
     exportFolder('*')
   } else if ('importData' === command) {
     importData()
+  } else if ('keyMigrate' === command) {
+    openKeyMigrate()
   } else if ('batchDelete' === command) {
     deleteFolder('*')
   } else if ('flushDb' === command) {
@@ -1976,6 +1991,9 @@ async function searchKeysAll(): Promise<void> {
                 </el-dropdown-item>
                 <el-dropdown-item command="importData" v-if="canEdit">
                   <me-icon :name="t('keyMain.importData')" icon="me-icon-import" />
+                </el-dropdown-item>
+                <el-dropdown-item command="keyMigrate">
+                  <me-icon :name="t('keyMain.keyMigrate')" icon="el-icon-switch" />
                 </el-dropdown-item>
                 <el-dropdown-item command="mockData" v-if="canEdit">
                   <me-icon :name="t('keyMain.mockData')" icon="el-icon-coffee-cup" />

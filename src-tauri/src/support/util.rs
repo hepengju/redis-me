@@ -48,6 +48,7 @@ pub const EVENT_MONITOR: &str = "monitor";
 pub const EVENT_NOTIFY: &str = "notify";
 pub const EVENT_EXPORT: &str = "export";
 pub const EVENT_IMPORT: &str = "import";
+pub const EVENT_MIGRATE: &str = "migrate";
 pub const EVENT_COMMAND_LOG: &str = "command-log";
 pub const EVENT_VALUE_DOWNLOAD: &str = "value-download";
 

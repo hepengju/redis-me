@@ -255,5 +255,50 @@ macro_rules! me_client_forwards {
         fn acl_dryrun(&self, username: String, command: String) -> AnyResult<String> {
             $crate::client::ops::acl::acl_dryrun0(self.get_conn()?, username, command)
         }
+
+        fn migrate_dump(&self, key: RedisKey) -> AnyResult<(Vec<u8>, i64)> {
+            $crate::client::ops::migrate::dump_with_pttl0(self.get_conn()?, key)
+        }
+
+        fn migrate_restore(
+            &self,
+            key: RedisKey,
+            ttl_ms: i64,
+            payload: Vec<u8>,
+            replace: bool,
+        ) -> AnyResult<()> {
+            $crate::client::ops::migrate::restore_key0(self.get_conn()?, key, ttl_ms, payload, replace)
+        }
+
+        fn migrate_exists(&self, key: RedisKey) -> AnyResult<bool> {
+            $crate::client::ops::migrate::exists_key0(self.get_conn()?, key)
+        }
+
+        fn migrate_pttl(&self, key: RedisKey) -> AnyResult<i64> {
+            $crate::client::ops::migrate::pttl0(self.get_conn()?, key)
+        }
+
+        fn migrate_pexpire(&self, key: RedisKey, ms: i64) -> AnyResult<()> {
+            $crate::client::ops::migrate::pexpire0(self.get_conn()?, key, ms)
+        }
+
+        fn migrate_read_payload(
+            &self,
+            key: RedisKey,
+        ) -> AnyResult<$crate::client::ops::migrate_payload::KeyPayload> {
+            $crate::client::ops::migrate_payload::read_key_payload0(self.get_conn()?, key)
+        }
+
+        fn migrate_write_payload(
+            &self,
+            key: RedisKey,
+            payload: $crate::client::ops::migrate_payload::KeyPayload,
+        ) -> AnyResult<()> {
+            $crate::client::ops::migrate_payload::write_key_payload0(self.get_conn()?, key, payload)
+        }
+
+        fn migrate_command_available(&self, name: &str) -> AnyResult<()> {
+            $crate::client::ops::migrate::command_available0(self.get_conn()?, name)
+        }
     };
 }

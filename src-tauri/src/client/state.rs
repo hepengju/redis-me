@@ -75,7 +75,6 @@ impl MeBase {
 }
 
 /// 进程内的连接表、已打开的客户端，以及全局超时设置。
-#[derive(Default)]
 pub struct AppState {
     // 初始化连接列表
     pub connections: Mutex<HashMap<String, ConnConfig>>,
@@ -85,6 +84,20 @@ pub struct AppState {
 
     /// 全局设置（建连/命令超时等），由前端 app_settings 同步
     pub app_settings: RwLock<AppSettings>,
+
+    /// 键迁移进行中标记：true=继续，false=空闲或已取消。全局同时只跑一个迁移任务。
+    pub migrate_running: Arc<AtomicBool>,
+}
+
+impl Default for AppState {
+    fn default() -> Self {
+        Self {
+            connections: Mutex::new(HashMap::new()),
+            clients: RwLock::new(HashMap::new()),
+            app_settings: RwLock::new(AppSettings::default()),
+            migrate_running: Arc::new(AtomicBool::new(false)),
+        }
+    }
 }
 
 /// 读取当前全局建连超时、命令超时
