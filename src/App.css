@@ -29,10 +29,10 @@ html {
   /*
      MacOS: Menlo 支持中英文, Monaco 也支持中英文
     Window: Consolas/黑体,
-     Linux: 可以自定义字体
+     Linux: Noto Sans Mono/Ubuntu Mono
      system-ui: 兜底
   */
-  --code-font: Menlo, Monaco, Consolas, 黑体, system-ui;
+  --code-font: Menlo, Monaco, Consolas, 'Noto Sans Mono', 'Ubuntu Mono', Consolas, 黑体, system-ui;
 }
 
 /* Linux WebKitGTK：减轻假粗/发糊（Yaak/JetPilot 同类补丁；勿用于 macOS） */
