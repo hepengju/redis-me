@@ -279,7 +279,8 @@ async function configSet() {
       :title="`${configVersion} ${t('redisConfig.defaultConfig')}`"
       v-model="dialog.raw"
       width="60vw">
-      <me-code :modelValue="configRaw" mode="properties" read-only />
+      <!-- 单向绑定：弹窗里改字不写回，关掉即丢 -->
+      <me-code :modelValue="configRaw" mode="properties" />
     </me-dialog>
 
     <el-dialog
