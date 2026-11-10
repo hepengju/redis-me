@@ -455,8 +455,14 @@ async function stopScanIfRunning(): Promise<void> {
   }
 }
 
-// 扫描键；restart=true 时中断进行中的扫描并重新开始
-async function scanKey(useCursor = false, loadAll = false, restart = false): Promise<void> {
+// 扫描键；restart=true 时中断进行中的扫描并重新开始。
+// openExact：这次是精确新搜索。回来正好 1 条就直接打开。
+async function scanKey(
+  useCursor = false,
+  loadAll = false,
+  restart = false,
+  openExact = false,
+): Promise<void> {
   if (!share.conn) return
   if (loading.value) {
     if (!restart) return
@@ -484,6 +490,11 @@ async function scanKey(useCursor = false, loadAll = false, restart = false): Pro
       await scanKeyAuto(firstScanKeys)
     } else {
       await scanKeyAll()
+    }
+
+    // 被中途停掉的扫描结果不打开
+    if (openExact && !scanCancelled.value && cursor.value?.finished && scanBuffer.length === 1) {
+      chooseKey(scanBuffer[0])
     }
   } finally {
     loading.value = false
@@ -1347,7 +1358,12 @@ function editDbName(db: number): void {
 /** 回车、加载更多、加载全部、暂停后继续。索引模式走 FT.SEARCH，否则仍是 SCAN。 */
 function queryKeyList(append: boolean, loadAll = false, restart = false): void {
   if (searchMode.value) void runSearchKeys(append, loadAll, restart)
-  else void scanKey(append, loadAll, restart)
+  else {
+    // 回车 / 点历史的精确搜索才打开；加载更多、暂停继续不打开
+    const openExact =
+      !append && !loadAll && exact.value && !favoriteMode.value && keyword.value.trim() !== ''
+    void scanKey(append, loadAll, restart, openExact)
+  }
 }
 
 function chooseKeyType(keyTypeSelected: string): void {
