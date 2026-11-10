@@ -2,7 +2,7 @@
 
 - 多个Redis连接之间的键迁移 ✅
 - Linux默认等宽字体 ✅
-- deepin应用商店的上架: 审核中
+- deepin应用商店的上架: 审核未过（deb control 缺 Section，已在 tauri.conf 补 section/priority）
 - 查询工作台: 输入多行文本及回显表格的处理
 - 多个配色主题的选择
 - rme 终端执行，类似 redis-cli 的效果
