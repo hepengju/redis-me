@@ -729,14 +729,25 @@ function folderIconName(node: TreeNode): string {
           <el-dropdown-item v-if="canEdit" command="addKey" :divided="isContextFavoriteFolderRoot">
             <me-icon icon="el-icon-circle-plus" :name="t('keyTree.addKey')" />
           </el-dropdown-item>
-          <el-dropdown-item command="copyFolder" :divided="isContextFavoriteFolderRoot && !canEdit">
-            <me-icon icon="el-icon-document-copy" :name="t('keyTree.copyFolder')" />
-          </el-dropdown-item>
-          <el-dropdown-item v-if="!showCheckbox && allowEnterCheckedMode" command="checkedMode">
+          <el-dropdown-item
+            v-if="!showCheckbox && allowEnterCheckedMode"
+            command="checkedMode"
+            :divided="isContextFavoriteFolderRoot && !canEdit">
             <me-icon icon="me-icon-checked" :name="t('keyMain.checkedMode')" />
           </el-dropdown-item>
-          <el-dropdown-item v-if="showCheckbox" command="exitCheckedMode">
+          <el-dropdown-item
+            v-if="showCheckbox"
+            command="exitCheckedMode"
+            :divided="isContextFavoriteFolderRoot && !canEdit">
             <me-icon icon="el-icon-circle-close" :name="t('keyMain.exitCheckedMode')" />
+          </el-dropdown-item>
+          <!-- 只读且多选入口也不出现时，复制路径才是重载项后的第一项 -->
+          <el-dropdown-item
+            command="copyFolder"
+            :divided="
+              isContextFavoriteFolderRoot && !canEdit && !showCheckbox && !allowEnterCheckedMode
+            ">
+            <me-icon icon="el-icon-document-copy" :name="t('keyTree.copyFolder')" />
           </el-dropdown-item>
 
           <!-- 收藏目录根：取消收藏；普通模式目录：收藏/取消 -->
