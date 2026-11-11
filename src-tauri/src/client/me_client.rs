@@ -20,10 +20,16 @@ pub trait MeClient: Send + Sync {
     fn select_db(&self, db: u16) -> AnyResult<()>;
 
     // 信息与节点
-    fn info(&self, node: Option<String>) -> AnyResult<RedisInfo>;
+    /// `section` 见 `ops::info::info_cmd`：空为默认 `INFO`，`"all"` 为 `INFO all`。
+    fn info(&self, node: Option<String>, section: Option<String>) -> AnyResult<RedisInfo>;
     /// 各节点 INFO 列表。`node_filter`：**仅 `"all"`=全部节点**、
     /// `"master"`/`"slave"`=按角色过滤、`"ip:port"`=仅指定节点；`None`/空串=不匹配（返回空）。单机忽略该参数。
-    fn info_list(&self, node_filter: Option<String>) -> AnyResult<Vec<RedisInfo>>;
+    /// `section` 与 `node_filter` 独立：前者是 INFO 段落，后者是选哪些节点。
+    fn info_list(
+        &self,
+        node_filter: Option<String>,
+        section: Option<String>,
+    ) -> AnyResult<Vec<RedisInfo>>;
     fn node_list(&self) -> AnyResult<Vec<RedisNode>>;
 
     // 扫描
@@ -168,12 +174,13 @@ pub trait MeClient: Send + Sync {
 
     /// 单节点监控图，由 INFO 换算。
     fn chart(&self, node: Option<String>) -> AnyResult<RedisChart> {
-        info_to_chart(self.info(node)?)
+        // 图表只要 default 段里的瞬时量，不拉 commandstats / latencystats
+        info_to_chart(self.info(node, None)?)
     }
 
     /// 各节点监控图，由 INFO 列表换算；`node_filter` 语义见 `info_list`。
     fn chart_list(&self, node_filter: Option<String>) -> AnyResult<Vec<RedisChart>> {
-        let info_list = self.info_list(node_filter)?;
+        let info_list = self.info_list(node_filter, None)?;
         info_list.into_iter().map(info_to_chart).collect()
     }
 

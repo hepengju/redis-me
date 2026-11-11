@@ -17,8 +17,8 @@ use tauri::{AppHandle, Webview, command};
 api_commands!(
     db_list() -> Vec<RedisDB>;                 // 数据库列表
     select_db(db: u16) -> ();                  // 切换数据库
-    info(node: Option<String>)  -> RedisInfo;  // 信息
-    info_list(node_filter: Option<String>) -> Vec<RedisInfo>; // 信息列表（可按角色/节点过滤）
+    info(node: Option<String>, section: Option<String>) -> RedisInfo; // 信息；section 空=默认 INFO，all=INFO all
+    info_list(node_filter: Option<String>, section: Option<String>) -> Vec<RedisInfo>; // 信息列表；node_filter 选节点，section 选 INFO 段落
     chart(node: Option<String>) -> RedisChart; // 图表
     chart_list(node_filter: Option<String>) -> Vec<RedisChart>; // 图表列表（可按角色/节点过滤）
     node_list() -> Vec<RedisNode>;             // 节点列表

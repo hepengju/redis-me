@@ -8,9 +8,19 @@ use chrono::DateTime;
 use log::info;
 use parking_lot::MutexGuard;
 use redis::streams::{StreamInfoConsumersReply, StreamInfoGroupsReply};
-use redis::{Commands, FromRedisValue, Value, ValueType};
+use redis::{Cmd, Commands, FromRedisValue, Value, ValueType};
 use serde_json::{Map, Value as JsonValue};
 use std::collections::HashMap;
+
+/// 组装 `INFO`。`section` 为空时不带参数，即 Redis 的 default（不含 commandstats / latencystats）。
+/// 非空时作为单个参数，例如信息页传 `all`。这和集群 `info_list` 里表示「全部节点」的 `"all"` 不是一回事。
+pub fn info_cmd(section: Option<&str>) -> Cmd {
+    let mut cmd = redis::cmd("INFO");
+    if let Some(section) = section.map(str::trim).filter(|s| !s.is_empty()) {
+        cmd.arg(section);
+    }
+    cmd
+}
 
 /// Array ARINFO：元数据（默认不含 FULL）；RESP2 扁平键值对 / RESP3 Map。
 pub fn ar_info0(
@@ -475,6 +485,24 @@ mod ts_info_parse_tests {
         assert_eq!(items[0].field, "size");
         assert_eq!(items[0].value, "2");
         assert!(parse_info_kv_items(Value::Int(1), "VINFO").is_err());
+    }
+}
+
+#[cfg(test)]
+mod info_cmd_tests {
+    use super::info_cmd;
+
+    /// 空段落不带参数；空白会被裁掉，`all` 作为单个参数发出。
+    #[test]
+    fn empty_section_is_bare_info_and_all_is_one_arg() {
+        let bare = String::from_utf8(info_cmd(None).get_packed_command()).unwrap();
+        assert_eq!(bare, "*1\r\n$4\r\nINFO\r\n");
+
+        let blank = String::from_utf8(info_cmd(Some("  ")).get_packed_command()).unwrap();
+        assert_eq!(blank, "*1\r\n$4\r\nINFO\r\n");
+
+        let all = String::from_utf8(info_cmd(Some("  all  ")).get_packed_command()).unwrap();
+        assert_eq!(all, "*2\r\n$4\r\nINFO\r\n$3\r\nall\r\n");
     }
 }
 

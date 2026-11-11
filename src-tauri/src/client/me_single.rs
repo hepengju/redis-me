@@ -3,7 +3,7 @@ use crate::client::ops::acl::acl_build_rules;
 use crate::client::ops::exp::{export_cmd_0_thread, export_csv_0_thread};
 use crate::client::ops::field_scan::value_download_0_thread;
 use crate::client::ops::imp::{import_cmd_0_thread, import_csv_0_thread};
-use crate::client::ops::info::{parse_client_info, redis_value_to_log};
+use crate::client::ops::info::{info_cmd, parse_client_info, redis_value_to_log};
 use crate::client::ops::key::copy0;
 use crate::client::ops::key_scan::{batch_key0, scan_0_batch_count, scan_0_exact, scan_1_cmd};
 use crate::client::ops::notify::{build_notify_patterns, notify_subscribe_node0};
@@ -103,17 +103,21 @@ impl MeClient for MeSingle {
         Ok(())
     }
 
-    fn info(&self, _node: Option<String>) -> AnyResult<RedisInfo> {
+    fn info(&self, _node: Option<String>, section: Option<String>) -> AnyResult<RedisInfo> {
         let mut conn = self.get_conn()?;
-        let info: String = redis::cmd("info").query(&mut conn)?;
+        let info: String = info_cmd(section.as_deref()).query(&mut conn)?;
         Ok(RedisInfo {
             node: "".to_string(),
             info,
         })
     }
 
-    fn info_list(&self, _node_filter: Option<String>) -> AnyResult<Vec<RedisInfo>> {
-        let info = self.info(None)?;
+    fn info_list(
+        &self,
+        _node_filter: Option<String>,
+        section: Option<String>,
+    ) -> AnyResult<Vec<RedisInfo>> {
+        let info = self.info(None, section)?;
         Ok(vec![info])
     }
 

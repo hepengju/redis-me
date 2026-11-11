@@ -26,7 +26,7 @@ import RedisClient from './RedisClient.vue'
 import RedisConfig from './RedisConfig.vue'
 // #endregion
 
-// Info 页：INFO 原文 → 字典/标签表；弹窗挂 Client / ACL / Config（本域组件）。
+// Info 页：INFO all 原文 → 字典/标签表（含 commandstats / latencystats）；弹窗挂 Client / ACL / Config。图表不走这条。
 
 // #region 共享上下文
 const { t } = useI18n()
@@ -164,7 +164,7 @@ const tagSectionTip = computed(() => {
 
 // MeTable 列描述：单一来源，表格与导出共用（说明列文本由 formatter 计算，与界面展示一致）；关键词搜索 key/value/tip 由 MeTable 内部处理（tip 走 formatter 展示文本）
 const infoColumns = computed<MeColumn<InfoRow>[]>(() => [
-  { key: 'tag', prop: 'tag', title: t('redisInfo.tag'), width: 100 },
+  { key: 'tag', prop: 'tag', title: t('redisInfo.tag'), width: 120 },
   { key: 'key', prop: 'key', title: t('redisInfo.key'), minWidth: 150, searchable: true },
   { key: 'value', prop: 'value', title: t('redisInfo.value'), minWidth: 150, searchable: true },
   {
@@ -195,7 +195,8 @@ onUnmounted(() => bus.off(INFO_REFRESH, onInfoRefreshBus))
 async function refresh(withConfigGet: boolean = false) {
   loading.value = true
   try {
-    const data = await meCommands.info(share.conn!.id, node.value)
+    // section 与节点过滤分开：这里要 INFO all，图表仍走默认 INFO
+    const data = await meCommands.info(share.conn!.id, node.value, 'all')
     raw.value = data.info || ''
     const conn = share.conn
     infoNode.value = data.node || (conn ? connEndpoint(conn) : '')
@@ -427,7 +428,8 @@ async function refreshCluster() {
   if (!isCluster.value || !id) return
   loading.value = true
   try {
-    const list = (await meCommands.infoList(id, 'all')) || []
+    // 第一个 all 是全部节点，第二个 all 是 INFO all
+    const list = (await meCommands.infoList(id, 'all', 'all')) || []
     const entries = await Promise.all(
       list.map(async item => {
         const snap = await fetchSaveConfig(item.node)

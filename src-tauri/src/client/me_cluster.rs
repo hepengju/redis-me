@@ -3,7 +3,7 @@ use crate::client::ops::acl::build_acl_setuser_cmd;
 use crate::client::ops::exp::{export_cmd_0_thread, export_csv_0_thread};
 use crate::client::ops::field_scan::value_download_0_thread;
 use crate::client::ops::imp::{import_cmd_0_thread, import_csv_0_thread};
-use crate::client::ops::info::{parse_client_info, redis_value_to_log};
+use crate::client::ops::info::{info_cmd, parse_client_info, redis_value_to_log};
 use crate::client::ops::key_scan::{batch_key0, scan_0_batch_count, scan_0_exact, scan_1_cmd};
 use crate::client::ops::notify::{build_notify_patterns, notify_subscribe_node0};
 use crate::client::ops::pubsub::{monitor0, subscribe0};
@@ -93,10 +93,10 @@ impl MeClient for MeCluster {
         bail!(AppError::ClusterDbSwitchNotSupported);
     }
 
-    fn info(&self, node: Option<String>) -> AnyResult<RedisInfo> {
+    fn info(&self, node: Option<String>, section: Option<String>) -> AnyResult<RedisInfo> {
         let mut conn = self.get_conn()?;
         let (route, exec_node) = self.get_node_route(node)?;
-        let value = conn.route_command(&redis::cmd("info"), route)?;
+        let value = conn.route_command(&info_cmd(section.as_deref()), route)?;
         let info: String = FromRedisValue::from_redis_value(value)?;
         Ok(RedisInfo {
             node: exec_node,
@@ -104,7 +104,11 @@ impl MeClient for MeCluster {
         })
     }
 
-    fn info_list(&self, node_filter: Option<String>) -> AnyResult<Vec<RedisInfo>> {
+    fn info_list(
+        &self,
+        node_filter: Option<String>,
+        section: Option<String>,
+    ) -> AnyResult<Vec<RedisInfo>> {
         // node_filter：仅 "all"=全部；含':'按地址精确匹配单节点，否则按角色（master/slave）子串匹配；
         // None/空串/未识别值一律不匹配（调用方须传显式 token）
         let Some(filter) = node_filter.as_deref().filter(|s| !s.is_empty()) else {
@@ -125,7 +129,7 @@ impl MeClient for MeCluster {
             }
             let node = redis_node.node.clone();
             let (route, _) = self.get_node_route(Some(node.clone()))?;
-            let value = conn.route_command(&redis::cmd("info"), route)?;
+            let value = conn.route_command(&info_cmd(section.as_deref()), route)?;
             let info: String = FromRedisValue::from_redis_value(value)?;
             infos.push(RedisInfo { node, info })
         }
