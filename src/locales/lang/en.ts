@@ -605,8 +605,8 @@ export default {
   keyBatch: {
     matchRequired: 'Key match expression required',
     match: 'Key match expression',
-    impactKeys: 'Impact Key ({count}) | Impact Keys ({count})',
-    showImpactKeys: 'Show Impact Keys',
+    impactKeys: 'Key List ({count})',
+    showImpactKeys: 'Show Key List',
     scanProgress: 'Scanned {count}',
     scanDone: 'Done',
     scanScanning: 'Scanning',
@@ -1397,6 +1397,7 @@ Once an operation prevents Redis from keeping the space-saving encoding, special
     sortByAlphabet: 'Alphabet',
 
     exportChecked: 'Export Checked',
+    migrateChecked: 'Migrate Checked',
     ttlChecked: 'TTL Checked',
     deleteChecked: 'Delete Checked',
     exitCheckedMode: 'Exit Select',

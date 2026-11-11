@@ -1230,11 +1230,11 @@ function onKeysPanelContextFolder(command: string, folder: string): void {
 }
 
 // 多选底栏批处理设计：
-// - 普通模式：导出 | TTL | 删除 | 收藏；对象=勾选叶子键
-// - 收藏上区（目录）：导出 | TTL | 删除 | 取消收藏
-// - 收藏下区（键）：仅取消收藏
-// - 导出/TTL/删除只处理「已 SCAN 上屏且已勾选」的叶子键（扫描多少处理多少），
-//   不因勾选目录根再去 path:* 二次 SCAN；仅勾选空目录根时这三项禁用
+// - 普通模式：导出 | 迁移 | TTL | 删除 | 收藏；对象=勾选叶子键
+// - 收藏上区（目录）：导出 | 迁移 | TTL | 删除 | 取消收藏
+// - 收藏下区（键）：迁移 | 取消收藏
+// - 导出/迁移/TTL/删除只处理「已 SCAN 上屏且已勾选」的叶子键（扫描多少处理多少），
+//   不因勾选目录根再去 path:* 二次 SCAN；仅勾选空目录根时这几项禁用
 // - 取消收藏：目录根 path + 勾选键都算（目录根不依赖是否已扫出子键）
 // 取消收藏等：键或目录根任一即可
 const checkedDisabled = computed(() => {
@@ -1242,7 +1242,7 @@ const checkedDisabled = computed(() => {
   if (favoriteMode.value) return favoriteCheckedCount.value === 0
   return checkedKeyList.value.length === 0
 })
-// 导出/TTL/删除：必须有已上屏的勾选叶子键
+// 导出/迁移/TTL/删除：必须有已上屏的勾选叶子键
 const checkedKeysDisabled = computed(() => {
   if (share.exportImporting) return true
   return checkedKeyList.value.length === 0
@@ -1251,7 +1251,7 @@ const checkedBtnClass = computed(() => (checkedDisabled.value ? ['icon-disabled'
 const checkedKeysBtnClass = computed(() =>
   checkedKeysDisabled.value ? ['icon-disabled'] : ['icon-btn'],
 )
-// 收藏上区多选：展示导出/TTL/删除；下区走仅取消收藏的分支
+// 收藏上区多选：展示导出/迁移/TTL/删除；下区走迁移 + 取消收藏
 const favFolderBatchOps = computed(
   () => favoriteMode.value && favoriteCheckedZone.value === 'folders',
 )
@@ -1259,6 +1259,12 @@ const favFolderBatchOps = computed(
 function exportChecked(): void {
   if (checkedKeyList.value.length === 0) return
   keyBatchRef.value?.open({ match: '', keyList: checkedKeyList.value }, 'export')
+}
+
+/** 只迁移已上屏勾选键；源锁定当前连接与库，不按 match 再扫 */
+function migrateChecked(): void {
+  if (checkedKeyList.value.length === 0) return
+  openKeyMigrate()
 }
 
 const ttlSetRef = useTemplateRef<InstanceType<typeof TTLSet>>('ttlSetRef')
@@ -1904,13 +1910,21 @@ async function searchKeysAll(): Promise<void> {
         </template>
       </div>
 
-      <!-- 多选底栏：见 script 中「多选底栏批处理设计」；导出/TTL/删除仅针对已上屏勾选键 -->
+      <!-- 多选底栏：见 script 中「多选底栏批处理设计」；导出/迁移/TTL/删除仅针对已上屏勾选键 -->
       <div class="me-flex" v-else style="margin-left: 10px; gap: 5px">
         <template v-if="!favoriteMode || favFolderBatchOps">
           <el-link underline="never" :disabled="checkedKeysDisabled" @click="exportChecked">
             <me-icon
               :name="t('keyMain.exportChecked')"
               icon="me-icon-export"
+              hint
+              :class="checkedKeysBtnClass"
+              placement="top" />
+          </el-link>
+          <el-link underline="never" :disabled="checkedKeysDisabled" @click="migrateChecked">
+            <me-icon
+              :name="t('keyMain.migrateChecked')"
+              icon="el-icon-switch"
               hint
               :class="checkedKeysBtnClass"
               placement="top" />
@@ -1961,8 +1975,16 @@ async function searchKeysAll(): Promise<void> {
               placement="top" />
           </el-link>
         </template>
-        <!-- 收藏下区：仅取消收藏 -->
+        <!-- 收藏下区：迁移勾选键 + 取消收藏 -->
         <template v-else>
+          <el-link underline="never" :disabled="checkedKeysDisabled" @click="migrateChecked">
+            <me-icon
+              :name="t('keyMain.migrateChecked')"
+              icon="el-icon-switch"
+              hint
+              :class="checkedKeysBtnClass"
+              placement="top" />
+          </el-link>
           <el-link underline="never" :disabled="checkedDisabled" @click="unfavoriteChecked">
             <me-icon
               :name="t('keyMain.unfavoriteChecked')"

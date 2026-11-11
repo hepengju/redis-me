@@ -594,8 +594,8 @@ export default {
   keyBatch: {
     matchRequired: '键名表达式不能为空',
     match: '键名表达式',
-    impactKeys: '受影响的键名({count})',
-    showImpactKeys: '查看受影响的键名',
+    impactKeys: '键名列表 ({count})',
+    showImpactKeys: '查看键名列表',
     scanProgress: '已扫描 {count} 个',
     scanDone: '已完成',
     scanScanning: '扫描中',
@@ -1372,6 +1372,7 @@ export default {
     sortByAlphabet: '字母排序',
 
     exportChecked: '导出所选项',
+    migrateChecked: '迁移所选项',
     ttlChecked: '为所选项更新TTL',
     deleteChecked: '删除所选项',
     exitCheckedMode: '退出多选',
