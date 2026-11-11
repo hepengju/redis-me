@@ -41,6 +41,8 @@ pub trait MeClient: Send + Sync {
     fn key_type(&self, key: RedisKey) -> AnyResult<String>;
     /// 批量 MEMORY USAGE，与入参等长；键不存在为 None。不支持时直接报错，不发命令。
     fn key_memory(&self, keys: Vec<RedisKey>) -> AnyResult<Vec<Option<u64>>>;
+    /// 批量 PTTL（毫秒）。与入参等长：-1 无过期，-2 键不存在，正数是剩余毫秒。
+    fn key_pttl(&self, keys: Vec<RedisKey>) -> AnyResult<Vec<i64>>;
     fn key_slot(&self, key: RedisKey) -> AnyResult<u64>;
     fn key_node(&self, key: RedisKey) -> AnyResult<Vec<RedisNode>>;
     fn batch_del(&self, param: RedisBatchKey) -> AnyResult<()>;

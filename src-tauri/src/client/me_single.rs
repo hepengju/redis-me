@@ -1,9 +1,9 @@
 use crate::client::me_client::*;
 use crate::client::ops::acl::acl_build_rules;
 use crate::client::ops::exp::{export_cmd_0_thread, export_csv_0_thread};
+use crate::client::ops::field_scan::value_download_0_thread;
 use crate::client::ops::imp::{import_cmd_0_thread, import_csv_0_thread};
 use crate::client::ops::info::{parse_client_info, redis_value_to_log};
-use crate::client::ops::field_scan::value_download_0_thread;
 use crate::client::ops::key::copy0;
 use crate::client::ops::key_scan::{batch_key0, scan_0_batch_count, scan_0_exact, scan_1_cmd};
 use crate::client::ops::notify::{build_notify_patterns, notify_subscribe_node0};
@@ -282,6 +282,20 @@ impl MeClient for MeSingle {
         }
         let sizes: Vec<Option<u64>> = pipe.query(&mut conn)?;
         Ok(sizes)
+    }
+
+    /// 列表右侧 TTL。PTTL 与入参等长，单位毫秒。
+    fn key_pttl(&self, keys: Vec<RedisKey>) -> AnyResult<Vec<i64>> {
+        if keys.is_empty() {
+            return Ok(vec![]);
+        }
+        let mut conn = self.get_conn()?;
+        let mut pipe = Pipeline::with_capacity(keys.len());
+        for key in &keys {
+            pipe.cmd("pttl").arg(key.to_bytes());
+        }
+        let ttls: Vec<i64> = pipe.query(&mut conn)?;
+        Ok(ttls)
     }
 
     fn client_list(

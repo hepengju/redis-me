@@ -135,6 +135,7 @@ const moreDefaultSettings = {
   keySort: defaultSettings.keySort,
   // 只在键列表菜单里切换，设置页不展示；重置「更多」时一并恢复默认关
   keyShowMemory: defaultSettings.keyShowMemory,
+  keyShowTtl: defaultSettings.keyShowTtl,
   keyHeight: defaultSettings.keyHeight,
   fieldShow: defaultSettings.fieldShow,
   fieldShowView: defaultSettings.fieldShowView,

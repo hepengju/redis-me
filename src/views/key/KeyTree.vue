@@ -18,6 +18,7 @@ import { redisKeyId, sameRedisKey } from '@/utils/redis-key'
 import { TREE_KEY_ID_PREFIX } from '@/utils/util'
 
 import KeyMemorySize from './KeyMemorySize.vue'
+import KeyTtlLabel from './KeyTtlLabel.vue'
 import KeyTypeTag from './KeyTypeTag.vue'
 // #endregion
 
@@ -189,6 +190,8 @@ const keyHeight = computed(() => meTauri.settings.keyHeight ?? 20)
 const showKeyMemory = computed(
   () => !!meTauri.settings.keyShowMemory && share.capabilities.memoryUsageSupported,
 )
+// 菜单开关才挂叶子并打 PTTL。PTTL 各版本都有，不必看能力位
+const showKeyTtl = computed(() => !!meTauri.settings.keyShowTtl)
 
 const isContextNodeFavorited = computed(() => {
   if (!contextMenuNode.value?.isLeaf) return false
@@ -631,15 +634,16 @@ function folderIconName(node: TreeNode): string {
               </div>
             </div>
             <div
-              v-if="showKeyMemory || isFavoritedLocal(node.data.redisKey)"
+              v-if="showKeyMemory || showKeyTtl || isFavoritedLocal(node.data.redisKey)"
               class="key-leaf-actions"
-              :class="{ 'is-star-only': !showKeyMemory }">
+              :class="{ 'is-star-only': !showKeyMemory && !showKeyTtl }">
               <me-icon
                 v-if="isFavoritedLocal(node.data.redisKey)"
                 icon="el-icon-star-filled"
                 style="color: #f7ba2a"
                 class="key-favorite-btn"
                 @click.stop="emit('contextKey', 'unfavoriteKey', node.data.redisKey)" />
+              <KeyTtlLabel v-if="showKeyTtl" :redis-key="node.data.redisKey" />
               <KeyMemorySize v-if="showKeyMemory" :redis-key="node.data.redisKey" />
             </div>
           </div>

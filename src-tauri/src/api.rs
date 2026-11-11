@@ -65,6 +65,7 @@ api_commands!(
     slow_log(count: Option<u64>, node: Option<String>) -> Vec<RedisSlowLog>;    // 慢日志
     memory_usage(param: RedisMemoryParam) -> RedisMemoryResult;                 // 内存分析（一轮）
     key_memory(keys: Vec<RedisKey>) -> Vec<Option<u64>>;                        // 键列表批量 MEMORY USAGE
+    key_pttl(keys: Vec<RedisKey>) -> Vec<i64>;                                  // 键列表批量 PTTL（毫秒）
     client_list(node: Option<String>, client_type: Option<String>) -> Vec<RedisClientInfo>; // 客户端列表
     publish(channel: &str, message: &str, msg_fmt: Option<BytesFormat>) -> (); // 发布消息
     subscribe_stop() -> ();                                      // 订阅消息停止
@@ -227,8 +228,14 @@ pub fn disconnect(app_handle: AppHandle, id: &str) -> ApiResult<()> {
 /// 跨连接键迁移：开始前探测 DUMP/RESTORE 或 TYPE。
 #[command]
 #[specta]
-pub fn migrate_probe(app_handle: AppHandle, param: RedisMigrateProbe) -> ApiResult<MigrateProbeResult> {
-    to_api_result(crate::client::ops::migrate::migrate_probe(&app_handle, param))
+pub fn migrate_probe(
+    app_handle: AppHandle,
+    param: RedisMigrateProbe,
+) -> ApiResult<MigrateProbeResult> {
+    to_api_result(crate::client::ops::migrate::migrate_probe(
+        &app_handle,
+        param,
+    ))
 }
 
 /// 跨连接键迁移：后台新建两端连接并串行复制键；进度事件 `migrate`。

@@ -279,6 +279,7 @@ function defaultPayload(cmd: CommandKey): Record<string, unknown> {
     case 'importCsv':
       return { id: connIdForDefaults(), param: { ...minimalImportCsv } }
     case 'keyMemory':
+    case 'keyPttl':
       return { id: connIdForDefaults(), keys: [{ ...dummyKey }] }
     case 'keyType':
     case 'keySlot':

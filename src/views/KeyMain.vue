@@ -33,6 +33,7 @@ import {
   clearFavoriteFoldersForDb,
 } from '@/utils/favorite'
 import { clearKeyMemoryCacheForConn } from '@/utils/key-memory-cache'
+import { clearKeyTtlCacheForConn } from '@/utils/key-ttl-cache'
 import { clearKeyTypeCacheForConn } from '@/utils/key-type-cache'
 import { FT_QUERY_HISTORY_KEY, rememberFtQuery } from '@/utils/query-history'
 import { KEY_TYPE_LIST, meKeyShort, toRedisTypeName } from '@/utils/redis-display'
@@ -338,7 +339,10 @@ async function onRefreshKey() {
   hideSearchHistory()
   // 收藏模式 F5：重载已展开的收藏目录，不触发主列表 SCAN
   if (favoriteMode.value) {
-    if (share.conn) clearKeyMemoryCacheForConn(share.conn.id)
+    if (share.conn) {
+      clearKeyMemoryCacheForConn(share.conn.id)
+      clearKeyTtlCacheForConn(share.conn.id)
+    }
     await favFolderPanelRef.value?.reloadExpanded()
     return
   }
@@ -479,8 +483,9 @@ async function scanKey(
       cursor.value = null
       scanBatchCount.value = 0
       scanBuffer = []
-      // 整表重扫时丢掉内存缓存，可见行会按新列表再查
+      // 整表重扫时丢掉内存和 TTL 缓存，可见行会按新列表再查
       clearKeyMemoryCacheForConn(share.conn.id)
+      clearKeyTtlCacheForConn(share.conn.id)
     }
 
     const firstScanKeys = await scanKeyCore()
@@ -964,11 +969,22 @@ const showKeyMemory = computed({
   },
 })
 
+const showKeyTtl = computed({
+  get() {
+    return !!meTauri.settings.keyShowTtl
+  },
+  set(newValue: boolean) {
+    meTauri.settings.keyShowTtl = newValue
+  },
+})
+
 async function handleCommand(command: string): Promise<void> {
   if (command === 'toggleKeyShow') {
     keyShowTree.value = !keyShowTree.value
   } else if (command === 'toggleKeyMemory') {
     showKeyMemory.value = !showKeyMemory.value
+  } else if (command === 'toggleKeyTtl') {
+    showKeyTtl.value = !showKeyTtl.value
   } else if (command === 'toggleKeySort') {
     sortByCount.value = !sortByCount.value
   } else if ('mockData' === command) {
@@ -1008,6 +1024,7 @@ function flushDb(): void {
     await meCommands.flushDb(share.conn!.id)
     clearKeyTypeCacheForConn(share.conn!.id)
     clearKeyMemoryCacheForConn(share.conn!.id)
+    clearKeyTtlCacheForConn(share.conn!.id)
     meOk(t('keyMain.flushDbOk'))
     bus.emit(CONN_REFRESH)
     bus.emit(INFO_REFRESH)
@@ -1515,6 +1532,7 @@ async function runSearchKeys(append = false, loadAll = false, restart = false): 
     scanBatchCount.value = 0
     clearSearchHits()
     clearKeyMemoryCacheForConn(share.conn.id)
+    clearKeyTtlCacheForConn(share.conn.id)
   }
   try {
     if (loadAll) await searchKeysAll()
@@ -2027,6 +2045,11 @@ async function searchKeysAll(): Promise<void> {
                       : t('keyMain.memoryUsageUnsupported')
                   "
                   icon="me-icon-memory" />
+              </el-dropdown-item>
+              <el-dropdown-item command="toggleKeyTtl">
+                <me-icon
+                  :name="showKeyTtl ? t('keyMain.hideKeyTtl') : t('keyMain.showKeyTtl')"
+                  icon="el-icon-timer" />
               </el-dropdown-item>
               <el-dropdown-item command="toggleKeyShow">
                 <me-icon

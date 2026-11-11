@@ -1392,6 +1392,8 @@ Once an operation prevents Redis from keeping the space-saving encoding, special
     treeView: 'Tree View',
     showKeyMemory: 'Show Mem',
     hideKeyMemory: 'Hide Mem',
+    showKeyTtl: 'Show TTL',
+    hideKeyTtl: 'Hide TTL',
     memoryUsageUnsupported: 'This server does not support MEMORY USAGE',
     sortByCount: 'Key Count',
     sortByAlphabet: 'Alphabet',

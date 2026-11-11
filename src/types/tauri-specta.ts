@@ -93,6 +93,7 @@ export const commands = {
 	slowLog: (id: string, count: number | null, node: string | null) => typedError<RedisSlowLog[], string>(__TAURI_INVOKE("slow_log", { id, count, node })),
 	memoryUsage: (id: string, param: RedisMemoryParam_Deserialize) => typedError<RedisMemoryResult_Serialize, string>(__TAURI_INVOKE("memory_usage", { id, param })),
 	keyMemory: (id: string, keys: RedisKey_Deserialize[]) => typedError<(number | null)[], string>(__TAURI_INVOKE("key_memory", { id, keys })),
+	keyPttl: (id: string, keys: RedisKey_Deserialize[]) => typedError<number[], string>(__TAURI_INVOKE("key_pttl", { id, keys })),
 	configGet: (id: string, pattern: string, node: string | null) => typedError<{ [key in string]: string }, string>(__TAURI_INVOKE("config_get", { id, pattern, node })),
 	configSet: (id: string, key: string, value: string, node: string | null) => typedError<null, string>(__TAURI_INVOKE("config_set", { id, key, value, node })),
 	clientList: (id: string, node: string | null, clientType: string | null) => typedError<RedisClientInfo[], string>(__TAURI_INVOKE("client_list", { id, node, clientType })),

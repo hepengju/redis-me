@@ -407,6 +407,20 @@ impl MeClient for MeCluster {
         Ok(sizes)
     }
 
+    /// 列表右侧 TTL。ClusterPipeline 按槽拆开；PTTL 与入参等长，单位毫秒。
+    fn key_pttl(&self, keys: Vec<RedisKey>) -> AnyResult<Vec<i64>> {
+        if keys.is_empty() {
+            return Ok(vec![]);
+        }
+        let mut conn = self.get_conn()?;
+        let mut pipe = ClusterPipeline::with_capacity(keys.len());
+        for key in &keys {
+            pipe.cmd("pttl").arg(key.to_bytes());
+        }
+        let ttls: Vec<i64> = conn.cluster_pipe_query(&pipe, keys.len())?;
+        Ok(ttls)
+    }
+
     fn client_list(
         &self,
         node: Option<String>,

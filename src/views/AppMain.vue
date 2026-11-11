@@ -35,6 +35,7 @@ import {
   mergeConnGroupsFromList,
 } from '@/utils/conn'
 import { clearKeyMemoryCacheForConn, onMemoryUsageUnsupported } from '@/utils/key-memory-cache'
+import { clearKeyTtlCacheForConn } from '@/utils/key-ttl-cache'
 import { clearKeyTypeCacheForConn } from '@/utils/key-type-cache'
 import { mergeImportedConnList } from '@/utils/rdm'
 import {
@@ -116,6 +117,7 @@ watch(
       if (oldConn) {
         clearKeyTypeCacheForConn(oldConn.id)
         clearKeyMemoryCacheForConn(oldConn.id)
+        clearKeyTtlCacheForConn(oldConn.id)
         await meCommands.disconnect(oldConn.id)
       }
 

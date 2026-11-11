@@ -1367,6 +1367,8 @@ export default {
     treeView: '树形展示',
     showKeyMemory: '显示内存',
     hideKeyMemory: '隐藏内存',
+    showKeyTtl: '显示 TTL',
+    hideKeyTtl: '隐藏 TTL',
     memoryUsageUnsupported: '当前服务不支持 MEMORY USAGE',
     sortByCount: '数量排序',
     sortByAlphabet: '字母排序',

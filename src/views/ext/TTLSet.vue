@@ -7,6 +7,7 @@ import { useI18n } from 'vue-i18n'
 
 import { shareProvideKey } from '@/types/me-interface'
 import type { RedisKey_Deserialize } from '@/types/tauri-specta'
+import { invalidateKeyTtl, invalidateKeyTtlList } from '@/utils/key-ttl-cache'
 import { meCommands, meOk } from '@/utils/util'
 // #endregion
 
@@ -82,12 +83,15 @@ function submit() {
     loading.value = true
     try {
       const seconds = ttlInputRef.value?.toSeconds() ?? form.value.ttl
+      const connId = share.conn!.id
       if (isBatch.value) {
         const param = { ttl: seconds, keyList: form.value.keyList }
-        await meCommands.batchTtl(share.conn!.id, param)
+        await meCommands.batchTtl(connId, param)
+        invalidateKeyTtlList(connId, form.value.keyList)
         meOk(t('ttlSet.ttlOkBatch'))
       } else {
-        await meCommands.ttl(share.conn!.id, share.redisKey!, seconds)
+        await meCommands.ttl(connId, share.redisKey!, seconds)
+        invalidateKeyTtl(connId, share.redisKey!)
         meOk(t('ttlSet.ttlOk'))
       }
 

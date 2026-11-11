@@ -1,12 +1,14 @@
 import { describe, expect, it } from 'vite-plus/test'
 
 import {
+  formatKeyTtlRemain,
   formatUtcOffset,
   meTtlAlignAt,
   meTtlFromAt,
   meTtlSeconds,
   meTtlSplit,
   meTtlToAt,
+  pttlToEntry,
 } from '@/utils/ttl'
 
 describe('meTtlSeconds', () => {
@@ -58,6 +60,31 @@ describe('meTtlAlignAt', () => {
   it('过期时刻对齐到整秒', () => {
     const ms = Date.UTC(2026, 8, 6, 6, 0, 10, 800)
     expect(meTtlAlignAt(ms).getTime()).toBe(Date.UTC(2026, 8, 6, 6, 0, 10, 0))
+  })
+})
+
+describe('pttlToEntry', () => {
+  const now = 1_700_000_000_000
+
+  it('永久、剩余毫秒、不存在', () => {
+    expect(pttlToEntry(-1, now)).toEqual({ kind: 'forever' })
+    expect(pttlToEntry(12_000, now)).toEqual({ kind: 'until', at: now + 12_000 })
+    expect(pttlToEntry(-2, now)).toEqual({ kind: 'none' })
+    expect(pttlToEntry(0, now)).toEqual({ kind: 'none' })
+  })
+})
+
+describe('formatKeyTtlRemain', () => {
+  const now = 1_700_000_000_000
+
+  it('按查出那一刻折成一个单位，已过期为空', () => {
+    expect(formatKeyTtlRemain(now + 12_000, now)).toBe('12s')
+    expect(formatKeyTtlRemain(now + 90_000, now)).toBe('1m')
+    expect(formatKeyTtlRemain(now + 3 * 60_000, now)).toBe('3m')
+    expect(formatKeyTtlRemain(now + 2 * 3_600_000, now)).toBe('2h')
+    expect(formatKeyTtlRemain(now + 5 * 86_400_000, now)).toBe('5d')
+    expect(formatKeyTtlRemain(now - 1000, now)).toBe('')
+    expect(formatKeyTtlRemain(now + 400, now)).toBe('1s')
   })
 })
 

@@ -13,6 +13,8 @@ declare global {
       keySort?: string
       /** 键列表是否显示 MEMORY USAGE。只在键列表菜单切换，默认关 */
       keyShowMemory?: boolean
+      /** 键列表是否显示 PTTL。只在键列表菜单切换，默认关 */
+      keyShowTtl?: boolean
       keyHeight?: number
       /** Hash/List 等值区默认展示：auto 默认表格、记住手动切换 | table 始终表格 */
       fieldShow?: 'auto' | 'table'

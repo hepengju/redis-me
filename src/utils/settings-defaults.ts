@@ -15,6 +15,8 @@ export const defaultSettings = {
   keySort: 'count',
   // 键列表右侧内存列。只在键列表菜单切换，设置页不展示，默认关
   keyShowMemory: false,
+  // 键列表右侧 TTL。只在键列表菜单切换，设置页不展示，默认关
+  keyShowTtl: false,
   keyHeight: 20,
   fieldShow: 'auto', // 'table' 始终表格 | 'auto' 默认表格、记住手动切换
   fieldShowView: 'table', // auto 模式下上次手动选择的 json/table，持久化供切换连接/键沿用

@@ -28,6 +28,29 @@ export function meTtlFromAt(at: Date | number, now = Date.now()): number {
   return Math.floor(ms / 1000) - Math.floor(now / 1000)
 }
 
+/** 批量 PTTL（毫秒）收成列表缓存：-1 永久，正数记下到期时刻，其余（不存在 / 已到期）无展示 */
+export function pttlToEntry(pttlMs: number, now = Date.now()): KeyTtlEntry {
+  if (pttlMs === -1) return { kind: 'forever' }
+  if (pttlMs > 0) return { kind: 'until', at: now + pttlMs }
+  return { kind: 'none' }
+}
+
+export type KeyTtlEntry = { kind: 'forever' } | { kind: 'until'; at: number } | { kind: 'none' }
+
+/**
+ * 键列表剩余时间，查出或重绘的那一刻算一次，不倒计时。
+ * 不足 1 分钟用秒，否则只保留一个单位：3m / 2h / 5d。已过期为空串。
+ */
+export function formatKeyTtlRemain(expireAtMs: number, now = Date.now()): string {
+  if (expireAtMs > now && meTtlFromAt(expireAtMs, now) <= 0) return '1s'
+  const sec = meTtlFromAt(expireAtMs, now)
+  if (sec <= 0) return ''
+  if (sec >= 86400) return `${Math.floor(sec / 86400)}d`
+  if (sec >= 3600) return `${Math.floor(sec / 3600)}h`
+  if (sec >= 60) return `${Math.floor(sec / 60)}m`
+  return `${sec}s`
+}
+
 /** 剩余秒 → 过期时刻；在读取 TTL 的当下钉到整秒，之后展示/弹窗共用这个绝对时间 */
 export function meTtlToAt(seconds: number, now = Date.now()): Date {
   return new Date(Math.floor(now / 1000) * 1000 + seconds * 1000)

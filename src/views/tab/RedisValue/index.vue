@@ -58,6 +58,7 @@ import {
   type ViewBytesFormat,
 } from '@/utils/format'
 import { captureKeyMemoryWrite } from '@/utils/key-memory-cache'
+import { invalidateKeyTtl } from '@/utils/key-ttl-cache'
 import { resolveKeyType } from '@/utils/key-type-cache'
 import { toKeyTypeLabel } from '@/utils/redis-display'
 import {
@@ -1926,6 +1927,8 @@ async function setValue() {
       keyType: rv.type,
       inputFormat: jsonType.value ? 'utf8' : IPC_WIRE_FORMAT, // JSON=utf8；STRING=base64 wire
     })
+    // SET 会重写过期，列表上的 TTL 缓存不能留着旧的到期时刻
+    invalidateKeyTtl(share.conn!.id, share.redisKey!)
     meOk(t('saveOk'))
     await refreshKey()
   } finally {

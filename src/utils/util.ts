@@ -13,6 +13,7 @@ import { computed } from 'vue'
 import i18n from '@/locales'
 import type { RedisKey_Deserialize } from '@/types/tauri-specta'
 import { invalidateKeyMemory } from '@/utils/key-memory-cache'
+import { invalidateKeyTtl } from '@/utils/key-ttl-cache'
 import { invalidateKeyType } from '@/utils/key-type-cache'
 import { formatSpectaErrorForUser, meCommands, meErr, meLog } from '@/utils/me-commands'
 
@@ -284,6 +285,7 @@ export function meDeleteKey(id: string, redisKey: RedisKey_Deserialize, thenFn?:
     await meCommands.del(id, redisKey)
     invalidateKeyType(id, redisKey)
     invalidateKeyMemory(id, redisKey)
+    invalidateKeyTtl(id, redisKey)
     bus.emit(KEY_DELETE, redisKey)
     meOk(t('deleteOk'))
     thenFn?.()

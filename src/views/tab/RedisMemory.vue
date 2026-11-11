@@ -7,6 +7,7 @@ import type { MeColumn } from '@/components/me-table-column'
 import { shareProvideKey } from '@/types/me-interface'
 import type { RedisKey_Deserialize, RedisKeySize_Serialize } from '@/types/tauri-specta'
 import { clearKeyMemoryCacheForConn } from '@/utils/key-memory-cache'
+import { clearKeyTtlCacheForConn } from '@/utils/key-ttl-cache'
 import { clearKeyTypeCacheForConn } from '@/utils/key-type-cache'
 import { useMemoryScan } from '@/utils/memory-scan'
 import { meType, toKeyTypeLabel } from '@/utils/redis-display'
@@ -152,6 +153,7 @@ function batchDelKey() {
       await meCommands.batchDel(share.conn!.id, param)
       clearKeyTypeCacheForConn(share.conn!.id)
       clearKeyMemoryCacheForConn(share.conn!.id)
+      clearKeyTtlCacheForConn(share.conn!.id)
       meOk(t('deleteOk'))
       dataList.value = dataList.value.filter(
         rk => !param.keyList.some(del => sameRedisKey(rk, del)),

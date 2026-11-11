@@ -10,6 +10,7 @@ import { useI18n } from 'vue-i18n'
 import { shareProvideKey } from '@/types/me-interface'
 import type { RedisKey_Deserialize, ScanCursor } from '@/types/tauri-specta'
 import { clearKeyMemoryCacheForConn } from '@/utils/key-memory-cache'
+import { clearKeyTtlCacheForConn } from '@/utils/key-ttl-cache'
 import { clearKeyTypeCacheForConn } from '@/utils/key-type-cache'
 import { meCommands, meOk, sleep } from '@/utils/util'
 // #endregion
@@ -124,6 +125,7 @@ function submit() {
         await meCommands.batchDel(share.conn!.id, form.value)
         clearKeyTypeCacheForConn(share.conn!.id)
         clearKeyMemoryCacheForConn(share.conn!.id)
+        clearKeyTtlCacheForConn(share.conn!.id)
       }
       if (!isExport.value) {
         meOk(t('deleteOk'))
