@@ -757,7 +757,8 @@ function onOverviewRowClick(row: OverviewRow) {
 
   <!-- 本域弹窗：原文 / Client / ACL / Config -->
   <me-dialog v-model="dialog.raw" icon="el-icon-tickets" title="Info" width="60vw">
-    <me-code :modelValue="raw" mode="properties" read-only />
+    <!-- 单向绑定：弹窗里改字不写回，关掉即丢 -->
+    <me-code :modelValue="raw" mode="properties" />
   </me-dialog>
 
   <me-dialog

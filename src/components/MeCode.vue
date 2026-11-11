@@ -169,6 +169,7 @@ function copyCode(): void {
   meCopy(props.modelValue)
 }
 
+// 只读只改外观（变淡 + 禁止光标），不把编辑器设成不可聚焦
 const rootClass = computed(() => [
   ...(props.readOnly ? ['codemirror-opacity', 'is-disabled'] : []),
   ...(props.error ? ['is-decode-error'] : []),
@@ -234,8 +235,8 @@ const fullExtensions = computed(() => [
   ...extensions.value,
   ...(lang.value ? [lang.value] : []),
   ...(Object.keys(phrases.value).length > 0 ? [EditorState.phrases.of(phrases.value)] : []),
+  // 只读只锁文档，编辑器仍可聚焦：选中、复制、Ctrl+F 搜索都可用
   EditorState.readOnly.of(props.readOnly),
-  EditorView.editable.of(!props.readOnly),
   EditorView.theme({}, { dark: dark.value }),
 ])
 // #endregion
