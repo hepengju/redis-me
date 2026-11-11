@@ -24,9 +24,7 @@ pub fn open_ephemeral(app: &AppHandle, conn_id: &str, db: u16) -> AnyResult<Box<
         let map = state.connections.lock().unwrap();
         let mut conf = map
             .get(conn_id)
-            .ok_or(AppError::ConnectionNotFound {
-                id: conn_id.into(),
-            })?
+            .ok_or(AppError::ConnectionNotFound { id: conn_id.into() })?
             .clone();
         conf.db = db;
         conf
@@ -124,16 +122,7 @@ pub fn migrate_keys_start(app: AppHandle, param: RedisMigrateParam) -> AnyResult
             Err(e) => {
                 // 启动后失败（如键列表为空）：用 err_count=1 让前端走失败摘要，不显示「成功 0」
                 warn!("migrate err: {e}");
-                emit_progress(
-                    &app_handle,
-                    &task_id,
-                    0,
-                    1,
-                    1,
-                    0,
-                    true,
-                    &e.to_string(),
-                );
+                emit_progress(&app_handle, &task_id, 0, 1, 1, 0, true, &e.to_string());
             }
         }
         drop(source);
@@ -358,10 +347,7 @@ pub fn pexpire0(mut conn: MutexGuard<'_, impl Commands>, key: RedisKey, ms: i64)
     Ok(())
 }
 
-pub fn command_available0(
-    mut conn: MutexGuard<'_, impl Commands>,
-    name: &str,
-) -> AnyResult<()> {
+pub fn command_available0(mut conn: MutexGuard<'_, impl Commands>, name: &str) -> AnyResult<()> {
     // COMMAND INFO；极老版本无此命令时视为探测不完整但放行由调用方决定
     let value: redis::Value = match redis::cmd("COMMAND")
         .arg("INFO")

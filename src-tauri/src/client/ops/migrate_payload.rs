@@ -1,6 +1,8 @@
 //! 命令模式迁移：结构化 KeyPayload（源读 → 目标写），不经 redis-cli 文本往返。
 
-use crate::client::ops::field_scan::{ARRAY_INDEX_MAX, vadd_values, vgetattr_opt, vsetattr_json_or_clear};
+use crate::client::ops::field_scan::{
+    ARRAY_INDEX_MAX, vadd_values, vgetattr_opt, vsetattr_json_or_clear,
+};
 use crate::model::*;
 use crate::support::convert::*;
 use crate::support::error::AppError;
@@ -187,7 +189,11 @@ fn read_time_series(conn: &mut impl Commands, key: &RedisKey) -> AnyResult<Vec<(
         if items.is_empty() {
             break;
         }
-        out.extend(items.iter().map(|item| (item.key.clone(), item.value.clone())));
+        out.extend(
+            items
+                .iter()
+                .map(|item| (item.key.clone(), item.value.clone())),
+        );
         if items.len() < page {
             break;
         }
@@ -198,7 +204,11 @@ fn read_time_series(conn: &mut impl Commands, key: &RedisKey) -> AnyResult<Vec<(
     Ok(out)
 }
 
-fn write_key_payload(conn: &mut impl Commands, key: &RedisKey, payload: KeyPayload) -> AnyResult<()> {
+fn write_key_payload(
+    conn: &mut impl Commands,
+    key: &RedisKey,
+    payload: KeyPayload,
+) -> AnyResult<()> {
     match payload {
         KeyPayload::String(value) => {
             let _: () = conn.set(key, value)?;

@@ -267,7 +267,13 @@ macro_rules! me_client_forwards {
             payload: Vec<u8>,
             replace: bool,
         ) -> AnyResult<()> {
-            $crate::client::ops::migrate::restore_key0(self.get_conn()?, key, ttl_ms, payload, replace)
+            $crate::client::ops::migrate::restore_key0(
+                self.get_conn()?,
+                key,
+                ttl_ms,
+                payload,
+                replace,
+            )
         }
 
         fn migrate_exists(&self, key: RedisKey) -> AnyResult<bool> {

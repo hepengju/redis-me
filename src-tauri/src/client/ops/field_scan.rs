@@ -3,11 +3,11 @@ use crate::support::convert::*;
 use crate::support::error::AppError;
 use crate::support::util::*;
 use anyhow::bail;
+use log::warn;
 use parking_lot::MutexGuard;
 use redis::streams::StreamRangeReply;
 use redis::vector_sets::{EmbeddingInput, VectorAddInput};
 use redis::{Cmd, Commands, FromRedisValue, IntegerReplyOrNoOp, Value, ValueType};
-use log::warn;
 use std::collections::HashSet;
 use tauri::{AppHandle, Emitter};
 
@@ -243,11 +243,10 @@ pub fn value_download0(
         return handle_other_value_type(&key_type, &param.key).map(|_| ());
     }
     let strlen: usize = conn.strlen(&param.key)?;
-    let mut file =
-        std::fs::File::create(&param.file).map_err(|e| AppError::FileWriteFailed {
-            filename: param.file.clone(),
-            detail: e.to_string(),
-        })?;
+    let mut file = std::fs::File::create(&param.file).map_err(|e| AppError::FileWriteFailed {
+        filename: param.file.clone(),
+        detail: e.to_string(),
+    })?;
     if strlen == 0 {
         emit_value_download(&app_handle, &id, 100, true, None);
         return Ok(());
