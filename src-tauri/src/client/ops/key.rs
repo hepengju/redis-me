@@ -59,6 +59,14 @@ pub fn del0(mut conn: MutexGuard<impl Commands>, key: RedisKey) -> AnyResult<()>
     Ok(())
 }
 
+/// 批量 `DEL` 回复合计。单键回复是 0 或 1，键不存在时为 0。
+pub fn deleted_count(deleted: &[i64]) -> u64 {
+    deleted
+        .iter()
+        .map(|n| if *n > 0 { *n as u64 } else { 0 })
+        .sum()
+}
+
 /// `COPY` 到指定库。目标键已存在时直接报错，不覆盖。
 pub fn copy0(mut conn: MutexGuard<impl Commands>, param: RedisCopyParam) -> AnyResult<RedisKey> {
     let dest = &param.destination;
@@ -125,4 +133,15 @@ pub fn flush_db0(mut conn: MutexGuard<impl Commands>) -> AnyResult<()> {
 pub fn flush_all0(mut conn: MutexGuard<impl Commands>) -> AnyResult<()> {
     let _: () = conn.flushall()?;
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::deleted_count;
+
+    #[test]
+    fn sums_positive_del_replies() {
+        assert_eq!(deleted_count(&[]), 0);
+        assert_eq!(deleted_count(&[1, 0, 1, 0]), 2);
+    }
 }

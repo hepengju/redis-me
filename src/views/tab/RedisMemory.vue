@@ -150,11 +150,11 @@ function batchDelKey() {
         match: '',
         keyList: selection.value.map(row => ({ key: row.key, bytes: row.bytes })),
       }
-      await meCommands.batchDel(share.conn!.id, param)
+      const count = await meCommands.batchDel(share.conn!.id, param)
       clearKeyTypeCacheForConn(share.conn!.id)
       clearKeyMemoryCacheForConn(share.conn!.id)
       clearKeyTtlCacheForConn(share.conn!.id)
-      meOk(t('deleteOk'))
+      meOk(t('batchDeleteOk', { count }))
       dataList.value = dataList.value.filter(
         rk => !param.keyList.some(del => sameRedisKey(rk, del)),
       )

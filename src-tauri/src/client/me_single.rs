@@ -4,7 +4,7 @@ use crate::client::ops::exp::{export_cmd_0_thread, export_csv_0_thread};
 use crate::client::ops::field_scan::value_download_0_thread;
 use crate::client::ops::imp::{import_cmd_0_thread, import_csv_0_thread};
 use crate::client::ops::info::{info_cmd, parse_client_info, redis_value_to_log};
-use crate::client::ops::key::copy0;
+use crate::client::ops::key::{copy0, deleted_count};
 use crate::client::ops::key_scan::{batch_key0, scan_0_batch_count, scan_0_exact, scan_1_cmd};
 use crate::client::ops::notify::{build_notify_patterns, notify_subscribe_node0};
 use crate::client::ops::pubsub::{monitor0, subscribe0};
@@ -366,21 +366,23 @@ impl MeClient for MeSingle {
         )
     }
 
-    fn batch_del(&self, param: RedisBatchKey) -> AnyResult<()> {
+    fn batch_del(&self, param: RedisBatchKey) -> AnyResult<u64> {
         let key_list = batch_key0(self, param, false)?;
         if key_list.is_empty() {
-            return Ok(());
+            return Ok(0);
         }
 
         let size = key_list.len();
         let mut pipe = Pipeline::with_capacity(size);
         for key in key_list {
-            pipe.del(&key).ignore();
+            // 保留 DEL 的整数回复，合计才是实际删掉的条数
+            pipe.del(&key);
         }
         let mut conn = self.get_conn()?;
-        let _: () = pipe.query(&mut conn)?;
-        info!("batch delete finished: {}", size);
-        Ok(())
+        let deleted: Vec<i64> = pipe.query(&mut conn)?;
+        let count = deleted_count(&deleted);
+        info!("batch delete finished: {count} of {size}");
+        Ok(count)
     }
 
     fn batch_ttl(&self, param: RedisBatchTtl) -> AnyResult<()> {

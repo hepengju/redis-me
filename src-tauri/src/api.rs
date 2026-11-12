@@ -71,7 +71,7 @@ api_commands!(
     subscribe_stop() -> ();                                      // 订阅消息停止
     monitor_stop()   -> ();                                      // 监控命令停止
     notify_subscribe_stop() -> ();                               // 键空间通知订阅停止
-    batch_del(param: RedisBatchKey) -> ();                       // 批量删除
+    batch_del(param: RedisBatchKey) -> u64;                      // 批量删除，返回实际删除条数
     batch_ttl(param: RedisBatchTtl) -> ();                       // 批量更新过期时间
     mock_data(count: u64) -> ();                                 // 模拟数据
     key_type(key: RedisKey) -> String;                           // 获取键类型

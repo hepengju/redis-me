@@ -22,6 +22,7 @@ export default {
   editOk: 'Saved',
   saveOk: 'Saved',
   deleteOk: 'Deleted',
+  batchDeleteOk: 'Batch deleted {count}',
   actionOk: 'Success',
 
   clusterUpdateAllTip: 'Note: Updates all nodes',
@@ -606,7 +607,7 @@ export default {
     matchRequired: 'Key match expression required',
     match: 'Key match expression',
     impactKeys: 'Key List ({count})',
-    showImpactKeys: 'Show Key List',
+    showImpactKeys: 'Show Affected Keys',
     scanProgress: 'Scanned {count}',
     scanDone: 'Done',
     scanScanning: 'Scanning',

@@ -51,7 +51,8 @@ pub trait MeClient: Send + Sync {
     fn key_pttl(&self, keys: Vec<RedisKey>) -> AnyResult<Vec<i64>>;
     fn key_slot(&self, key: RedisKey) -> AnyResult<u64>;
     fn key_node(&self, key: RedisKey) -> AnyResult<Vec<RedisNode>>;
-    fn batch_del(&self, param: RedisBatchKey) -> AnyResult<()>;
+    /// 批量删除。返回实际删除条数（各 `DEL` 回复之和）；没匹配到键时为 0。
+    fn batch_del(&self, param: RedisBatchKey) -> AnyResult<u64>;
     fn batch_ttl(&self, param: RedisBatchTtl) -> AnyResult<()>;
     fn flush_db(&self) -> AnyResult<()>;
     fn flush_all(&self) -> AnyResult<()>;

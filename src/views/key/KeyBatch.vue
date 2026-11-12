@@ -122,13 +122,11 @@ function submit() {
       if (isExport.value) {
         await meCommands.exportCsv(share.conn!.id, form.value)
       } else {
-        await meCommands.batchDel(share.conn!.id, form.value)
+        const count = await meCommands.batchDel(share.conn!.id, form.value)
         clearKeyTypeCacheForConn(share.conn!.id)
         clearKeyMemoryCacheForConn(share.conn!.id)
         clearKeyTtlCacheForConn(share.conn!.id)
-      }
-      if (!isExport.value) {
-        meOk(t('deleteOk'))
+        meOk(t('batchDeleteOk', { count }))
       }
       emit('success', batchMode.value)
       visible.value = false

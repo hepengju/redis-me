@@ -22,6 +22,7 @@ export default {
   editOk: '保存成功',
   saveOk: '保存成功',
   deleteOk: '删除成功',
+  batchDeleteOk: '批量删除 {count} 条',
   actionOk: '操作成功',
 
   clusterUpdateAllTip: '说明：集群下将更新所有节点',
@@ -595,7 +596,7 @@ export default {
     matchRequired: '键名表达式不能为空',
     match: '键名表达式',
     impactKeys: '键名列表 ({count})',
-    showImpactKeys: '查看键名列表',
+    showImpactKeys: '查看受影响的键',
     scanProgress: '已扫描 {count} 个',
     scanDone: '已完成',
     scanScanning: '扫描中',
