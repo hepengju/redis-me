@@ -359,6 +359,88 @@ export async function saveTableTextFile(
   await saveTextExport(content, defaultPath, extensions)
 }
 
+/**
+ * 复制/导出菜单与命令名一一对应（文案键 `meTable.${command}`）。
+ * needsMatrix：依赖列描述算出的展示矩阵；RAW 只序列化原始行。
+ */
+export const TABLE_EXPORT_MENU = [
+  { command: 'copyRawJson', needsMatrix: false, divided: false },
+  { command: 'copyJson', needsMatrix: true, divided: false },
+  { command: 'copyCsv', needsMatrix: true, divided: false },
+  { command: 'copyTsv', needsMatrix: true, divided: false },
+  { command: 'copyHtml', needsMatrix: true, divided: false },
+  { command: 'copyMarkdown', needsMatrix: true, divided: false },
+  { command: 'exportRawJson', needsMatrix: false, divided: true },
+  { command: 'exportJson', needsMatrix: true, divided: false },
+  { command: 'exportCsv', needsMatrix: true, divided: false },
+  { command: 'exportTsv', needsMatrix: true, divided: false },
+  { command: 'exportHtml', needsMatrix: true, divided: false },
+  { command: 'exportMarkdown', needsMatrix: true, divided: false },
+  { command: 'exportExcel', needsMatrix: true, divided: false },
+] as const
+
+export type TableExportCommand = (typeof TABLE_EXPORT_MENU)[number]['command']
+
+/**
+ * 虚拟表格那一套复制/导出。调用方传入原始行文本和列矩阵，点哪项才计算哪项。
+ * exportName 同时作为文件名中段和 Excel 工作表名。
+ */
+export async function dispatchTableExport(
+  command: string,
+  source: { rawText: () => string; matrix: () => TableExportMatrix; exportName: string },
+): Promise<void> {
+  const fileName = (ext: string) => buildExportFileName(source.exportName, ext)
+
+  if (command === 'copyRawJson') {
+    meCopy(source.rawText())
+    return
+  }
+  if (command === 'exportRawJson') {
+    await saveTableTextFile(source.rawText(), fileName('json'), ['json'])
+    return
+  }
+
+  const { headers, rows } = source.matrix()
+  switch (command as TableExportCommand) {
+    case 'copyJson':
+      meCopy(matrixToJson(headers, rows))
+      break
+    case 'copyCsv':
+      meCopy(matrixToCsv(headers, rows))
+      break
+    case 'copyTsv':
+      meCopy(matrixToTsv(headers, rows))
+      break
+    case 'copyHtml':
+      await copyTableHtml(headers, rows)
+      break
+    case 'copyMarkdown':
+      meCopy(matrixToMarkdown(headers, rows))
+      break
+    case 'exportJson':
+      await saveTableTextFile(matrixToJson(headers, rows), fileName('json'), ['json'])
+      break
+    case 'exportCsv':
+      await saveTableTextFile(matrixToCsv(headers, rows), fileName('csv'), ['csv'])
+      break
+    case 'exportTsv':
+      await saveTableTextFile(matrixToTsv(headers, rows), fileName('tsv'), ['tsv'])
+      break
+    case 'exportExcel':
+      await saveTableXlsxFile(headers, rows, fileName('xlsx'), source.exportName)
+      break
+    case 'exportHtml':
+      await saveTableTextFile(matrixToHtml(headers, rows), fileName('html'), ['html'])
+      break
+    case 'exportMarkdown':
+      await saveTableTextFile(matrixToMarkdown(headers, rows), fileName('md'), ['md'])
+      break
+    case 'copyRawJson':
+    case 'exportRawJson':
+      break
+  }
+}
+
 /** MeTable 导出 xlsx；sheetName 为工作表名（导出名，如 info） */
 export async function saveTableXlsxFile(
   headers: string[],

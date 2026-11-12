@@ -694,6 +694,9 @@ export default {
     title: 'Folder Memory Usage',
     match: 'Key match expression',
     info: 'Total: {total}，Size: {size}',
+    copyExport: 'Copy / Export',
+    key: 'Key',
+    size: 'Size',
   },
 
   keyList: { renameKey: 'Rename Key' },

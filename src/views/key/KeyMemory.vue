@@ -4,7 +4,9 @@ import { useVirtualList } from '@vueuse/core'
 import { computed, inject, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import type { MeColumn } from '@/components/me-table-column'
 import { shareProvideKey } from '@/types/me-interface'
+import type { RedisKeySize_Serialize } from '@/types/tauri-specta'
 import { useMemoryScan } from '@/utils/memory-scan'
 import { meHumanSize } from '@/utils/util'
 
@@ -54,6 +56,17 @@ async function onClosed() {
 const totalSize = computed(() =>
   dataList.value.map(item => item.size).reduce((sum, cur) => sum + cur, 0),
 )
+
+// 导出列与列表一致：键 + 可读大小。RAW 仍是原始行（含字节数）
+const exportColumns = computed<MeColumn<RedisKeySize_Serialize>[]>(() => [
+  { key: 'key', prop: 'key', title: t('keyMemory.key') },
+  {
+    key: 'size',
+    prop: 'size',
+    title: t('keyMemory.size'),
+    formatter: row => meHumanSize(row.size),
+  },
+])
 const items = computed(() => dataList.value)
 const { list, containerProps, wrapperProps } = useVirtualList(items, { itemHeight: 14 })
 </script>
@@ -82,18 +95,27 @@ const { list, containerProps, wrapperProps } = useVirtualList(items, { itemHeigh
     </el-form>
     <template #footer>
       <div class="memory-footer">
-        <me-scan-control
-          v-if="showScanControl"
-          :percentage="scanProgress"
-          :loading="scanning"
-          :tip="scanToggleTip"
-          @click="onRingClick" />
-        <el-button v-if="!scanning && !paused" @click="visible = false">{{
-          t('cancel')
-        }}</el-button>
-        <el-button v-else type="danger" icon="el-icon-video-pause" @click="onStartStop">{{
-          t('redisMemory.stopScan')
-        }}</el-button>
+        <me-copy-export
+          :data="dataList"
+          :columns="exportColumns"
+          export-name="key-memory"
+          placement="top-start">
+          <el-button :disabled="dataList.length === 0">{{ t('keyMemory.copyExport') }}</el-button>
+        </me-copy-export>
+        <div class="memory-footer-actions">
+          <me-scan-control
+            v-if="showScanControl"
+            :percentage="scanProgress"
+            :loading="scanning"
+            :tip="scanToggleTip"
+            @click="onRingClick" />
+          <el-button v-if="!scanning && !paused" @click="visible = false">{{
+            t('cancel')
+          }}</el-button>
+          <el-button v-else type="danger" icon="el-icon-video-pause" @click="onStartStop">{{
+            t('redisMemory.stopScan')
+          }}</el-button>
+        </div>
       </div>
     </template>
   </el-dialog>
@@ -110,7 +132,13 @@ const { list, containerProps, wrapperProps } = useVirtualList(items, { itemHeigh
 .memory-footer {
   display: flex;
   align-items: center;
-  justify-content: flex-end;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.memory-footer-actions {
+  display: flex;
+  align-items: center;
   gap: 10px;
 }
 </style>

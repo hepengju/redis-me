@@ -678,7 +678,14 @@ export default {
     confirm: '确认导入',
   },
 
-  keyMemory: { title: '目录内存分析', match: '键名表达式', info: '总数：{total}，大小：{size}' },
+  keyMemory: {
+    title: '目录内存分析',
+    match: '键名表达式',
+    info: '总数：{total}，大小：{size}',
+    copyExport: '复制/导出',
+    key: '键',
+    size: '大小',
+  },
 
   keyList: { renameKey: '重命名键' },
 

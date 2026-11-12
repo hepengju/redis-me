@@ -18,23 +18,8 @@ import { computed, ref, toRaw, useAttrs, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import {
-  buildExportFileName,
-  copyTableHtml,
-  matrixToCsv,
-  matrixToHtml,
-  matrixToJson,
-  matrixToMarkdown,
-  matrixToTsv,
-  saveTableTextFile,
-  saveTableXlsxFile,
-} from '@/utils/export'
-import { meCopy, meErr } from '@/utils/util'
-
-import {
   type MeColumn,
   type MeFilterValue,
-  exportableColumns,
-  exportMatrixFromColumns,
   isExportableColumn,
   toCellText,
   truncateCellDisplay,
@@ -410,100 +395,6 @@ function displayCellText(
 // 溢出 tooltip 的 disabled 在 MeOverflowText 内按格维护，避免全表共用 ref 悬停刷可见格
 // #endregion
 
-// #region 导出：RAW 直接序列化数据；其余格式由列描述从数据层计算矩阵，不渲染 DOM
-// 导出菜单项：RAW 项永远可用，其余格式需列描述能算出矩阵
-const exportMenuItems = computed(() => {
-  const withMatrix = exportableColumns(props.columns).length > 0
-  return [
-    { command: 'copyRawJson', label: t('meTable.copyRawJson'), divided: false },
-    ...(withMatrix
-      ? [
-          { command: 'copyJson', label: t('meTable.copyJson'), divided: false },
-          { command: 'copyCsv', label: t('meTable.copyCsv'), divided: false },
-          { command: 'copyTsv', label: t('meTable.copyTsv'), divided: false },
-          { command: 'copyHtml', label: t('meTable.copyHtml'), divided: false },
-          { command: 'copyMarkdown', label: t('meTable.copyMarkdown'), divided: false },
-        ]
-      : []),
-    { command: 'exportRawJson', label: t('meTable.exportRawJson'), divided: true },
-    ...(withMatrix
-      ? [
-          { command: 'exportJson', label: t('meTable.exportJson'), divided: false },
-          { command: 'exportCsv', label: t('meTable.exportCsv'), divided: false },
-          { command: 'exportTsv', label: t('meTable.exportTsv'), divided: false },
-          { command: 'exportHtml', label: t('meTable.exportHtml'), divided: false },
-          { command: 'exportMarkdown', label: t('meTable.exportMarkdown'), divided: false },
-          { command: 'exportExcel', label: t('meTable.exportExcel'), divided: false },
-        ]
-      : []),
-  ]
-})
-
-function exportFileName(ext: string): string {
-  return buildExportFileName(props.exportName, ext)
-}
-
-// 原始数据 JSON：直接序列化 sortedData（不受展示格式化/截断影响）
-function rawJsonText(): string {
-  return JSON.stringify(sortedData.value, null, 2)
-}
-
-async function handleExportCommand(command: string): Promise<void> {
-  if (!sortedData.value.length) {
-    meErr(t('meTable.exportEmpty'))
-    return
-  }
-
-  // 原始 JSON 直接序列化数据，不受列描述影响
-  if (command === 'copyRawJson') {
-    meCopy(rawJsonText())
-    return
-  }
-  if (command === 'exportRawJson') {
-    await saveTableTextFile(rawJsonText(), exportFileName('json'), ['json'])
-    return
-  }
-
-  // 其余格式：由列描述计算展示文本（与界面列定义单一来源）
-  const { headers, rows } = exportMatrixFromColumns(props.columns, sortedData.value)
-
-  switch (command) {
-    case 'copyJson':
-      meCopy(matrixToJson(headers, rows))
-      break
-    case 'copyCsv':
-      meCopy(matrixToCsv(headers, rows))
-      break
-    case 'copyTsv':
-      meCopy(matrixToTsv(headers, rows))
-      break
-    case 'copyHtml':
-      await copyTableHtml(headers, rows)
-      break
-    case 'copyMarkdown':
-      meCopy(matrixToMarkdown(headers, rows))
-      break
-    case 'exportJson':
-      await saveTableTextFile(matrixToJson(headers, rows), exportFileName('json'), ['json'])
-      break
-    case 'exportCsv':
-      await saveTableTextFile(matrixToCsv(headers, rows), exportFileName('csv'), ['csv'])
-      break
-    case 'exportTsv':
-      await saveTableTextFile(matrixToTsv(headers, rows), exportFileName('tsv'), ['tsv'])
-      break
-    case 'exportExcel':
-      await saveTableXlsxFile(headers, rows, exportFileName('xlsx'), props.exportName)
-      break
-    case 'exportHtml':
-      await saveTableTextFile(matrixToHtml(headers, rows), exportFileName('html'), ['html'])
-      break
-    case 'exportMarkdown':
-      await saveTableTextFile(matrixToMarkdown(headers, rows), exportFileName('md'), ['md'])
-      break
-  }
-}
-
 defineExpose({
   scrollTo(top: number, left?: number) {
     v2Ref.value?.scrollTo({ scrollTop: top, scrollLeft: left ?? 0 })
@@ -608,28 +499,16 @@ defineExpose({
                     <slot name="footer" />
                   </div>
                   <!-- 空表禁用：避免点开复制/导出再提示无数据 -->
-                  <el-dropdown
+                  <me-copy-export
                     class="me-table-more-wrap"
-                    :disabled="!sortedData.length"
-                    trigger="click"
-                    placement="top-end"
-                    @command="handleExportCommand">
+                    :data="sortedData"
+                    :columns="columns"
+                    :export-name="exportName">
                     <me-icon
                       icon="el-icon-more-filled"
                       class="me-table-more"
                       :class="{ 'icon-btn': !!sortedData.length }" />
-                    <template #dropdown>
-                      <el-dropdown-menu>
-                        <el-dropdown-item
-                          v-for="item in exportMenuItems"
-                          :key="item.command"
-                          :command="item.command"
-                          :divided="item.divided">
-                          {{ item.label }}
-                        </el-dropdown-item>
-                      </el-dropdown-menu>
-                    </template>
-                  </el-dropdown>
+                  </me-copy-export>
                 </div>
               </div>
             </template>
