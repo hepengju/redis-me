@@ -164,7 +164,7 @@ const tagSectionTip = computed(() => {
 
 // MeTable 列描述：单一来源，表格与导出共用（说明列文本由 formatter 计算，与界面展示一致）；关键词搜索 key/value/tip 由 MeTable 内部处理（tip 走 formatter 展示文本）
 const infoColumns = computed<MeColumn<InfoRow>[]>(() => [
-  { key: 'tag', prop: 'tag', title: t('redisInfo.tag'), width: 120 },
+  { key: 'tag', prop: 'tag', title: t('redisInfo.tag'), width: 130 },
   { key: 'key', prop: 'key', title: t('redisInfo.key'), minWidth: 150, searchable: true },
   { key: 'value', prop: 'value', title: t('redisInfo.value'), minWidth: 150, searchable: true },
   {
@@ -716,6 +716,7 @@ function onOverviewRowClick(row: OverviewRow) {
                 v-model="tagSelected"
                 :placeholder="t('redisInfo.tag')"
                 clearable
+                filterable
                 style="width: 150px; flex-shrink: 0"
                 @change="tagChange">
                 <el-option v-for="tag in tagList" :key="tag" :label="tag" :value="tag" />
