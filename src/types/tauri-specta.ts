@@ -863,14 +863,14 @@ export type RedisKeySize = RedisKeySize_Serialize | RedisKeySize_Deserialize;
 export type RedisKeySize_Deserialize = {
 	key: string,
 	bytes: string,
-	type: string,
+	type?: string,
 	size: number,
 };
 
 export type RedisKeySize_Serialize = {
 	key: string,
 	bytes: string,
-	type: string,
+	type?: string,
 	size: number,
 };
 

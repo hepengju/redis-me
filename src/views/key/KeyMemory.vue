@@ -57,7 +57,7 @@ const totalSize = computed(() =>
   dataList.value.map(item => item.size).reduce((sum, cur) => sum + cur, 0),
 )
 
-// 导出列与列表一致：键 + 可读大小。RAW 仍是原始行（含字节数）
+// 导出列与列表一致：键 + 可读大小。RAW 为原始行（含字节数；未查 TYPE 时无 type 字段）
 const exportColumns = computed<MeColumn<RedisKeySize_Serialize>[]>(() => [
   { key: 'key', prop: 'key', title: t('keyMemory.key') },
   {
