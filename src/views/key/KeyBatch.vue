@@ -204,7 +204,7 @@ const scanStatusText = computed(() => {
   return ''
 })
 
-// 批量删除和导出数据同时支持
+// 批量删除和数据导出同时支持
 const isExport = computed(() => batchMode.value === 'export')
 const title = computed(() => (isExport.value ? t('keyBatch.export') : t('keyBatch.delete')))
 const directTip = computed(() =>

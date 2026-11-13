@@ -85,7 +85,7 @@ pub struct AppState {
     /// 全局设置（建连/命令超时等），由前端 app_settings 同步
     pub app_settings: RwLock<AppSettings>,
 
-    /// 键迁移进行中标记：true=继续，false=空闲或已取消。全局同时只跑一个迁移任务。
+    /// 键传输进行中标记：true=继续，false=空闲或已取消。全局同时只跑一个传输任务。
     pub migrate_running: Arc<AtomicBool>,
 }
 

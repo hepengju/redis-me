@@ -599,7 +599,7 @@ api_model!(RedisImportCsv {
     handle_conflict: String, // 冲突处理: 覆盖 replace, 忽略 ignore
 });
 
-// 跨连接键迁移参数。源/目标按配置 id 后台新建专用连接，结束后断开。
+// 跨连接键传输参数。源/目标按配置 id 后台新建专用连接，结束后断开。
 api_model!(RedisMigrateParam {
     task_id: String,
     source_conn_id: String,
@@ -1139,7 +1139,7 @@ api_model!(ExportImportEvent {
     finished: bool
 });
 
-// 键迁移进度（字段对齐 ExportImportEvent，id 为 task_id）
+// 键传输进度（字段对齐 ExportImportEvent，id 为 task_id）
 api_model!(MigrateEvent {
     id: String,
     ok_count: u64,

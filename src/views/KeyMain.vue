@@ -880,7 +880,7 @@ function importData(): void {
   keyImportRef.value?.open()
 }
 
-/** 连接扩展「键迁移」：源锁定当前；有勾选则带入已选键 */
+/** 连接扩展「键传输」：源锁定当前；有勾选则带入已选键 */
 function openKeyMigrate(): void {
   if (!share.conn) return
   bus.emit(OPEN_KEY_MIGRATE, {
@@ -1247,9 +1247,9 @@ function onKeysPanelContextFolder(command: string, folder: string): void {
 }
 
 // 多选底栏批处理设计：普通模式与收藏上下区同一套
-// - 导出 | 迁移 | TTL | 删除 | 收藏或取消收藏；对象=已上屏勾选叶子键
+// - 导出 | 传输 | TTL | 删除 | 收藏或取消收藏；对象=已上屏勾选叶子键
 // - 收藏模式最后一项是取消收藏（上区目录根也算）
-// - 导出/迁移/TTL/删除只处理已上屏且已勾选的叶子键（扫描多少处理多少），
+// - 导出/传输/TTL/删除只处理已上屏且已勾选的叶子键（扫描多少处理多少），
 //   不因勾选目录根再去 path:* 二次 SCAN；仅勾选空目录根时这几项禁用
 // - 取消收藏：目录根 path + 勾选键都算（目录根不依赖是否已扫出子键）
 const checkedDisabled = computed(() => {
@@ -1257,7 +1257,7 @@ const checkedDisabled = computed(() => {
   if (favoriteMode.value) return favoriteCheckedCount.value === 0
   return checkedKeyList.value.length === 0
 })
-// 导出/迁移/TTL/删除：必须有已上屏的勾选叶子键
+// 导出/传输/TTL/删除：必须有已上屏的勾选叶子键
 const checkedKeysDisabled = computed(() => {
   if (share.exportImporting) return true
   return checkedKeyList.value.length === 0
@@ -1272,7 +1272,7 @@ function exportChecked(): void {
   keyBatchRef.value?.open({ match: '', keyList: checkedKeyList.value }, 'export')
 }
 
-/** 只迁移已上屏勾选键；源锁定当前连接与库，不按 match 再扫 */
+/** 只传输已上屏勾选键；源锁定当前连接与库，不按 match 再扫 */
 function migrateChecked(): void {
   if (checkedKeyList.value.length === 0) return
   openKeyMigrate()
@@ -1922,7 +1922,7 @@ async function searchKeysAll(): Promise<void> {
         </template>
       </div>
 
-      <!-- 多选底栏：见 script 中「多选底栏批处理设计」；导出/迁移/TTL/删除仅针对已上屏勾选键 -->
+      <!-- 多选底栏：见 script 中「多选底栏批处理设计」；导出/传输/TTL/删除仅针对已上屏勾选键 -->
       <div class="me-flex" v-else style="margin-left: 10px; gap: 5px">
         <el-link underline="never" :disabled="checkedKeysDisabled" @click="exportChecked">
           <me-icon
@@ -2021,11 +2021,11 @@ async function searchKeysAll(): Promise<void> {
                 <el-dropdown-item command="importData" v-if="canEdit">
                   <me-icon :name="t('keyMain.importData')" icon="me-icon-import" />
                 </el-dropdown-item>
-                <el-dropdown-item command="keyMigrate">
-                  <me-icon :name="t('keyMain.keyMigrate')" icon="el-icon-switch" />
-                </el-dropdown-item>
                 <el-dropdown-item command="mockData" v-if="canEdit">
                   <me-icon :name="t('keyMain.mockData')" icon="el-icon-coffee-cup" />
+                </el-dropdown-item>
+                <el-dropdown-item command="keyMigrate">
+                  <me-icon :name="t('keyMain.keyMigrate')" icon="el-icon-switch" />
                 </el-dropdown-item>
 
                 <el-dropdown-item command="batchDelete" v-if="canEdit" divided>

@@ -89,7 +89,7 @@ pub enum AppError {
 
     // 导入导出 / 迁移
     ExportImportRunning,
-    /// 已有键迁移任务在跑
+    /// 已有键传输任务在跑
     MigrateRunning,
     /// 源与目标不能是同一连接同一 DB
     MigrateSameSourceTarget,

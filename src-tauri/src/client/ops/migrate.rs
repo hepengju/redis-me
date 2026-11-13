@@ -1,4 +1,4 @@
-//! 跨连接键迁移：后台新建源/目标专用连接，RESTORE 或命令重建，结束后断开。
+//! 跨连接键传输：后台新建源/目标专用连接，RESTORE 或命令重建，结束后断开。
 
 use crate::client::me_client::MeClient;
 use crate::client::me_cluster::MeCluster;

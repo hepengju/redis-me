@@ -38,7 +38,7 @@ export type MeBusEvents = {
   CONN_REFRESH: void
   /** 打开设置弹窗：顶部栏设置图标 emit，KeyHeader（挂载 AppSetting）监听 */
   OPEN_SETTING: void
-  /** 打开键迁移对话框；KeyHeader 挂载 KeyMigrate 并监听 */
+  /** 打开键传输对话框；KeyHeader 挂载 KeyMigrate 并监听 */
   OPEN_KEY_MIGRATE: {
     sourceLocked?: boolean
     sourceConnId?: string

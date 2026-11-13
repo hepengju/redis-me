@@ -225,7 +225,7 @@ pub fn disconnect(app_handle: AppHandle, id: &str) -> ApiResult<()> {
     to_api_result(app_handle.disconnect(id))
 }
 
-/// 跨连接键迁移：开始前探测 DUMP/RESTORE 或 TYPE。
+/// 跨连接键传输：开始前探测 DUMP/RESTORE 或 TYPE。
 #[command]
 #[specta]
 pub fn migrate_probe(
@@ -238,7 +238,7 @@ pub fn migrate_probe(
     ))
 }
 
-/// 跨连接键迁移：后台新建两端连接并串行复制键；进度事件 `migrate`。
+/// 跨连接键传输：后台新建两端连接并串行复制键；进度事件 `migrate`。
 #[command]
 #[specta]
 pub fn migrate_keys(app_handle: AppHandle, param: RedisMigrateParam) -> ApiResult<()> {
@@ -247,7 +247,7 @@ pub fn migrate_keys(app_handle: AppHandle, param: RedisMigrateParam) -> ApiResul
     ))
 }
 
-/// 取消正在进行的键迁移。
+/// 取消正在进行的键传输。
 #[command]
 #[specta]
 pub fn migrate_stop(app_handle: AppHandle) -> ApiResult<()> {

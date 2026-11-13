@@ -21,11 +21,11 @@ export const commands = {
 	appSettings: (appSettings: AppSettings_Deserialize, options?: InvokeOptions) => typedError<null, string>(__TAURI_INVOKE("app_settings", { appSettings }, options)),
 	connect: (id: string, options?: InvokeOptions) => typedError<ServerCapabilities, string>(__TAURI_INVOKE("connect", { id }, options)),
 	disconnect: (id: string, options?: InvokeOptions) => typedError<null, string>(__TAURI_INVOKE("disconnect", { id }, options)),
-	/**  跨连接键迁移：开始前探测 DUMP/RESTORE 或 TYPE。 */
+	/**  跨连接键传输：开始前探测 DUMP/RESTORE 或 TYPE。 */
 	migrateProbe: (param: RedisMigrateProbe, options?: InvokeOptions) => typedError<MigrateProbeResult, string>(__TAURI_INVOKE("migrate_probe", { param }, options)),
-	/**  跨连接键迁移：后台新建两端连接并串行复制键；进度事件 `migrate`。 */
+	/**  跨连接键传输：后台新建两端连接并串行复制键；进度事件 `migrate`。 */
 	migrateKeys: (param: RedisMigrateParam_Deserialize, options?: InvokeOptions) => typedError<null, string>(__TAURI_INVOKE("migrate_keys", { param }, options)),
-	/**  取消正在进行的键迁移。 */
+	/**  取消正在进行的键传输。 */
 	migrateStop: (options?: InvokeOptions) => typedError<null, string>(__TAURI_INVOKE("migrate_stop", undefined, options)),
 	dbList: (id: string, options?: InvokeOptions) => typedError<RedisDB[], string>(__TAURI_INVOKE("db_list", { id }, options)),
 	selectDb: (id: string, db: number, options?: InvokeOptions) => typedError<null, string>(__TAURI_INVOKE("select_db", { id, db }, options)),

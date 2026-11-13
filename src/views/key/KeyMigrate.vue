@@ -1,5 +1,5 @@
 <script setup lang="ts">
-// 跨连接键迁移对话框：总菜单 / 连接扩展入口共用
+// 跨连接键传输对话框：总菜单 / 连接扩展入口共用
 import { listen, type UnlistenFn } from '@tauri-apps/api/event'
 import { useVirtualList } from '@vueuse/core'
 import type { FormItemRule } from 'element-plus'

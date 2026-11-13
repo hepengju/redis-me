@@ -128,7 +128,7 @@ pub trait MeClient: Send + Sync {
     fn import_cmd(&self, file: String) -> AnyResult<()>;
     fn mock_data(&self, count: u64) -> AnyResult<()>;
 
-    // 跨连接键迁移（供 ops/migrate 调用；一般不直接给前端）
+    // 跨连接键传输（供 ops/migrate 调用；一般不直接给前端）
     fn migrate_dump(&self, key: RedisKey) -> AnyResult<(Vec<u8>, i64)>;
     fn migrate_restore(
         &self,
