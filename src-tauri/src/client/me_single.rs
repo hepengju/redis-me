@@ -255,7 +255,7 @@ impl MeClient for MeSingle {
             if let Some(size) = size
                 && size >= size_limit
             {
-                // 未查 TYPE 时用空串；序列化侧 skip 空 type，避免 RAW 出现 "unknown"
+                // 未查 TYPE 时用空串，不写成 unknown
                 out.push((keys[index].to_bytes().to_vec(), size, String::new()));
             }
         }

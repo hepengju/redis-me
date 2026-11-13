@@ -1033,8 +1033,8 @@ api_model!(RedisKeySize {
     #[specta(type = String)]
     bytes: Vec<u8>, // 修改、删除等依据（JSON 为 Base64 字符串）
 
-    // need_key_type=false（如目录内存分析）不查 TYPE，空串省略，避免 RAW 出现误导性的 "unknown"
-    #[serde(rename = "type", default, skip_serializing_if = "String::is_empty")]
+    // 未查 TYPE（如目录内存分析）时为空串，不写成 unknown
+    #[serde(rename = "type")]
     key_type: String, // 类型
     size: u64,        // 大小
 });
@@ -1294,9 +1294,9 @@ mod tests {
         assert!(!conf.is_resp3());
     }
 
-    /// 未查 TYPE 时 type 空串不进 JSON；有类型时照常带 type（内存页 RAW 不受影响）
+    /// 未查 TYPE 时 type 是空串；有类型时照常带上。空串不写成 unknown。
     #[test]
-    fn redis_key_size_skips_empty_type() {
+    fn redis_key_size_empty_type_is_blank() {
         let bare = RedisKeySize {
             key: "k".into(),
             bytes: vec![],
@@ -1311,9 +1311,8 @@ mod tests {
         };
         let bare_json = serde_json::to_value(&bare).unwrap();
         let typed_json = serde_json::to_value(&with_type).unwrap();
-        assert!(bare_json.get("type").is_none());
+        assert_eq!(bare_json.get("type").and_then(|v| v.as_str()), Some(""));
         assert_eq!(typed_json.get("type").and_then(|v| v.as_str()), Some("string"));
-        // 缺 type 反序列化回空串，不报错
         let back: RedisKeySize = serde_json::from_value(bare_json).unwrap();
         assert!(back.key_type.is_empty());
     }
