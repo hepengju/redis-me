@@ -108,21 +108,22 @@ async function invokeSpectaCommand<T>(
 
 type SpectaCommandFn = (...a: unknown[]) => Promise<SpectaResult<unknown>>
 
-/**
- * 与 Specta `commands` 同键。比原函数多传一个末尾 `false` 时失败不弹窗。
- * 原参数本身是 `false`（如 deleteDocs）时不能剥掉，否则 Tauri 会报缺参。
- */
-function bindMeCommand(name: string, fn: unknown): unknown {
+/** specta ≥ rc.29 末尾多了可选 `InvokeOptions`，调用时不传 */
+function bindMeCommand(name: string, fn: unknown, alert: boolean): unknown {
   if (typeof fn !== 'function') return fn
   const spectaFn = fn as SpectaCommandFn
-  const arity = spectaFn.length
-  return (...args: unknown[]) => {
-    const silent = args.length > arity && args[args.length - 1] === false
-    const pass = silent ? args.slice(0, -1) : args
-    return invokeSpectaCommand(String(name), pass, () => spectaFn(...pass), !silent)
-  }
+  return (...args: unknown[]) =>
+    invokeSpectaCommand(String(name), args, () => spectaFn(...args), alert)
 }
 
-export const meCommands = Object.fromEntries(
-  Object.entries(spectaCommands).map(([name, fn]) => [name, bindMeCommand(name, fn)]),
-) as MeCommands
+function bindMeCommands(alert: boolean): MeCommands {
+  return Object.fromEntries(
+    Object.entries(spectaCommands).map(([name, fn]) => [name, bindMeCommand(name, fn, alert)]),
+  ) as MeCommands
+}
+
+/** 失败时弹错误框（默认） */
+export const meCommands = bindMeCommands(true)
+
+/** 失败只抛错、不弹窗（缓存探测、后台检查更新等） */
+export const meCommandsQuiet = bindMeCommands(false)

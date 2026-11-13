@@ -19,7 +19,7 @@ import { shareProvideKey } from '@/types/me-interface'
 import type { RedisInfo } from '@/types/tauri-specta'
 import { connEndpoint } from '@/utils/conn'
 import { enrichNodeList } from '@/utils/redis-display'
-import { bus, INFO_REFRESH, meCommands, meHumanSize } from '@/utils/util'
+import { bus, INFO_REFRESH, meCommands, meCommandsQuiet, meHumanSize } from '@/utils/util'
 
 import RedisACL from './RedisACL.vue'
 import RedisClient from './RedisClient.vue'
@@ -281,7 +281,7 @@ async function fetchSaveConfig(
   nodeAddr: string,
 ): Promise<Pick<NodeSnapshot, 'config' | 'configError'>> {
   try {
-    const data = await meCommands.configGet(share.conn!.id, 'save', nodeAddr, false)
+    const data = await meCommandsQuiet.configGet(share.conn!.id, 'save', nodeAddr)
     return { config: data ?? {}, configError: '' }
   } catch (e: unknown) {
     return { config: {}, configError: String(e) }

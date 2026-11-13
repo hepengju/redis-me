@@ -1,7 +1,7 @@
 import { reactive, ref } from 'vue'
 
 import type { RedisKey_Deserialize } from '@/types/tauri-specta'
-import { meCommands } from '@/utils/me-commands'
+import { meCommandsQuiet } from '@/utils/me-commands'
 import { redisKeyId } from '@/utils/redis-key'
 
 /**
@@ -153,10 +153,9 @@ async function flush(): Promise<void> {
   flushing = true
   const generation = keyMemoryGeneration.value
   try {
-    const sizes = await meCommands.keyMemory(
+    const sizes = await meCommandsQuiet.keyMemory(
       connId,
       batch.map(item => item.entry.redisKey),
-      false,
     )
     if (generation !== keyMemoryGeneration.value) return
     batch.forEach((item, index) => {

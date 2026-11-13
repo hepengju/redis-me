@@ -19,8 +19,8 @@ overrides:
 patchedDependencies:
   java-object-serialization@0.1.2: patches/java-object-serialization@0.1.2.patch
 catalog:
-  vite: npm:@voidzero-dev/vite-plus-core@1.5.0
-  vite-plus: 1.5.0
+  vite: npm:@voidzero-dev/vite-plus-core@1.6.0
+  vite-plus: 1.6.0
 peerDependencyRules:
   allowAny:
     - vite
@@ -37,3 +37,6 @@ minimumReleaseAgeExclude:
   - '@oxfmt/*'
   - vitest
   - '@vitest/*'
+  - '@intlify/*'
+  - '@vitejs/plugin-vue'
+  - vue-i18n

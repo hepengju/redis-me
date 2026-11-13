@@ -8,7 +8,15 @@ import { h } from 'vue'
 
 import i18n from '@/locales'
 import type { MeAppUpdateState } from '@/types/me-interface'
-import { DoNothing, meCommands, meConfirm, meErr, meLog, meOpenUrl } from '@/utils/util'
+import {
+  DoNothing,
+  meCommands,
+  meCommandsQuiet,
+  meConfirm,
+  meErr,
+  meLog,
+  meOpenUrl,
+} from '@/utils/util'
 
 const t = i18n.global.t
 
@@ -69,8 +77,8 @@ export async function checkAppUpdate(): Promise<Update | null> {
     Intl.DateTimeFormat().resolvedOptions().timeZone,
   )
   meLog('检查更新端点:', endpoints)
-  // 末尾 false：失败不弹命令错误，交给调用方决定是否提示
-  const metadata = await meCommands.checkAppUpdate(endpoints, UPDATE_CHECK_TIMEOUT_MS, false)
+  // Quiet：失败不弹命令错误，交给调用方决定是否提示
+  const metadata = await meCommandsQuiet.checkAppUpdate(endpoints, UPDATE_CHECK_TIMEOUT_MS)
   if (!metadata) return null
   return new Update({
     rid: metadata.rid,

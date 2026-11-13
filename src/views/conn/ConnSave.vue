@@ -24,7 +24,15 @@ import {
   type ConnProtocol,
 } from '@/utils/conn'
 import { DEFAULT_PROXY_OPTION } from '@/utils/conn-compat'
-import { meCommands, PREDEFINE_COLORS, meRandomString, meOk, meErr, meCopy } from '@/utils/util'
+import {
+  meCommands,
+  meCommandsQuiet,
+  PREDEFINE_COLORS,
+  meRandomString,
+  meOk,
+  meErr,
+  meCopy,
+} from '@/utils/util'
 const { t } = useI18n()
 // #endregion
 
@@ -473,7 +481,7 @@ async function autoDiscover(alert: boolean = false) {
   // db 未填时默认赋值 0
   if (form.db == null) form.db = 0
   try {
-    masters.value = await meCommands.masters(form, false)
+    masters.value = await meCommandsQuiet.masters(form)
     if (!form.sentinelOption.masterName && masters.value.length > 0) {
       form.sentinelOption.masterName = masters.value[0].name
     }

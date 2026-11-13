@@ -21,7 +21,7 @@ use tauri_plugin_log::fern::{
 };
 use tauri_plugin_log::{Target, TargetKind};
 use tauri_plugin_window_state::{StateFlags, WindowExt};
-use tauri_specta::{Builder, Commands, collect_commands};
+use tauri_specta::{Builder, Commands, ErrorHandlingMode, collect_commands};
 
 /// 启动应用：安装 rustls、注册命令、挂上插件，并显示主窗口。
 #[rustfmt::skip] // 行尾注释按列对齐，rustfmt 会把多余空格收成一个
@@ -99,7 +99,10 @@ fn install_rustls() {
 
 /// 注册 Tauri 命令。debug 构建时同时写出前端类型文件。
 fn specta_builder() -> Builder<tauri::Wry> {
+    // tauri-specta ≥ rc.29 默认 ErrorHandlingMode::Throw；前端 meCommands 依赖
+    // typedError 的 `{ status: 'ok'|'error' }` 解包，需显式保持 Result。
     let specta_builder = Builder::<tauri::Wry>::new()
+        .error_handling(ErrorHandlingMode::Result)
         .dangerously_cast_bigints_to_number()
         .commands(tauri_specta_commands());
 
@@ -298,6 +301,7 @@ mod specta_export_tests {
     #[test]
     fn export_tauri_specta_typescript_bindings() {
         Builder::<tauri::Wry>::new()
+            .error_handling(ErrorHandlingMode::Result)
             .dangerously_cast_bigints_to_number()
             .commands(tauri_specta_commands())
             .export(Typescript::default(), tauri_specta_typescript_path())

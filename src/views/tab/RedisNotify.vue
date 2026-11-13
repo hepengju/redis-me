@@ -8,7 +8,7 @@ import type { MeColumn } from '@/components/me-table-column'
 import { shareProvideKey } from '@/types/me-interface'
 import { createRealtimeStream } from '@/utils/realtime-stream'
 import { enrichNodeList } from '@/utils/redis-display'
-import { meCommands, meConfirm, meCopy, meOk } from '@/utils/util'
+import { meCommands, meCommandsQuiet, meConfirm, meCopy, meOk } from '@/utils/util'
 // #endregion
 
 // #region 核心状态
@@ -116,7 +116,7 @@ async function loadConfig() {
     if (share.conn?.cluster) {
       await loadClusterConfig()
     } else {
-      const data = await meCommands.configGet(share.conn!.id, 'notify-keyspace-events', null, false)
+      const data = await meCommandsQuiet.configGet(share.conn!.id, 'notify-keyspace-events', null)
       configValue.value = data?.['notify-keyspace-events'] ?? ''
       clusterConsistent.value = null
       clusterConfigList.value = []
@@ -132,18 +132,13 @@ async function loadConfig() {
 
 // 集群：逐个主从节点读 notify-keyspace-events，汇总一致性并保留明细供悬浮
 async function loadClusterConfig() {
-  const raw = await meCommands.nodeList(share.conn!.id, false)
+  const raw = await meCommandsQuiet.nodeList(share.conn!.id)
   const nodes = enrichNodeList(raw || []).filter(n => n.isMaster || n.isSlave)
   const list: { node: string; label: string; value: string }[] = []
   for (const n of nodes) {
     let value = ''
     try {
-      const data = await meCommands.configGet(
-        share.conn!.id,
-        'notify-keyspace-events',
-        n.node,
-        false,
-      )
+      const data = await meCommandsQuiet.configGet(share.conn!.id, 'notify-keyspace-events', n.node)
       value = data?.['notify-keyspace-events'] ?? ''
     } catch {
       value = ''

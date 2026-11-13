@@ -1,7 +1,7 @@
 import { reactive, ref } from 'vue'
 
 import type { RedisKey_Deserialize } from '@/types/tauri-specta'
-import { meCommands } from '@/utils/me-commands'
+import { meCommandsQuiet } from '@/utils/me-commands'
 import { redisKeyId } from '@/utils/redis-key'
 import { pttlToEntry, type KeyTtlEntry } from '@/utils/ttl'
 
@@ -124,10 +124,9 @@ async function flush(): Promise<void> {
   flushing = true
   const generation = keyTtlGeneration.value
   try {
-    const ttls = await meCommands.keyPttl(
+    const ttls = await meCommandsQuiet.keyPttl(
       connId,
       batch.map(item => item.entry.redisKey),
-      false,
     )
     // 用结果回到本地的时刻换算到期时间，不把整段往返算进剩余时间
     const fetchedAt = Date.now()

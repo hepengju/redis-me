@@ -36,13 +36,13 @@ redis = { package = "redis-me-rs", version = "1.8.1", features = [
   "tls-rustls-insecure",
 ] }
 url = "2"
-rustls = { version = "0.23.45", default-features = false, features = [
+rustls = { version = "0.23.46", default-features = false, features = [
   "ring",
   "std",
   "tls12",
   "logging",
 ] }
-parking_lot = "0.12"
+parking_lot = "0.13"
 log = "0.4"
 rand = "0.10"
 anyhow = { version = "1" }
@@ -58,7 +58,7 @@ shellexpand = "3"
 x509-parser = "0.18"
 
 # SSH 隧道支持（使用 russh 支持现代密钥格式）
-russh = { version = "0.64", default-features = false, features = ["flate2", "ring", "rsa"] }
+russh = { version = "0.65", default-features = false, features = ["flate2", "ring", "rsa"] }
 tokio = { version = "1", features = ["full"] }
 tauri-plugin-dialog = "2"
 tauri-plugin-opener = "2"
@@ -71,9 +71,9 @@ tauri-plugin-system-fonts = "2"
 tauri-plugin-clipboard-manager = "2"
 
 # 支持TS类型
-specta = { version = "2.0.0-rc.25", features = ["derive", "chrono", "serde_json"] }
-specta-typescript = "0.0.12"
-tauri-specta = { version = "2.0.0-rc.25", features = ["typescript"] }
+specta = { version = "2.0.0-rc.28", features = ["derive", "chrono", "serde_json"] }
+specta-typescript = "0.0.15"
+tauri-specta = { version = "2.0.0-rc.29", features = ["typescript"] }
 
 [target.'cfg(windows)'.dependencies]
 winreg = "0.56"

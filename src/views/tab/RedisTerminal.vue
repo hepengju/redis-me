@@ -11,7 +11,7 @@ import { commandHelp, isReadonlyCommand, parseCommandName } from '@/locales/cmd'
 import { shareProvideKey } from '@/types/me-interface'
 import type { CliOutputMode } from '@/types/tauri-specta'
 import { getTerminalShortcuts } from '@/utils/shortcut'
-import { bus, DB_SWITCH, formatSpectaErrorForUser, meCopy, meCommands } from '@/utils/util'
+import { bus, DB_SWITCH, formatSpectaErrorForUser, meCopy, meCommandsQuiet } from '@/utils/util'
 
 import CommandHelp from '../ext/CommandHelp.vue'
 import NodeList from '../ext/NodeList.vue'
@@ -94,7 +94,7 @@ async function handleSelect(command: string): Promise<string> {
   if (!share.conn) return colorText('var(--el-color-error)', '(error) no connection')
   try {
     // 末尾传 false 关闭错误弹窗，集群切库等失败统一在终端内联回显，不另弹框
-    await meCommands.selectDb(share.conn.id, db, false)
+    await meCommandsQuiet.selectDb(share.conn.id, db)
     share.conn.db = db
     bus.emit(DB_SWITCH, db)
     return colorText('var(--el-color-success)', 'OK')
@@ -135,7 +135,7 @@ async function execCommand(command: string): Promise<string> {
       autoBroadcast: autoBroadcast.value,
       outputMode: outputMode.value,
     }
-    const data = await meCommands.executeCommand(share.conn!.id, param, false)
+    const data = await meCommandsQuiet.executeCommand(share.conn!.id, param)
     autoCopyIfNeed(data)
     return formatCommandResult(data)
   } catch (e: unknown) {

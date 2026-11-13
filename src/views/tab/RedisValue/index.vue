@@ -76,6 +76,7 @@ import {
   KEY_REFRESH,
   requestSearchCreate,
   meCommands,
+  meCommandsQuiet,
   meConfirm,
   meCopy,
   meDeleteKey,
@@ -1554,7 +1555,7 @@ async function refreshFieldRow(row: ValueTableRow) {
     const param = buildFieldGetParam(row)
     if (!param) return
     try {
-      const data = await meCommands.fieldGet(conn.id, param, false)
+      const data = await meCommandsQuiet.fieldGet(conn.id, param)
       applyFieldGetResult(rv, data, row)
       meOk(t('redisValue.refreshFieldRowOk'))
       return
@@ -1671,7 +1672,7 @@ async function onFieldSetSuccess() {
     return
   }
   try {
-    const data = await meCommands.fieldGet(share.conn!.id, param, false)
+    const data = await meCommandsQuiet.fieldGet(share.conn!.id, param)
     const row = fieldSetRow.value
     if (row) applyFieldGetResult(rv, data, row)
     fieldSetInit()

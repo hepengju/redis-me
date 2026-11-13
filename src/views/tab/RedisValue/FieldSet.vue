@@ -36,7 +36,15 @@ import {
   readonlyViewTip,
   type ViewBytesFormat,
 } from '@/utils/format'
-import { meCommands, meCopy, meErr, meFormatDisplayValue, meJsonNormal, meOk } from '@/utils/util'
+import {
+  meCommands,
+  meCommandsQuiet,
+  meCopy,
+  meErr,
+  meFormatDisplayValue,
+  meJsonNormal,
+  meOk,
+} from '@/utils/util'
 import { parseAttrsInput, parseVectorInput } from '@/utils/vector'
 // #endregion
 
@@ -557,7 +565,7 @@ async function refreshField() {
   if (!conn || !param || isRefreshing.value) return
   isRefreshing.value = true
   try {
-    const data = await meCommands.fieldGet(conn.id, param, false)
+    const data = await meCommandsQuiet.fieldGet(conn.id, param)
     applyFieldGetToForm(data)
     await syncFieldEditor()
     codeRemountKey.value++

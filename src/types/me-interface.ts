@@ -2,10 +2,10 @@ import type { Update } from '@tauri-apps/plugin-updater'
 import type { InjectionKey } from 'vue'
 
 import { commands as spectaCommands } from '@/types/tauri-specta'
-import type { ConnConfig, RedisKey_Deserialize, RedisNode } from '@/types/tauri-specta'
+import type { ConnConfig, RedisKey_Deserialize, RedisNode_Serialize } from '@/types/tauri-specta'
 
-/** node_list 原始项经 enrich 后供 UI 使用 */
-export interface EnrichedRedisNode extends RedisNode {
+/** node_list 原始项经 enrich 后供 UI 使用（后端序列化形态 + UI 字段） */
+export interface EnrichedRedisNode extends RedisNode_Serialize {
   isMaster: boolean
   isSlave: boolean
   shortLabel: string
@@ -117,17 +117,20 @@ export interface MeXtermCommandItem {
 type UnwrapSpectaPromise<R> =
   R extends Promise<infer P> ? (P extends { status: 'ok'; data: infer D } ? D : never) : never
 
+/** specta ≥ rc.29 末尾可选 `InvokeOptions` 不对外暴露 */
+type DropTrailingArg<A extends unknown[]> = A extends [...infer Rest, unknown?] ? Rest : A
+
 type WrapSpectaCommand<F> = F extends (...args: infer A) => infer R
   ? R extends Promise<unknown>
-    ? (...args: [...A, (false | undefined)?]) => Promise<UnwrapSpectaPromise<R>>
+    ? (...args: DropTrailingArg<A>) => Promise<UnwrapSpectaPromise<R>>
     : F
   : F
 
 type SpectaCommandsMap = typeof spectaCommands
 
 /**
- * `MeCommands`（及运行时 `meCommands`）：与 `@/types/tauri-specta` 里 **`export const commands`**
- * 逐项同键、同入参（本文件以 `spectaCommands` 取类型）；成功时返回解包后的 `data`；末尾可传 `false` 关闭错误弹窗。
+ * `MeCommands`：与 specta `commands` 同键、同业务入参；成功返回解包后的 `data`。
+ * 是否弹错由 `meCommands` / `meCommandsQuiet` 两套入口区分，不再用末尾 `false`。
  */
 export type MeCommands = {
   [K in keyof SpectaCommandsMap]: SpectaCommandsMap[K] extends (...args: never[]) => unknown

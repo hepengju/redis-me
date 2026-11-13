@@ -15,9 +15,15 @@ import type { RedisKey_Deserialize } from '@/types/tauri-specta'
 import { invalidateKeyMemory } from '@/utils/key-memory-cache'
 import { invalidateKeyTtl } from '@/utils/key-ttl-cache'
 import { invalidateKeyType } from '@/utils/key-type-cache'
-import { formatSpectaErrorForUser, meCommands, meErr, meLog } from '@/utils/me-commands'
+import {
+  formatSpectaErrorForUser,
+  meCommands,
+  meCommandsQuiet,
+  meErr,
+  meLog,
+} from '@/utils/me-commands'
 
-export { formatSpectaErrorForUser, meCommands, meErr, meLog }
+export { formatSpectaErrorForUser, meCommands, meCommandsQuiet, meErr, meLog }
 
 /** 全局 `bus` 事件载荷（与 `bus.emit` / `bus.on` 一致） */
 export type MeBusEvents = {
