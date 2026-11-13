@@ -55,6 +55,8 @@ const props = withDefaults(
      * 值区字段表关：大值靠双击/点行进 FieldSet 看，避免 MB 级气泡。
      */
     showOverflowTooltip?: boolean
+    /** 初始排序，对齐 el-table 的 default-sort。写在 props 上，保证弹窗里第一次打开就能读到 */
+    defaultSort?: { prop: string; order: 'ascending' | 'descending' }
   }>(),
   { data: () => [], exportName: 'table', keyword: '', showOverflowTooltip: true },
 )
@@ -140,9 +142,9 @@ const sortOrder = ref<'ascending' | 'descending' | null>(null)
 // 当前排序列：排序方式全由列描述决定（sortable: 'custom' 不动行序、sortMethod 自定义比较器）
 const sortCol = computed(() => props.columns.find(c => (c.prop ?? c.key) === sortProp.value))
 
-// default-sort 只是为对齐 el-table 习惯的透传项（v2 无此概念），故从 attrs 读而不进 props
+// v2 没有 default-sort。从 prop 读初值（声明成 prop 后不会再留在 attrs 里）
 const defaultSort = computed(() => {
-  const ds = attrs.defaultSort as { prop?: string; order?: 'ascending' | 'descending' } | undefined
+  const ds = props.defaultSort
   if (!ds?.prop || !ds.order) return null
   return ds
 })
