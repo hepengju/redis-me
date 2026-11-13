@@ -1,5 +1,29 @@
 # 5.x Changelog
 
+## [v5.8.0 - Transfer Keys](https://mp.weixin.qq.com/s/BmdkRfVzEba5F22tGd9ZaQ) <span class="changelog-date">2026-11-14</span>
+
+### ✨ Improvements
+
+- **Transfer keys across connections**
+  - From the top menu or the current connection; selected keys can be transferred after multi-select
+  - Two modes: **As-is** or **Typed**
+- Keys panel: the menu can **show TTL** (time left or forever), querying only the keys currently visible
+- Keys panel: with Exact checked, pressing Enter on a unique match **opens it directly**
+- Info: switched to **INFO all**, including command stats and latency stats; the section dropdown can be filtered by typing
+- Folder memory usage: results can be **copied / exported**
+- Other details
+  - The favorites multi-select bar matches normal mode (export, transfer, TTL, delete, unfavorite)
+  - Batch menu labels aligned to Data Export, Data Import, and Data Mock
+  - Linux default monospace fonts now include Noto Sans Mono and Ubuntu Mono
+  - Read-only code areas can be selected, copied, and searched; Info and config raw dialogs can be searched, and edits are not written back
+  - Folder context menu puts Multi Select before Copy Folder
+  - Linux packages are categorized as Development
+  - Frontend and backend dependencies updated (Element Plus, Vue, Tauri plugins, russh, and others)
+
+### 🐞 Bug Fixes
+
+- Fixed the batch-delete success message not showing the actual count #178
+
 ## [v5.7.0 - Unix Socket](https://mp.weixin.qq.com/s/JoNqjj9Vb3KZZldBhwBMnQ) <span class="changelog-date">2026-11-07</span>
 
 ### ✨ Improvements
