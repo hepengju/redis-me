@@ -746,7 +746,7 @@ const latencyScopeLabel = computed(() =>
                   </me-overflow-text>
                 </div>
               </template>
-              <!-- 拓扑、图表、命令统计、延迟分位：紧挨更多菜单 -->
+              <!-- 拓扑、命令统计、延迟分位：紧挨更多菜单 -->
               <template #footer>
                 <me-icon
                   class="icon-btn info-footer-icon"
@@ -755,13 +755,6 @@ const latencyScopeLabel = computed(() =>
                   hint
                   placement="top"
                   @click="dialog.topology = true" />
-                <me-icon
-                  class="icon-btn info-footer-icon"
-                  icon="el-icon-data-line"
-                  :name="t('tabMain.chart')"
-                  hint
-                  placement="top"
-                  @click="openTab('chart')" />
                 <me-icon
                   class="icon-btn info-footer-icon"
                   icon="el-icon-data-analysis"
