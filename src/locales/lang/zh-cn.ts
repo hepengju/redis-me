@@ -51,6 +51,28 @@ export default {
 
   keyEmpty: { tagline: '现代、轻量、跨平台的 Redis 桌面客户端' },
 
+  meCode: {
+    fullscreen: '全屏',
+    lineNumbers: '显示行号',
+    lineWrap: '自动换行',
+    fontSize: '字号（{size}）',
+    fontIncrease: '放大',
+    fontDecrease: '缩小',
+    highlight: '高亮语言',
+    highlightFollow: '跟随内容（{name}）',
+    find: '查找替换',
+    mode: {
+      json: 'JSON',
+      yaml: 'YAML',
+      markdown: 'Markdown',
+      xml: 'XML',
+      properties: 'Properties',
+      shell: 'Shell',
+      redis: 'Redis',
+      text: '纯文本',
+    },
+  },
+
   setting: {
     toDefault: '恢复默认',
     confirmToDefault: '确认恢复【{name}】到默认值吗？',

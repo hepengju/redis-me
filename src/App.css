@@ -17,6 +17,13 @@ html {
   -moz-user-select: text; /* Firefox */
 }
 
+/* 下拉弹层同时带 el-tooltip。两条单类优先级相同，写成组合选择器，避免菜单文字被选中 */
+.el-popper.el-dropdown__popper {
+  user-select: none;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+}
+
 /* 字体 */
 :root {
   /* https://element-plus.org/zh-CN/component/typography#%E5%AD%97%E4%BD%93 */

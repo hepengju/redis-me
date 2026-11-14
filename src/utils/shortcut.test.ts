@@ -214,6 +214,8 @@ describe('fullscreen hotkey', () => {
     expect(isAppFullscreenHotkeyBlocked(key({}))).toBe(true)
     fullscreenNode = el('div', 'cm-editor')
     expect(isAppFullscreenHotkeyBlocked(key({}))).toBe(true)
+    fullscreenNode = el('div', 'me-code-wrap')
+    expect(isAppFullscreenHotkeyBlocked(key({}))).toBe(true)
     fullscreenNode = el('div')
     expect(isAppFullscreenHotkeyBlocked(key({}), { tabName: 'value' })).toBe(false)
   })

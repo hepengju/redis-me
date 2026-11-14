@@ -1,8 +1,10 @@
 <script setup lang="ts">
 // #region 导入
 import { syntaxHighlighting } from '@codemirror/language'
+import { openSearchPanel } from '@codemirror/search'
 import { Prec, EditorState, StateEffect } from '@codemirror/state'
 import { EditorView, keymap, lineNumbers, placeholder as cmPlaceholder } from '@codemirror/view'
+import { type as getOsType } from '@tauri-apps/plugin-os'
 import { useDark } from '@vueuse/core'
 import { json5 as cmJson5 } from 'codemirror-json5'
 import {
@@ -17,6 +19,7 @@ import {
 } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import MeCodeSubmenu from '@/components/MeCodeSubmenu.vue'
 import {
   markdownHeadingSyntax,
   markdownLang,
@@ -32,11 +35,22 @@ import {
 } from '@/plugins/codemirror'
 import { detectCodeMode } from '@/utils/detect-code-mode'
 import { redisHighlighting, redisLang } from '@/utils/redis-lang'
-import { isZh, meCopy } from '@/utils/util'
+import { displayShortcutKey, type ShortcutKey } from '@/utils/shortcut'
+import {
+  ME_CODE_FONT_DEFAULT,
+  ME_CODE_FONT_MAX,
+  ME_CODE_FONT_MIN,
+  ME_CODE_FONT_STEP,
+  isZh,
+  meCodeFontSize,
+  meCodeLineWrap,
+  meCodeShowLineNumbers,
+  meCopy,
+} from '@/utils/util'
 // #endregion
 
 // #region 核心状态
-// 编辑器聚焦时全屏 `.cm-editor`（再按同一快捷键或 Esc 退出）
+// 全屏外层包裹（含右键菜单）。全屏 `.cm-editor` 时菜单在元素外，全屏层里看不见
 // macOS 的 F11 被系统「显示桌面」占用，另认 ⌘⇧F；F11 仍保留
 function toggleCmEditorFullscreen(el: HTMLElement) {
   const doc = el.ownerDocument
@@ -47,20 +61,29 @@ function toggleCmEditorFullscreen(el: HTMLElement) {
   void el.requestFullscreen().catch(() => {})
 }
 
-// 自动换行默认关闭，Mod+B 切换（Mac ⌘ / Win·Linux Ctrl）
-const lineWrap = ref(false)
-// 行号默认显示，Mod+N 切换
-const showLineNumbers = ref(true)
+// 行号 / 换行 / 字号：本次运行内所有编辑器共用，见 util.ts
+const lineWrap = meCodeLineWrap
+const showLineNumbers = meCodeShowLineNumbers
+const fontSizePx = meCodeFontSize
+const wrapEl = ref<HTMLElement>()
+const fullscreenOn = ref(false)
+const menuRef = ref<{ showMenu: (e: MouseEvent) => void; closeMenu: () => void }>()
 
-// 编辑器字号（px），Mod+= / Mod+- 调节，Mod+0 恢复默认
-const FONT_SIZE_DEFAULT = 15
-const FONT_SIZE_MIN = 10
-const FONT_SIZE_MAX = 28
-const FONT_SIZE_STEP = 2
-const fontSizePx = ref(FONT_SIZE_DEFAULT)
+function fullscreenEditor() {
+  const el = wrapEl.value
+  if (!el) return
+  toggleCmEditorFullscreen(el)
+}
+
+function syncFullscreen() {
+  fullscreenOn.value = document.fullscreenElement === wrapEl.value
+}
 
 function bumpFontSize(delta: number) {
-  fontSizePx.value = Math.min(FONT_SIZE_MAX, Math.max(FONT_SIZE_MIN, fontSizePx.value + delta))
+  fontSizePx.value = Math.min(
+    ME_CODE_FONT_MAX,
+    Math.max(ME_CODE_FONT_MIN, fontSizePx.value + delta),
+  )
 }
 // #endregion
 
@@ -69,16 +92,16 @@ const meCodePrecKeymap = Prec.highest(
   keymap.of([
     {
       key: 'F11',
-      run: view => {
-        toggleCmEditorFullscreen(view.dom)
+      run: () => {
+        fullscreenEditor()
         return true
       },
     },
     {
       // 仅 macOS。`mac` 会盖掉同条里的 key，所以不跟 F11 写在一起
       mac: 'Mod-Shift-f',
-      run: view => {
-        toggleCmEditorFullscreen(view.dom)
+      run: () => {
+        fullscreenEditor()
         return true
       },
     },
@@ -99,21 +122,21 @@ const meCodePrecKeymap = Prec.highest(
     {
       key: 'Mod-=',
       run: () => {
-        bumpFontSize(FONT_SIZE_STEP)
+        bumpFontSize(ME_CODE_FONT_STEP)
         return true
       },
     },
     {
       key: 'Mod--',
       run: () => {
-        bumpFontSize(-FONT_SIZE_STEP)
+        bumpFontSize(-ME_CODE_FONT_STEP)
         return true
       },
     },
     {
       key: 'Mod-0',
       run: () => {
-        fontSizePx.value = FONT_SIZE_DEFAULT
+        fontSizePx.value = ME_CODE_FONT_DEFAULT
         return true
       },
     },
@@ -169,6 +192,26 @@ function copyCode(): void {
   meCopy(props.modelValue)
 }
 
+function onContextMenu(e: MouseEvent) {
+  menuRef.value?.showMenu(e)
+}
+
+function onMenuCommand(command: unknown) {
+  if (typeof command !== 'string' || !command) return
+  if (command === 'fullscreen') fullscreenEditor()
+  else if (command === 'lineNumbers') showLineNumbers.value = !showLineNumbers.value
+  else if (command === 'lineWrap') lineWrap.value = !lineWrap.value
+  else if (command === 'find') {
+    const v = view.value
+    if (v) openSearchPanel(v)
+  } else if (command === 'font+') bumpFontSize(ME_CODE_FONT_STEP)
+  else if (command === 'font-') bumpFontSize(-ME_CODE_FONT_STEP)
+  else if (command === 'mode:follow') modeOverride.value = null
+  else if (command.startsWith('mode:')) modeOverride.value = command.slice('mode:'.length)
+  // 放大/缩小留着菜单连点，其余项点完关掉
+  if (command !== 'font+' && command !== 'font-') menuRef.value?.closeMenu()
+}
+
 // 只读只改外观（变淡 + 禁止光标），不把编辑器设成不可聚焦
 const rootClass = computed(() => [
   ...(props.readOnly ? ['codemirror-opacity', 'is-disabled'] : []),
@@ -182,7 +225,61 @@ const detectedMode = ref<string>('text')
 function detectOnce(value: string) {
   detectedMode.value = detectCodeMode(value)
 }
-const effectiveMode = computed(() => (props.mode === 'auto' ? detectedMode.value : props.mode))
+// 右键临时改高亮，不写入设置。外部换内容或 mode 时回到传入值 / 推断结果
+const modeOverride = ref<string | null>(null)
+const effectiveMode = computed(() => {
+  if (modeOverride.value) return modeOverride.value
+  return props.mode === 'auto' ? detectedMode.value : props.mode
+})
+
+const HIGHLIGHT_MODES = [
+  'json',
+  'yaml',
+  'markdown',
+  'xml',
+  'properties',
+  'shell',
+  'redis',
+  'text',
+] as const
+
+function highlightId(mode: string): string {
+  if (mode === 'json' || mode === 'json5') return 'json'
+  if (mode === 'properties' || mode === 'conf') return 'properties'
+  return mode
+}
+
+function modeLabel(mode: string): string {
+  const id = highlightId(mode)
+  const key = `meCode.mode.${id}`
+  const text = t(key)
+  return text === key ? mode : text
+}
+
+const followChecked = computed(() => props.mode === 'auto' && !modeOverride.value)
+const followLabel = computed(() =>
+  t('meCode.highlightFollow', { name: modeLabel(detectedMode.value) }),
+)
+const fontTitle = computed(() => t('meCode.fontSize', { size: fontSizePx.value }))
+
+// 右键项右侧的快捷键，与编辑器实际按键一致。macOS 全屏显示 ⌘⇧F（F11 被系统占用）
+const isMacOS = getOsType() === 'macos'
+function menuShortcut(keys: ShortcutKey[]): string {
+  return keys.map(key => displayShortcutKey(key, isMacOS)).join(' + ')
+}
+const menuKeys = {
+  fullscreen: menuShortcut(isMacOS ? ['mod', 'shift', 'f'] : ['F11']),
+  lineNumbers: menuShortcut(['mod', 'n']),
+  lineWrap: menuShortcut(['mod', 'b']),
+  fontIncrease: menuShortcut(['mod', '=']),
+  fontDecrease: menuShortcut(['mod', '-']),
+  find: menuShortcut(['mod', 'f']),
+}
+
+function languageChecked(id: string): boolean {
+  if (followChecked.value) return false
+  return highlightId(effectiveMode.value) === id
+}
 
 const lang = computed(() => {
   const m = effectiveMode.value
@@ -284,9 +381,11 @@ onMounted(() => {
     },
   })
   containerEl.value.addEventListener('compositionend', flushPendingExternal)
+  document.addEventListener('fullscreenchange', syncFullscreen)
 })
 
 onBeforeUnmount(() => {
+  document.removeEventListener('fullscreenchange', syncFullscreen)
   containerEl.value?.removeEventListener('compositionend', flushPendingExternal)
   view.value?.destroy()
   view.value = undefined
@@ -297,12 +396,22 @@ watch(fullExtensions, exts => {
   view.value?.dispatch({ effects: StateEffect.reconfigure.of(exts) })
 })
 
+watch(
+  () => props.mode,
+  () => {
+    modeOverride.value = null
+  },
+)
+
 // 外部改值（加载 / 刷新 / 切换键）整篇替换；IME 合成中先暂存，合成结束后重放
 watch(
   () => props.modelValue,
   value => {
-    // auto：外部改值重推断一次；用户输入经 v-model 回灌的那次跳过（同 applyExternalValue 的抑制）
-    if (props.mode === 'auto' && value !== lastEmitted) detectOnce(value)
+    // 外部改值：丢掉右键选的高亮，auto 再推断一次。用户输入回灌跳过
+    if (value !== lastEmitted) {
+      modeOverride.value = null
+      if (props.mode === 'auto') detectOnce(value)
+    }
     if (view.value?.composing) {
       pendingExternal = value
       return
@@ -315,7 +424,12 @@ watch(
 
 <template>
   <!-- 直接挂载 CodeMirror EditorView，不再依赖 vue-codemirror6 包装层 -->
-  <div class="me-code-wrap" :class="[wrapClass, rootClass]" :style="wrapStyle">
+  <div
+    ref="wrapEl"
+    class="me-code-wrap"
+    :class="[wrapClass, rootClass]"
+    :style="wrapStyle"
+    @contextmenu="onContextMenu">
     <div ref="containerEl" class="vue-codemirror" v-bind="restAttrs"></div>
     <div v-if="props.loading" class="me-code-loading">
       <me-icon icon="el-icon-loading" :name="props.loadingText" />
@@ -327,6 +441,93 @@ watch(
       :info="t('copy')"
       placement="top"
       @click="copyCode" />
+    <!-- 全屏时菜单留在包裹层内；平时挂到 body，避免被父级 overflow 裁掉 -->
+    <me-context
+      ref="menuRef"
+      popper-class="me-code-menu"
+      :teleported="!fullscreenOn"
+      :hide-on-click="false"
+      @handle-command="onMenuCommand">
+      <el-dropdown-item command="fullscreen">
+        <span class="me-code-menu-row">
+          <me-icon
+            class="me-code-menu-label"
+            icon="me-icon-window-maximize"
+            :name="t('meCode.fullscreen')" />
+          <span class="me-code-menu-key">{{ menuKeys.fullscreen }}</span>
+        </span>
+      </el-dropdown-item>
+      <el-dropdown-item command="lineNumbers">
+        <span class="me-code-menu-row">
+          <me-icon
+            class="me-code-menu-label"
+            icon="me-icon-line-number"
+            :name="t('meCode.lineNumbers')" />
+          <span class="me-code-menu-key">{{ menuKeys.lineNumbers }}</span>
+        </span>
+      </el-dropdown-item>
+      <el-dropdown-item command="lineWrap">
+        <span class="me-code-menu-row">
+          <me-icon
+            class="me-code-menu-label"
+            icon="me-icon-line-wrap"
+            :name="t('meCode.lineWrap')" />
+          <span class="me-code-menu-key">{{ menuKeys.lineWrap }}</span>
+        </span>
+      </el-dropdown-item>
+      <MeCodeSubmenu keep-open icon="me-icon-font-size" :title="fontTitle" @command="onMenuCommand">
+        <el-dropdown-item command="font+" :disabled="fontSizePx >= ME_CODE_FONT_MAX">
+          <span class="me-code-menu-row">
+            <me-icon
+              class="me-code-menu-label"
+              icon="el-icon-zoom-in"
+              :name="t('meCode.fontIncrease')" />
+            <span class="me-code-menu-key">{{ menuKeys.fontIncrease }}</span>
+          </span>
+        </el-dropdown-item>
+        <el-dropdown-item command="font-" :disabled="fontSizePx <= ME_CODE_FONT_MIN">
+          <span class="me-code-menu-row">
+            <me-icon
+              class="me-code-menu-label"
+              icon="el-icon-zoom-out"
+              :name="t('meCode.fontDecrease')" />
+            <span class="me-code-menu-key">{{ menuKeys.fontDecrease }}</span>
+          </span>
+        </el-dropdown-item>
+      </MeCodeSubmenu>
+      <MeCodeSubmenu
+        icon="el-icon-brush"
+        :title="t('meCode.highlight')"
+        :max-height="320"
+        @command="onMenuCommand">
+        <el-dropdown-item v-if="props.mode === 'auto'" command="mode:follow">
+          <span class="me-code-menu-row">
+            <span class="me-code-menu-mark">
+              <me-icon v-if="followChecked" icon="el-icon-check" />
+            </span>
+            <span>{{ followLabel }}</span>
+          </span>
+        </el-dropdown-item>
+        <el-dropdown-item
+          v-for="id in HIGHLIGHT_MODES"
+          :key="id"
+          :command="`mode:${id}`"
+          :divided="id === 'json' && props.mode === 'auto'">
+          <span class="me-code-menu-row">
+            <span class="me-code-menu-mark">
+              <me-icon v-if="languageChecked(id)" icon="el-icon-check" />
+            </span>
+            <span>{{ t(`meCode.mode.${id}`) }}</span>
+          </span>
+        </el-dropdown-item>
+      </MeCodeSubmenu>
+      <el-dropdown-item command="find">
+        <span class="me-code-menu-row">
+          <me-icon class="me-code-menu-label" icon="me-icon-search" :name="t('meCode.find')" />
+          <span class="me-code-menu-key">{{ menuKeys.find }}</span>
+        </span>
+      </el-dropdown-item>
+    </me-context>
   </div>
 </template>
 
@@ -385,20 +586,6 @@ watch(
     height: 100%;
   }
 
-  /* F11 全屏时填满视口（普通 DOM 全屏，非整窗 Tauri F11） */
-  :deep(.cm-editor:fullscreen) {
-    box-sizing: border-box;
-    width: 100vw;
-    height: 100vh;
-    max-height: 100vh;
-    background-color: var(--el-bg-color-page, var(--el-bg-color, #fff));
-  }
-
-  :deep(.cm-editor:fullscreen .cm-scroller) {
-    flex: 1;
-    min-height: 0;
-  }
-
   /* 字体设置 */
   :deep(.cm-scroller) {
     font-family: var(--code-font);
@@ -410,12 +597,26 @@ watch(
   }
 }
 
+.me-code-wrap:fullscreen {
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: 100%;
+  background-color: var(--el-bg-color-page, var(--el-bg-color, #fff));
+
+  .vue-codemirror {
+    flex: 1;
+    min-height: 0;
+  }
+}
+
+html.dark .me-code-wrap:fullscreen {
+  background-color: #272822;
+}
+
 html.dark .vue-codemirror {
   background-color: #272822;
-
-  :deep(.cm-editor:fullscreen) {
-    background-color: #272822;
-  }
 
   :deep(.ͼ3 .cm-gutters) {
     background-color: #272822;
@@ -451,5 +652,71 @@ html.dark .vue-codemirror {
   :deep(.ͼm) {
     color: #75715e;
   }
+}
+</style>
+
+<style lang="scss">
+.me-code-menu-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+}
+
+.me-code-menu-mark {
+  width: 14px;
+  height: 14px;
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.me-code-menu-label {
+  flex: 1;
+}
+
+.me-code-menu-arrow {
+  margin-left: 12px;
+  flex: none;
+}
+
+.me-code-menu-key {
+  flex: none;
+  margin-left: 16px;
+  color: var(--el-color-info);
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+.el-dropdown-menu__item.is-disabled .me-code-menu-key {
+  color: inherit;
+}
+
+.me-code-menu-arrow {
+  font-size: 12px;
+}
+
+.me-code-menu.el-dropdown__popper .el-dropdown__list {
+  min-width: 168px;
+}
+
+/* 子菜单触发器铺满整行。不要把这一行改成 block，否则箭头会掉到下一行，弹出层也会跟着偏下 */
+.el-dropdown-menu__item:has(.me-code-menu-sub) {
+  padding: 0;
+}
+
+.me-code-menu-sub.el-dropdown {
+  display: flex;
+  width: 100%;
+  line-height: inherit;
+}
+
+.me-code-menu-sub .me-code-menu-row {
+  flex: 1;
+  box-sizing: border-box;
+  min-width: 0;
+  padding: 5px 16px;
+  line-height: 22px;
 }
 </style>

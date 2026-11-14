@@ -56,6 +56,28 @@ export default {
 
   keyEmpty: { tagline: 'Modern, Lightweight, Cross-Platform' },
 
+  meCode: {
+    fullscreen: 'Fullscreen',
+    lineNumbers: 'Line Numbers',
+    lineWrap: 'Word Wrap',
+    fontSize: 'Font Size ({size})',
+    fontIncrease: 'Increase',
+    fontDecrease: 'Decrease',
+    highlight: 'Language',
+    highlightFollow: 'Detect ({name})',
+    find: 'Find Replace',
+    mode: {
+      json: 'JSON',
+      yaml: 'YAML',
+      markdown: 'Markdown',
+      xml: 'XML',
+      properties: 'Properties',
+      shell: 'Shell',
+      redis: 'Redis',
+      text: 'Plain Text',
+    },
+  },
+
   setting: {
     toDefault: 'Restore Default',
     confirmToDefault: 'Confirm Restore【{name}】To Default ?',

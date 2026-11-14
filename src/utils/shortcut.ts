@@ -120,7 +120,12 @@ export function isAppFullscreenHotkeyBlocked(
 
   const fs = document.fullscreenElement
   if (fs instanceof HTMLElement) {
-    if (fs.classList.contains('cm-editor') || fs.classList.contains('charts')) return true
+    if (
+      fs.classList.contains('cm-editor') ||
+      fs.classList.contains('me-code-wrap') ||
+      fs.classList.contains('charts')
+    )
+      return true
   }
 
   return false

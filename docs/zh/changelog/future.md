@@ -2,13 +2,13 @@
 
 - 多个Redis连接之间的键迁移 ✅
 - Linux默认等宽字体 ✅
+- CodeMirror右键菜单 ✅
 - deepin应用商店的上架: 审核未过（deb control 缺 Section，已在 tauri.conf 补 section/priority）
 - 部分简单的操作：放在上面，选中某行后编辑查看
 - 查询工作台: 输入多行文本及回显表格的处理
 - 多个配色主题的选择
 - rme 终端执行，类似 redis-cli 的效果
 - MCP接口的设置
-
 - Linux其他应用商店上线的继续处理
 - 整理i18n键，以便可以快速加入其他语言的支持
 - 某些模块可以右键不显示

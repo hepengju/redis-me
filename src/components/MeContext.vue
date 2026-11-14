@@ -2,7 +2,22 @@
 // 说明: 自定义右键菜单（使用el-dropdown的虚拟触发实现）
 import { ref, useTemplateRef } from 'vue'
 
-defineExpose({ showMenu })
+withDefaults(
+  defineProps<{
+    /** 默认挂到 body。全屏容器内传 false，菜单才能画在全屏元素里 */
+    teleported?: boolean
+    popperClass?: string
+    /** 点菜单项后是否收起。代码编辑器里放大/缩小要连点，由调用方自己关 */
+    hideOnClick?: boolean
+  }>(),
+  { teleported: true, popperClass: '', hideOnClick: true },
+)
+
+function closeMenu(): void {
+  dropdownRef.value?.handleClose()
+}
+
+defineExpose({ showMenu, closeMenu })
 const emit = defineEmits(['handleCommand', 'handleClose'])
 
 const dropdownRef = useTemplateRef('dropdownRef')
@@ -35,6 +50,9 @@ function handleClose(isOpen: boolean): void {
     :virtual-ref="triggerRef"
     virtual-triggering
     :show-arrow="false"
+    :teleported="teleported"
+    :popper-class="popperClass"
+    :hide-on-click="hideOnClick"
     trigger="contextmenu"
     placement="bottom-start">
     <template #dropdown>

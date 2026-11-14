@@ -8,7 +8,7 @@ import JSON5 from 'json5'
 import { applyEdits, format } from 'jsonc-parser'
 import { sampleSize } from 'lodash'
 import mitt from 'mitt'
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 
 import i18n from '@/locales'
 import type { RedisKey_Deserialize } from '@/types/tauri-specta'
@@ -344,4 +344,16 @@ export function meJsonParse(jsonString: string | null | undefined): unknown {
 export function meJsonNormal(jsonString: string): string {
   return JSON.stringify(JSON5.parse(jsonString), null, 2)
 }
+// #endregion
+
+// #region 代码编辑器显示与右键菜单
+/** 本次运行内所有代码编辑器共用。不写入设置，重启恢复默认（行号开、换行关、字号 15）。 */
+export const meCodeShowLineNumbers = ref(true)
+export const meCodeLineWrap = ref(false)
+export const meCodeFontSize = ref(15)
+
+export const ME_CODE_FONT_DEFAULT = 15
+export const ME_CODE_FONT_MIN = 10
+export const ME_CODE_FONT_MAX = 28
+export const ME_CODE_FONT_STEP = 1
 // #endregion
