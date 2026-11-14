@@ -17,17 +17,12 @@ import MeOverflowText from '@/components/MeOverflowText.vue'
 import { infoTip as tips } from '@/locales/info'
 import { shareProvideKey } from '@/types/me-interface'
 import type { RedisInfo } from '@/types/tauri-specta'
-import {
-  aggregateMasterCommandStats,
-  commandStatRows,
-  parseCommandStats,
-  type CommandStatRow,
-  type MasterUptime,
-} from '@/utils/command-stats'
+import type { MasterStatSource } from '@/utils/command-stats'
 import { connEndpoint } from '@/utils/conn'
 import { enrichNodeList } from '@/utils/redis-display'
 import { bus, INFO_REFRESH, meCommands, meCommandsQuiet, meHumanSize } from '@/utils/util'
 
+import CommandStats from './CommandStats.vue'
 import RedisACL from './RedisACL.vue'
 import RedisClient from './RedisClient.vue'
 import RedisConfig from './RedisConfig.vue'
@@ -513,40 +508,10 @@ function onOverviewRowClick(row: OverviewRow) {
 // #endregion
 
 // #region 命令画像
-// 参数详情：当前节点这份 INFO。节点概览：只加主节点（副本会再计一遍同步来的写命令）。
+// 参数详情传当前节点原文。节点概览只传主节点（副本会再计一遍同步来的写命令）。表格在 CommandStats。
 function openCmdstat(scope: 'node' | 'masters') {
   cmdstatScope.value = scope
   dialog.cmdstat = true
-}
-
-function formatStatNum(n: number | null): string {
-  if (n == null || !Number.isFinite(n)) return ''
-  return String(Math.round(n))
-}
-
-function formatStatAvg(n: number): string {
-  if (!Number.isFinite(n)) return ''
-  return String(Math.round(n * 100) / 100)
-}
-
-function compareNullable(a: number | null, b: number | null): number {
-  if (a == null && b == null) return 0
-  if (a == null) return -1
-  if (b == null) return 1
-  return a - b
-}
-
-/** 运行时间只留到能看出「是不是刚重启」的两级 */
-function formatUptime(seconds: number): string {
-  if (seconds < 60) return t('redisInfo.cmdUptimeUnderMinute')
-  const days = Math.floor(seconds / 86400)
-  const hours = Math.floor((seconds % 86400) / 3600)
-  const minutes = Math.floor((seconds % 3600) / 60)
-  const parts: string[] = []
-  if (days > 0) parts.push(t('redisInfo.cmdUptimeDays', { n: days }))
-  if (hours > 0) parts.push(t('redisInfo.cmdUptimeHours', { n: hours }))
-  if (days === 0 && minutes > 0) parts.push(t('redisInfo.cmdUptimeMinutes', { n: minutes }))
-  return parts.join(' ')
 }
 
 function currentNodeLabel(): string {
@@ -557,9 +522,9 @@ function currentNodeLabel(): string {
 }
 
 /** 概览表里的主节点优先（M1/M2/M3）；nodeList 里有、但 INFO 没进表的主节点补在后面标缺失 */
-function masterStatSources() {
+const cmdstatSources = computed((): MasterStatSource[] => {
   const seen = new Set<string>()
-  const sources: { label: string; node: string; info: string }[] = []
+  const sources: MasterStatSource[] = []
   for (const row of overviewRows.value) {
     if (!row.isMaster) continue
     seen.add(row.node)
@@ -578,88 +543,11 @@ function masterStatSources() {
     })
   }
   return sources
-}
-
-const cmdstatView = computed(() => {
-  if (cmdstatScope.value === 'masters') {
-    const aggregated = aggregateMasterCommandStats(masterStatSources())
-    return { rows: commandStatRows(aggregated.rows), nodes: aggregated.nodes }
-  }
-  return { rows: commandStatRows(parseCommandStats(raw.value)), nodes: [] as MasterUptime[] }
 })
-
-const cmdstatRows = computed(() => cmdstatView.value.rows)
 
 const cmdstatScopeLabel = computed(() =>
   cmdstatScope.value === 'masters' ? t('redisInfo.commandProfileScopeMasters') : currentNodeLabel(),
 )
-
-const cmdstatNote = computed(() => {
-  if (cmdstatScope.value !== 'masters') return ''
-  const parts = cmdstatView.value.nodes.map(item => {
-    if (item.missing) return t('redisInfo.cmdUptimeMissing', { label: item.label })
-    if (item.uptimeSeconds == null) return `${item.label} --`
-    return `${item.label} ${formatUptime(item.uptimeSeconds)}`
-  })
-  let note = parts.length
-    ? `${t('redisInfo.cmdstatNote')} · ${parts.join(' · ')}`
-    : t('redisInfo.cmdstatNote')
-  const rows = cmdstatRows.value
-  const rejectBlank = rows.length > 0 && rows.every(row => row.rejected == null)
-  const failedBlank = rows.length > 0 && rows.every(row => row.failed == null)
-  if (rejectBlank && failedBlank) note += ` · ${t('redisInfo.cmdstatRejectBlank')}`
-  return note
-})
-
-const cmdstatColumns = computed<MeColumn<CommandStatRow>[]>(() => [
-  { key: 'command', prop: 'command', title: t('redisInfo.command'), minWidth: 160 },
-  {
-    key: 'calls',
-    prop: 'calls',
-    title: t('redisInfo.cmdCalls'),
-    width: 120,
-    align: 'right',
-    formatter: row => formatStatNum(row.calls),
-  },
-  {
-    key: 'usec',
-    prop: 'usec',
-    title: t('redisInfo.cmdUsec'),
-    headerTip: t('redisInfo.cmdUsecTip'),
-    width: 150,
-    align: 'right',
-    formatter: row => formatStatNum(row.usec),
-  },
-  {
-    key: 'avg',
-    prop: 'avg',
-    title: t('redisInfo.cmdAvg'),
-    headerTip: t('redisInfo.cmdAvgTip'),
-    width: 150,
-    align: 'right',
-    formatter: row => formatStatAvg(row.avg),
-  },
-  {
-    key: 'rejected',
-    prop: 'rejected',
-    title: t('redisInfo.cmdRejected'),
-    headerTip: t('redisInfo.cmdRejectedTip'),
-    width: 120,
-    align: 'right',
-    formatter: row => formatStatNum(row.rejected),
-    sortMethod: (a, b) => compareNullable(a.rejected, b.rejected),
-  },
-  {
-    key: 'failed',
-    prop: 'failed',
-    title: t('redisInfo.cmdFailed'),
-    headerTip: t('redisInfo.cmdFailedTip'),
-    width: 120,
-    align: 'right',
-    formatter: row => formatStatNum(row.failed),
-    sortMethod: (a, b) => compareNullable(a.failed, b.failed),
-  },
-])
 // #endregion
 </script>
 
@@ -952,19 +840,8 @@ const cmdstatColumns = computed<MeColumn<CommandStatRow>[]>(() => [
     <template #title-extra>
       <el-text type="info" class="cmdstat-scope">{{ cmdstatScopeLabel }}</el-text>
     </template>
-    <div class="cmdstat-dialog">
-      <me-table
-        :data="cmdstatRows"
-        :columns="cmdstatColumns"
-        :default-sort="{ prop: 'usec', order: 'descending' }"
-        export-name="commandstats">
-        <template v-if="cmdstatNote" #footer-center>
-          <div class="cmdstat-note">
-            <me-overflow-text :content="cmdstatNote" />
-          </div>
-        </template>
-      </me-table>
-    </div>
+    <CommandStats v-if="cmdstatScope === 'masters'" :sources="cmdstatSources" />
+    <CommandStats v-else :info="raw" />
   </me-dialog>
 
   <me-dialog
@@ -1266,19 +1143,9 @@ const cmdstatColumns = computed<MeColumn<CommandStatRow>[]>(() => [
   padding: 4px 2px 12px;
 }
 
-/* 弹窗 append-to-body，样式不能挂在 .redis-info 下面 */
+/* 标题补充在弹窗 header 上，弹窗 append-to-body，不能挂在 .redis-info 下面 */
 .cmdstat-scope {
   margin-left: 8px;
-  font-size: 13px;
-}
-
-.cmdstat-dialog {
-  height: 100%;
-  min-height: 0;
-}
-
-.cmdstat-note {
-  color: var(--el-text-color-secondary);
   font-size: 13px;
 }
 </style>
