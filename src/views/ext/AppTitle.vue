@@ -48,13 +48,20 @@ const marginLeft = computed(() => {
   return isMacOSTahoePlus ? '80px' : '70px'
 })
 
-// 点击图标切换主题
-const toggleIcon = () => {
-  const nowTheme =
-    meTauri.settings.theme === 'system' ? meTauri.systemTheme : meTauri.settings.theme
-  const newTheme = nowTheme === 'light' ? 'dark' : 'light'
+// 当前生效主题：跟随系统时用系统主题，否则用设置值
+const effectiveTheme = computed(() =>
+  meTauri.settings.theme === 'system' ? meTauri.systemTheme : meTauri.settings.theme,
+)
+// 浅色太阳、深色月亮，表示当前主题
+const themeIcon = computed(() =>
+  effectiveTheme.value === 'dark' ? 'el-icon-moon' : 'el-icon-sunny',
+)
+
+// 在浅色 / 深色之间切换（跟随系统时按当前生效主题取反，并写成显式主题）
+const toggleTheme = () => {
+  const newTheme = effectiveTheme.value === 'light' ? 'dark' : 'light'
   meTauri.settings.theme = newTheme
-  meOk(newTheme)
+  meOk(newTheme === 'dark' ? t('setting.dark') : t('setting.light'))
 }
 
 // 点击名称切换语言或未来其他功能的快速测试验证
@@ -74,28 +81,27 @@ const toggleName = () => {
         icon="me-icon-redis-me"
         class="icon-btn"
         style="font-size: 16px"
-        @click="toggleIcon" />
+        @click="toggleTheme" />
       <div style="margin-left: 5px; font-size: 12px" @click="toggleName">RedisME</div>
     </div>
     <div class="title-right">
-      <!-- 只读/可写 -->
-      <me-icon
-        v-if="share.conn"
-        class="action-icon"
-        :icon="share.readonly ? 'me-icon-lock' : 'me-icon-unlock'"
-        :name="share.readonly ? t('appMain.readonly') : t('appMain.writable')"
-        :hint="true"
-        placement="bottom"
-        @click="changeReadonly" />
-      <!-- 设置：弹窗挂在 KeyHeader，兄弟组件间经 bus 通知打开 -->
-      <me-icon
-        class="action-icon"
-        icon="el-icon-setting"
-        :name="t('keyHeader.setting')"
-        :hint="true"
-        placement="bottom"
-        :style="{ marginRight: isMacOS ? '15px' : '-5px' }"
-        @click="bus.emit(OPEN_SETTING)" />
+      <!-- 功能图标单独成组，彼此间距大于到窗口按钮的距离 -->
+      <div class="title-actions">
+        <!-- 只读/可写 -->
+        <me-icon
+          v-if="share.conn"
+          class="action-icon"
+          :icon="share.readonly ? 'me-icon-lock' : 'me-icon-unlock'"
+          @click="changeReadonly" />
+        <!-- 深浅色：太阳=浅色，月亮=深色 -->
+        <me-icon class="action-icon" :icon="themeIcon" @click="toggleTheme" />
+        <!-- 设置：弹窗挂在 KeyHeader，兄弟组件间经 bus 通知打开 -->
+        <me-icon
+          class="action-icon"
+          icon="el-icon-setting"
+          :style="{ marginRight: isMacOS ? '15px' : '-5px' }"
+          @click="bus.emit(OPEN_SETTING)" />
+      </div>
       <div style="font-size: 12px" v-if="!isMacOS">
         <me-icon
           icon="me-icon-window-minimize"
@@ -131,7 +137,13 @@ const toggleName = () => {
     gap: 10px;
   }
 
-  /* 顶部栏功能图标（只读锁、设置） */
+  .title-actions {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+  }
+
+  /* 顶部栏功能图标（只读锁、深浅色、设置） */
   .action-icon {
     font-size: 16px;
     cursor: pointer;
