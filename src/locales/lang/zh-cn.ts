@@ -651,6 +651,7 @@ export default {
     done: '传输完成',
     cancelled: '已取消传输',
     progressTip: '成功 {ok} / 失败 {err} / 跳过 {skip} / 共 {total}',
+    copyFails: '复制失败明细',
     probeRestoreFail: '原样复制探测失败，请改用类型写入或检查 ACL：{message}',
     probeCommandFail: '类型写入探测失败：{message}',
     needScanOrDirect: '请先查看受影响键，或勾选直接匹配传输',

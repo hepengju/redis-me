@@ -122,7 +122,18 @@ pub fn migrate_keys_start(app: AppHandle, param: RedisMigrateParam) -> AnyResult
             Err(e) => {
                 // 启动后失败（如键列表为空）：用 err_count=1 让前端走失败摘要，不显示「成功 0」
                 warn!("migrate err: {e}");
-                emit_progress(&app_handle, &task_id, 0, 1, 1, 0, true, &e.to_string());
+                emit_progress(
+                    &app_handle,
+                    &task_id,
+                    0,
+                    1,
+                    1,
+                    0,
+                    true,
+                    "",
+                    "",
+                    &e.to_string(),
+                );
             }
         }
         drop(source);
@@ -177,22 +188,28 @@ fn run_migrate(
             ignore_count,
             false,
             &display,
+            "",
+            "",
         );
-        match if mode_command {
+        let (failed_key, failed_msg) = match if mode_command {
             migrate_one_command(source, target, &key, replace)
         } else {
             migrate_one_restore(source, target, &key, replace)
         } {
-            Ok(MigrateOne::Ok) => ok_count += 1,
-            Ok(MigrateOne::Skipped) => ignore_count += 1,
+            Ok(MigrateOne::Ok) => {
+                ok_count += 1;
+                (String::new(), String::new())
+            }
+            Ok(MigrateOne::Skipped) => {
+                ignore_count += 1;
+                (String::new(), String::new())
+            }
             Err(e) => {
                 warn!("migrate key err [{display}]: {e}");
                 err_count += 1;
-                if stop_on_error {
-                    break;
-                }
+                (display.clone(), e.to_string())
             }
-        }
+        };
         emit_progress(
             app_handle,
             &param.task_id,
@@ -202,7 +219,12 @@ fn run_migrate(
             ignore_count,
             false,
             &display,
+            &failed_key,
+            &failed_msg,
         );
+        if stop_on_error && !failed_msg.is_empty() {
+            break;
+        }
     }
 
     emit_progress(
@@ -213,6 +235,8 @@ fn run_migrate(
         total_count,
         ignore_count,
         true,
+        "",
+        "",
         "",
     );
     Ok(())
@@ -285,6 +309,8 @@ fn emit_progress(
     ignore_count: u64,
     finished: bool,
     current_key: &str,
+    error_key: &str,
+    error_message: &str,
 ) {
     let _ = app.emit(
         EVENT_MIGRATE,
@@ -296,6 +322,8 @@ fn emit_progress(
             ignore_count,
             finished,
             current_key: current_key.to_string(),
+            error_key: error_key.to_string(),
+            error_message: error_message.to_string(),
         },
     );
 }

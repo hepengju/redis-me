@@ -1175,6 +1175,12 @@ api_model!(MigrateEvent {
     finished: bool,
     #[serde(default)]
     current_key: String,
+    /// 本条是一次失败时的键名；任务级失败或非失败进度为空
+    #[serde(default)]
+    error_key: String,
+    /// 本条是一次失败时的原因（AppError JSON 或 Redis 原文）；否则为空
+    #[serde(default)]
+    error_message: String,
 });
 
 // ACL 用户详情（由 ACL GETUSER 结构化转换而来）

@@ -14,7 +14,15 @@ import type {
   ScanCursor,
 } from '@/types/tauri-specta'
 import { connsInGroupOrder, getConnIcon } from '@/utils/conn'
-import { meCommands, meConfirm, meOk, meWarn, sleep } from '@/utils/util'
+import {
+  formatSpectaErrorForUser,
+  meCommands,
+  meConfirm,
+  meCopy,
+  meOk,
+  meWarn,
+  sleep,
+} from '@/utils/util'
 
 type KeyMigrateOpenData = {
   /** 扩展入口锁定源连接 */
@@ -34,7 +42,12 @@ type MigrateProgressPayload = {
   totalCount: number
   finished: boolean
   currentKey?: string
+  /** 本条进度是一次失败时才有 */
+  errorKey?: string
+  errorMessage?: string
 }
+
+type MigrateFailure = { key: string; message: string }
 
 type KeyMigrateForm = {
   sourceConnId: string
@@ -72,6 +85,8 @@ const taskId = ref('')
 const formBusy = computed(() => migrating.value || loading.value || migrateDone.value)
 
 const progress = ref(emptyProgress())
+/** 失败键与原因，只供「复制失败明细」，不在对话框里展开 */
+const failures = ref<MigrateFailure[]>([])
 
 const initForm: KeyMigrateForm = {
   sourceConnId: '',
@@ -148,6 +163,7 @@ function open(data: KeyMigrateOpenData = {}) {
   migrateDone.value = false
   cancelledByUser.value = false
   progress.value = emptyProgress()
+  failures.value = []
   Object.assign(form.value, cloneDeep(initForm))
   sourceLocked.value = !!data.sourceLocked
   const keyList = data.keyList ?? []
@@ -224,6 +240,7 @@ async function doStartMigrate() {
 
     taskId.value = `migrate-${Date.now()}`
     progress.value = emptyProgress()
+    failures.value = []
     migrating.value = true
     cancelledByUser.value = false
 
@@ -241,6 +258,9 @@ async function doStartMigrate() {
         totalCount: p.totalCount,
         currentKey: p.currentKey || '',
         percentage,
+      }
+      if (p.errorMessage) {
+        failures.value.push({ key: p.errorKey || '', message: migrateFailText(p.errorMessage) })
       }
 
       if (p.finished) {
@@ -271,6 +291,21 @@ async function doStartMigrate() {
   } finally {
     loading.value = false
   }
+}
+
+/** Redis 客户端错误常带这段前缀，界面只留服务端原文 */
+function migrateFailText(raw: string) {
+  const text = formatSpectaErrorForUser(raw).trim()
+  const marker = 'signalled by the server: '
+  const i = text.indexOf(marker)
+  return i >= 0 ? text.slice(i + marker.length) : text
+}
+
+function copyFailures() {
+  const text = failures.value
+    .map(item => (item.key ? `${item.key}\t${item.message}` : item.message))
+    .join('\n')
+  meCopy(text)
 }
 
 async function cancelMigrate() {
@@ -526,51 +561,62 @@ const scanStatusText = computed(() => {
     </div>
 
     <template #footer>
-      <el-button v-if="migrating" type="warning" @click="cancelMigrate">{{
-        t('keyMigrate.cancelMigrate')
-      }}</el-button>
-      <el-button v-else-if="migrateDone" type="primary" @click="visible = false">{{
-        t('ok')
-      }}</el-button>
-      <el-button v-else @click="visible = false">{{ t('cancel') }}</el-button>
-
-      <template v-if="!migrating && !migrateDone && !checkedKeys && !form.migrateDirect">
-        <el-button type="primary" :loading="scanning" @click="startOrResumeScan" v-if="showScan">{{
-          t('keyBatch.showImpactKeys')
+      <div class="me-dialog-footer">
+        <el-button v-if="failures.length" link type="danger" @click="copyFailures">{{
+          t('keyMigrate.copyFails')
         }}</el-button>
-        <template v-else-if="scanning">
-          <el-button @click="cancelScan">{{ t('keyBatch.cancelScan') }}</el-button>
-          <el-button type="warning" @click="pauseScan">{{ t('keyMain.pauseScan') }}</el-button>
-        </template>
-        <template v-else-if="scanPaused && !scanFinished">
-          <el-button @click="cancelScan">{{ t('keyBatch.cancelScan') }}</el-button>
-          <el-button type="primary" @click="startOrResumeScan">{{
-            t('keyMain.resumeScan')
+        <div class="footer-btns">
+          <el-button v-if="migrating" type="warning" @click="cancelMigrate">{{
+            t('keyMigrate.cancelMigrate')
           }}</el-button>
-        </template>
-        <el-button
-          v-else
-          type="primary"
-          :loading="loading"
-          :disabled="startDisabled || !scanFinished || form.keyList.length === 0"
-          @click="startMigrate"
-          >{{
-            t('keyMigrate.start', { count: form.keyList.length }, form.keyList.length)
-          }}</el-button
-        >
-      </template>
-      <el-button
-        v-else-if="!migrating && !migrateDone"
-        type="primary"
-        :loading="loading"
-        :disabled="startDisabled"
-        @click="startMigrate"
-        >{{
-          checkedKeys
-            ? t('keyMigrate.start', { count: form.keyList.length }, form.keyList.length)
-            : t('keyMigrate.startDirect')
-        }}</el-button
-      >
+          <el-button v-else-if="migrateDone" type="primary" @click="visible = false">{{
+            t('ok')
+          }}</el-button>
+          <el-button v-else @click="visible = false">{{ t('cancel') }}</el-button>
+
+          <template v-if="!migrating && !migrateDone && !checkedKeys && !form.migrateDirect">
+            <el-button
+              type="primary"
+              :loading="scanning"
+              @click="startOrResumeScan"
+              v-if="showScan"
+              >{{ t('keyBatch.showImpactKeys') }}</el-button
+            >
+            <template v-else-if="scanning">
+              <el-button @click="cancelScan">{{ t('keyBatch.cancelScan') }}</el-button>
+              <el-button type="warning" @click="pauseScan">{{ t('keyMain.pauseScan') }}</el-button>
+            </template>
+            <template v-else-if="scanPaused && !scanFinished">
+              <el-button @click="cancelScan">{{ t('keyBatch.cancelScan') }}</el-button>
+              <el-button type="primary" @click="startOrResumeScan">{{
+                t('keyMain.resumeScan')
+              }}</el-button>
+            </template>
+            <el-button
+              v-else
+              type="primary"
+              :loading="loading"
+              :disabled="startDisabled || !scanFinished || form.keyList.length === 0"
+              @click="startMigrate"
+              >{{
+                t('keyMigrate.start', { count: form.keyList.length }, form.keyList.length)
+              }}</el-button
+            >
+          </template>
+          <el-button
+            v-else-if="!migrating && !migrateDone"
+            type="primary"
+            :loading="loading"
+            :disabled="startDisabled"
+            @click="startMigrate"
+            >{{
+              checkedKeys
+                ? t('keyMigrate.start', { count: form.keyList.length }, form.keyList.length)
+                : t('keyMigrate.startDirect')
+            }}</el-button
+          >
+        </div>
+      </div>
     </template>
   </el-dialog>
 </template>

@@ -662,6 +662,7 @@ export default {
     done: 'Transfer Done',
     cancelled: 'Transfer Cancelled',
     progressTip: 'OK {ok} / Fail {err} / Skip {skip} / Total {total}',
+    copyFails: 'Copy failures',
     probeRestoreFail: 'As-is probe failed; try Typed or check ACL: {message}',
     probeCommandFail: 'Typed probe failed: {message}',
     needScanOrDirect: 'Show impact keys first, or enable direct match transfer',
