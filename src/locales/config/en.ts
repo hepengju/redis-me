@@ -116,7 +116,7 @@ export const enConfigTip = {
   'repl-diskless-sync-delay':
     'Delay time (seconds) for waiting for more replica nodes to connect during diskless synchronization, default 5, setting to 0 starts transmission immediately',
   'repl-diskless-sync-max-replicas':
-    'Start synchronization in advance when the specified number of replica nodes connect during the diskless synchronization delay period, default 0 means no limit',
+    'During the diskless full-sync wait, start the transfer once this many replicas are connected. Default 0 means there is no such count, so Redis waits the full repl-diskless-sync-delay',
   'repl-diskless-load':
     'The way the replica node loads RDB data from the master node, optional disabled (default, store to disk first then load), swapdb (load in parallel in memory, requiring sufficient memory), on-empty-db (diskless load only when the database is empty)',
   'repl-ping-replica-period':
@@ -138,7 +138,7 @@ export const enConfigTip = {
   'replica-ignore-disk-write-errors':
     'Whether the replica node ignores errors when writing to disk fails, default no (crash), yes only logs a warning and executes the command',
   'replica-announced':
-    'Whether to announce this replica’s addressing to the master/topology via replica-announce-* and REPLCONF, default yes; not specific to Sentinel visibility',
+    'Whether Sentinel may announce this replica (sentinel replicas and clients). Default yes. no still allows promotion; set replica-priority 0 to prevent that. Addressing uses replica-announce-ip/port',
   'min-replicas-to-write':
     'Minimum number of online replica nodes required for the master node to accept writes, default 0 (disabled), need to be used with min-replicas-max-lag',
   'min-replicas-max-lag':
@@ -213,7 +213,7 @@ export const enConfigTip = {
   'aof-timestamp-enabled':
     'Whether to record timestamp annotations in AOF to support point-in-time recovery, default no, enabling may be incompatible with some AOF parsers',
   'shutdown-timeout':
-    'Upper bound (seconds) for graceful shutdown steps (e.g. replication catch-up); 0 uses the server default, shutdown still proceeds after timeout',
+    'Seconds to wait for replicas to catch up on shutdown; only applies when replicas exist. Default 10. 0 disables the wait. Shutdown continues after the timeout',
   'shutdown-on-sigint':
     'Shutdown behavior when receiving the SIGINT signal, optional default, save, nosave, now, force, can be combined (save and nosave cannot be used simultaneously)',
   'shutdown-on-sigterm':
@@ -225,7 +225,7 @@ export const enConfigTip = {
   'cluster-enabled':
     'Whether to enable Redis Cluster mode, default no, instances can join the cluster only after enabling',
   'cluster-config-file':
-    'Path to the cluster configuration file, automatically created and updated by Redis, cannot be edited manually, default nodes-6379.conf',
+    'Cluster node state file, created and updated by Redis; do not edit it by hand. Unset value is nodes.conf. The sample config uses nodes-6379.conf so instances on one host do not share a file',
   'cluster-node-timeout':
     'Cluster node timeout time (milliseconds), a node is marked as faulty if unreachable for more than this time, default 15000',
   'cluster-port':

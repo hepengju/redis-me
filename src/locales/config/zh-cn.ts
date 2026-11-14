@@ -86,7 +86,7 @@ export const zhConfigTip = {
   'repl-diskless-sync-delay':
     '无盘同步时，等待更多从节点连接的延迟时间（秒），默认 5，设为 0 立即开始传输',
   'repl-diskless-sync-max-replicas':
-    '无盘同步延迟期间，达到指定数量的从节点连接后提前开始同步，默认 0 表示不限制',
+    '无盘全量同步的等待期内，已连接副本数达到该值就提前开始传输。默认 0，表示不设这个数量，会等满 repl-diskless-sync-delay',
   'repl-diskless-load':
     '从节点加载主节点 RDB 数据的方式，可选 disabled（默认，先存储到磁盘再加载）、swapdb（内存中并行加载，需足够内存）、on-empty-db（仅空数据库时无盘加载）',
   'repl-ping-replica-period': '主节点向从节点发送 PING 的间隔时间（秒），默认 10',
@@ -107,7 +107,7 @@ export const zhConfigTip = {
   'replica-ignore-disk-write-errors':
     '从节点写入磁盘失败时是否忽略错误，默认 no（崩溃），yes 仅日志警告并执行命令',
   'replica-announced':
-    '是否通过 replica-announce-* 与 REPLCONF 向主节点/拓扑宣告本副本地址，默认 yes；与 Sentinel 展示无必然绑定',
+    '是否允许 Sentinel 公布这台副本（sentinel replicas 及对客户端的展示）。默认 yes。设为 no 仍可能被提升为主节点，若不希望提升请把 replica-priority 设为 0。地址宣告是 replica-announce-ip/port',
   'min-replicas-to-write':
     '主节点接受写入所需的最小在线从节点数量，默认 0（禁用），需与 min-replicas-max-lag 配合使用',
   'min-replicas-max-lag': '主节点接受写入时，从节点的最大延迟时间（秒），默认 10',
@@ -170,7 +170,7 @@ export const zhConfigTip = {
   'aof-timestamp-enabled':
     '是否在 AOF 中记录时间戳注释，支持按时间点恢复，默认 no，启用后可能与部分 AOF 解析器不兼容',
   'shutdown-timeout':
-    '优雅关闭阶段的最长等待时间（秒），用于复制追赶等收尾，超时后仍会继续关闭，默认 0 表示使用内置默认',
+    '关闭时等待副本追上复制的最长时间（秒），仅在有副本时生效。默认 10。0 表示不等待。超时后仍会继续关闭',
   'shutdown-on-sigint':
     '接收 SIGINT 信号时的关闭行为，可选 default（默认）、save、nosave、now、force，可组合（save 和 nosave 不可同时使用）',
   'shutdown-on-sigterm': '接收 SIGTERM 信号时的关闭行为，可选值同 shutdown-on-sigint，默认 default',
@@ -179,7 +179,7 @@ export const zhConfigTip = {
   'busy-reply-threshold': '与 lua-time-limit 功能相同，为兼容旧配置的别名，默认 5000',
   'cluster-enabled': '是否启用 Redis Cluster 模式，默认 no，启用后实例才可加入集群',
   'cluster-config-file':
-    '集群配置文件路径，由 Redis 自动创建和更新，不可手动编辑，默认 nodes-6379.conf',
+    '集群节点状态文件路径，由 Redis 自动创建和更新，不要手改。未配置时为 nodes.conf。官方示例常写成 nodes-6379.conf，避免同机多实例共用一个文件',
   'cluster-node-timeout': '集群节点超时时间（毫秒），节点不可达超过此时间则标记为故障，默认 15000',
   'cluster-port':
     '集群总线监听端口，默认 0（命令端口 + 10000），手动配置后需在 cluster meet 命令中指定',
