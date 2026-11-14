@@ -1,5 +1,5 @@
 <script setup lang="ts">
-// 命令画像：把已经取回的 INFO commandstats 画成表。不发命令。
+// 命令统计：把已经取回的 INFO commandstats 画成表。不发命令。
 // 传入 sources 时合计这些节点（调用方决定给哪些，信息页只给主节点）；否则解析 info。
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'

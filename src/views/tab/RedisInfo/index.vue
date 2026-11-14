@@ -29,7 +29,7 @@ import RedisClient from './RedisClient.vue'
 import RedisConfig from './RedisConfig.vue'
 // #endregion
 
-// Info 页：INFO all 原文 → 字典/标签表（含 commandstats / latencystats）；弹窗挂 Client / ACL / Config / 命令画像 / 延迟分位。图表不走这条。
+// Info 页：INFO all 原文 → 字典/标签表（含 commandstats / latencystats）；弹窗挂 Client / ACL / Config / 命令统计 / 延迟分位。图表不走这条。
 
 // #region 共享上下文
 const { t } = useI18n()
@@ -63,7 +63,7 @@ const dialog = reactive({
   cmdstat: false,
   latency: false,
 })
-/** 命令画像范围：参数详情看当前节点；节点概览只合计主节点 */
+/** 命令统计范围：参数详情看当前节点；节点概览只合计主节点 */
 const cmdstatScope = ref<'node' | 'masters'>('node')
 /** 延迟分位范围：参数详情看当前节点；节点概览取各主节点的最大分位 */
 const latencyScope = ref<'node' | 'masters'>('node')
@@ -511,7 +511,7 @@ function onOverviewRowClick(row: OverviewRow) {
 }
 // #endregion
 
-// #region 命令画像
+// #region 命令统计
 // 参数详情传当前节点原文。节点概览只传主节点（副本会再计一遍同步来的写命令）。表格在 CommandStats。
 function openCmdstat(scope: 'node' | 'masters') {
   cmdstatScope.value = scope
@@ -746,7 +746,7 @@ const latencyScopeLabel = computed(() =>
                   </me-overflow-text>
                 </div>
               </template>
-              <!-- 拓扑、图表、命令画像、延迟分位：紧挨更多菜单 -->
+              <!-- 拓扑、图表、命令统计、延迟分位：紧挨更多菜单 -->
               <template #footer>
                 <me-icon
                   class="icon-btn info-footer-icon"
@@ -823,7 +823,7 @@ const latencyScopeLabel = computed(() =>
                 :keyword="keyword"
                 :columns="infoColumns"
                 export-name="info">
-                <!-- 官网在左，原文、命令画像、延迟分位紧挨更多菜单 -->
+                <!-- 官网在左，原文、命令统计、延迟分位紧挨更多菜单 -->
                 <template #footer>
                   <me-website to="info" />
                   <me-icon
@@ -856,7 +856,7 @@ const latencyScopeLabel = computed(() =>
     </div>
   </div>
 
-  <!-- 本域弹窗：原文 / 命令画像 / 延迟分位 / Client / ACL / Config -->
+  <!-- 本域弹窗：原文 / 命令统计 / 延迟分位 / Client / ACL / Config -->
   <me-dialog v-model="dialog.raw" icon="el-icon-tickets" title="Info" width="60vw">
     <!-- 单向绑定：弹窗里改字不写回，关掉即丢 -->
     <me-code :modelValue="raw" mode="properties" />
