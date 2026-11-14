@@ -43,7 +43,8 @@ export const enInfoTip = {
   uptime_in_days: 'Same value expressed in days',
   hz: "The server's current frequency setting",
   configured_hz: "The server's configured frequency setting",
-  lru_clock: 'Clock incrementing every minute, for LRU management',
+  lru_clock:
+    'Clock for LRU management, about 1 second resolution (low 24 bits of the current Unix time in seconds)',
   executable: "The path to the server's executable",
   config_file: 'The path to the config file',
   io_threads_active: 'Flag indicating if I/O threads are active',
@@ -62,6 +63,8 @@ export const enInfoTip = {
     'Number of clients in pubsub mode (SUBSCRIBE, PSUBSCRIBE, SSUBSCRIBE). Added in Redis 7.4',
   watching_clients: 'Number of clients in watching mode (WATCH). Added in Redis 7.4',
   clients_in_timeout_table: 'Number of clients in the clients timeout table',
+  active_clients:
+    'Clients with recent read activity (each client counted at most once in a sliding window). Added in Redis 8.8',
   total_watched_keys: 'Number of watched keys. Added in Redis 7.4',
   total_blocking_keys: 'Number of blocking keys. Added in Redis 7.2',
   total_blocking_keys_on_nokey:
@@ -105,6 +108,8 @@ export const enInfoTip = {
   used_memory_scripts:
     'used_memory_scripts_eval + used_memory_functions (part of used_memory). Added in Redis 7.0',
   used_memory_scripts_human: 'Human readable representation of previous value',
+  used_memory_hash_templates:
+    'Total memory in bytes used by all compact hash templates (the shared template registry). Added in Redis 8.10',
   maxmemory: 'The value of the maxmemory configuration directive',
   maxmemory_human: 'Human readable representation of previous value',
   maxmemory_policy: 'The value of the maxmemory-policy configuration directive',
@@ -134,7 +139,12 @@ export const enInfoTip = {
     "Used memory that's not counted for key eviction. This is basically transient replica and AOF buffers",
   mem_clients_slaves:
     "Memory used by replica clients - Starting Redis 7.0, replica buffers share memory with the replication backlog, so this field can show 0 when replicas don't trigger an increase of memory usage",
-  mem_clients_normal: 'Memory used by normal clients',
+  mem_clients_normal:
+    'Memory actually used by normal clients. Since Redis 8.10 this includes unshared referenced replies and excludes bytes shared with the keyspace (see mem_clients_normal_shared)',
+  mem_clients_normal_shared:
+    'Aggregate shared output-buffer bytes on normal clients (zero-copy replies still owned by the keyspace; excluded from mem_clients_normal to avoid double-counting)',
+  mem_clients_normal_unshared:
+    'Aggregate unshared output-buffer bytes on normal clients (referenced replies whose keys were deleted; freed when the client disconnects or consumes them)',
   mem_cluster_links:
     'Memory used by links to peers on the cluster bus when cluster mode is enabled',
   mem_cluster_slot_migration_output_buffer:
@@ -188,6 +198,7 @@ export const enInfoTip = {
   aof_last_write_status: 'Status of the last write operation to the AOF',
   aof_last_cow_size:
     'The size in bytes of copy-on-write memory during the last AOF rewrite operation',
+  backup_in_progress: 'Flag indicating a BACKUP is in progress. Added in Redis 8.10',
   module_fork_in_progress: 'Flag indicating a module fork is on-going',
   module_fork_last_cow_size:
     'The size in bytes of copy-on-write memory during the last module fork operation',
@@ -240,9 +251,10 @@ export const enInfoTip = {
   sync_partial_err: 'The number of denied partial resync requests',
   expired_subkeys: 'The number of hash field expiration events',
   expired_subkeys_active:
-    'Hash field expirations being processed in the current active expiry cycle',
+    'Hash fields deleted by the active expire cycle since startup (cumulative; a subset of expired_subkeys)',
   expired_keys: 'Total number of key expiration events',
-  expired_keys_active: 'Key expirations being processed in the current active expiry cycle',
+  expired_keys_active:
+    'Keys deleted by the active expire cycle since startup (cumulative; a subset of expired_keys). The rest are deleted on access',
   expired_stale_perc: 'The percentage of keys probably expired',
   expired_time_cap_reached_count: 'The count of times that active expiry cycles have stopped early',
   expire_cycle_cpu_milliseconds: 'The cumulative amount of time spent on active expiry cycles',
@@ -256,6 +268,9 @@ export const enInfoTip = {
     'The time passed since used_memory last rose above maxmemory, in milliseconds',
   keyspace_hits: 'Number of successful lookup of keys in the main dictionary',
   keyspace_misses: 'Number of failed lookup of keys in the main dictionary',
+  hash_templates:
+    'Number of distinct compact hash templates in the shared registry. Added in Redis 8.10',
+  hash_template_keys: 'Total number of keys backed by a compact hash template. Added in Redis 8.10',
   pubsub_channels: 'Global number of pub/sub channels with client subscriptions',
   pubsub_patterns: 'Global number of pub/sub pattern with client subscriptions',
   pubsubshard_channels:
@@ -310,6 +325,25 @@ export const enInfoTip = {
   instantaneous_eventloop_cycles_per_sec: 'Number of eventloop cycles per second',
   instantaneous_eventloop_duration_usec:
     'Average time spent in a single eventloop cycle in microseconds',
+  eventloop_cycles_with_clients_processing:
+    'Event loop cycles where client input buffers were processed. Added in Redis 8.8',
+  total_client_processing_events:
+    'Attempts to process client input buffers; does not guarantee a command was parsed. Added in Redis 8.8',
+  avg_pipeline_length_sum:
+    'Cumulative number of commands parsed across all parsing batches for all clients. Added in Redis 8.8',
+  avg_pipeline_length_cnt:
+    'Number of parsing batches; a batch is counted when at least one command is parsed from a client query buffer. Added in Redis 8.8',
+  avg_pipeline_length:
+    'Average commands parsed per batch (sum/cnt). Approximates pipelining depth. Added in Redis 8.8',
+  commands_per_parse_batch_sum: 'Same as avg_pipeline_length_sum (renamed in later Redis 8.x)',
+  commands_per_parse_batch_cnt: 'Same as avg_pipeline_length_cnt (renamed in later Redis 8.x)',
+  commands_per_parse_batch_avg: 'Same as avg_pipeline_length (renamed in later Redis 8.x)',
+  slowlog_commands_count:
+    'Commands written to the slowlog, including entries later trimmed. Added in Redis 8.8',
+  slowlog_commands_time_ms_sum:
+    'Sum of execution times of commands from the slowlog, in milliseconds. Added in Redis 8.8',
+  slowlog_commands_time_ms_max:
+    'Maximum execution time of a command from the slowlog, in milliseconds. Added in Redis 8.8',
   acl_access_denied_auth: 'Number of authentication failures',
   acl_access_denied_cmd: 'Number of commands rejected because of access denied to the command',
   acl_access_denied_key: 'Number of commands rejected because of access denied to a key',
@@ -333,7 +367,7 @@ export const enInfoTip = {
   master_link_status: 'Status of the link (up/down)',
   master_last_io_seconds_ago: 'Number of seconds since the last interaction with master',
   master_sync_in_progress:
-    'Whether this replica is currently syncing from its master (full or partial resync)',
+    '1 while this replica is receiving the full-sync RDB. 0 during incremental replication and partial resync',
   master_current_sync_attempts:
     'Sync attempts since the last stable master link (or replica config change); >1 while link is up often means repeated handshakes or instability',
   master_total_sync_attempts:
@@ -341,8 +375,9 @@ export const enInfoTip = {
   master_link_up_since_seconds: 'Seconds since the replication link last became up',
   master_client_io_thread:
     'I/O thread id for the replica→master replication client connection (when io-threads are enabled)',
-  slave_read_repl_offset: 'The read replication offset of the replica instance',
-  slave_repl_offset: 'The replication offset of the replica instance',
+  slave_read_repl_offset:
+    'Replication offset the replica has read from the master (may not be applied to the dataset yet)',
+  slave_repl_offset: 'Replication offset the replica has applied to the dataset',
   replica_full_sync_buffer_size: 'Current size (bytes) of the replica-side buffer during full sync',
   replica_full_sync_buffer_peak: 'Peak size (bytes) of that full-sync replica buffer',
   total_disconnect_time_sec:
@@ -351,7 +386,7 @@ export const enInfoTip = {
   slave_read_only: 'Flag indicating if the replica is read-only',
   replica_read_only: 'Same as slave_read_only (newer INFO key name)',
   replica_announced:
-    'Whether the replica announces its addressing to the master/topology (REPLCONF; replica-announce-*)',
+    'Whether Sentinel announces this replica to clients (replica-announced). Address announcement is replica-announce-ip/port, not this field',
   master_sync_total_bytes:
     'Total number of bytes that need to be transferred. May be 0 when the size is unknown (e.g. repl-diskless-sync)',
   master_sync_read_bytes: 'Number of bytes already transferred',
@@ -367,14 +402,19 @@ export const enInfoTip = {
   min_slaves_good_slaves: 'Number of replicas currently considered good',
   slaveXXX: 'id, IP address, port, state, offset, lag',
   used_cpu_sys:
-    'System CPU consumed by the Redis server, which is the sum of system CPU consumed by all threads of the server process (main thread and background threads)',
+    'System CPU consumed by the Redis server, summed across all threads (main and background). Cumulative seconds since start, not a percentage',
   used_cpu_user:
-    'User CPU consumed by the Redis server, which is the sum of user CPU consumed by all threads of the server process (main thread and background threads)',
-  used_cpu_sys_children: 'System CPU consumed by the background processes',
-  used_cpu_user_children: 'User CPU consumed by the background processes',
-  used_cpu_sys_main_thread: 'System CPU consumed by the Redis server main thread',
-  used_cpu_user_main_thread: 'User CPU consumed by the Redis server main thread',
-  cmdstat_XXX: 'calls=XXX,usec=XXX,usec_per_call=XXX,rejected_calls=XXX,failed_calls=XXX',
+    'User CPU consumed by the Redis server, summed across all threads (main and background). Cumulative seconds since start, not a percentage',
+  used_cpu_sys_children:
+    'System CPU consumed by the background processes. Cumulative seconds since start, not a percentage',
+  used_cpu_user_children:
+    'User CPU consumed by the background processes. Cumulative seconds since start, not a percentage',
+  used_cpu_sys_main_thread:
+    'System CPU consumed by the Redis server main thread. Cumulative seconds since start, not a percentage',
+  used_cpu_user_main_thread:
+    'User CPU consumed by the Redis server main thread. Cumulative seconds since start, not a percentage',
+  cmdstat_XXX:
+    'Per-command totals: calls reached execution, usec is total CPU microseconds, usec_per_call is the average, rejected_calls were rejected before execution, failed_calls failed during execution. Slowlog hits may also include slowlog_count, slowlog_time_ms_sum, and slowlog_time_ms_max (Redis 8.8)',
   latency_percentiles_usec_XXX:
     'p<percentile 1>=<percentile 1 value>,p<percentile 2>=<percentile 2 value>,...',
   errorstat_XXX: 'count=XXX',

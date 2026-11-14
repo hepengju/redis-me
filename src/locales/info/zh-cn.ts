@@ -43,7 +43,7 @@ export const zhInfoTip = {
   uptime_in_days: '相同值以天表示',
   hz: '服务器当前频率设置',
   configured_hz: '服务器配置的频率设置',
-  lru_clock: '每分钟递增的时钟，用于 LRU 管理',
+  lru_clock: '用于 LRU 管理的时钟，分辨率约 1 秒（当前 Unix 秒的低 24 位）',
   executable: '服务器可执行文件的路径',
   config_file: '配置文件的路径',
   io_threads_active: '标志，表示 I/O 线程是否活跃',
@@ -62,6 +62,7 @@ export const zhInfoTip = {
     '处于发布/订阅模式的客户端数量 (SUBSCRIBE, PSUBSCRIBE, SSUBSCRIBE)。在 Redis 7.4 中添加',
   watching_clients: '处于 WATCH 模式的客户端数量 (WATCH)。在 Redis 7.4 中添加',
   clients_in_timeout_table: '客户端超时表中的客户端数量',
+  active_clients: '近期有读活动的客户端数量（滑动窗口内每个客户端最多计一次）。在 Redis 8.8 中添加',
   total_watched_keys: '被监视键的数量。在 Redis 7.4 中添加',
   total_blocking_keys: '阻塞键的数量。在 Redis 7.2 中添加',
   total_blocking_keys_on_nokey:
@@ -100,6 +101,7 @@ export const zhInfoTip = {
   used_memory_scripts:
     'used_memory_scripts_eval + used_memory_functions（属于 used_memory）。在 Redis 7.0 中添加',
   used_memory_scripts_human: '上一个值的易读表示',
+  used_memory_hash_templates: '所有紧凑哈希模板（共享模板表）占用的总字节数。在 Redis 8.10 中添加',
   maxmemory: 'maxmemory 配置指令的值',
   maxmemory_human: '上一个值的易读表示',
   maxmemory_policy: 'maxmemory-policy 配置指令的值',
@@ -126,7 +128,12 @@ export const zhInfoTip = {
   mem_not_counted_for_evict: '不计入键逐出的已用内存。这基本上是临时的副本和 AOF 缓冲区',
   mem_clients_slaves:
     '副本客户端使用的内存 - 从 Redis 7.0 开始，副本缓冲区与复制积压共享内存，因此当副本未触发内存使用量增加时，此字段可能显示 0',
-  mem_clients_normal: '普通客户端使用的内存',
+  mem_clients_normal:
+    '普通客户端实际占用的内存。Redis 8.10 起含 unshared 引用回复，不含与键空间共享的部分（见 mem_clients_normal_shared）',
+  mem_clients_normal_shared:
+    '普通客户端输出缓冲中、与键空间共享的零拷贝引用回复字节合计（不计入 mem_clients_normal，避免与数据集重复计算）',
+  mem_clients_normal_unshared:
+    '普通客户端输出缓冲中、仅由客户端持有的引用回复字节合计（对应键已从键空间删除，断开连接或消费完毕后释放）',
   mem_cluster_links: '启用集群模式时，集群总线上连接到对等节点的链接使用的内存',
   mem_cluster_slot_migration_output_buffer:
     '槽迁移：源节点迁移客户端输出缓冲（暂存迁出中的写增量）',
@@ -170,6 +177,7 @@ export const zhInfoTip = {
   aof_last_bgrewrite_status: '上次 AOF 重写操作的状态',
   aof_last_write_status: '上次写入 AOF 操作的状态',
   aof_last_cow_size: '上次 AOF 重写操作期间写时复制内存的大小（字节）',
+  backup_in_progress: '标志，表示 BACKUP 是否正在进行。在 Redis 8.10 中添加',
   module_fork_in_progress: '标志，表示模块 fork 操作正在进行',
   module_fork_last_cow_size: '上次模块 fork 操作期间写时复制内存的大小（字节）',
   aof_rewrites: '自启动以来执行的 AOF 重写次数',
@@ -209,9 +217,11 @@ export const zhInfoTip = {
   sync_partial_ok: '接受的部分同步请求次数',
   sync_partial_err: '拒绝的部分同步请求次数',
   expired_subkeys: '哈希字段过期事件的数量',
-  expired_subkeys_active: '当前主动过期周期中正在处理的子键（字段）过期数量',
+  expired_subkeys_active:
+    '启动以来由主动过期循环删除的哈希字段数量（累计，是 expired_subkeys 的子集）',
   expired_keys: '键过期事件总数',
-  expired_keys_active: '当前主动过期周期中正在处理的键过期数量',
+  expired_keys_active:
+    '启动以来由主动过期循环删除的键数量（累计，是 expired_keys 的子集；其余为访问时顺带删除）',
   expired_stale_perc: '可能过期的键的百分比',
   expired_time_cap_reached_count: '主动过期周期提前停止的次数',
   expire_cycle_cpu_milliseconds: '主动过期周期累积花费的时间（毫秒）',
@@ -223,6 +233,8 @@ export const zhInfoTip = {
   current_eviction_exceeded_time: '自 used_memory 上次超过 maxmemory 以来经过的时间（毫秒）',
   keyspace_hits: '在主字典中成功查找键的数量',
   keyspace_misses: '在主字典中查找键失败的数量',
+  hash_templates: '共享表中不同紧凑哈希模板的数量。在 Redis 8.10 中添加',
+  hash_template_keys: '由紧凑哈希模板支撑的键总数。在 Redis 8.10 中添加',
   pubsub_channels: '具有客户端订阅的发布/订阅通道总数',
   pubsub_patterns: '具有客户端订阅的发布/订阅模式总数',
   pubsubshard_channels: '全局 pub/sub 分片通道数，包含客户端订阅。在 Redis 7.0.3 中添加',
@@ -262,6 +274,20 @@ export const zhInfoTip = {
   eventloop_duration_cmd_sum: '执行命令花费的总时间，单位为微秒',
   instantaneous_eventloop_cycles_per_sec: '每秒事件循环周期数',
   instantaneous_eventloop_duration_usec: '单个事件循环周期平均花费的时间，单位为微秒',
+  eventloop_cycles_with_clients_processing:
+    '处理过客户端输入缓冲的事件循环周期数。在 Redis 8.8 中添加',
+  total_client_processing_events:
+    '尝试处理客户端输入缓冲的次数（不保证实际解析出命令）。在 Redis 8.8 中添加',
+  avg_pipeline_length_sum: '所有客户端各次解析批次中解析出的命令数累计。在 Redis 8.8 中添加',
+  avg_pipeline_length_cnt:
+    '解析批次次数；某次从客户端查询缓冲中至少解析出一条命令即计 1 次。在 Redis 8.8 中添加',
+  avg_pipeline_length: '每次解析批次的平均命令数（sum/cnt），近似流水线深度。在 Redis 8.8 中添加',
+  commands_per_parse_batch_sum: '同 avg_pipeline_length_sum（较新版本的字段名）',
+  commands_per_parse_batch_cnt: '同 avg_pipeline_length_cnt（较新版本的字段名）',
+  commands_per_parse_batch_avg: '同 avg_pipeline_length（较新版本的字段名）',
+  slowlog_commands_count: '写入慢日志的命令次数（含后来被裁掉的条目）。在 Redis 8.8 中添加',
+  slowlog_commands_time_ms_sum: '慢日志中命令执行时间的累计（毫秒）。在 Redis 8.8 中添加',
+  slowlog_commands_time_ms_max: '慢日志中单条命令的最长执行时间（毫秒）。在 Redis 8.8 中添加',
   acl_access_denied_auth: '认证失败次数',
   acl_access_denied_cmd: '由于拒绝访问命令而被拒绝的命令数量',
   acl_access_denied_key: '由于拒绝访问键而被拒绝的命令数量',
@@ -282,7 +308,7 @@ export const zhInfoTip = {
   master_port: '主实例监听的 TCP 端口',
   master_link_status: '链接状态 (up/down)',
   master_last_io_seconds_ago: '自上次与主实例交互以来经过的秒数',
-  master_sync_in_progress: '副本是否正在从主节点进行同步（全量/增量载入中时为 1）',
+  master_sync_in_progress: '副本是否正在接收全量同步的 RDB（为 1）。增量复制和部分重同步期间为 0',
   master_current_sync_attempts:
     '自上次稳定连上主节点（或复制配置变更）以来，为建立/恢复同步而发起的尝试次数；链路已为 up 时若仍大于 1 多表示曾反复握手或不稳定',
   master_total_sync_attempts:
@@ -290,8 +316,8 @@ export const zhInfoTip = {
   master_link_up_since_seconds: '与主节点复制链路最近一次变为 up 以来持续的秒数',
   master_client_io_thread:
     '副本连向主节点的那条复制客户端连接所绑定的 I/O 线程 ID（启用 io-threads 时）',
-  slave_read_repl_offset: '副本实例的读取复制偏移量',
-  slave_repl_offset: '副本实例的复制偏移量',
+  slave_read_repl_offset: '副本已从主节点读到的复制偏移（可能尚未应用到数据集）',
+  slave_repl_offset: '副本已应用到数据集的复制偏移',
   replica_full_sync_buffer_size: '全量同步期间副本端复制流缓冲当前大小（字节）',
   replica_full_sync_buffer_peak: '全量同步期间上述缓冲的峰值（字节）',
   total_disconnect_time_sec: '与主节点复制链路处于断开（down）状态的累计秒数，用于评估链路稳定性',
@@ -299,7 +325,7 @@ export const zhInfoTip = {
   slave_read_only: '指示副本是否为只读的标志',
   replica_read_only: '副本是否只读（与 slave_read_only 同义，新字段名）',
   replica_announced:
-    '副本是否向主节点/拓扑宣告自身地址（REPLCONF，与 replica-announce-* 等配置相关）',
+    'Sentinel 是否对外公布这台副本（配置 replica-announced）。地址宣告是 replica-announce-ip/port，不是这个字段',
   master_sync_total_bytes:
     '需要传输的总字节数。当大小未知时（例如，使用 repl-diskless-sync 配置指令时），此值可能为 0',
   master_sync_read_bytes: '已传输的字节数',
@@ -313,15 +339,15 @@ export const zhInfoTip = {
   min_slaves_good_slaves: '当前被认为“良好”的副本数量',
   slaveXXX: 'id, IP 地址, 端口, 状态, 偏移量, 延迟',
   used_cpu_sys:
-    'Redis 服务器消耗的系统 CPU，是服务器进程所有线程（主线程和后台线程）消耗的系统 CPU 之和',
+    'Redis 服务器消耗的系统 CPU，是所有线程（主线程和后台线程）之和。单位为启动以来的累计秒，不是百分比',
   used_cpu_user:
-    'Redis 服务器消耗的用户 CPU，是服务器进程所有线程（主线程和后台线程）消耗的用户 CPU 之和',
-  used_cpu_sys_children: '后台进程消耗的系统 CPU',
-  used_cpu_user_children: '后台进程消耗的用户 CPU',
-  used_cpu_sys_main_thread: 'Redis 服务器主线程消耗的系统 CPU',
-  used_cpu_user_main_thread: 'Redis 服务器主线程消耗的用户 CPU',
+    'Redis 服务器消耗的用户 CPU，是所有线程（主线程和后台线程）之和。单位为启动以来的累计秒，不是百分比',
+  used_cpu_sys_children: '后台进程消耗的系统 CPU。单位为启动以来的累计秒，不是百分比',
+  used_cpu_user_children: '后台进程消耗的用户 CPU。单位为启动以来的累计秒，不是百分比',
+  used_cpu_sys_main_thread: 'Redis 服务器主线程消耗的系统 CPU。单位为启动以来的累计秒，不是百分比',
+  used_cpu_user_main_thread: 'Redis 服务器主线程消耗的用户 CPU。单位为启动以来的累计秒，不是百分比',
   cmdstat_XXX:
-    '每类命令的累计统计（格式 calls=…,usec=…,usec_per_call=…,rejected_calls=…,failed_calls=…；XXX 为命令名）',
+    '该命令的累计统计：calls 执行次数，usec 总 CPU 微秒，usec_per_call 平均，rejected_calls 执行前被拒，failed_calls 执行中失败。进入过慢日志时还可有 slowlog_count、slowlog_time_ms_sum、slowlog_time_ms_max（Redis 8.8 起）',
   latency_percentiles_usec_XXX: '命令延迟百分位（微秒），形如 p<分位1>=<值1>,p<分位2>=<值2>,…',
   errorstat_XXX: '各类错误事件累计次数（格式 count=XXX）',
   sentinel_masters: '此 Sentinel 实例监控的 Redis 主实例数量',

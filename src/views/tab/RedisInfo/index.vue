@@ -14,7 +14,7 @@ import { useI18n } from 'vue-i18n'
 
 import type { MeColumn } from '@/components/me-table-column'
 import MeOverflowText from '@/components/MeOverflowText.vue'
-import { infoTip as tips } from '@/locales/info'
+import { infoTip as tips, lookupInfoTip } from '@/locales/info'
 import { shareProvideKey } from '@/types/me-interface'
 import type { RedisInfo } from '@/types/tauri-specta'
 import type { MasterStatSource } from '@/utils/command-stats'
@@ -191,7 +191,7 @@ const infoColumns = computed<MeColumn<InfoRow>[]>(() => [
     minWidth: 200,
     // 灰色加在单元格节点（而非内部 span）：截断省略号与文字同色继承
     className: 'col-tip-info',
-    formatter: row => tipMap.value[row.key] ?? '',
+    formatter: row => lookupInfoTip(tipMap.value, row.key),
     searchable: true,
   },
 ])
