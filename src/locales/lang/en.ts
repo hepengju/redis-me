@@ -906,6 +906,23 @@ export default {
     cmdUptimeHours: '{n}h',
     cmdUptimeMinutes: '{n}m',
     cmdUptimeUnderMinute: '<1m',
+    latencyProfile: 'Latency Percentiles',
+    latencyProfileNode: "This node's latency percentiles",
+    latencyUsecTip: 'Blank when this percentile is absent, not zero',
+    latencyNote:
+      'p50 is the median; p99 means only 1% of calls were slower. This is the per-call latency distribution, not cumulative time',
+    latencyEmptyOld: 'Latencystats starts in Redis 7. This server is {version}',
+    latencyEmptyMissing: 'This INFO has no Latencystats section (Redis 7+)',
+    latencyEmptyBlank:
+      'No latency samples. The section is empty when latency-tracking is off, and stays empty until commands have run',
+    latencyProfileMasters: 'Master latency percentiles',
+    latencyScopeMasters: 'Worst among masters',
+    latencyMasterNote:
+      'Each percentile is the worst value among masters. Replicas are not included. Samples accumulate since each process started, so the windows differ',
+    latencyUsecTipMasters:
+      'Worst value among masters. A node that did not report this percentile is skipped, not treated as zero',
+    latencyNoSamples: '{label} no samples',
+    latencyMastersMissing: 'Master INFO is missing',
   },
 
   redisMemory: {

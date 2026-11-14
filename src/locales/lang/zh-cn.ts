@@ -893,6 +893,20 @@ export default {
     cmdUptimeHours: '{n}小时',
     cmdUptimeMinutes: '{n}分钟',
     cmdUptimeUnderMinute: '不足1分钟',
+    latencyProfile: '延迟分位',
+    latencyProfileNode: '当前节点延迟分位',
+    latencyUsecTip: '没有这个分位则留空，不当成 0',
+    latencyNote: 'p50 是中位数；p99 表示只有 1% 的调用更慢。这是单次延迟的分布，不是累计耗时',
+    latencyEmptyOld: 'Redis 7 起才有 Latencystats，当前版本是 {version}',
+    latencyEmptyMissing: 'INFO 里没有 Latencystats 段（Redis 7 起才有）',
+    latencyEmptyBlank:
+      '没有延迟采样。latency-tracking 关闭时这段为空；开启后要等命令执行才会出现分位',
+    latencyProfileMasters: '主节点延迟分位',
+    latencyScopeMasters: '主节点最差',
+    latencyMasterNote: '各分位取主节点中的最大值，不含副本。样本从各自进程启动起累计，启动时间不同',
+    latencyUsecTipMasters: '各主节点中的最大值。没有上报的节点跳过，不当成 0',
+    latencyNoSamples: '{label} 无延迟采样',
+    latencyMastersMissing: '主节点 INFO 没有回来',
   },
 
   redisMemory: {

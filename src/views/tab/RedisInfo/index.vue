@@ -23,12 +23,13 @@ import { enrichNodeList } from '@/utils/redis-display'
 import { bus, INFO_REFRESH, meCommands, meCommandsQuiet, meHumanSize } from '@/utils/util'
 
 import CommandStats from './CommandStats.vue'
+import LatencyStats from './LatencyStats.vue'
 import RedisACL from './RedisACL.vue'
 import RedisClient from './RedisClient.vue'
 import RedisConfig from './RedisConfig.vue'
 // #endregion
 
-// Info 页：INFO all 原文 → 字典/标签表（含 commandstats / latencystats）；弹窗挂 Client / ACL / Config / 命令画像。图表不走这条。
+// Info 页：INFO all 原文 → 字典/标签表（含 commandstats / latencystats）；弹窗挂 Client / ACL / Config / 命令画像 / 延迟分位。图表不走这条。
 
 // #region 共享上下文
 const { t } = useI18n()
@@ -60,9 +61,12 @@ const dialog = reactive({
   acl: false,
   topology: false,
   cmdstat: false,
+  latency: false,
 })
 /** 命令画像范围：参数详情看当前节点；节点概览只合计主节点 */
 const cmdstatScope = ref<'node' | 'masters'>('node')
+/** 延迟分位范围：参数详情看当前节点；节点概览取各主节点的最大分位 */
+const latencyScope = ref<'node' | 'masters'>('node')
 const loading = ref(false)
 const isCluster = computed(() => !!share.conn?.cluster)
 /** Valkey 用 server_mode，Redis 用 redis_mode */
@@ -514,6 +518,11 @@ function openCmdstat(scope: 'node' | 'masters') {
   dialog.cmdstat = true
 }
 
+function openLatency(scope: 'node' | 'masters') {
+  latencyScope.value = scope
+  dialog.latency = true
+}
+
 function currentNodeLabel(): string {
   const addr = node.value || infoNode.value
   const row = overviewRows.value.find(item => item.node === addr)
@@ -547,6 +556,10 @@ const cmdstatSources = computed((): MasterStatSource[] => {
 
 const cmdstatScopeLabel = computed(() =>
   cmdstatScope.value === 'masters' ? t('redisInfo.commandProfileScopeMasters') : currentNodeLabel(),
+)
+
+const latencyScopeLabel = computed(() =>
+  latencyScope.value === 'masters' ? t('redisInfo.latencyScopeMasters') : currentNodeLabel(),
 )
 // #endregion
 </script>
@@ -730,7 +743,7 @@ const cmdstatScopeLabel = computed(() =>
                   </template>
                 </span>
               </template>
-              <!-- 拓扑、图表、命令画像：紧挨更多菜单 -->
+              <!-- 拓扑、图表、命令画像、延迟分位：紧挨更多菜单 -->
               <template #footer>
                 <me-icon
                   class="icon-btn info-footer-icon"
@@ -753,6 +766,13 @@ const cmdstatScopeLabel = computed(() =>
                   hint
                   placement="top"
                   @click="openCmdstat('masters')" />
+                <me-icon
+                  class="icon-btn info-footer-icon"
+                  icon="el-icon-odometer"
+                  :name="t('redisInfo.latencyProfileMasters')"
+                  hint
+                  placement="top"
+                  @click="openLatency('masters')" />
               </template>
               <template #cell-node="{ row }">
                 <div class="node-overview-node">
@@ -800,7 +820,7 @@ const cmdstatScopeLabel = computed(() =>
                 :keyword="keyword"
                 :columns="infoColumns"
                 export-name="info">
-                <!-- 官网在左、原文在右，紧挨更多菜单 -->
+                <!-- 官网在左，原文、命令画像、延迟分位紧挨更多菜单 -->
                 <template #footer>
                   <me-website to="info" />
                   <me-icon
@@ -817,6 +837,13 @@ const cmdstatScopeLabel = computed(() =>
                     hint
                     placement="top"
                     @click="openCmdstat('node')" />
+                  <me-icon
+                    class="icon-btn info-footer-icon"
+                    icon="el-icon-odometer"
+                    :name="t('redisInfo.latencyProfileNode')"
+                    hint
+                    placement="top"
+                    @click="openLatency('node')" />
                 </template>
               </me-table>
             </div>
@@ -826,7 +853,7 @@ const cmdstatScopeLabel = computed(() =>
     </div>
   </div>
 
-  <!-- 本域弹窗：原文 / 命令画像 / Client / ACL / Config -->
+  <!-- 本域弹窗：原文 / 命令画像 / 延迟分位 / Client / ACL / Config -->
   <me-dialog v-model="dialog.raw" icon="el-icon-tickets" title="Info" width="60vw">
     <!-- 单向绑定：弹窗里改字不写回，关掉即丢 -->
     <me-code :modelValue="raw" mode="properties" />
@@ -842,6 +869,18 @@ const cmdstatScopeLabel = computed(() =>
     </template>
     <CommandStats v-if="cmdstatScope === 'masters'" :sources="cmdstatSources" />
     <CommandStats v-else :info="raw" />
+  </me-dialog>
+
+  <me-dialog
+    v-model="dialog.latency"
+    icon="el-icon-odometer"
+    :title="t('redisInfo.latencyProfile')"
+    width="80vw">
+    <template #title-extra>
+      <el-text type="info" class="cmdstat-scope">{{ latencyScopeLabel }}</el-text>
+    </template>
+    <LatencyStats v-if="latencyScope === 'masters'" :sources="cmdstatSources" />
+    <LatencyStats v-else :info="raw" />
   </me-dialog>
 
   <me-dialog
