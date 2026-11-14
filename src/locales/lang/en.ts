@@ -918,7 +918,7 @@ export default {
     latencyProfileMasters: 'Master latency percentiles',
     latencyScopeMasters: 'Worst among masters',
     latencyMasterNote:
-      'Each percentile is the worst value among masters. Replicas are not included. Samples accumulate since each process started, so the windows differ',
+      'Worst among masters, replicas excluded. Each process has its own sample window.',
     latencyUsecTipMasters:
       'Worst value among masters. A node that did not report this percentile is skipped, not treated as zero',
     latencyNoSamples: '{label} no samples',

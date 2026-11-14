@@ -42,17 +42,14 @@ function compareNullable(a: number | null, b: number | null): number {
   return a - b
 }
 
-/** 运行时间只留到能看出「是不是刚重启」的两级 */
+/** 只留最大一级：天、小时、分钟。用来看出是不是刚重启 */
 function formatUptime(seconds: number): string {
   if (seconds < 60) return t('redisInfo.cmdUptimeUnderMinute')
   const days = Math.floor(seconds / 86400)
-  const hours = Math.floor((seconds % 86400) / 3600)
-  const minutes = Math.floor((seconds % 3600) / 60)
-  const parts: string[] = []
-  if (days > 0) parts.push(t('redisInfo.cmdUptimeDays', { n: days }))
-  if (hours > 0) parts.push(t('redisInfo.cmdUptimeHours', { n: hours }))
-  if (days === 0 && minutes > 0) parts.push(t('redisInfo.cmdUptimeMinutes', { n: minutes }))
-  return parts.join(' ')
+  if (days > 0) return t('redisInfo.cmdUptimeDays', { n: days })
+  const hours = Math.floor(seconds / 3600)
+  if (hours > 0) return t('redisInfo.cmdUptimeHours', { n: hours })
+  return t('redisInfo.cmdUptimeMinutes', { n: Math.floor(seconds / 60) })
 }
 
 const view = computed(() => {
