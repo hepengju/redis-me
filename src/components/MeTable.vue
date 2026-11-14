@@ -490,27 +490,30 @@ defineExpose({
             </template>
             <template #footer>
               <div class="me-table-footer" :class="{ 'has-center': !!$slots['footer-center'] }">
-                <span class="me-table-total">{{ footerTotalText }}</span>
-                <!-- 居中摘要：有内容时总数与右侧操作不再抢中间空位 -->
-                <div v-if="$slots['footer-center']" class="me-table-footer-center">
-                  <slot name="footer-center" />
-                </div>
-                <div class="me-table-footer-right">
-                  <!-- 主动作区：调用方经 #footer 插槽注入（如键值页「加载更多 / 加载全部」），右侧紧邻导出菜单 -->
-                  <div class="me-table-footer-actions">
-                    <slot name="footer" />
+                <!-- 整行在 40px 行高里居中；行内三块底边对齐，避免较小字号的摘要显得偏高 -->
+                <div class="me-table-footer-line">
+                  <span class="me-table-total">{{ footerTotalText }}</span>
+                  <!-- 居中摘要：有内容时总数与右侧操作不再抢中间空位 -->
+                  <div v-if="$slots['footer-center']" class="me-table-footer-center">
+                    <slot name="footer-center" />
                   </div>
-                  <!-- 空表禁用：避免点开复制/导出再提示无数据 -->
-                  <me-copy-export
-                    class="me-table-more-wrap"
-                    :data="sortedData"
-                    :columns="columns"
-                    :export-name="exportName">
-                    <me-icon
-                      icon="el-icon-more-filled"
-                      class="me-table-more"
-                      :class="{ 'icon-btn': !!sortedData.length }" />
-                  </me-copy-export>
+                  <div class="me-table-footer-right">
+                    <!-- 主动作区：调用方经 #footer 插槽注入（如键值页「加载更多 / 加载全部」），右侧紧邻导出菜单 -->
+                    <div class="me-table-footer-actions">
+                      <slot name="footer" />
+                    </div>
+                    <!-- 空表禁用：避免点开复制/导出再提示无数据 -->
+                    <me-copy-export
+                      class="me-table-more-wrap"
+                      :data="sortedData"
+                      :columns="columns"
+                      :export-name="exportName">
+                      <me-icon
+                        icon="el-icon-more-filled"
+                        class="me-table-more"
+                        :class="{ 'icon-btn': !!sortedData.length }" />
+                    </me-copy-export>
+                  </div>
                 </div>
               </div>
             </template>
@@ -541,12 +544,20 @@ defineExpose({
     height: 100%;
     display: flex;
     align-items: center;
-    gap: 4px;
     padding: 0 12px;
     // 顶边划出与表体的边界（末行底线已去掉，不补这里就看不出分界）
     border-top: var(--el-table-border);
     // v2 footer 默认透明而表体刷 --el-bg-color，弹框内叠底底色不同会出色差带，对齐表体
     background-color: var(--el-bg-color);
+
+    // 总数、摘要、右侧图标按底边对齐（垂直居中时较小字号的摘要基线会偏高）
+    .me-table-footer-line {
+      display: flex;
+      align-items: flex-end;
+      gap: 4px;
+      width: 100%;
+      min-width: 0;
+    }
 
     .me-table-total {
       flex: 1;
@@ -574,7 +585,7 @@ defineExpose({
     .me-table-footer-actions {
       flex-shrink: 0;
       display: flex;
-      align-items: center;
+      align-items: flex-end;
       gap: 8px;
     }
 
@@ -583,7 +594,7 @@ defineExpose({
       flex: 1;
       min-width: 0;
       display: flex;
-      align-items: center;
+      align-items: flex-end;
       justify-content: flex-end;
       gap: 8px;
     }

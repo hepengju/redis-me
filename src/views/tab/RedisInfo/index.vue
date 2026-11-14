@@ -282,8 +282,8 @@ const nodeInfoMap = ref<Record<string, NodeSnapshot>>({})
 // 集群下描述列表下方用页签切换节点概览 / 参数详情，避免两块纵向叠在一起把详情挤出视口
 const lowerTab = ref(isCluster.value ? 'overview' : 'detail')
 
-function formatKbps(n: number): string {
-  return Number.isFinite(n) ? n.toFixed(2) : '--'
+function formatKbps(n: number, digits = 2): string {
+  return Number.isFinite(n) ? n.toFixed(digits) : '--'
 }
 
 function formatOps(n: number): string {
@@ -416,7 +416,7 @@ const overviewColumns = computed<MeColumn<OverviewRow>[]>(() => [
   },
 ])
 
-/** 底栏合计段：模板用 | 隔开 */
+/** 底栏合计段：模板用 | 隔开。网络、内存取整，少占宽度；节点行仍保留两位小数 */
 const overviewSummaryParts = computed(() => {
   const rows = overviewRows.value
   if (!rows.length) return [] as string[]
@@ -433,8 +433,8 @@ const overviewSummaryParts = computed(() => {
     `${t('redisInfo.summaryMasterKeys')} ${sum.keys}`,
     `${t('redisInfo.summaryClients')} ${sum.clients}`,
     `${t('redisInfo.command')} ${formatOps(sum.ops)}/s`,
-    `${t('redisInfo.network')} ↓ ${formatKbps(sum.netIn)} ↑ ${formatKbps(sum.netOut)} kb/s`,
-    `${t('redisInfo.memory')} ${meHumanSize(sum.memory)}`,
+    `${t('redisInfo.network')} ↓ ${formatKbps(sum.netIn, 0)} ↑ ${formatKbps(sum.netOut, 0)} kb/s`,
+    `${t('redisInfo.memory')} ${meHumanSize(sum.memory, '0B', 0)}`,
   ]
 })
 
@@ -736,12 +736,15 @@ const latencyScopeLabel = computed(() =>
               :row-class="overviewRowClass"
               @row-click="onOverviewRowClick">
               <template v-if="overviewSummaryParts.length" #footer-center>
-                <span class="node-overview-summary">
-                  <template v-for="(part, i) in overviewSummaryParts" :key="part">
-                    <span v-if="i" class="sum-sep">|</span>
-                    <span>{{ part }}</span>
-                  </template>
-                </span>
+                <div class="node-overview-summary">
+                  <!-- 窄宽度或英文标签过长时单行省略，悬停才看全文 -->
+                  <me-overflow-text :content="overviewSummaryParts.join(' | ')">
+                    <template v-for="(part, i) in overviewSummaryParts" :key="i">
+                      <span v-if="i" class="sum-sep">|</span>
+                      <span>{{ part }}</span>
+                    </template>
+                  </me-overflow-text>
+                </div>
               </template>
               <!-- 拓扑、图表、命令画像、延迟分位：紧挨更多菜单 -->
               <template #footer>
@@ -1167,6 +1170,8 @@ const latencyScopeLabel = computed(() =>
 }
 
 .node-overview-summary {
+  width: 100%;
+  min-width: 0;
   font-size: 13px;
   color: var(--el-text-color-secondary);
   // 标签与数字同一文本节点，避免分 span 后中文/数字基线错位
