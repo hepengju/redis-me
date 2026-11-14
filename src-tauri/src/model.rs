@@ -154,8 +154,8 @@ api_model!(
     }
 );
 
-/// 信息页哨兵拓扑。只含这条连接监视的那一个 master。
 api_model!(
+    /// 信息页哨兵拓扑。只含这条连接监视的那一个 master。
     SentinelTopology {
         master_name: String,
         /// 本次查询连上的哨兵，取连接配置里的 host:port。`SENTINEL sentinels` 不含自己。
@@ -169,8 +169,8 @@ api_model!(
     }
 );
 
-/// 哨兵眼里的一个节点。flags 为哨兵原文，如 `master`、`slave,s_down`。
 api_model!(
+    /// 哨兵眼里的一个节点。flags 为哨兵原文，如 `master`、`slave,s_down`。
     SentinelPeer {
         addr: String,
         flags: String,

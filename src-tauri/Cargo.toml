@@ -48,7 +48,6 @@ rand = "0.10"
 anyhow = { version = "1" }
 base64 = "0.23"
 chrono = "0.4"
-chrono-tz = "0.10"
 fern = { version = "0.7", features = ["colored"] }
 
 # 目录支持~和环境变量
@@ -88,3 +87,13 @@ tauri-plugin-window-state = "2"
 [[bin]]
 name = "RedisME"
 path = "src/main.rs"
+
+# 安装包体积：体积优先的 release。不改变运行时功能。
+# opt-level=s 偏体积；LTO + codegen-units=1 去掉跨 crate 死代码；strip 去掉符号。
+# panic=abort 去掉展开表。命令路径不用 catch_unwind，panic 本来就会中断这次调用。
+[profile.release]
+opt-level = "s"
+lto = true
+codegen-units = 1
+strip = true
+panic = "abort"

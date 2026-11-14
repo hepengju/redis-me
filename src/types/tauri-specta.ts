@@ -1338,6 +1338,7 @@ export type SentinelOption = {
 	masterPassword: string,
 };
 
+/**  哨兵眼里的一个节点。flags 为哨兵原文，如 `master`、`slave,s_down`。 */
 export type SentinelPeer = {
 	addr: string,
 	flags: string,
@@ -1345,6 +1346,7 @@ export type SentinelPeer = {
 	linkDownMs: number,
 };
 
+/**  信息页哨兵拓扑。只含这条连接监视的那一个 master。 */
 export type SentinelTopology = {
 	masterName: string,
 	/**  本次查询连上的哨兵，取连接配置里的 host:port。`SENTINEL sentinels` 不含自己。 */

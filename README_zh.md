@@ -79,4 +79,4 @@ vp run tauri dev
 
 定期分享 RedisME 的特色功能与图文更新日志，及其他技术疑难问题和解决方案
 
-![wechat](src/assets/images/wechat.png) ```
+![wechat](src/assets/images/wechat.webp) ```

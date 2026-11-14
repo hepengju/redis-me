@@ -3,7 +3,7 @@
 import { ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import logoGlowUrl from '@/assets/images/logo-glow.png'
+import logoGlowUrl from '@/assets/images/logo-glow.webp'
 import { meOpenUrl } from '@/utils/util'
 import RedisInstall from '@/views/ext/RedisInstall.vue'
 // #endregion

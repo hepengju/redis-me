@@ -4,7 +4,7 @@ use crate::support::convert::{is_array_type, ui_xinfo_consumer, ui_xinfo_group};
 use crate::support::error::AppError;
 use crate::support::util::*;
 use anyhow::bail;
-use chrono::DateTime;
+use chrono::{DateTime, Local};
 use log::info;
 use parking_lot::MutexGuard;
 use redis::streams::{StreamInfoConsumersReply, StreamInfoGroupsReply};
@@ -295,12 +295,14 @@ fn slow_log_from_map(map: Vec<(Value, Value)>, node: &str) -> AnyResult<RedisSlo
     })
 }
 
-// 时间戳 (秒) 转字符串
+// SLOWLOG 的 timestamp 是 Unix 秒。按本机时区展示，与命令日志、通知一致。
+// 用 chrono::Local，不引入 chrono-tz 的整库时区数据。
 fn timestamp_to_string(timestamp: i64) -> String {
-    let datetime = DateTime::from_timestamp(timestamp, 0)
+    DateTime::from_timestamp(timestamp, 0)
         .unwrap()
-        .with_timezone(&chrono_tz::Asia::Shanghai);
-    datetime.format("%Y-%m-%d %H:%M:%S").to_string()
+        .with_timezone(&Local)
+        .format("%Y-%m-%d %H:%M:%S")
+        .to_string()
 }
 
 /// `tot_mem` → `totMem`，与 `RedisClientInfo` 的 `rename_all = "camelCase"` 一致。

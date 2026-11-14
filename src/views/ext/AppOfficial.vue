@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 
-import bilibili from '@/assets/images/bilibili.png'
-import wechat from '@/assets/images/wechat.png'
+import bilibili from '@/assets/images/bilibili.webp'
+import wechat from '@/assets/images/wechat.webp'
 
 const visible = ref(false)
 

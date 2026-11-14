@@ -64,4 +64,4 @@ vp run tauri dev
 
 Regularly shares RedisME special features and update logs, as well as other technical issues and solutions.
 
-<img src="src/assets/images/wechat.png" alt="wechat" width="400" />
+<img src="src/assets/images/wechat.webp" alt="wechat" width="400" />
