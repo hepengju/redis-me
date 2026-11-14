@@ -1,16 +1,15 @@
 use crate::api_commands;
-use crate::client::state::{ClientAccess, app_timeouts};
+use crate::client::state::{AppState, ClientAccess, app_timeouts};
 use crate::model::*;
 use crate::net::system_proxy;
 use crate::support::app_store;
 use crate::support::capabilities::ServerCapabilities;
+use crate::support::error::AppError;
 use crate::support::util::*;
 use specta::specta;
 use std::collections::HashMap;
-#[cfg(target_os = "macos")]
-use tauri::Manager;
 use tauri::utils::platform::current_exe;
-use tauri::{AppHandle, Webview, command};
+use tauri::{AppHandle, Manager, State, Webview, command};
 
 // 使用宏简化代码
 // to_api_result(app_handle.get_client(id).and_then(|client| client.$name($($param),*)))
@@ -191,6 +190,23 @@ pub fn masters(app_handle: AppHandle, conf: ConnConfig) -> ApiResult<Vec<HashMap
         connect_timeout,
         command_timeout,
     ))
+}
+
+/// 信息页哨兵拓扑。按连接 id 取出哨兵地址，临时连哨兵查询，不占用主库会话。
+#[command]
+#[specta]
+pub fn sentinel_topology(app_handle: AppHandle, id: &str) -> ApiResult<SentinelTopology> {
+    let (connect_timeout, command_timeout) = app_timeouts(&app_handle);
+    to_api_result((|| {
+        let state: State<AppState> = app_handle.state();
+        let conf = {
+            let map = state.connections.lock().unwrap();
+            map.get(id)
+                .cloned()
+                .ok_or(AppError::ConnectionNotFound { id: id.into() })?
+        };
+        crate::net::conn::sentinel_topology(&conf, connect_timeout, command_timeout)
+    })())
 }
 
 // 连接信息发送到后端

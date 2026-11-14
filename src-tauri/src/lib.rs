@@ -187,6 +187,7 @@ fn tauri_specta_commands() -> Commands<tauri::Wry> {
         test_conn,
         detect_system_proxy,
         masters,
+        sentinel_topology,
         conn_list,
         app_settings,
         connect,

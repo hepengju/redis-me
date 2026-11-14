@@ -1,4 +1,4 @@
-use crate::model::{ConnConfig, SslOption};
+use crate::model::{ConnConfig, SentinelPeer, SentinelTopology, SslOption};
 use crate::net::proxy::build_proxy_dialer;
 use crate::net::ssh::SshDialer;
 use crate::net::tls;
@@ -30,21 +30,181 @@ pub fn test_conn(conf: &ConnConfig, connect_timeout: Duration) -> AnyResult<()> 
     Ok(())
 }
 
-/// 向哨兵查询 master 列表。查询前关掉 sentinel 标志，避免拨号层再走哨兵解析。
+/// 向哨兵查询 master 列表。连的是配置里的哨兵进程，不是主库。
 pub fn sentinel_masters(
     conf: &ConnConfig,
     connect_timeout: Duration,
     command_timeout: Duration,
 ) -> AnyResult<Vec<HashMap<String, String>>> {
-    reject_unix_combo(conf)?;
-    let mut conf = conf.clone();
-    conf.sentinel = false;
-    let (client, _) = get_client_single(&conf, connect_timeout, false, None)?;
-    let mut conn =
-        init_single_connection(&client, conf.db, connect_timeout, command_timeout, &conf)?;
+    let mut conn = open_sentinel_session(conf, connect_timeout, command_timeout)?;
     let masters: Vec<HashMap<String, String>> =
-        redis::cmd("sentinel").arg("masters").query(&mut conn)?;
+        redis::cmd("SENTINEL").arg("MASTERS").query(&mut conn)?;
     Ok(masters)
+}
+
+/// 向哨兵查询当前连接监视的那一组：主库、副本、其他哨兵。
+/// 不能走已经连上的主库会话，主库不认 `SENTINEL`。
+/// `REPLICAS` 在旧版本不存在时退回 `SLAVES`。
+pub fn sentinel_topology(
+    conf: &ConnConfig,
+    connect_timeout: Duration,
+    command_timeout: Duration,
+) -> AnyResult<SentinelTopology> {
+    let master_name = conf.sentinel_option.master_name.clone();
+    if master_name.is_empty() {
+        bail!(AppError::SentinelMasterNotFound { name: master_name });
+    }
+    let mut conn = open_sentinel_session(conf, connect_timeout, command_timeout)?;
+    let masters: Vec<HashMap<String, String>> =
+        redis::cmd("SENTINEL").arg("MASTERS").query(&mut conn)?;
+    let master = select_monitored_master(&masters, &master_name)?;
+    let replicas = query_sentinel_replicas(&mut conn, &master_name)?;
+    let sentinels: Vec<HashMap<String, String>> = redis::cmd("SENTINEL")
+        .arg("SENTINELS")
+        .arg(&master_name)
+        .query(&mut conn)?;
+    let topology = assemble_sentinel_topology(conf, &master_name, master, &replicas, &sentinels);
+    info!(
+        "哨兵拓扑 {}:{} master {master_name}，副本 {}，其他哨兵 {}",
+        conf.host,
+        conf.port,
+        topology.replicas.len(),
+        topology.sentinels.len()
+    );
+    Ok(topology)
+}
+
+/// 连上配置里的哨兵进程。关掉 sentinel 标志，避免拨号层再去解析 master。
+fn open_sentinel_session(
+    conf: &ConnConfig,
+    connect_timeout: Duration,
+    command_timeout: Duration,
+) -> AnyResult<Connection> {
+    reject_unix_combo(conf)?;
+    let mut sent = conf.clone();
+    sent.sentinel = false;
+    // 配置里的 db 属于主库；哨兵不认 SELECT
+    sent.db = 0;
+    let (client, _) = get_client_single(&sent, connect_timeout, false, None)?;
+    init_single_connection(&client, 0, connect_timeout, command_timeout, &sent)
+}
+
+fn select_monitored_master<'a>(
+    masters: &'a [HashMap<String, String>],
+    master_name: &str,
+) -> AnyResult<&'a HashMap<String, String>> {
+    masters
+        .iter()
+        .find(|item| map_field(item, "name") == master_name)
+        .ok_or_else(|| AppError::SentinelMasterNotFound { name: master_name.into() }.into())
+}
+
+/// Redis 5 起叫 REPLICAS，更早只有 SLAVES。权限错误不退回，避免多打一枪。
+fn query_sentinel_replicas(
+    conn: &mut Connection,
+    master_name: &str,
+) -> AnyResult<Vec<HashMap<String, String>>> {
+    match redis::cmd("SENTINEL")
+        .arg("REPLICAS")
+        .arg(master_name)
+        .query(conn)
+    {
+        Ok(rows) => Ok(rows),
+        Err(err) if unknown_sentinel_subcommand(&err) => {
+            let rows = redis::cmd("SENTINEL")
+                .arg("SLAVES")
+                .arg(master_name)
+                .query(conn)?;
+            Ok(rows)
+        }
+        Err(err) => Err(err.into()),
+    }
+}
+
+fn unknown_sentinel_subcommand(err: &RedisError) -> bool {
+    let msg = err.to_string().to_ascii_lowercase();
+    msg.contains("unknown subcommand") || msg.contains("unknown command")
+}
+
+fn assemble_sentinel_topology(
+    conf: &ConnConfig,
+    master_name: &str,
+    master: &HashMap<String, String>,
+    replicas: &[HashMap<String, String>],
+    sentinels: &[HashMap<String, String>],
+) -> SentinelTopology {
+    let self_addr = sentinel_self_addr(conf);
+    let mut replicas: Vec<SentinelPeer> =
+        replicas.iter().map(|item| peer_from(item, true)).collect();
+    replicas.sort_by(|a, b| a.addr.cmp(&b.addr));
+    let mut sentinels: Vec<SentinelPeer> = sentinels
+        .iter()
+        .map(|item| peer_from(item, false))
+        .filter(|peer| !peer.addr.eq_ignore_ascii_case(&self_addr))
+        .collect();
+    sentinels.sort_by(|a, b| a.addr.cmp(&b.addr));
+    SentinelTopology {
+        master_name: master_name.to_string(),
+        self_addr,
+        quorum: parse_u64(map_field(master, "quorum")),
+        master: peer_from(master, false),
+        replicas,
+        sentinels,
+    }
+}
+
+fn sentinel_self_addr(conf: &ConnConfig) -> String {
+    let host = conf.host.trim().trim_matches(|c| c == '[' || c == ']');
+    format!("{host}:{}", conf.port)
+}
+
+fn peer_from(map: &HashMap<String, String>, replica: bool) -> SentinelPeer {
+    SentinelPeer {
+        addr: peer_addr(map),
+        flags: if replica {
+            replica_flags(map)
+        } else {
+            map_field(map, "flags").trim().to_string()
+        },
+        link_down_ms: if replica {
+            parse_u64(map_field(map, "master-link-down-time"))
+        } else {
+            0
+        },
+    }
+}
+
+fn peer_addr(map: &HashMap<String, String>) -> String {
+    let ip = map_field(map, "ip").trim();
+    let port = map_field(map, "port").trim();
+    if ip.is_empty() {
+        map_field(map, "name").trim().to_string()
+    } else if port.is_empty() {
+        ip.to_string()
+    } else {
+        format!("{ip}:{port}")
+    }
+}
+
+/// 副本链路不是 ok 时，把 master-link-status 接到 flags 后面，界面只看这一列。
+fn replica_flags(map: &HashMap<String, String>) -> String {
+    let flags = map_field(map, "flags").trim();
+    let status = map_field(map, "master-link-status").trim();
+    if status.is_empty() || status.eq_ignore_ascii_case("ok") {
+        flags.to_string()
+    } else if flags.is_empty() {
+        status.to_string()
+    } else {
+        format!("{flags},{status}")
+    }
+}
+
+fn map_field<'a>(map: &'a HashMap<String, String>, key: &str) -> &'a str {
+    map.get(key).map(String::as_str).unwrap_or("")
+}
+
+fn parse_u64(raw: &str) -> u64 {
+    raw.trim().parse().unwrap_or(0)
 }
 
 // 获取单机 Client；verify 为 true 时按 connect_timeout ping 验证（测试连接），为 false 时仅构建 Client（init 复用 TCP）
@@ -1017,5 +1177,108 @@ mod tests {
     fn local_unix_url_parses() {
         let url = redis_url(&unix_conf("/tmp/redis.sock")).unwrap();
         redis::Client::open(url.to_string()).expect("unix url should parse");
+    }
+
+    fn pairs(items: &[(&str, &str)]) -> HashMap<String, String> {
+        items
+            .iter()
+            .map(|(key, value)| ((*key).to_string(), (*value).to_string()))
+            .collect()
+    }
+
+    /// 没填 master 名时，在建连前拒绝。
+    #[test]
+    fn sentinel_topology_empty_master_name_fails_before_io() {
+        let conf = ConnConfig {
+            host: "127.0.0.1".into(),
+            port: 1,
+            sentinel: true,
+            ..ConnConfig::default()
+        };
+        let err = sentinel_topology(&conf, Duration::from_secs(1), Duration::from_secs(1))
+            .unwrap_err()
+            .to_string();
+        assert!(
+            err.contains("sentinel_master_not_found"),
+            "unexpected error: {err}"
+        );
+    }
+
+    /// 只留下配置里的 master；自己的通告地址从其他哨兵里去掉；副本按地址排序。
+    #[test]
+    fn sentinel_topology_assembles_one_master() {
+        let conf = ConnConfig {
+            host: "[::1]".into(),
+            port: 26379,
+            ..ConnConfig::default()
+        };
+        let masters = vec![
+            pairs(&[("name", "cache"), ("ip", "10.0.0.8"), ("port", "6379")]),
+            pairs(&[
+                ("name", "app"),
+                ("ip", "10.0.0.1"),
+                ("port", "6379"),
+                ("flags", "master"),
+                ("quorum", "2"),
+            ]),
+        ];
+        let master = select_monitored_master(&masters, "app").unwrap();
+        let replicas = vec![
+            pairs(&[
+                ("ip", "10.0.0.3"),
+                ("port", "6379"),
+                ("flags", "slave"),
+                ("master-link-status", "ok"),
+                ("master-link-down-time", "0"),
+            ]),
+            pairs(&[
+                ("ip", "10.0.0.2"),
+                ("port", "6379"),
+                ("flags", "slave,disconnected"),
+                ("master-link-status", "err"),
+                ("master-link-down-time", "1500"),
+            ]),
+        ];
+        let sentinels = vec![
+            pairs(&[("ip", "::1"), ("port", "26379"), ("flags", "sentinel")]),
+            pairs(&[
+                ("ip", "10.0.0.9"),
+                ("port", "26380"),
+                ("flags", "sentinel,s_down"),
+            ]),
+        ];
+        let topo = assemble_sentinel_topology(&conf, "app", master, &replicas, &sentinels);
+        assert_eq!(topo.self_addr, "::1:26379");
+        assert_eq!(topo.master.addr, "10.0.0.1:6379");
+        assert_eq!(topo.master.flags, "master");
+        assert_eq!(topo.quorum, 2);
+        assert_eq!(
+            topo.replicas
+                .iter()
+                .map(|peer| peer.addr.as_str())
+                .collect::<Vec<_>>(),
+            vec!["10.0.0.2:6379", "10.0.0.3:6379"]
+        );
+        assert_eq!(topo.replicas[0].flags, "slave,disconnected,err");
+        assert_eq!(topo.replicas[0].link_down_ms, 1500);
+        assert_eq!(topo.replicas[1].link_down_ms, 0);
+        assert_eq!(topo.sentinels.len(), 1);
+        assert_eq!(topo.sentinels[0].addr, "10.0.0.9:26380");
+        assert!(select_monitored_master(&masters, "missing").is_err());
+    }
+
+    /// 只有未知子命令才退回 SLAVES，权限错误保持原样。
+    #[test]
+    fn sentinel_replicas_subcommand_fallback_detects_unknown_only() {
+        let unknown = redis::RedisError::from((
+            redis::ErrorKind::Parse,
+            "ERR Unknown subcommand 'replicas'. Try SENTINEL HELP.",
+        ));
+        assert!(unknown_sentinel_subcommand(&unknown));
+        let denied = redis::RedisError::from((
+            redis::ErrorKind::Parse,
+            "NOPERM this user has no permissions to run the 'sentinel' command",
+        ));
+        assert!(!unknown_sentinel_subcommand(&denied));
     }
 }

@@ -16,7 +16,7 @@ import type { MeColumn } from '@/components/me-table-column'
 import MeOverflowText from '@/components/MeOverflowText.vue'
 import { infoTip as tips } from '@/locales/info'
 import { shareProvideKey } from '@/types/me-interface'
-import type { RedisInfo } from '@/types/tauri-specta'
+import type { RedisInfo, SentinelPeer, SentinelTopology } from '@/types/tauri-specta'
 import type { MasterStatSource } from '@/utils/command-stats'
 import { connEndpoint } from '@/utils/conn'
 import { enrichNodeList } from '@/utils/redis-display'
@@ -69,6 +69,7 @@ const cmdstatScope = ref<'node' | 'masters'>('node')
 const latencyScope = ref<'node' | 'masters'>('node')
 const loading = ref(false)
 const isCluster = computed(() => !!share.conn?.cluster)
+const isSentinel = computed(() => !!share.conn?.sentinel)
 /** Valkey 用 server_mode，Redis 用 redis_mode */
 const modeKey = computed(() => (share.capabilities.isValkey ? 'server_mode' : 'redis_mode'))
 
@@ -256,6 +257,66 @@ const nodeGroups = computed(() => {
     slaves: share.nodeList.filter(n => n.isSlave && n.slaveOfNode === m.node),
   }))
 })
+
+// 哨兵拓扑不在主库 INFO 里。打开弹窗时临时连配置中的哨兵拉一次。
+const sentinelTopology = ref<SentinelTopology | null>(null)
+const topologyLoading = ref(false)
+const ROLE_FLAGS = new Set(['master', 'slave', 'sentinel'])
+
+type SentinelPeerRow = SentinelPeer & { self: boolean }
+
+const sentinelPeers = computed<SentinelPeerRow[]>(() => {
+  const topo = sentinelTopology.value
+  if (!topo) return []
+  return [
+    { addr: topo.selfAddr, flags: '', linkDownMs: 0, self: true },
+    ...topo.sentinels.map(peer => ({ ...peer, self: false })),
+  ]
+})
+
+function sentinelAlert(flags: string): string {
+  return flags
+    .split(',')
+    .map(part => part.trim())
+    .filter(part => part && !ROLE_FLAGS.has(part))
+    .join(', ')
+}
+
+function formatLinkDown(ms: number): string {
+  if (ms >= 1000) {
+    const sec = ms / 1000
+    const text = Number.isInteger(sec) ? String(sec) : sec.toFixed(1)
+    return `${text}s`
+  }
+  return `${ms}ms`
+}
+
+function peerStatus(peer: SentinelPeer): string {
+  const alert = sentinelAlert(peer.flags)
+  const down =
+    peer.linkDownMs > 0
+      ? t('redisInfo.sentinelLinkDown', { time: formatLinkDown(peer.linkDownMs) })
+      : ''
+  return [alert, down].filter(Boolean).join(' · ')
+}
+
+let topologySeq = 0
+async function openSentinelTopology() {
+  const seq = ++topologySeq
+  dialog.topology = true
+  topologyLoading.value = true
+  sentinelTopology.value = null
+  try {
+    const data = await meCommands.sentinelTopology(share.conn!.id)
+    if (seq !== topologySeq) return
+    sentinelTopology.value = data
+  } catch {
+    if (seq !== topologySeq) return
+    dialog.topology = false
+  } finally {
+    if (seq === topologySeq) topologyLoading.value = false
+  }
+}
 // #endregion
 
 // #region 集群节点概览
@@ -820,6 +881,14 @@ const latencyScopeLabel = computed(() =>
                 <template #footer>
                   <me-website to="info" />
                   <me-icon
+                    v-if="isSentinel"
+                    class="icon-btn info-footer-icon"
+                    icon="me-icon-sentinel"
+                    :name="t('redisInfo.sentinelTopology')"
+                    hint
+                    placement="top"
+                    @click="openSentinelTopology" />
+                  <me-icon
                     class="icon-btn info-footer-icon"
                     icon="el-icon-tickets"
                     :name="t('redisInfo.rawInfo')"
@@ -909,12 +978,14 @@ const latencyScopeLabel = computed(() =>
     <RedisConfig :init-node="node || infoNode" :init-version="share.capabilities.version" />
   </me-dialog>
 
-  <!-- 集群拓扑：节点概览底栏图标打开 -->
+  <!-- 集群拓扑走已有 nodeList；哨兵拓扑打开时再连哨兵查询 -->
   <el-dialog v-model="dialog.topology" width="600px" draggable>
     <template #header>
-      <me-icon icon="me-icon-cluster" :name="t('redisInfo.clusterTopology')" />
+      <me-icon
+        :icon="isSentinel ? 'me-icon-sentinel' : 'me-icon-cluster'"
+        :name="t(isSentinel ? 'redisInfo.sentinelTopology' : 'redisInfo.clusterTopology')" />
     </template>
-    <div class="cluster-topology-wrap">
+    <div v-if="isCluster" class="cluster-topology-wrap">
       <el-card
         v-for="(group, groupIdx) in nodeGroups"
         :key="group.master.node"
@@ -963,6 +1034,95 @@ const latencyScopeLabel = computed(() =>
           Slots: {{ group.master.slots }}
         </el-text>
       </el-card>
+    </div>
+    <div v-else v-loading="topologyLoading" class="cluster-topology-wrap">
+      <template v-if="sentinelTopology">
+        <el-card shadow="hover">
+          <div
+            v-for="(peer, idx) in sentinelPeers"
+            :key="`${peer.addr}-${idx}`"
+            class="topo-row"
+            :style="{ marginTop: idx ? '8px' : '0' }">
+            <div class="topo-row-main">
+              <el-tag
+                :type="peer.self ? 'primary' : peerStatus(peer) ? 'danger' : 'info'"
+                effect="dark"
+                size="small">
+                {{ peer.self ? t('redisInfo.sentinelSelf') : t('redisInfo.sentinelPeer') }}
+              </el-tag>
+              <el-text
+                effect="dark"
+                :type="peer.self ? 'primary' : 'info'"
+                style="font-size: 13px; font-weight: 500">
+                {{ peer.addr }}
+              </el-text>
+            </div>
+            <el-text v-if="peerStatus(peer)" type="danger" style="font-size: 12px; flex-shrink: 0">
+              {{ peerStatus(peer) }}
+            </el-text>
+          </div>
+        </el-card>
+        <el-card shadow="hover" style="margin-top: 10px">
+          <div class="topo-row">
+            <div class="topo-row-main">
+              <el-tag
+                :type="peerStatus(sentinelTopology.master) ? 'danger' : 'primary'"
+                effect="dark"
+                size="small">
+                {{ t('redisInfo.sentinelMaster') }}
+              </el-tag>
+              <el-text effect="dark" type="primary" style="font-size: 13px; font-weight: 600">
+                {{ sentinelTopology.master.addr }}
+              </el-text>
+            </div>
+            <div class="topo-row-side">
+              <el-text type="info" style="font-size: 12px">{{
+                sentinelTopology.masterName
+              }}</el-text>
+              <el-text
+                v-if="peerStatus(sentinelTopology.master)"
+                type="danger"
+                style="font-size: 12px">
+                {{ peerStatus(sentinelTopology.master) }}
+              </el-text>
+            </div>
+          </div>
+          <div v-if="sentinelTopology.replicas.length" class="topo-replicas">
+            <div
+              v-for="(replica, idx) in sentinelTopology.replicas"
+              :key="`${replica.addr}-${idx}`"
+              class="topo-row"
+              :style="{ marginTop: idx ? '8px' : '0' }">
+              <div class="topo-row-main">
+                <el-tag :type="peerStatus(replica) ? 'danger' : 'info'" effect="dark" size="small">
+                  {{ t('redisInfo.sentinelReplica') }}
+                </el-tag>
+                <el-text effect="dark" type="info" style="font-size: 13px; font-weight: 500">
+                  {{ replica.addr }}
+                </el-text>
+              </div>
+              <el-text
+                v-if="peerStatus(replica)"
+                type="danger"
+                style="font-size: 12px; flex-shrink: 0">
+                {{ peerStatus(replica) }}
+              </el-text>
+            </div>
+          </div>
+          <el-text
+            v-if="sentinelTopology.quorum > 0"
+            class="topo-quorum"
+            effect="dark"
+            type="info"
+            size="small">
+            <me-icon
+              :name="`${t('redisInfo.sentinelQuorum')}: ${sentinelTopology.quorum}`"
+              icon="el-icon-question-filled"
+              :info="t('redisInfo.sentinelQuorumTip')"
+              placement="top" />
+          </el-text>
+        </el-card>
+      </template>
     </div>
   </el-dialog>
 </template>
@@ -1178,6 +1338,41 @@ const latencyScopeLabel = computed(() =>
   height: 100%;
   overflow: auto;
   padding: 4px 2px 12px;
+  min-height: 80px;
+}
+
+.topo-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.topo-row-main {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.topo-row-side {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
+}
+
+.topo-replicas {
+  margin-top: 10px;
+  padding-left: 14px;
+  border-left: 2px solid var(--el-border-color-lighter);
+}
+
+.topo-quorum {
+  display: flex;
+  justify-content: flex-end;
+  width: 100%;
+  margin-top: 10px;
 }
 
 /* 标题补充在弹窗 header 上，弹窗 append-to-body，不能挂在 .redis-info 下面 */

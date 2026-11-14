@@ -17,6 +17,8 @@ export const commands = {
 	/**  勾选「使用系统代理」时检测一次，供表单只读展示。建连时会再检测。 */
 	detectSystemProxy: (options?: InvokeOptions) => typedError<SystemProxyDetect, string>(__TAURI_INVOKE("detect_system_proxy", undefined, options)),
 	masters: (conf: ConnConfig_Deserialize, options?: InvokeOptions) => typedError<{ [key in string]: string }[], string>(__TAURI_INVOKE("masters", { conf }, options)),
+	/**  信息页哨兵拓扑。按连接 id 取出哨兵地址，临时连哨兵查询，不占用主库会话。 */
+	sentinelTopology: (id: string, options?: InvokeOptions) => typedError<SentinelTopology, string>(__TAURI_INVOKE("sentinel_topology", { id }, options)),
 	connList: (connList: ConnConfig_Deserialize[], options?: InvokeOptions) => typedError<null, string>(__TAURI_INVOKE("conn_list", { connList }, options)),
 	appSettings: (appSettings: AppSettings_Deserialize, options?: InvokeOptions) => typedError<null, string>(__TAURI_INVOKE("app_settings", { appSettings }, options)),
 	connect: (id: string, options?: InvokeOptions) => typedError<ServerCapabilities, string>(__TAURI_INVOKE("connect", { id }, options)),
@@ -1334,6 +1336,25 @@ export type SentinelOption = {
 	masterName: string,
 	masterUsername: string,
 	masterPassword: string,
+};
+
+export type SentinelPeer = {
+	addr: string,
+	flags: string,
+	/**  副本的 master-link-down-time，毫秒。主库和哨兵为 0 */
+	linkDownMs: number,
+};
+
+export type SentinelTopology = {
+	masterName: string,
+	/**  本次查询连上的哨兵，取连接配置里的 host:port。`SENTINEL sentinels` 不含自己。 */
+	selfAddr: string,
+	/**  该 master 的 quorum；哨兵没报则为 0 */
+	quorum: number,
+	master: SentinelPeer,
+	replicas: SentinelPeer[],
+	/**  其他哨兵，已去掉和 self_addr 相同的地址 */
+	sentinels: SentinelPeer[],
 };
 
 export type ServerCapabilities = {

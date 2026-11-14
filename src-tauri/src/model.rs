@@ -154,6 +154,31 @@ api_model!(
     }
 );
 
+/// 信息页哨兵拓扑。只含这条连接监视的那一个 master。
+api_model!(
+    SentinelTopology {
+        master_name: String,
+        /// 本次查询连上的哨兵，取连接配置里的 host:port。`SENTINEL sentinels` 不含自己。
+        self_addr: String,
+        /// 该 master 的 quorum；哨兵没报则为 0
+        quorum: u64,
+        master: SentinelPeer,
+        replicas: Vec<SentinelPeer>,
+        /// 其他哨兵，已去掉和 self_addr 相同的地址
+        sentinels: Vec<SentinelPeer>,
+    }
+);
+
+/// 哨兵眼里的一个节点。flags 为哨兵原文，如 `master`、`slave,s_down`。
+api_model!(
+    SentinelPeer {
+        addr: String,
+        flags: String,
+        /// 副本的 master-link-down-time，毫秒。主库和哨兵为 0
+        link_down_ms: u64,
+    }
+);
+
 api_model!(
     #[derive(Default)]
     SshOption {
