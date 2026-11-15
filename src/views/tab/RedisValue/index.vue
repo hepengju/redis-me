@@ -16,7 +16,7 @@ import {
 } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import { type MeColumn, truncateCellDisplay } from '@/components/me-table-column'
+import { type MeColumn, truncateCellDisplay } from '@/components/me-table/column'
 import MeSelectUpDownIcon from '@/components/MeSelectUpDownIcon.vue'
 import { shareProvideKey, connUiProvideKey } from '@/types/me-interface'
 import type {

@@ -4,10 +4,13 @@
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import {
+  type MeColumn,
+  exportMatrixFromColumns,
+  exportableColumns,
+} from '@/components/me-table/column'
 import { TABLE_EXPORT_MENU, dispatchTableExport } from '@/utils/export'
 import { meErr } from '@/utils/util'
-
-import { type MeColumn, exportMatrixFromColumns, exportableColumns } from './me-table-column'
 
 const props = withDefaults(
   defineProps<{

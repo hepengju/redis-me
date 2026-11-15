@@ -4,7 +4,7 @@ import { sortBy } from 'lodash'
 import { computed, inject, nextTick, reactive, ref, useTemplateRef, watch, watchEffect } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import type { MeColumn } from '@/components/me-table-column'
+import type { MeColumn } from '@/components/me-table/column'
 import { configTip as tips, redisConfDict, valkeyConfDict } from '@/locales/config'
 import { shareProvideKey } from '@/types/me-interface'
 import { pickVersionAtOrBelow, sortVersionsDesc } from '@/utils/redis-version'

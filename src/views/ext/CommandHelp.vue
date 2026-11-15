@@ -3,7 +3,7 @@
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import type { MeColumn, MeFilterValue } from '@/components/me-table-column'
+import type { MeColumn, MeFilterValue } from '@/components/me-table/column'
 import { commandHelp, type CommandHelpRow } from '@/locales/cmd'
 import { sortVersionsDesc } from '@/utils/redis-version'
 import { isZh } from '@/utils/util'

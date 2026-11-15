@@ -17,14 +17,14 @@ import type { StyleValue } from 'vue'
 import { computed, ref, toRaw, useAttrs, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import MeOverflowText from '../MeOverflowText.vue'
 import {
   type MeColumn,
   type MeFilterValue,
   isExportableColumn,
   toCellText,
   truncateCellDisplay,
-} from './me-table-column'
-import MeOverflowText from './MeOverflowText.vue'
+} from './column'
 
 defineOptions({ inheritAttrs: false })
 

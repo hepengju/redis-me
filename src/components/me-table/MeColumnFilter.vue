@@ -6,7 +6,7 @@
 // 仅手动放进 header-${key} 插槽自持选中态时，才需调用方在数据层自行过滤（并自行关该列排序，避免表头点击热区劫持下拉）。
 import { useI18n } from 'vue-i18n'
 
-import type { MeFilterValue } from './me-table-column'
+import type { MeFilterValue } from './column'
 
 const { t } = useI18n()
 

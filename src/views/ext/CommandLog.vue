@@ -5,7 +5,7 @@ import { listen } from '@tauri-apps/api/event'
 import { computed, inject, nextTick, onUnmounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import type { MeColumn } from '@/components/me-table-column'
+import type { MeColumn } from '@/components/me-table/column'
 import { shareProvideKey } from '@/types/me-interface'
 import type { CommandLogEntry } from '@/types/tauri-specta'
 import { meCommands, meConfirm, meOk } from '@/utils/util'

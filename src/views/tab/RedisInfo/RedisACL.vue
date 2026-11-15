@@ -4,7 +4,7 @@
 import { computed, inject, reactive, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import type { MeColumn } from '@/components/me-table-column'
+import type { MeColumn } from '@/components/me-table/column'
 import { shareProvideKey } from '@/types/me-interface'
 import type { AclUserDetail } from '@/types/tauri-specta'
 import {

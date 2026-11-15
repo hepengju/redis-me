@@ -3,7 +3,7 @@
 import { computed, inject, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import type { MeColumn } from '@/components/me-table-column'
+import type { MeColumn } from '@/components/me-table/column'
 import { clientTip as tips } from '@/locales/client'
 import { shareProvideKey } from '@/types/me-interface'
 import type { RedisClientInfo, RedisCommand } from '@/types/tauri-specta'

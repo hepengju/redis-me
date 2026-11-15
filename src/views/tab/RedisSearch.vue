@@ -4,7 +4,7 @@ import { useStorage } from '@vueuse/core'
 import { computed, inject, onMounted, onUnmounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import type { MeColumn } from '@/components/me-table-column'
+import type { MeColumn } from '@/components/me-table/column'
 import { connUiProvideKey, shareProvideKey } from '@/types/me-interface'
 import type {
   SearchHit,
