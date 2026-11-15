@@ -4,11 +4,11 @@ import { computed, inject, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import type { MeColumn } from '@/components/me-table/column'
+import NodeList from '@/components/MeNodeList.vue'
 import { clientTip as tips } from '@/locales/client'
 import { shareProvideKey } from '@/types/me-interface'
 import type { RedisClientInfo, RedisCommand } from '@/types/tauri-specta'
 import { meConfirm, meCopy, meHumanSeconds, meCommands, meOk } from '@/utils/app/util'
-import NodeList from '@/views/ext/NodeList.vue'
 // `client_list` 实际载荷字段齐全；`Required` 与 specta 在 `#[serde(default)]` 下生成的可选字段对齐
 type RedisClientListRow = Required<RedisClientInfo>
 // #endregion

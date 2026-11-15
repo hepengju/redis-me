@@ -5,11 +5,11 @@ import { computed, inject, nextTick, reactive, ref, useTemplateRef, watch, watch
 import { useI18n } from 'vue-i18n'
 
 import type { MeColumn } from '@/components/me-table/column'
+import NodeList from '@/components/MeNodeList.vue'
 import { configTip as tips, redisConfDict, valkeyConfDict } from '@/locales/config'
 import { shareProvideKey } from '@/types/me-interface'
 import { meCopy, meCommands, meOk } from '@/utils/app/util'
 import { pickVersionAtOrBelow, sortVersionsDesc } from '@/utils/redis/redis-version'
-import NodeList from '@/views/ext/NodeList.vue'
 // #endregion
 
 // #region 核心状态

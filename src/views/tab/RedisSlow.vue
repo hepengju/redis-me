@@ -5,11 +5,11 @@ import { computed, inject, nextTick, reactive, ref, useTemplateRef, watchEffect 
 import { useI18n } from 'vue-i18n'
 
 import type { MeColumn } from '@/components/me-table/column'
+import NodeList from '@/components/MeNodeList.vue'
 import { shareProvideKey } from '@/types/me-interface'
 import type { RedisSlowLog } from '@/types/tauri-specta'
 // 官网参考: https://redis.ac.cn/docs/latest/commands/slowlog-get/
 import { meCopy, meCommands, meOk } from '@/utils/app/util'
-import NodeList from '@/views/ext/NodeList.vue'
 // #endregion
 
 // #region 核心状态

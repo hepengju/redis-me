@@ -5,6 +5,7 @@ import { computed, inject, nextTick, onMounted, onUnmounted, ref, useTemplateRef
 import { useI18n } from 'vue-i18n'
 
 import MeIcon from '@/components/MeIcon.vue'
+import NodeList from '@/components/MeNodeList.vue'
 import MeSelectUpDownIcon from '@/components/MeSelectUpDownIcon.vue'
 import MeShortcut from '@/components/MeShortcut.vue'
 import { commandHelp, isReadonlyCommand, parseCommandName } from '@/locales/cmd'
@@ -14,7 +15,6 @@ import { getTerminalShortcuts } from '@/utils/app/shortcut'
 import { bus, DB_SWITCH, formatSpectaErrorForUser, meCopy, meCommandsQuiet } from '@/utils/app/util'
 
 import CommandHelp from '../ext/CommandHelp.vue'
-import NodeList from '../ext/NodeList.vue'
 // #endregion
 
 // #region 核心状态

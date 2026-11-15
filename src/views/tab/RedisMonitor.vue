@@ -5,10 +5,10 @@ import { computed, inject, onUnmounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import type { MeColumn } from '@/components/me-table/column'
+import NodeList from '@/components/MeNodeList.vue'
 import { shareProvideKey } from '@/types/me-interface'
 import { meConfirm, meCommands, meOk } from '@/utils/app/util'
 import { createRealtimeStream } from '@/utils/redis/realtime-stream'
-import NodeList from '@/views/ext/NodeList.vue'
 // #endregion
 
 // #region 核心状态
