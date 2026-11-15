@@ -9,7 +9,7 @@ import setupI18n from '@/plugins/i18n'
 import setupSvgIcon from '@/plugins/icon'
 import setupMe from '@/plugins/me'
 import setupTauri from '@/plugins/tauri'
-import setupTernimal from '@/plugins/ternimal'
+import setupTerminal from '@/plugins/terminal'
 
 import App from './App.vue'
 
@@ -20,6 +20,6 @@ setupSvgIcon(app)
 setupMe(app)
 setupTauri(app)
 setupI18n(app)
-setupTernimal(app)
+setupTerminal(app)
 
 app.mount('#app')

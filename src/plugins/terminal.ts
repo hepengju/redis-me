@@ -26,7 +26,7 @@ const terminal = createTerminal()
 // import customTheme from '/your-style-dir/terminal-custom-theme1.css?inline'
 // terminal.configTheme('my-custom-theme', customTheme)
 
-export default function setupTernimal(app: App): void {
+export default function setupTerminal(app: App): void {
   app.use(terminal)
 }
 

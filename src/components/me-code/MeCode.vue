@@ -19,19 +19,6 @@ import {
 } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import {
-  markdownHeadingSyntax,
-  markdownLang,
-  meBasicSetup,
-  propertiesDarkSyntax,
-  propertiesEagerParse,
-  propertiesLang,
-  propertiesLightSyntax,
-  shellLang,
-  xmlLang,
-  yamlLang,
-  zhPhrases,
-} from '@/plugins/codemirror'
 import { displayShortcutKey, type ShortcutKey } from '@/utils/app/shortcut'
 import {
   ME_CODE_FONT_DEFAULT,
@@ -44,6 +31,19 @@ import {
   meCodeShowLineNumbers,
   meCopy,
 } from '@/utils/app/util'
+import {
+  markdownHeadingSyntax,
+  markdownLang,
+  meBasicSetup,
+  propertiesDarkSyntax,
+  propertiesEagerParse,
+  propertiesLang,
+  propertiesLightSyntax,
+  shellLang,
+  xmlLang,
+  yamlLang,
+  zhPhrases,
+} from '@/utils/codec/codemirror'
 import { detectCodeMode } from '@/utils/codec/detect-code-mode'
 import { redisHighlighting, redisLang } from '@/utils/redis/redis-lang'
 

@@ -3,7 +3,7 @@
 import { computed, onMounted, ref, useTemplateRef } from 'vue'
 import type { FailedFunc, Message, SuccessFunc } from 'vue-web-terminal'
 
-import { handleInputTipsSearch } from '@/plugins/ternimal'
+import { handleInputTipsSearch } from '@/plugins/terminal'
 import type { MeXtermCommandItem } from '@/types/me-interface'
 import { matchAppFullscreenHotkey } from '@/utils/app/shortcut'
 import { isDark } from '@/utils/app/util'
