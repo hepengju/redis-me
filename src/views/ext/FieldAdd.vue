@@ -16,8 +16,8 @@ import {
 } from '@/utils/codec/format'
 import { KEY_TYPE_LIST, meType, toKeyTypeLabel, toRedisTypeName } from '@/utils/redis/redis-display'
 import { redisKeyWireBase64 } from '@/utils/redis/redis-key'
+import { normalizeTsRangeBound } from '@/utils/redis/ts-range'
 import { parseAttrsInput, parseVectorInput } from '@/utils/redis/vector'
-import { normalizeTsRangeBound } from '@/views/tab/RedisValue/helpers'
 // #endregion
 
 // #region 核心状态

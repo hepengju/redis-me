@@ -1,13 +1,10 @@
 // RedisValue 域内共享：类型、键类型能力、扫描/表格纯函数（有状态编排在 index.vue）
 import dayjs from 'dayjs'
-import customParseFormat from 'dayjs/plugin/customParseFormat'
 
 import i18n from '@/locales'
 import type { FieldScanResult } from '@/types/tauri-specta'
 import { meHumanSeconds } from '@/utils/app/util'
 import { formatUtcOffset, meTtlAlignAt, meTtlFromAt, meTtlToAt } from '@/utils/redis/ttl'
-
-dayjs.extend(customParseFormat)
 
 const t = i18n.global.t
 
@@ -162,25 +159,6 @@ export function tsTimestampToDate(ts: string): string {
 }
 
 /** 工具栏时间戳区间：数字 ms / `-`/`+` 原样；可读时间转本地 ms 字符串；空串保持空 */
-const TS_RANGE_BOUND_FMTS = [
-  'YYYY-MM-DD HH:mm:ss.SSS',
-  'YYYY-MM-DD HH:mm:ss',
-  'YYYY-MM-DD HH:mm',
-  'YYYY-MM-DD',
-] as const
-
-export function normalizeTsRangeBound(raw: string): string {
-  const s = raw.trim()
-  if (!s) return ''
-  if (s === '-' || s === '+') return s
-  if (/^\d+$/.test(s)) return s
-  for (const fmt of TS_RANGE_BOUND_FMTS) {
-    const d = dayjs(s, fmt, true)
-    if (d.isValid()) return String(d.valueOf())
-  }
-  return s
-}
-
 const DATETIME_FMT = 'YYYY-MM-DD HH:mm:ss'
 
 function pad2(n: number): string {

@@ -90,6 +90,7 @@ import {
   computeScanProgress,
 } from '@/utils/redis/redis-glob'
 import { indexCreateDraft, type IndexDraftField } from '@/utils/redis/search-ddl'
+import { normalizeTsRangeBound } from '@/utils/redis/ts-range'
 import { meTtlFromAt, meTtlToAt } from '@/utils/redis/ttl'
 import CommandHelp from '@/views/ext/CommandHelp.vue'
 import FieldAdd from '@/views/ext/FieldAdd.vue'
@@ -108,7 +109,6 @@ import {
   isStringLikeType,
   listRowRedisIndex,
   mergeFieldScanPage,
-  normalizeTsRangeBound,
   parseListIndexInput,
   removeScannedFieldRow,
   pinFieldExpireAt,
