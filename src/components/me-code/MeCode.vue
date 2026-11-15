@@ -4,6 +4,7 @@ import { syntaxHighlighting } from '@codemirror/language'
 import { openSearchPanel } from '@codemirror/search'
 import { Prec, EditorState, StateEffect } from '@codemirror/state'
 import { EditorView, keymap, lineNumbers, placeholder as cmPlaceholder } from '@codemirror/view'
+import { readText } from '@tauri-apps/plugin-clipboard-manager'
 import { type as getOsType } from '@tauri-apps/plugin-os'
 import { useDark } from '@vueuse/core'
 import { json5 as cmJson5 } from 'codemirror-json5'
@@ -193,13 +194,72 @@ function copyCode(): void {
   meCopy(props.modelValue)
 }
 
+/** 右键打开时记下选区：点菜单项时编辑器选区可能已空 */
+const menuHasSelection = ref(false)
+let menuSelFrom = 0
+let menuSelTo = 0
+let menuSelText = ''
+
 function onContextMenu(e: MouseEvent) {
+  const v = view.value
+  if (v) {
+    const { from, to } = v.state.selection.main
+    menuSelFrom = from
+    menuSelTo = to
+    menuSelText = from === to ? '' : v.state.sliceDoc(from, to)
+  } else {
+    menuSelFrom = 0
+    menuSelTo = 0
+    menuSelText = ''
+  }
+  menuHasSelection.value = !!menuSelText
   menuRef.value?.showMenu(e)
+}
+
+function cutSelection(): void {
+  const v = view.value
+  if (!v || props.readOnly || !menuSelText) return
+  const docLen = v.state.doc.length
+  const from = Math.min(menuSelFrom, docLen)
+  const to = Math.min(menuSelTo, docLen)
+  if (from >= to) return
+  // 静默写入剪贴板，避免弹出「复制成功」
+  meCopy(menuSelText, undefined, false)
+  v.dispatch({
+    changes: { from, to, insert: '' },
+    selection: { anchor: from },
+    userEvent: 'delete.cut',
+  })
+  v.focus()
+}
+
+function copySelection(): void {
+  if (menuSelText) meCopy(menuSelText, undefined, false)
+}
+
+function pasteClipboard(): void {
+  if (props.readOnly) return
+  void readText()
+    .then(text => {
+      const v = view.value
+      if (!v || !text) return
+      const { from, to } = v.state.selection.main
+      v.dispatch({
+        changes: { from, to, insert: text },
+        selection: { anchor: from + text.length },
+        userEvent: 'input.paste',
+      })
+      v.focus()
+    })
+    .catch((error: unknown) => console.error(error))
 }
 
 function onMenuCommand(command: unknown) {
   if (typeof command !== 'string' || !command) return
-  if (command === 'fullscreen') fullscreenEditor()
+  if (command === 'cut') cutSelection()
+  else if (command === 'copy') copySelection()
+  else if (command === 'paste') pasteClipboard()
+  else if (command === 'fullscreen') fullscreenEditor()
   else if (command === 'lineNumbers') showLineNumbers.value = !showLineNumbers.value
   else if (command === 'lineWrap') lineWrap.value = !lineWrap.value
   else if (command === 'find') {
@@ -269,6 +329,9 @@ function menuShortcut(keys: ShortcutKey[]): string {
   return keys.map(key => displayShortcutKey(key, isMacOS)).join(' + ')
 }
 const menuKeys = {
+  cut: menuShortcut(['mod', 'x']),
+  copy: menuShortcut(['mod', 'c']),
+  paste: menuShortcut(['mod', 'v']),
   fullscreen: menuShortcut(isMacOS ? ['mod', 'shift', 'f'] : ['F11']),
   lineNumbers: menuShortcut(['mod', 'n']),
   lineWrap: menuShortcut(['mod', 'b']),
@@ -449,7 +512,25 @@ watch(
       :teleported="!fullscreenOn"
       :hide-on-click="false"
       @handle-command="onMenuCommand">
-      <el-dropdown-item command="fullscreen">
+      <el-dropdown-item v-if="menuHasSelection && !readOnly" command="cut">
+        <span class="me-code-menu-row">
+          <me-icon class="me-code-menu-label" icon="el-icon-scissor" :name="t('cut')" />
+          <span class="me-code-menu-key">{{ menuKeys.cut }}</span>
+        </span>
+      </el-dropdown-item>
+      <el-dropdown-item v-if="menuHasSelection" command="copy">
+        <span class="me-code-menu-row">
+          <me-icon class="me-code-menu-label" icon="el-icon-document-copy" :name="t('copy')" />
+          <span class="me-code-menu-key">{{ menuKeys.copy }}</span>
+        </span>
+      </el-dropdown-item>
+      <el-dropdown-item v-if="!readOnly" command="paste">
+        <span class="me-code-menu-row">
+          <me-icon class="me-code-menu-label" icon="el-icon-document-add" :name="t('paste')" />
+          <span class="me-code-menu-key">{{ menuKeys.paste }}</span>
+        </span>
+      </el-dropdown-item>
+      <el-dropdown-item command="fullscreen" :divided="menuHasSelection || !readOnly">
         <span class="me-code-menu-row">
           <me-icon
             class="me-code-menu-label"

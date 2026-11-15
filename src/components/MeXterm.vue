@@ -174,7 +174,7 @@ function onContextMenu(e: MouseEvent): void {
 function onMenuCommand(command: unknown): void {
   if (typeof command !== 'string' || !command) return
   if (command === 'copy') {
-    if (menuSelected.value) meCopy(menuSelected.value)
+    if (menuSelected.value) meCopy(menuSelected.value, undefined, false)
   } else if (command === 'paste') {
     props.onPaste?.()
   } else if (command === 'fullscreen') {
@@ -285,18 +285,18 @@ function onKeydown(e: KeyboardEvent): void {
       :teleported="!fullscreenOn"
       :hide-on-click="false"
       @handle-command="onMenuCommand">
-      <el-dropdown-item command="copy" :disabled="!menuSelected">
+      <el-dropdown-item v-if="menuSelected" command="copy">
         <span class="me-code-menu-row">
           <me-icon class="me-code-menu-label" icon="el-icon-document-copy" :name="t('copy')" />
         </span>
       </el-dropdown-item>
-      <el-dropdown-item command="paste" :disabled="!onPaste">
+      <el-dropdown-item v-if="onPaste" command="paste">
         <span class="me-code-menu-row">
           <me-icon class="me-code-menu-label" icon="el-icon-document-add" :name="t('paste')" />
           <span class="me-code-menu-key">{{ menuKeys.paste }}</span>
         </span>
       </el-dropdown-item>
-      <el-dropdown-item command="fullscreen" divided>
+      <el-dropdown-item command="fullscreen" :divided="!!menuSelected || !!onPaste">
         <span class="me-code-menu-row">
           <me-icon
             class="me-code-menu-label"

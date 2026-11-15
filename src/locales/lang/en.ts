@@ -3,6 +3,7 @@ export default {
 
   // 通用
   copy: 'Copy',
+  cut: 'Cut',
   paste: 'Paste',
   edit: 'Edit',
   view: 'View',
