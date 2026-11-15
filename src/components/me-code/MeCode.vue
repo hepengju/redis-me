@@ -19,7 +19,6 @@ import {
 } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import MeCodeSubmenu from '@/components/MeCodeSubmenu.vue'
 import {
   markdownHeadingSyntax,
   markdownLang,
@@ -47,6 +46,8 @@ import {
 } from '@/utils/app/util'
 import { detectCodeMode } from '@/utils/codec/detect-code-mode'
 import { redisHighlighting, redisLang } from '@/utils/redis/redis-lang'
+
+import MeCodeSubmenu from './MeCodeSubmenu.vue'
 // #endregion
 
 // #region 核心状态

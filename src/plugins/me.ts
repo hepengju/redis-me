@@ -1,10 +1,10 @@
 import '@/App.css'
 import type { App } from 'vue'
 
+import MeCode from '../components/me-code/MeCode.vue'
 import MeColumnFilter from '../components/me-table/MeColumnFilter.vue'
 import MeTable from '../components/me-table/MeTable.vue'
 import MeButton from '../components/MeButton.vue'
-import MeCode from '../components/MeCode.vue'
 import MeContext from '../components/MeContext.vue'
 import MeCopyExport from '../components/MeCopyExport.vue'
 import MeDialog from '../components/MeDialog.vue'
