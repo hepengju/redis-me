@@ -13,8 +13,7 @@ import { shareProvideKey } from '@/types/me-interface'
 import type { CliOutputMode } from '@/types/tauri-specta'
 import { getTerminalShortcuts } from '@/utils/app/shortcut'
 import { bus, DB_SWITCH, formatSpectaErrorForUser, meCopy, meCommandsQuiet } from '@/utils/app/util'
-
-import CommandHelp from '../ext/CommandHelp.vue'
+import CommandHelp from '@/views/tools/CommandHelp.vue'
 // #endregion
 
 // #region 核心状态

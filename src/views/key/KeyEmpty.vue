@@ -5,7 +5,7 @@ import { useI18n } from 'vue-i18n'
 
 import logoGlowUrl from '@/assets/images/logo-glow.webp'
 import { meOpenUrl } from '@/utils/app/util'
-import RedisInstall from '@/views/ext/RedisInstall.vue'
+import RedisInstall from '@/views/tools/RedisInstall.vue'
 // #endregion
 
 // #region 核心状态

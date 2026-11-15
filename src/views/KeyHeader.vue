@@ -15,11 +15,11 @@ import {
 } from '@/utils/app/util'
 import type { MeBusEvents } from '@/utils/app/util'
 import { connsInGroupOrder, getConnIcon } from '@/utils/conn'
-import AppAbout from '@/views/ext/AppAbout.vue'
-import AppSetting from '@/views/ext/AppSetting.vue'
-import AppShortcut from '@/views/ext/AppShortcut.vue'
-import CommandLog from '@/views/ext/CommandLog.vue'
+import AppAbout from '@/views/app/AppAbout.vue'
+import AppSetting from '@/views/app/AppSetting.vue'
+import AppShortcut from '@/views/app/AppShortcut.vue'
 import KeyMigrate from '@/views/key/KeyMigrate.vue'
+import CommandLog from '@/views/tools/CommandLog.vue'
 // #endregion
 
 // #region 核心状态

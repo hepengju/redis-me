@@ -92,10 +92,10 @@ import {
 import { indexCreateDraft, type IndexDraftField } from '@/utils/redis/search-ddl'
 import { normalizeTsRangeBound } from '@/utils/redis/ts-range'
 import { meTtlFromAt, meTtlToAt } from '@/utils/redis/ttl'
-import CommandHelp from '@/views/ext/CommandHelp.vue'
-import FieldAdd from '@/views/ext/FieldAdd.vue'
-import TTLSet from '@/views/ext/TTLSet.vue'
 import KeyRename from '@/views/key/KeyRename.vue'
+import CommandHelp from '@/views/tools/CommandHelp.vue'
+import FieldAdd from '@/views/tools/FieldAdd.vue'
+import TTLSet from '@/views/tools/TTLSet.vue'
 
 import CustomCodec from './CustomCodec.vue'
 import FieldSet from './FieldSet.vue'

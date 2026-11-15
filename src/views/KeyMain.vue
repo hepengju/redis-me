@@ -63,11 +63,11 @@ import {
 } from '@/utils/redis/redis-glob'
 import { redisKeyId, sameRedisKey } from '@/utils/redis/redis-key'
 import { setTerminalKeyHints } from '@/utils/redis/terminal-key-hints'
-import FieldAdd from '@/views/ext/FieldAdd.vue'
-import TTLSet from '@/views/ext/TTLSet.vue'
 import KeyCopy from '@/views/key/KeyCopy.vue'
 import KeyImport from '@/views/key/KeyImport.vue'
 import KeyRename from '@/views/key/KeyRename.vue'
+import FieldAdd from '@/views/tools/FieldAdd.vue'
+import TTLSet from '@/views/tools/TTLSet.vue'
 
 import KeyBatch from './key/KeyBatch.vue'
 import KeyFavoriteFolder from './key/KeyFavoriteFolder.vue'

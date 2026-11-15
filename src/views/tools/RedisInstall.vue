@@ -11,7 +11,7 @@ import {
   genInstallSans,
   genRedisInstall,
 } from '@/utils/redis/redis-install-gen'
-import TlsCertGen from '@/views/ext/TlsCertGen.vue'
+import TlsCertGen from '@/views/tools/TlsCertGen.vue'
 // #endregion
 
 // #region 核心状态
