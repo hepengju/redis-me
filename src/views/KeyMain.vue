@@ -37,7 +37,7 @@ import {
   OPEN_KEY_MIGRATE,
   sleep,
 } from '@/utils/app/util'
-import { folderKeyPrefix, folderMatchExpr, getConnKeySeparator } from '@/utils/conn/conn'
+import { folderKeyPrefix, folderMatchExpr, getConnKeySeparator } from '@/utils/conn'
 import {
   useFavorites,
   useFavoriteFolders,

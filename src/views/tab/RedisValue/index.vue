@@ -77,7 +77,7 @@ import {
   viewFmtForField,
   type ViewBytesFormat,
 } from '@/utils/codec/format'
-import { isConnMinimalMode } from '@/utils/conn/conn'
+import { isConnMinimalMode } from '@/utils/conn'
 import { useFavorites, addFavorite, removeFavorite, isFavorited } from '@/utils/redis/favorite'
 import { captureKeyMemoryWrite } from '@/utils/redis/key-memory-cache'
 import { invalidateKeyTtl } from '@/utils/redis/key-ttl-cache'

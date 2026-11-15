@@ -9,7 +9,7 @@ import { parse as parseYaml } from 'yaml'
 
 import type { UiConn } from '@/types/me-interface'
 import { meJsonParse } from '@/utils/app/util'
-import { setConnGroup } from '@/utils/conn/conn'
+import { setConnGroup } from '@/utils/conn'
 import { DEFAULT_PROXY_OPTION } from '@/utils/conn/conn-compat'
 
 // #region 错误与来源标识

@@ -46,7 +46,7 @@ import {
   collectKnownConnGroupNames,
   isConnMinimalMode,
   mergeConnGroupsFromList,
-} from '@/utils/conn/conn'
+} from '@/utils/conn'
 import { mergeImportedConnList } from '@/utils/conn/rdm'
 import {
   clearKeyMemoryCacheForConn,

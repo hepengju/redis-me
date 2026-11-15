@@ -8,7 +8,7 @@ import { useI18n } from 'vue-i18n'
 import { shareProvideKey } from '@/types/me-interface'
 import type { RedisKey_Deserialize, ScanCursor } from '@/types/tauri-specta'
 import { meCommands, meCopy, meWarn, sleep } from '@/utils/app/util'
-import { folderMatchExpr, getConnKeySeparator, keyUnderFolder } from '@/utils/conn/conn'
+import { folderMatchExpr, getConnKeySeparator, keyUnderFolder } from '@/utils/conn'
 import { redisKeyId, sameRedisKey } from '@/utils/redis/redis-key'
 
 import KeyTree from './KeyTree.vue'

@@ -17,7 +17,7 @@ import {
   meErr,
   meCopy,
 } from '@/utils/app/util'
-import { buildRedisUrl, isUnixNetwork } from '@/utils/conn/conn'
+import { buildRedisUrl, isUnixNetwork } from '@/utils/conn'
 import {
   getConnCommandMap,
   getConnGroup,
@@ -31,7 +31,7 @@ import {
   setConnProtocol,
   setConnUiMode,
   type ConnProtocol,
-} from '@/utils/conn/conn'
+} from '@/utils/conn'
 import { DEFAULT_PROXY_OPTION } from '@/utils/conn/conn-compat'
 const { t } = useI18n()
 // #endregion

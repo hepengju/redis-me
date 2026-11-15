@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vite-plus/test'
 
-import { getConnGroup, mergeConnGroupsFromList } from '@/utils/conn/conn'
+import { getConnGroup, mergeConnGroupsFromList } from '@/utils/conn'
 import { checkConnList } from '@/utils/conn/conn-compat'
 import {
   ConnImportParseError,

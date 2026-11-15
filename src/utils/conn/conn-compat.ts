@@ -1,5 +1,5 @@
 import type { ConnConfig } from '@/types/tauri-specta'
-import { DEFAULT_KEY_SEPARATOR } from '@/utils/conn/conn'
+import { DEFAULT_KEY_SEPARATOR } from '@/utils/conn'
 
 /** 本地 store / 旧版数据：字段可能缺失，或含已迁移的扁平哨兵字段 */
 export type ConnFromStore = { [K in keyof ConnConfig]?: ConnConfig[K] } & Record<string, unknown>

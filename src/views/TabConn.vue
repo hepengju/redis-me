@@ -19,7 +19,7 @@ import {
   normalizeGroupName,
   removeConnGroup,
   renameConnGroup,
-} from '@/utils/conn/conn'
+} from '@/utils/conn'
 import { encodeRedisMeConnectionsToMec } from '@/utils/conn/rdm'
 import ConnEmpty from '@/views/conn/ConnEmpty.vue'
 import ConnGroup from '@/views/conn/ConnGroup.vue'

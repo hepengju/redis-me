@@ -18,7 +18,7 @@ import { infoTip as tips, lookupInfoTip } from '@/locales/info'
 import { shareProvideKey } from '@/types/me-interface'
 import type { RedisInfo } from '@/types/tauri-specta'
 import { bus, INFO_REFRESH, meCommands, meCommandsQuiet, meHumanSize } from '@/utils/app/util'
-import { connEndpoint } from '@/utils/conn/conn'
+import { connEndpoint } from '@/utils/conn'
 import type { MasterStatSource } from '@/utils/redis/command-stats'
 import { enrichNodeList } from '@/utils/redis/redis-display'
 

@@ -6,7 +6,7 @@ import {
   buildRedisUrl,
   connsInGroupOrder,
   isConnMinimalMode,
-} from '@/utils/conn/conn'
+} from '@/utils/conn'
 
 describe('buildRedisUrl', () => {
   it('基本单机：redis://host:port', () => {

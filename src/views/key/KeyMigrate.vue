@@ -22,7 +22,7 @@ import {
   meWarn,
   sleep,
 } from '@/utils/app/util'
-import { connsInGroupOrder, getConnIcon } from '@/utils/conn/conn'
+import { connsInGroupOrder, getConnIcon } from '@/utils/conn'
 
 type KeyMigrateOpenData = {
   /** 扩展入口锁定源连接 */

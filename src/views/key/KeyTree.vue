@@ -14,7 +14,7 @@ import {
   keyRelativePath,
   keyUnderFolder,
   splitKeyPath,
-} from '@/utils/conn/conn'
+} from '@/utils/conn'
 import { redisKeyId, sameRedisKey } from '@/utils/redis/redis-key'
 
 import KeyMemorySize from './KeyMemorySize.vue'
