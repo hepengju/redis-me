@@ -123,6 +123,7 @@ export function isAppFullscreenHotkeyBlocked(
     if (
       fs.classList.contains('cm-editor') ||
       fs.classList.contains('me-code-wrap') ||
+      fs.classList.contains('me-xterm') ||
       fs.classList.contains('charts')
     )
       return true
@@ -177,6 +178,9 @@ export function getTerminalShortcuts(t: ComposerTranslation): ShortcutItem[] {
     { label: t('redisTerminal.keyShort.cursorEnd'), keys: ['mod', 'E'] },
     { label: t('redisTerminal.keyShort.toggleWrap'), keys: ['mod', 'B'] },
     { label: t('redisTerminal.keyShort.paste'), keys: ['mod', 'V'] },
+    { label: t('redisTerminal.keyShort.fontIncrease'), keys: ['mod', '='], gapBefore: true },
+    { label: t('redisTerminal.keyShort.fontDecrease'), keys: ['mod', '-'] },
+    { label: t('redisTerminal.keyShort.fontReset'), keys: ['mod', '0'] },
     { label: t('redisTerminal.keyShort.cmdClear'), keys: ['clear'], gapBefore: true },
     { label: t('redisTerminal.keyShort.cmdHelp'), keys: ['help'] },
     { label: t('redisTerminal.keyShort.cmdOpen'), keys: ['open'] },

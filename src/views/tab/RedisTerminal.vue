@@ -282,13 +282,6 @@ function onPaste(event: ClipboardEvent): void {
   event.preventDefault()
 }
 
-// 右键按下时选区还在；到 contextmenu 时可能已被清掉，有选区则留给组件复制
-let selectedOnPointer = ''
-
-function onMouseDown(): void {
-  selectedOnPointer = document.getSelection()?.toString() ?? ''
-}
-
 function insertAtCursor(text: string): void {
   const term = xtermRef.value
   if (!term) return
@@ -300,8 +293,11 @@ function insertAtCursor(text: string): void {
 }
 
 // vue-web-terminal 初次挂载不会 focus 内部 textarea，Ctrl+V 的 keydown 到不了容器，
-// 需等 setCommand 等路径间接聚焦；这里点击和挂载时通过组件 ref 主动聚焦
+// 需等 setCommand 等路径间接聚焦；这里点击和挂载时通过组件 ref 主动聚焦。
+// 有选区时不抢焦，否则选完立刻 focus 输入框会清掉选区，右键「复制」永远点不了
 function focusTerminalInput(): void {
+  const sel = document.getSelection()
+  if (sel && !sel.isCollapsed && sel.toString()) return
   xtermRef.value?.focus()
 }
 
@@ -326,21 +322,6 @@ function onKeydown(event: KeyboardEvent): void {
   }
 }
 
-function onContextMenu(event: MouseEvent): void {
-  const selected = (document.getSelection()?.toString() || selectedOnPointer).replaceAll(
-    '\u00a0',
-    ' ',
-  )
-  selectedOnPointer = ''
-  event.preventDefault()
-  event.stopPropagation()
-  if (selected) {
-    meCopy(selected)
-    return
-  }
-  pasteFromClipboard()
-}
-
 onUnmounted(() => {
   settlePasteAsk(null)
   finishCommand()
@@ -357,14 +338,13 @@ onUnmounted(() => {
       class="terminal"
       @click="focusTerminalInput"
       @keydown.capture="onKeydown"
-      @paste.capture="onPaste"
-      @mousedown.capture="onMouseDown"
-      @contextmenu.capture="onContextMenu">
+      @paste.capture="onPaste">
       <me-xterm
         ref="xtermRef"
         class="terminal"
         :exec-command="execCommand"
         :on-command-done="finishCommand"
+        :on-paste="pasteFromClipboard"
         :prefix
         :welcome
         :command-help="commandHelp" />

@@ -3,6 +3,7 @@ export default {
 
   // 通用
   copy: '复制',
+  paste: '粘贴',
   edit: '编辑',
   view: '查看',
   save: '保存',
@@ -1180,6 +1181,9 @@ export default {
       clearInput: '清除输入',
       cursorStart: '光标到行首',
       cursorEnd: '光标到行尾',
+      fontIncrease: '增大字号',
+      fontDecrease: '减小字号',
+      fontReset: '恢复默认字号',
       cmdClear: '清屏',
       cmdHelp: '帮助',
       cmdOpen: '打开网址',

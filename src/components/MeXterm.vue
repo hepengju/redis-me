@@ -1,12 +1,27 @@
 <script setup lang="ts">
 // #region 导入
-import { computed, onMounted, ref, useTemplateRef } from 'vue'
+import { type as getOsType } from '@tauri-apps/plugin-os'
+import { computed, onBeforeUnmount, onMounted, ref, useTemplateRef } from 'vue'
+import { useI18n } from 'vue-i18n'
 import type { FailedFunc, Message, SuccessFunc } from 'vue-web-terminal'
 
+import MeCodeSubmenu from '@/components/me-code/MeCodeSubmenu.vue'
 import { handleInputTipsSearch } from '@/plugins/terminal'
 import type { MeXtermCommandItem } from '@/types/me-interface'
-import { matchAppFullscreenHotkey } from '@/utils/app/shortcut'
-import { isDark } from '@/utils/app/util'
+import {
+  displayShortcutKey,
+  matchAppFullscreenHotkey,
+  type ShortcutKey,
+} from '@/utils/app/shortcut'
+import {
+  ME_XTERM_FONT_DEFAULT,
+  ME_XTERM_FONT_MAX,
+  ME_XTERM_FONT_MIN,
+  ME_XTERM_FONT_STEP,
+  isDark,
+  meCopy,
+  meXtermFontSize,
+} from '@/utils/app/util'
 // #endregion
 
 // #region 核心状态
@@ -21,6 +36,8 @@ const props = withDefaults(
     commandHelp?: MeXtermCommandItem[]
     /** 回显已经写入终端后调用，多条命令靠它排成「命令、结果」交替 */
     onCommandDone?: () => void
+    /** 粘贴由 Redis 终端处理（多行询问 / Tauri 剪贴板） */
+    onPaste?: () => void
   }>(),
   {
     welcome: '欢迎使用 Terminal',
@@ -43,12 +60,38 @@ type TerminalExpose = {
   execute: (command: string) => boolean
 }
 
+const { t } = useI18n()
+const wrapEl = useTemplateRef<HTMLElement>('wrapEl')
 const terminalRef = useTemplateRef<TerminalExpose | null>('terminal')
+const menuRef = useTemplateRef<{ showMenu: (e: MouseEvent) => void; closeMenu: () => void } | null>(
+  'menuRef',
+)
 // 自动换行默认开启，Mod+B 切换（与 CodeMirror 一致）
 const lineWrap = ref(true)
+// 字号：终端会话内共用，与 CodeMirror 独立
+const fontSizePx = meXtermFontSize
+const fontTitle = computed(() => t('meCode.fontSize', { size: fontSizePx.value }))
+const wrapStyle = computed(() => ({
+  '--t-font-size': `${fontSizePx.value}px`,
+  '--t-font-height': `${fontSizePx.value}px`,
+}))
+// 全屏挂在本组件根上，右键菜单才能留在全屏层内（库内 fullscreen 目标不含菜单）
+const fullscreenOn = ref(false)
+
+function bumpFontSize(delta: number): void {
+  fontSizePx.value = Math.min(
+    ME_XTERM_FONT_MAX,
+    Math.max(ME_XTERM_FONT_MIN, fontSizePx.value + delta),
+  )
+}
 
 onMounted(() => {
   terminalRef.value?.pushMessage(props.welcome)
+  document.addEventListener('fullscreenchange', syncFullscreen)
+})
+
+onBeforeUnmount(() => {
+  document.removeEventListener('fullscreenchange', syncFullscreen)
 })
 
 async function execCmd(
@@ -69,6 +112,28 @@ async function execCmd(
 
 const theme = computed(() => (isDark.value ? 'dark' : 'light'))
 
+function clearTerminal(): void {
+  const term = terminalRef.value
+  if (!term) return
+  term.clearLog()
+  term.pushMessage(props.welcome)
+  term.setCommand('')
+}
+
+function toggleFullscreen(): void {
+  const el = wrapEl.value
+  if (!el) return
+  if (document.fullscreenElement === el) {
+    void document.exitFullscreen().catch(() => {})
+    return
+  }
+  void el.requestFullscreen().catch(() => {})
+}
+
+function syncFullscreen(): void {
+  fullscreenOn.value = document.fullscreenElement === wrapEl.value
+}
+
 // 多行粘贴由 Redis 终端决定。这里只透出命令的读写和执行。
 defineExpose({
   focus: () => terminalRef.value?.focus(true),
@@ -76,6 +141,73 @@ defineExpose({
   setCommand: (command: string) => terminalRef.value?.setCommand(command),
   execute: (command: string) => terminalRef.value?.execute(command) ?? false,
 })
+// #endregion
+
+// #region 右键菜单
+// 右键按下时选区还在；到 contextmenu 时可能已被清掉。mouseup 再记一次，避免仅靠 mousedown 起始空选区
+let selectedOnPointer = ''
+const menuSelected = ref('')
+
+function readSelection(): string {
+  return (document.getSelection()?.toString() ?? '').replaceAll('\u00a0', ' ')
+}
+
+function onMouseDown(e: MouseEvent): void {
+  // 右键：按下时选区通常仍在
+  if (e.button === 2) selectedOnPointer = readSelection()
+}
+
+function onMouseUp(): void {
+  // 始终同步：空选区也要清掉旧缓存，避免无选区右键仍启用「复制」
+  selectedOnPointer = readSelection()
+}
+
+function onContextMenu(e: MouseEvent): void {
+  // 拦住 vue-web-terminal 自带的右键复制/粘贴，避免再 focus 清选区、与菜单抢事件
+  e.preventDefault()
+  e.stopPropagation()
+  menuSelected.value = readSelection() || selectedOnPointer
+  selectedOnPointer = ''
+  menuRef.value?.showMenu(e)
+}
+
+function onMenuCommand(command: unknown): void {
+  if (typeof command !== 'string' || !command) return
+  if (command === 'copy') {
+    if (menuSelected.value) meCopy(menuSelected.value)
+  } else if (command === 'paste') {
+    props.onPaste?.()
+  } else if (command === 'fullscreen') {
+    toggleFullscreen()
+  } else if (command === 'lineWrap') {
+    lineWrap.value = !lineWrap.value
+  } else if (command === 'font+') {
+    bumpFontSize(ME_XTERM_FONT_STEP)
+  } else if (command === 'font-') {
+    bumpFontSize(-ME_XTERM_FONT_STEP)
+  } else if (command === 'clear') {
+    clearTerminal()
+  } else if (command === 'clearInput') {
+    terminalRef.value?.setCommand('')
+  }
+  // 放大/缩小留着菜单连点，其余项点完关掉
+  if (command !== 'font+' && command !== 'font-') menuRef.value?.closeMenu()
+}
+
+// 右键项右侧的快捷键。Mod+C 在终端是清输入，不是复制
+const isMacOS = getOsType() === 'macos'
+function menuShortcut(keys: ShortcutKey[]): string {
+  return keys.map(key => displayShortcutKey(key, isMacOS)).join(' + ')
+}
+const menuKeys = {
+  paste: menuShortcut(['mod', 'v']),
+  fullscreen: menuShortcut(isMacOS ? ['mod', 'shift', 'f'] : ['F11']),
+  lineWrap: menuShortcut(['mod', 'b']),
+  fontIncrease: menuShortcut(['mod', '=']),
+  fontDecrease: menuShortcut(['mod', '-']),
+  clear: menuShortcut(['mod', 'l']),
+  clearInput: menuShortcut(['mod', 'c']),
+}
 // #endregion
 
 // #region 键盘事件
@@ -87,7 +219,7 @@ function onKeydown(e: KeyboardEvent): void {
 
   if (matchAppFullscreenHotkey(e)) {
     e.preventDefault()
-    term.fullscreen()
+    toggleFullscreen()
     return
   }
 
@@ -99,12 +231,24 @@ function onKeydown(e: KeyboardEvent): void {
       lineWrap.value = !lineWrap.value
       break
     case 'L':
-      term.clearLog()
-      term.pushMessage(props.welcome)
-      term.setCommand('')
+      clearTerminal()
       break
     case 'C':
       term.setCommand('')
+      break
+    case '=':
+    case '+':
+      e.preventDefault()
+      bumpFontSize(ME_XTERM_FONT_STEP)
+      break
+    case '-':
+    case '_':
+      e.preventDefault()
+      bumpFontSize(-ME_XTERM_FONT_STEP)
+      break
+    case '0':
+      e.preventDefault()
+      fontSizePx.value = ME_XTERM_FONT_DEFAULT
       break
   }
 }
@@ -112,7 +256,14 @@ function onKeydown(e: KeyboardEvent): void {
 </script>
 
 <template>
-  <div class="me-xterm" :class="{ 'is-wrap': lineWrap }">
+  <div
+    ref="wrapEl"
+    class="me-xterm"
+    :class="{ 'is-wrap': lineWrap }"
+    :style="wrapStyle"
+    @mousedown.capture="onMouseDown"
+    @mouseup.capture="onMouseUp"
+    @contextmenu.capture="onContextMenu">
     <terminal
       name="terminal"
       ref="terminal"
@@ -127,6 +278,81 @@ function onKeydown(e: KeyboardEvent): void {
       :input-tips-search-handler="handleInputTipsSearch"
       :context-suffix="prefix">
     </terminal>
+    <!-- 全屏时菜单留在包裹层内；平时挂到 body，避免被父级 overflow 裁掉 -->
+    <me-context
+      ref="menuRef"
+      popper-class="me-xterm-menu"
+      :teleported="!fullscreenOn"
+      :hide-on-click="false"
+      @handle-command="onMenuCommand">
+      <el-dropdown-item command="copy" :disabled="!menuSelected">
+        <span class="me-code-menu-row">
+          <me-icon class="me-code-menu-label" icon="el-icon-document-copy" :name="t('copy')" />
+        </span>
+      </el-dropdown-item>
+      <el-dropdown-item command="paste" :disabled="!onPaste">
+        <span class="me-code-menu-row">
+          <me-icon class="me-code-menu-label" icon="el-icon-document-add" :name="t('paste')" />
+          <span class="me-code-menu-key">{{ menuKeys.paste }}</span>
+        </span>
+      </el-dropdown-item>
+      <el-dropdown-item command="fullscreen" divided>
+        <span class="me-code-menu-row">
+          <me-icon
+            class="me-code-menu-label"
+            icon="me-icon-window-maximize"
+            :name="t('meCode.fullscreen')" />
+          <span class="me-code-menu-key">{{ menuKeys.fullscreen }}</span>
+        </span>
+      </el-dropdown-item>
+      <el-dropdown-item command="lineWrap">
+        <span class="me-code-menu-row">
+          <me-icon
+            class="me-code-menu-label"
+            icon="me-icon-line-wrap"
+            :name="t('meCode.lineWrap')" />
+          <span class="me-code-menu-key">{{ menuKeys.lineWrap }}</span>
+        </span>
+      </el-dropdown-item>
+      <MeCodeSubmenu keep-open icon="me-icon-font-size" :title="fontTitle" @command="onMenuCommand">
+        <el-dropdown-item command="font+" :disabled="fontSizePx >= ME_XTERM_FONT_MAX">
+          <span class="me-code-menu-row">
+            <me-icon
+              class="me-code-menu-label"
+              icon="el-icon-zoom-in"
+              :name="t('meCode.fontIncrease')" />
+            <span class="me-code-menu-key">{{ menuKeys.fontIncrease }}</span>
+          </span>
+        </el-dropdown-item>
+        <el-dropdown-item command="font-" :disabled="fontSizePx <= ME_XTERM_FONT_MIN">
+          <span class="me-code-menu-row">
+            <me-icon
+              class="me-code-menu-label"
+              icon="el-icon-zoom-out"
+              :name="t('meCode.fontDecrease')" />
+            <span class="me-code-menu-key">{{ menuKeys.fontDecrease }}</span>
+          </span>
+        </el-dropdown-item>
+      </MeCodeSubmenu>
+      <el-dropdown-item command="clear">
+        <span class="me-code-menu-row">
+          <me-icon
+            class="me-code-menu-label"
+            icon="el-icon-delete"
+            :name="t('redisTerminal.keyShort.clearScreen')" />
+          <span class="me-code-menu-key">{{ menuKeys.clear }}</span>
+        </span>
+      </el-dropdown-item>
+      <el-dropdown-item command="clearInput">
+        <span class="me-code-menu-row">
+          <me-icon
+            class="me-code-menu-label"
+            icon="el-icon-document-remove"
+            :name="t('redisTerminal.keyShort.clearInput')" />
+          <span class="me-code-menu-key">{{ menuKeys.clearInput }}</span>
+        </span>
+      </el-dropdown-item>
+    </me-context>
   </div>
 </template>
 
@@ -207,6 +433,23 @@ code,
 
 .me-xterm {
   height: 100%;
+  position: relative;
+}
+
+.me-xterm:fullscreen {
+  box-sizing: border-box;
+  width: 100%;
+  height: 100%;
+  background-color: #efefef;
+
+  /* 全屏挂在本组件根上，内部容器需铺满视口 */
+  .t-container {
+    height: 100%;
+  }
+}
+
+html.dark .me-xterm:fullscreen {
+  background-color: var(--t-main-background-color, #1e1e1e);
 }
 
 /* 自动换行开启：保留空白并强制长串换行，避免横向滚动条 */
@@ -233,5 +476,9 @@ code,
     overflow-wrap: normal;
     word-break: normal;
   }
+}
+
+.me-xterm-menu.el-dropdown__popper .el-dropdown__list {
+  min-width: 168px;
 }
 </style>

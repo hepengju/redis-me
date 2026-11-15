@@ -3,6 +3,7 @@ export default {
 
   // 通用
   copy: 'Copy',
+  paste: 'Paste',
   edit: 'Edit',
   view: 'View',
   save: 'Save',
@@ -1203,6 +1204,9 @@ export default {
       clearInput: 'Clear Input',
       cursorStart: 'Move Cursor to line start',
       cursorEnd: 'Move Cursor to line end',
+      fontIncrease: 'Increase Font Size',
+      fontDecrease: 'Decrease Font Size',
+      fontReset: 'Reset Font Size',
       cmdClear: 'Clear Screen',
       cmdHelp: 'Help',
       cmdOpen: 'Open Website',
