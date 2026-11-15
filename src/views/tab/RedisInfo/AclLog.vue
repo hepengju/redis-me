@@ -8,7 +8,7 @@ import { useI18n } from 'vue-i18n'
 import type { MeColumn } from '@/components/me-table/column'
 import { shareProvideKey } from '@/types/me-interface'
 import type { AclLogEntry } from '@/types/tauri-specta'
-import { meCommands, meConfirm, meOk } from '@/utils/util'
+import { meCommands, meConfirm, meOk } from '@/utils/app/util'
 // #endregion
 
 // #region 核心状态

@@ -13,7 +13,6 @@ import type {
   RedisMigrateParam_Deserialize,
   ScanCursor,
 } from '@/types/tauri-specta'
-import { connsInGroupOrder, getConnIcon } from '@/utils/conn'
 import {
   formatSpectaErrorForUser,
   meCommands,
@@ -22,7 +21,8 @@ import {
   meOk,
   meWarn,
   sleep,
-} from '@/utils/util'
+} from '@/utils/app/util'
+import { connsInGroupOrder, getConnIcon } from '@/utils/conn/conn'
 
 type KeyMigrateOpenData = {
   /** 扩展入口锁定源连接 */

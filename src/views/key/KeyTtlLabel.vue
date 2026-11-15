@@ -4,8 +4,8 @@ import { useI18n } from 'vue-i18n'
 
 import { shareProvideKey } from '@/types/me-interface'
 import type { RedisKey_Deserialize } from '@/types/tauri-specta'
-import { cachedKeyTtl, enqueueKeyTtl, keyTtlGeneration } from '@/utils/key-ttl-cache'
-import { formatKeyTtlRemain } from '@/utils/ttl'
+import { cachedKeyTtl, enqueueKeyTtl, keyTtlGeneration } from '@/utils/redis/key-ttl-cache'
+import { formatKeyTtlRemain } from '@/utils/redis/ttl'
 
 // 叶子行右侧 TTL。只挂载可见行；结果进 key-ttl-cache，不每秒倒计时。
 const share = inject(shareProvideKey)!

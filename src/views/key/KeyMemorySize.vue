@@ -3,8 +3,12 @@ import { computed, inject, onUnmounted, watch } from 'vue'
 
 import { shareProvideKey } from '@/types/me-interface'
 import type { RedisKey_Deserialize } from '@/types/tauri-specta'
-import { cachedKeyMemory, enqueueKeyMemory, keyMemoryGeneration } from '@/utils/key-memory-cache'
-import { meHumanSize } from '@/utils/util'
+import { meHumanSize } from '@/utils/app/util'
+import {
+  cachedKeyMemory,
+  enqueueKeyMemory,
+  keyMemoryGeneration,
+} from '@/utils/redis/key-memory-cache'
 
 // 叶子行右侧内存。只挂载可见行；结果进 key-memory-cache，滚回来不再请求。
 const share = inject(shareProvideKey)!

@@ -6,6 +6,7 @@ import { computed, inject, nextTick, onBeforeUnmount, ref, useTemplateRef, watch
 import { useI18n } from 'vue-i18n'
 
 import { shareProvideKey } from '@/types/me-interface'
+import { meCommands, meCopy, meWarn } from '@/utils/app/util'
 import {
   ACL_PRESET_COMMAND_RULES,
   getReadonlyPresetCommandRules,
@@ -16,8 +17,7 @@ import {
   normalizeSelectorInput,
   type AclEditModel,
   type AclPreset,
-} from '@/utils/acl'
-import { meCommands, meCopy, meWarn } from '@/utils/util'
+} from '@/utils/redis/acl'
 // #endregion
 
 // #region 核心状态

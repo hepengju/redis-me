@@ -5,8 +5,8 @@ import { useI18n } from 'vue-i18n'
 
 import type { MeColumn, MeFilterValue } from '@/components/me-table/column'
 import { commandHelp, type CommandHelpRow } from '@/locales/cmd'
-import { sortVersionsDesc } from '@/utils/redis-version'
-import { isZh } from '@/utils/util'
+import { isZh } from '@/utils/app/util'
+import { sortVersionsDesc } from '@/utils/redis/redis-version'
 // #endregion
 
 // #region 核心状态

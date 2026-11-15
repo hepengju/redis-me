@@ -4,8 +4,8 @@ import customParseFormat from 'dayjs/plugin/customParseFormat'
 
 import i18n from '@/locales'
 import type { FieldScanResult } from '@/types/tauri-specta'
-import { formatUtcOffset, meTtlAlignAt, meTtlFromAt, meTtlToAt } from '@/utils/ttl'
-import { meHumanSeconds } from '@/utils/util'
+import { meHumanSeconds } from '@/utils/app/util'
+import { formatUtcOffset, meTtlAlignAt, meTtlFromAt, meTtlToAt } from '@/utils/redis/ttl'
 
 dayjs.extend(customParseFormat)
 

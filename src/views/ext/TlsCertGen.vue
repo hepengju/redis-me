@@ -3,8 +3,8 @@
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import type { RedisCertLabels } from '@/utils/redis-install-gen'
-import { genOpensslCertScript } from '@/utils/redis-install-gen'
+import type { RedisCertLabels } from '@/utils/redis/redis-install-gen'
+import { genOpensslCertScript } from '@/utils/redis/redis-install-gen'
 // #endregion
 
 const { t } = useI18n()

@@ -7,15 +7,15 @@ import { useI18n } from 'vue-i18n'
 
 import { shareProvideKey } from '@/types/me-interface'
 import type { RedisKey_Deserialize } from '@/types/tauri-specta'
+import { TREE_KEY_ID_PREFIX } from '@/utils/app/util'
 import {
   getConnKeySeparator,
   joinKeyPath,
   keyRelativePath,
   keyUnderFolder,
   splitKeyPath,
-} from '@/utils/conn'
-import { redisKeyId, sameRedisKey } from '@/utils/redis-key'
-import { TREE_KEY_ID_PREFIX } from '@/utils/util'
+} from '@/utils/conn/conn'
+import { redisKeyId, sameRedisKey } from '@/utils/redis/redis-key'
 
 import KeyMemorySize from './KeyMemorySize.vue'
 import KeyTtlLabel from './KeyTtlLabel.vue'

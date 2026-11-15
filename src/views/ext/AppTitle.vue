@@ -5,7 +5,7 @@ import { computed, inject, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { shareProvideKey } from '@/types/me-interface'
-import { bus, meLog, meOk, OPEN_SETTING } from '@/utils/util'
+import { bus, meLog, meOk, OPEN_SETTING } from '@/utils/app/util'
 
 const { t } = useI18n()
 

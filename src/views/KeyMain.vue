@@ -19,32 +19,6 @@ import { useI18n } from 'vue-i18n'
 import MeSelectUpDownIcon from '@/components/MeSelectUpDownIcon.vue'
 import { shareProvideKey, connUiProvideKey } from '@/types/me-interface'
 import type { RedisDB, RedisKey_Deserialize, ScanCursor } from '@/types/tauri-specta'
-import { folderKeyPrefix, folderMatchExpr, getConnKeySeparator } from '@/utils/conn'
-import {
-  useFavorites,
-  useFavoriteFolders,
-  useFavoriteSplitLayout,
-  addFavorite,
-  removeFavorite,
-  clearFavoritesForDb,
-  isFavorited,
-  addFavoriteFolder,
-  removeFavoriteFolder,
-  clearFavoriteFoldersForDb,
-} from '@/utils/favorite'
-import { clearKeyMemoryCacheForConn } from '@/utils/key-memory-cache'
-import { clearKeyTtlCacheForConn } from '@/utils/key-ttl-cache'
-import { clearKeyTypeCacheForConn } from '@/utils/key-type-cache'
-import { FT_QUERY_HISTORY_KEY, rememberFtQuery } from '@/utils/query-history'
-import { KEY_TYPE_LIST, meKeyShort, toRedisTypeName } from '@/utils/redis-display'
-import {
-  buildScanPattern,
-  buildLocalFilterPattern,
-  compileRedisGlobFilter,
-  computeScanProgress,
-} from '@/utils/redis-glob'
-import { redisKeyId, sameRedisKey } from '@/utils/redis-key'
-import { setTerminalKeyHints } from '@/utils/terminal-key-hints'
 import {
   bus,
   CONN_REFRESH,
@@ -62,7 +36,33 @@ import {
   meWarn,
   OPEN_KEY_MIGRATE,
   sleep,
-} from '@/utils/util'
+} from '@/utils/app/util'
+import { folderKeyPrefix, folderMatchExpr, getConnKeySeparator } from '@/utils/conn/conn'
+import {
+  useFavorites,
+  useFavoriteFolders,
+  useFavoriteSplitLayout,
+  addFavorite,
+  removeFavorite,
+  clearFavoritesForDb,
+  isFavorited,
+  addFavoriteFolder,
+  removeFavoriteFolder,
+  clearFavoriteFoldersForDb,
+} from '@/utils/redis/favorite'
+import { clearKeyMemoryCacheForConn } from '@/utils/redis/key-memory-cache'
+import { clearKeyTtlCacheForConn } from '@/utils/redis/key-ttl-cache'
+import { clearKeyTypeCacheForConn } from '@/utils/redis/key-type-cache'
+import { FT_QUERY_HISTORY_KEY, rememberFtQuery } from '@/utils/redis/query-history'
+import { KEY_TYPE_LIST, meKeyShort, toRedisTypeName } from '@/utils/redis/redis-display'
+import {
+  buildScanPattern,
+  buildLocalFilterPattern,
+  compileRedisGlobFilter,
+  computeScanProgress,
+} from '@/utils/redis/redis-glob'
+import { redisKeyId, sameRedisKey } from '@/utils/redis/redis-key'
+import { setTerminalKeyHints } from '@/utils/redis/terminal-key-hints'
 import FieldAdd from '@/views/ext/FieldAdd.vue'
 import TTLSet from '@/views/ext/TTLSet.vue'
 import KeyCopy from '@/views/key/KeyCopy.vue'

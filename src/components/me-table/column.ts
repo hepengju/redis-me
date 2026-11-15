@@ -1,6 +1,6 @@
 // MeTable 统一列描述：一份定义同时驱动渲染（el-table-v2 Column）、排序、导出矩阵与具名插槽，
 // 避免界面列与导出列两份描述靠人肉同步。
-import type { TableExportMatrix } from '@/utils/export'
+import type { TableExportMatrix } from '@/utils/app/export'
 
 /** 列头筛选备选值：与行字段值全等比对（由 MeTable 内置的 MeColumnFilter 渲染筛选面板） */
 export type MeFilterValue = string | number | boolean

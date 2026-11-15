@@ -8,10 +8,10 @@ import { computed, inject, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { appProvideKey, connUiProvideKey } from '@/types/me-interface'
-import { meCheckUpdate } from '@/utils/app-update'
-import { resetWindowToDefault } from '@/utils/app-window'
-import { defaultSettings } from '@/utils/settings-defaults'
-import { meConfirm, meCommands, meErr, meOk } from '@/utils/util'
+import { meCheckUpdate } from '@/utils/app/app-update'
+import { resetWindowToDefault } from '@/utils/app/app-window'
+import { defaultSettings } from '@/utils/app/settings-defaults'
+import { meConfirm, meCommands, meErr, meOk } from '@/utils/app/util'
 // #endregion
 
 // #region 核心状态

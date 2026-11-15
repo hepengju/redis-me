@@ -5,9 +5,9 @@ import { useI18n } from 'vue-i18n'
 
 import { shareProvideKey } from '@/types/me-interface'
 import type { RedisKey_Deserialize } from '@/types/tauri-specta'
-import { BYTES_FORMAT, meFormatBytes, meToBase64 } from '@/utils/format'
-import { redisKeyWireBase64 } from '@/utils/redis-key'
-import { meCommands, meErr, meOk } from '@/utils/util'
+import { meCommands, meErr, meOk } from '@/utils/app/util'
+import { BYTES_FORMAT, meFormatBytes, meToBase64 } from '@/utils/codec/format'
+import { redisKeyWireBase64 } from '@/utils/redis/redis-key'
 // #endregion
 
 // #region 核心状态

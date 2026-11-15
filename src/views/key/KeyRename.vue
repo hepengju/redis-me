@@ -5,12 +5,12 @@ import { useI18n } from 'vue-i18n'
 
 import { shareProvideKey } from '@/types/me-interface'
 import type { RedisKey_Deserialize } from '@/types/tauri-specta'
-import { BYTES_FORMAT, meFormatBytes, meToBase64 } from '@/utils/format'
-import { invalidateKeyMemory } from '@/utils/key-memory-cache'
-import { invalidateKeyTtl } from '@/utils/key-ttl-cache'
-import { invalidateKeyType } from '@/utils/key-type-cache'
-import { redisKeyWireBase64 } from '@/utils/redis-key'
-import { bus, KEY_RENAME, meCommands, meErr, meOk } from '@/utils/util'
+import { bus, KEY_RENAME, meCommands, meErr, meOk } from '@/utils/app/util'
+import { BYTES_FORMAT, meFormatBytes, meToBase64 } from '@/utils/codec/format'
+import { invalidateKeyMemory } from '@/utils/redis/key-memory-cache'
+import { invalidateKeyTtl } from '@/utils/redis/key-ttl-cache'
+import { invalidateKeyType } from '@/utils/redis/key-type-cache'
+import { redisKeyWireBase64 } from '@/utils/redis/redis-key'
 // #endregion
 
 // #region 核心状态

@@ -7,9 +7,14 @@ import { useI18n } from 'vue-i18n'
 import type { MeColumn } from '@/components/me-table/column'
 import MeSelectUpDownIcon from '@/components/MeSelectUpDownIcon.vue'
 import { shareProvideKey } from '@/types/me-interface'
-import { BYTES_FORMAT, IPC_WIRE_FORMAT, meViewToWire, type ViewBytesFormat } from '@/utils/format'
-import { createRealtimeStream } from '@/utils/realtime-stream'
-import { meCommands, meConfirm, meErr, meOk } from '@/utils/util'
+import { meCommands, meConfirm, meErr, meOk } from '@/utils/app/util'
+import {
+  BYTES_FORMAT,
+  IPC_WIRE_FORMAT,
+  meViewToWire,
+  type ViewBytesFormat,
+} from '@/utils/codec/format'
+import { createRealtimeStream } from '@/utils/redis/realtime-stream'
 // #endregion
 
 // #region 核心状态

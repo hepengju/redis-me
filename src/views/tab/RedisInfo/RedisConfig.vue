@@ -7,8 +7,8 @@ import { useI18n } from 'vue-i18n'
 import type { MeColumn } from '@/components/me-table/column'
 import { configTip as tips, redisConfDict, valkeyConfDict } from '@/locales/config'
 import { shareProvideKey } from '@/types/me-interface'
-import { pickVersionAtOrBelow, sortVersionsDesc } from '@/utils/redis-version'
-import { meCopy, meCommands, meOk } from '@/utils/util'
+import { meCopy, meCommands, meOk } from '@/utils/app/util'
+import { pickVersionAtOrBelow, sortVersionsDesc } from '@/utils/redis/redis-version'
 import NodeList from '@/views/ext/NodeList.vue'
 // #endregion
 

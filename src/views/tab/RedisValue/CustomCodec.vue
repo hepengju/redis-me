@@ -7,16 +7,20 @@ import { Sortable, type SortableEvent } from 'sortablejs'
 import { computed, nextTick, onBeforeUnmount, reactive, ref, useTemplateRef, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import { buildCodecCommandLine, CODEC_TEMPLATES, findCodecTemplate } from '@/utils/codec-templates'
-import { pickSavePath } from '@/utils/export'
+import { pickSavePath } from '@/utils/app/export'
+import { meConfirm, meErr, meErrHtml, meOk, meOpenUrl } from '@/utils/app/util'
+import {
+  buildCodecCommandLine,
+  CODEC_TEMPLATES,
+  findCodecTemplate,
+} from '@/utils/codec/codec-templates'
 import {
   buildCodecCommand,
   parseCodecErrorDetail,
   testCodec,
   textUtf8ToBase64,
   type CustomCodec,
-} from '@/utils/format'
-import { meConfirm, meErr, meErrHtml, meOk, meOpenUrl } from '@/utils/util'
+} from '@/utils/codec/format'
 // #endregion
 
 // #region 核心状态

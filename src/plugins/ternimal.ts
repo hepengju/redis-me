@@ -10,7 +10,7 @@ import {
   parseTerminalKeyHintContext,
   terminalHintInput,
   terminalKeyHints,
-} from '@/utils/terminal-key-hints'
+} from '@/utils/redis/terminal-key-hints'
 
 const terminal = createTerminal()
 

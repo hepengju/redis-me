@@ -6,12 +6,6 @@ import { useI18n } from 'vue-i18n'
 import type { MeColumn } from '@/components/me-table/column'
 import { shareProvideKey } from '@/types/me-interface'
 import type { RedisKey_Deserialize, RedisKeySize_Serialize } from '@/types/tauri-specta'
-import { clearKeyMemoryCacheForConn } from '@/utils/key-memory-cache'
-import { clearKeyTtlCacheForConn } from '@/utils/key-ttl-cache'
-import { clearKeyTypeCacheForConn } from '@/utils/key-type-cache'
-import { useMemoryScan } from '@/utils/memory-scan'
-import { meType, toKeyTypeLabel } from '@/utils/redis-display'
-import { sameRedisKey } from '@/utils/redis-key'
 import {
   bus,
   KEY_REFRESH,
@@ -21,7 +15,13 @@ import {
   meHumanSize,
   meCommands,
   meOk,
-} from '@/utils/util'
+} from '@/utils/app/util'
+import { clearKeyMemoryCacheForConn } from '@/utils/redis/key-memory-cache'
+import { clearKeyTtlCacheForConn } from '@/utils/redis/key-ttl-cache'
+import { clearKeyTypeCacheForConn } from '@/utils/redis/key-type-cache'
+import { useMemoryScan } from '@/utils/redis/memory-scan'
+import { meType, toKeyTypeLabel } from '@/utils/redis/redis-display'
+import { sameRedisKey } from '@/utils/redis/redis-key'
 
 // #region 核心状态
 const { t } = useI18n()

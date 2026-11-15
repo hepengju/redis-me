@@ -2,7 +2,7 @@
 import { computed, inject } from 'vue'
 
 import { shareProvideKey } from '@/types/me-interface'
-import { isConnMinimalMode } from '@/utils/conn'
+import { isConnMinimalMode } from '@/utils/conn/conn'
 import RedisChart from '@/views/tab/RedisChart.vue'
 import RedisInfo from '@/views/tab/RedisInfo/index.vue'
 import RedisMemory from '@/views/tab/RedisMemory.vue'

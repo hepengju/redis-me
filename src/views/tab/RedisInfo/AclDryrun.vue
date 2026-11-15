@@ -5,7 +5,7 @@ import { computed, inject, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { shareProvideKey } from '@/types/me-interface'
-import { meCommands } from '@/utils/util'
+import { meCommands } from '@/utils/app/util'
 // #endregion
 
 // #region 核心状态

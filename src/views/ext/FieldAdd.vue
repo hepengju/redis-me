@@ -7,11 +7,16 @@ import { useI18n } from 'vue-i18n'
 
 import { shareProvideKey } from '@/types/me-interface'
 import type { RedisFieldAdd_Deserialize, RedisKey_Deserialize } from '@/types/tauri-specta'
-import { BYTES_FORMAT, IPC_WIRE_FORMAT, meViewToWire, type ViewBytesFormat } from '@/utils/format'
-import { KEY_TYPE_LIST, meType, toKeyTypeLabel, toRedisTypeName } from '@/utils/redis-display'
-import { redisKeyWireBase64 } from '@/utils/redis-key'
-import { meCommands, meErr, meOk, meJsonParse, meJsonNormal } from '@/utils/util'
-import { parseAttrsInput, parseVectorInput } from '@/utils/vector'
+import { meCommands, meErr, meOk, meJsonParse, meJsonNormal } from '@/utils/app/util'
+import {
+  BYTES_FORMAT,
+  IPC_WIRE_FORMAT,
+  meViewToWire,
+  type ViewBytesFormat,
+} from '@/utils/codec/format'
+import { KEY_TYPE_LIST, meType, toKeyTypeLabel, toRedisTypeName } from '@/utils/redis/redis-display'
+import { redisKeyWireBase64 } from '@/utils/redis/redis-key'
+import { parseAttrsInput, parseVectorInput } from '@/utils/redis/vector'
 import { normalizeTsRangeBound } from '@/views/tab/RedisValue/helpers'
 // #endregion
 

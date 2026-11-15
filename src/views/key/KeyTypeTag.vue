@@ -4,8 +4,8 @@ import { inject, ref, watch } from 'vue'
 // #region 导入
 import { shareProvideKey } from '@/types/me-interface'
 import type { RedisKey_Deserialize } from '@/types/tauri-specta'
-import { resolveKeyType } from '@/utils/key-type-cache'
-import { meKeyShort, meType } from '@/utils/redis-display'
+import { resolveKeyType } from '@/utils/redis/key-type-cache'
+import { meKeyShort, meType } from '@/utils/redis/redis-display'
 // #endregion
 
 const share = inject(shareProvideKey)!

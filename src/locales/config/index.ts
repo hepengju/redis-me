@@ -1,6 +1,6 @@
 import { computed } from 'vue'
 
-import { isZh } from '@/utils/util'
+import { isZh } from '@/utils/app/util'
 
 import { enConfigTip } from './en'
 import { zhConfigTip } from './zh-cn'

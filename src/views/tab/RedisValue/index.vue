@@ -28,48 +28,7 @@ import type {
   RedisKey_Deserialize,
   ScanCursor,
 } from '@/types/tauri-specta'
-import { isConnMinimalMode } from '@/utils/conn'
-import {
-  detectViewFormatAuto,
-  detectedCustomLabel,
-  detectedViewLabel,
-  type DetectedViewAuto,
-  type DetectedViewFormat,
-} from '@/utils/detect-view-format'
-import { useFavorites, addFavorite, removeFavorite, isFavorited } from '@/utils/favorite'
-import {
-  IPC_WIRE_FORMAT,
-  VIEW_FORMAT_OPTIONS,
-  autoCustomCodecs,
-  customFormatName,
-  customFormatValue,
-  isCustomView,
-  probeAutoCustomCodecs,
-  isReadonlyView,
-  isStringOnlyView,
-  isViewDecodeError,
-  meFormatViewValue,
-  meFormatViewValueAsync,
-  meViewToWire,
-  meViewToWireAsync,
-  needsJsonNormalize,
-  readonlyViewTip,
-  viewFmtForField,
-  type ViewBytesFormat,
-} from '@/utils/format'
-import { captureKeyMemoryWrite } from '@/utils/key-memory-cache'
-import { invalidateKeyTtl } from '@/utils/key-ttl-cache'
-import { resolveKeyType } from '@/utils/key-type-cache'
-import { toKeyTypeLabel } from '@/utils/redis-display'
-import {
-  buildScanPattern,
-  buildLocalFilterPattern,
-  compileRedisGlobFilter,
-  computeScanProgress,
-} from '@/utils/redis-glob'
-import { indexCreateDraft, type IndexDraftField } from '@/utils/search-ddl'
-import { defaultSettings } from '@/utils/settings-defaults'
-import { meTtlFromAt, meTtlToAt } from '@/utils/ttl'
+import { defaultSettings } from '@/utils/app/settings-defaults'
 import {
   bus,
   KEY_DELETE,
@@ -90,7 +49,48 @@ import {
   meOk,
   meWarn,
   sleep,
-} from '@/utils/util'
+} from '@/utils/app/util'
+import {
+  detectViewFormatAuto,
+  detectedCustomLabel,
+  detectedViewLabel,
+  type DetectedViewAuto,
+  type DetectedViewFormat,
+} from '@/utils/codec/detect-view-format'
+import {
+  IPC_WIRE_FORMAT,
+  VIEW_FORMAT_OPTIONS,
+  autoCustomCodecs,
+  customFormatName,
+  customFormatValue,
+  isCustomView,
+  probeAutoCustomCodecs,
+  isReadonlyView,
+  isStringOnlyView,
+  isViewDecodeError,
+  meFormatViewValue,
+  meFormatViewValueAsync,
+  meViewToWire,
+  meViewToWireAsync,
+  needsJsonNormalize,
+  readonlyViewTip,
+  viewFmtForField,
+  type ViewBytesFormat,
+} from '@/utils/codec/format'
+import { isConnMinimalMode } from '@/utils/conn/conn'
+import { useFavorites, addFavorite, removeFavorite, isFavorited } from '@/utils/redis/favorite'
+import { captureKeyMemoryWrite } from '@/utils/redis/key-memory-cache'
+import { invalidateKeyTtl } from '@/utils/redis/key-ttl-cache'
+import { resolveKeyType } from '@/utils/redis/key-type-cache'
+import { toKeyTypeLabel } from '@/utils/redis/redis-display'
+import {
+  buildScanPattern,
+  buildLocalFilterPattern,
+  compileRedisGlobFilter,
+  computeScanProgress,
+} from '@/utils/redis/redis-glob'
+import { indexCreateDraft, type IndexDraftField } from '@/utils/redis/search-ddl'
+import { meTtlFromAt, meTtlToAt } from '@/utils/redis/ttl'
 import CommandHelp from '@/views/ext/CommandHelp.vue'
 import FieldAdd from '@/views/ext/FieldAdd.vue'
 import TTLSet from '@/views/ext/TTLSet.vue'

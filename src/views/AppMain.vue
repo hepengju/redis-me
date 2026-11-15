@@ -26,23 +26,13 @@ import {
   type UiConn,
 } from '@/types/me-interface'
 import type { ConnConfig, RedisKey_Deserialize } from '@/types/tauri-specta'
-import { checkAppUpdate } from '@/utils/app-update'
-import { openNewWindow, toggleAppFullscreen } from '@/utils/app-window'
-import {
-  collapseImportedConnGroups,
-  collectKnownConnGroupNames,
-  isConnMinimalMode,
-  mergeConnGroupsFromList,
-} from '@/utils/conn'
-import { clearKeyMemoryCacheForConn, onMemoryUsageUnsupported } from '@/utils/key-memory-cache'
-import { clearKeyTtlCacheForConn } from '@/utils/key-ttl-cache'
-import { clearKeyTypeCacheForConn } from '@/utils/key-type-cache'
-import { mergeImportedConnList } from '@/utils/rdm'
+import { checkAppUpdate } from '@/utils/app/app-update'
+import { openNewWindow, toggleAppFullscreen } from '@/utils/app/app-window'
 import {
   isAppFullscreenHotkeyBlocked,
   matchAppFullscreenHotkey,
   matchConnShortcutAction,
-} from '@/utils/shortcut'
+} from '@/utils/app/shortcut'
 import {
   bus,
   CONN_LIST_WINDOWS_SYNC,
@@ -50,7 +40,20 @@ import {
   meCommands,
   meJsonParse,
   meOk,
-} from '@/utils/util'
+} from '@/utils/app/util'
+import {
+  collapseImportedConnGroups,
+  collectKnownConnGroupNames,
+  isConnMinimalMode,
+  mergeConnGroupsFromList,
+} from '@/utils/conn/conn'
+import { mergeImportedConnList } from '@/utils/conn/rdm'
+import {
+  clearKeyMemoryCacheForConn,
+  onMemoryUsageUnsupported,
+} from '@/utils/redis/key-memory-cache'
+import { clearKeyTtlCacheForConn } from '@/utils/redis/key-ttl-cache'
+import { clearKeyTypeCacheForConn } from '@/utils/redis/key-type-cache'
 import ConnImport from '@/views/conn/ConnImport.vue'
 import ConnSave from '@/views/conn/ConnSave.vue'
 import KeyEmpty from '@/views/key/KeyEmpty.vue'

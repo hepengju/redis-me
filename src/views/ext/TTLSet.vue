@@ -7,8 +7,8 @@ import { useI18n } from 'vue-i18n'
 
 import { shareProvideKey } from '@/types/me-interface'
 import type { RedisKey_Deserialize } from '@/types/tauri-specta'
-import { invalidateKeyTtl, invalidateKeyTtlList } from '@/utils/key-ttl-cache'
-import { meCommands, meOk } from '@/utils/util'
+import { meCommands, meOk } from '@/utils/app/util'
+import { invalidateKeyTtl, invalidateKeyTtlList } from '@/utils/redis/key-ttl-cache'
 // #endregion
 
 // #region 核心状态

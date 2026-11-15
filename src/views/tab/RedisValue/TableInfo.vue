@@ -8,8 +8,8 @@ import { useI18n } from 'vue-i18n'
 
 import { shareProvideKey } from '@/types/me-interface'
 import type { RedisArInfoItem, RedisObjectInfo, RedisZsetRankResult } from '@/types/tauri-specta'
-import { IPC_WIRE_FORMAT } from '@/utils/format'
-import { meCommands, meHumanSeconds } from '@/utils/util'
+import { meCommands, meHumanSeconds } from '@/utils/app/util'
+import { IPC_WIRE_FORMAT } from '@/utils/codec/format'
 // #endregion
 
 export type TableInfoKind = 'arinfo' | 'vinfo' | 'tsinfo' | 'object' | 'zrank'

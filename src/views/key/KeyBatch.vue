@@ -9,10 +9,10 @@ import { useI18n } from 'vue-i18n'
 
 import { shareProvideKey } from '@/types/me-interface'
 import type { RedisKey_Deserialize, ScanCursor } from '@/types/tauri-specta'
-import { clearKeyMemoryCacheForConn } from '@/utils/key-memory-cache'
-import { clearKeyTtlCacheForConn } from '@/utils/key-ttl-cache'
-import { clearKeyTypeCacheForConn } from '@/utils/key-type-cache'
-import { meCommands, meOk, sleep } from '@/utils/util'
+import { meCommands, meOk, sleep } from '@/utils/app/util'
+import { clearKeyMemoryCacheForConn } from '@/utils/redis/key-memory-cache'
+import { clearKeyTtlCacheForConn } from '@/utils/redis/key-ttl-cache'
+import { clearKeyTypeCacheForConn } from '@/utils/redis/key-type-cache'
 // #endregion
 
 // #region 核心状态

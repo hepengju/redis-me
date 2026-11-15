@@ -8,7 +8,7 @@ import {
   shortcutItemKeys,
   shortcutKbdClass,
   type ShortcutItem,
-} from '@/utils/shortcut'
+} from '@/utils/app/shortcut'
 // #endregion
 
 // #region 核心状态

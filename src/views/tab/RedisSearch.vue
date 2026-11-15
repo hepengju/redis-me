@@ -12,9 +12,7 @@ import type {
   SearchIndexInfo,
   SearchSynGroup,
 } from '@/types/tauri-specta'
-import { FT_QUERY_HISTORY_KEY, rememberFtQuery } from '@/utils/query-history'
-import { indexAlterDraft, indexDdl } from '@/utils/search-ddl'
-import { defaultSettings } from '@/utils/settings-defaults'
+import { defaultSettings } from '@/utils/app/settings-defaults'
 import {
   KEY_REFRESH,
   SEARCH_CREATE,
@@ -25,7 +23,9 @@ import {
   meFormatDisplayValue,
   meOk,
   meWarn,
-} from '@/utils/util'
+} from '@/utils/app/util'
+import { FT_QUERY_HISTORY_KEY, rememberFtQuery } from '@/utils/redis/query-history'
+import { indexAlterDraft, indexDdl } from '@/utils/redis/search-ddl'
 
 const { t } = useI18n()
 const share = inject(shareProvideKey)!

@@ -17,7 +17,7 @@ import { Line } from 'vue-chartjs'
 import 'chartjs-adapter-dayjs-4/dist/chartjs-adapter-dayjs-4.esm'
 import { useI18n } from 'vue-i18n'
 
-import { isDark, PREDEFINE_COLORS } from '@/utils/util'
+import { isDark, PREDEFINE_COLORS } from '@/utils/app/util'
 
 ChartJS.register(
   LineController,

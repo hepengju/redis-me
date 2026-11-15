@@ -4,10 +4,17 @@ import { computed, inject, nextTick, onMounted, onUnmounted, reactive, ref } fro
 import { useI18n } from 'vue-i18n'
 
 import { shareProvideKey, connUiProvideKey } from '@/types/me-interface'
-import { openNewWindow } from '@/utils/app-window'
-import { connsInGroupOrder, getConnIcon } from '@/utils/conn'
-import { bus, CONN_REFRESH, meCommands, meOk, OPEN_KEY_MIGRATE, OPEN_SETTING } from '@/utils/util'
-import type { MeBusEvents } from '@/utils/util'
+import { openNewWindow } from '@/utils/app/app-window'
+import {
+  bus,
+  CONN_REFRESH,
+  meCommands,
+  meOk,
+  OPEN_KEY_MIGRATE,
+  OPEN_SETTING,
+} from '@/utils/app/util'
+import type { MeBusEvents } from '@/utils/app/util'
+import { connsInGroupOrder, getConnIcon } from '@/utils/conn/conn'
 import AppAbout from '@/views/ext/AppAbout.vue'
 import AppSetting from '@/views/ext/AppSetting.vue'
 import AppShortcut from '@/views/ext/AppShortcut.vue'

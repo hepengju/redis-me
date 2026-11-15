@@ -6,7 +6,8 @@ import { nextTick, onBeforeUnmount, onMounted, useTemplateRef, watch } from 'vue
 import { useI18n } from 'vue-i18n'
 
 import type { UiConn } from '@/types/me-interface'
-import type { ConnGroupSection } from '@/utils/conn'
+import { PREDEFINE_COLORS } from '@/utils/app/util'
+import type { ConnGroupSection } from '@/utils/conn/conn'
 import {
   applyConnGroupOrder,
   connEndpoint,
@@ -14,8 +15,7 @@ import {
   getConnIcon,
   moveConnInGroup,
   moveConnToGroup,
-} from '@/utils/conn'
-import { PREDEFINE_COLORS } from '@/utils/util'
+} from '@/utils/conn/conn'
 // #endregion
 
 // #region 核心状态

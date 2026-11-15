@@ -3,7 +3,7 @@
 import { open, save } from '@tauri-apps/plugin-dialog'
 import { computed } from 'vue'
 
-import { buildTimestampedFileName } from '@/utils/export'
+import { buildTimestampedFileName } from '@/utils/app/export'
 
 const props = withDefaults(
   defineProps<{

@@ -13,10 +13,19 @@ import type {
   RedisFieldValue,
 } from '@/types/tauri-specta'
 import {
+  meCommands,
+  meCommandsQuiet,
+  meCopy,
+  meErr,
+  meFormatDisplayValue,
+  meJsonNormal,
+  meOk,
+} from '@/utils/app/util'
+import {
   detectViewFormatAuto,
   detectedCustomLabel,
   detectedViewLabel,
-} from '@/utils/detect-view-format'
+} from '@/utils/codec/detect-view-format'
 import {
   IPC_WIRE_FORMAT,
   autoCustomCodecs,
@@ -35,17 +44,8 @@ import {
   probeAutoCustomCodecs,
   readonlyViewTip,
   type ViewBytesFormat,
-} from '@/utils/format'
-import {
-  meCommands,
-  meCommandsQuiet,
-  meCopy,
-  meErr,
-  meFormatDisplayValue,
-  meJsonNormal,
-  meOk,
-} from '@/utils/util'
-import { parseAttrsInput, parseVectorInput } from '@/utils/vector'
+} from '@/utils/codec/format'
+import { parseAttrsInput, parseVectorInput } from '@/utils/redis/vector'
 // #endregion
 
 // 字段编辑面板：fieldScan 返回的 wire（恒 base64）→ 前端按编码展示/编辑 → field_set 写回。

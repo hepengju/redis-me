@@ -3,7 +3,7 @@ import { getVersion } from '@tauri-apps/api/app'
 import { ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import { meOpenUrl } from '@/utils/util'
+import { meOpenUrl } from '@/utils/app/util'
 
 const { t } = useI18n()
 const visible = ref(false)

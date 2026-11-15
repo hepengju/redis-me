@@ -7,7 +7,7 @@ import { useI18n } from 'vue-i18n'
 
 import { shareProvideKey } from '@/types/me-interface'
 import type { RedisImportCsv } from '@/types/tauri-specta'
-import { meCommands } from '@/utils/util'
+import { meCommands } from '@/utils/app/util'
 // #endregion
 
 // #region 核心状态

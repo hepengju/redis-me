@@ -8,7 +8,7 @@ import type { MeColumn } from '@/components/me-table/column'
 import { shareProvideKey } from '@/types/me-interface'
 import type { RedisSlowLog } from '@/types/tauri-specta'
 // 官网参考: https://redis.ac.cn/docs/latest/commands/slowlog-get/
-import { meCopy, meCommands, meOk } from '@/utils/util'
+import { meCopy, meCommands, meOk } from '@/utils/app/util'
 import NodeList from '@/views/ext/NodeList.vue'
 // #endregion
 

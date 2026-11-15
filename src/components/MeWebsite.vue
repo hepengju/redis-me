@@ -1,7 +1,7 @@
 <script setup lang="ts">
 // #region 导入
 // 跳转到官网: Redis中英文/Valkey中英文；可选 command 拼具体命令文档路径
-import { isZh, meOpenUrl } from '@/utils/util'
+import { isZh, meOpenUrl } from '@/utils/app/util'
 // #endregion
 
 // #region 核心状态

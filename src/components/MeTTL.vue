@@ -4,6 +4,7 @@ import { useIntervalFn, useNow } from '@vueuse/core'
 import { computed, nextTick, ref, useTemplateRef, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import { meHumanSeconds } from '@/utils/app/util'
 import {
   formatUtcOffset,
   meTtlAlignAt,
@@ -13,8 +14,7 @@ import {
   meTtlToAt,
   type TtlMode,
   type TtlUnit,
-} from '@/utils/ttl'
-import { meHumanSeconds } from '@/utils/util'
+} from '@/utils/redis/ttl'
 
 const DATETIME_FMT = 'YYYY-MM-DD HH:mm:ss'
 const FOREVER_AT_FALLBACK_SEC = 3600

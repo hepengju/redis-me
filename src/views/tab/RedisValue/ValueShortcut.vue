@@ -5,7 +5,7 @@ import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import MeShortcut from '@/components/MeShortcut.vue'
-import { getValueShortcuts } from '@/utils/shortcut'
+import { getValueShortcuts } from '@/utils/app/shortcut'
 // #endregion
 
 // #region 核心状态

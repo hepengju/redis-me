@@ -6,9 +6,9 @@ import type { App } from 'vue'
 
 import { normalizeAppLocale } from '@/locales'
 import { commands } from '@/types/tauri-specta'
-import { checkConnList, type ConnFromStore } from '@/utils/conn-compat'
-import { defaultSettings } from '@/utils/settings-defaults'
-import { meLog } from '@/utils/util'
+import { defaultSettings } from '@/utils/app/settings-defaults'
+import { meLog } from '@/utils/app/util'
+import { checkConnList, type ConnFromStore } from '@/utils/conn/conn-compat'
 
 // 打包后关闭右键菜单
 if (import.meta.env.PROD) {

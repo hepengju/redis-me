@@ -6,9 +6,9 @@ import { useI18n } from 'vue-i18n'
 
 import type { MeColumn } from '@/components/me-table/column'
 import { shareProvideKey } from '@/types/me-interface'
-import { createRealtimeStream } from '@/utils/realtime-stream'
-import { enrichNodeList } from '@/utils/redis-display'
-import { meCommands, meCommandsQuiet, meConfirm, meCopy, meOk } from '@/utils/util'
+import { meCommands, meCommandsQuiet, meConfirm, meCopy, meOk } from '@/utils/app/util'
+import { createRealtimeStream } from '@/utils/redis/realtime-stream'
+import { enrichNodeList } from '@/utils/redis/redis-display'
 // #endregion
 
 // #region 核心状态

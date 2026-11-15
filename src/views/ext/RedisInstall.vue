@@ -3,14 +3,14 @@
 import { computed, reactive, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import type { RedisInstallLabels, RedisInstallOptions } from '@/utils/redis-install-gen'
+import { meOpenUrl } from '@/utils/app/util'
+import type { RedisInstallLabels, RedisInstallOptions } from '@/utils/redis/redis-install-gen'
 import {
   genInstallDefaultPort,
   genInstallPassword,
   genInstallSans,
   genRedisInstall,
-} from '@/utils/redis-install-gen'
-import { meOpenUrl } from '@/utils/util'
+} from '@/utils/redis/redis-install-gen'
 import TlsCertGen from '@/views/ext/TlsCertGen.vue'
 // #endregion
 

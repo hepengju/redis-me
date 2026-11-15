@@ -6,8 +6,8 @@ import { useI18n } from 'vue-i18n'
 
 import { shareProvideKey } from '@/types/me-interface'
 import type { AclUserDetail } from '@/types/tauri-specta'
-import { buildAclSavePayload, createAclModelFromDetail } from '@/utils/acl'
-import { meCommands, meCopy, meOk, meWarn } from '@/utils/util'
+import { meCommands, meCopy, meOk, meWarn } from '@/utils/app/util'
+import { buildAclSavePayload, createAclModelFromDetail } from '@/utils/redis/acl'
 // #endregion
 
 // #region 核心状态

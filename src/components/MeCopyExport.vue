@@ -9,8 +9,8 @@ import {
   exportMatrixFromColumns,
   exportableColumns,
 } from '@/components/me-table/column'
-import { TABLE_EXPORT_MENU, dispatchTableExport } from '@/utils/export'
-import { meErr } from '@/utils/util'
+import { TABLE_EXPORT_MENU, dispatchTableExport } from '@/utils/app/export'
+import { meErr } from '@/utils/app/util'
 
 const props = withDefaults(
   defineProps<{

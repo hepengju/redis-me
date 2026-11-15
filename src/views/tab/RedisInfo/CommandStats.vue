@@ -12,7 +12,7 @@ import {
   parseCommandStats,
   type CommandStatRow,
   type MasterStatSource,
-} from '@/utils/command-stats'
+} from '@/utils/redis/command-stats'
 
 const props = defineProps<{
   /** 单节点 INFO 原文 */

@@ -4,7 +4,7 @@ import { provide, reactive, shallowRef, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { shareProvideKey, type AppMainShare, type UiConn } from '@/types/me-interface'
-import { isDark } from '@/utils/util'
+import { isDark } from '@/utils/app/util'
 import AppMain from '@/views/AppMain.vue'
 import AppResize from '@/views/ext/AppResize.vue'
 import AppTitle from '@/views/ext/AppTitle.vue'

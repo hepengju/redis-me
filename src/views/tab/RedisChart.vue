@@ -33,7 +33,7 @@ import { useI18n } from 'vue-i18n'
 
 import { shareProvideKey } from '@/types/me-interface'
 import type { RedisChart } from '@/types/tauri-specta'
-import { matchAppFullscreenHotkey } from '@/utils/shortcut'
+import { matchAppFullscreenHotkey } from '@/utils/app/shortcut'
 import {
   CHART_COLORS,
   isDark,
@@ -42,7 +42,7 @@ import {
   meHumanSize,
   meCommands,
   meLog,
-} from '@/utils/util'
+} from '@/utils/app/util'
 // #endregion
 
 // #region Chart.js 初始化

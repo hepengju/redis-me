@@ -6,8 +6,8 @@ import { useI18n } from 'vue-i18n'
 
 import type { MeColumn } from '@/components/me-table/column'
 import { shareProvideKey } from '@/types/me-interface'
-import { createRealtimeStream } from '@/utils/realtime-stream'
-import { meConfirm, meCommands, meOk } from '@/utils/util'
+import { meConfirm, meCommands, meOk } from '@/utils/app/util'
+import { createRealtimeStream } from '@/utils/redis/realtime-stream'
 import NodeList from '@/views/ext/NodeList.vue'
 // #endregion
 

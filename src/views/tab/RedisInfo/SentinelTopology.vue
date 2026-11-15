@@ -4,7 +4,7 @@ import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import type { SentinelPeer, SentinelTopology } from '@/types/tauri-specta'
-import { meCommands } from '@/utils/util'
+import { meCommands } from '@/utils/app/util'
 
 const props = defineProps<{ connId: string }>()
 

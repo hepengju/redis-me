@@ -5,7 +5,8 @@ import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import type { UiConn } from '@/types/me-interface'
-import { checkConnList } from '@/utils/conn-compat'
+import { meErr, meWarn } from '@/utils/app/util'
+import { checkConnList } from '@/utils/conn/conn-compat'
 import {
   ConnImportParseError,
   connImportFileSuffix,
@@ -14,8 +15,7 @@ import {
   parseRedisMeConnections,
   parseTinyRdmFromZipFile,
   type ConnImportSource,
-} from '@/utils/rdm'
-import { meErr, meWarn } from '@/utils/util'
+} from '@/utils/conn/rdm'
 // #endregion
 
 // #region 核心状态

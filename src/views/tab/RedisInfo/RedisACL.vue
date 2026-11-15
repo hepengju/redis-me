@@ -7,6 +7,7 @@ import { useI18n } from 'vue-i18n'
 import type { MeColumn } from '@/components/me-table/column'
 import { shareProvideKey } from '@/types/me-interface'
 import type { AclUserDetail } from '@/types/tauri-specta'
+import { meCommands, meConfirm, meOk, meWarn } from '@/utils/app/util'
 import {
   buildAclPreviewCommand,
   buildAclSavePayload,
@@ -15,8 +16,7 @@ import {
   summarizeRules,
   summarizeSelectors,
   type AclEditModel,
-} from '@/utils/acl'
-import { meCommands, meConfirm, meOk, meWarn } from '@/utils/util'
+} from '@/utils/redis/acl'
 
 import AclDryrun from './AclDryrun.vue'
 import AclLog from './AclLog.vue'

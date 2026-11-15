@@ -8,7 +8,16 @@ import { useI18n } from 'vue-i18n'
 
 import { shareProvideKey, type UiConn } from '@/types/me-interface'
 import type { SystemProxyDetect } from '@/types/tauri-specta'
-import { buildRedisUrl, isUnixNetwork } from '@/utils/conn'
+import {
+  meCommands,
+  meCommandsQuiet,
+  PREDEFINE_COLORS,
+  meRandomString,
+  meOk,
+  meErr,
+  meCopy,
+} from '@/utils/app/util'
+import { buildRedisUrl, isUnixNetwork } from '@/utils/conn/conn'
 import {
   getConnCommandMap,
   getConnGroup,
@@ -22,17 +31,8 @@ import {
   setConnProtocol,
   setConnUiMode,
   type ConnProtocol,
-} from '@/utils/conn'
-import { DEFAULT_PROXY_OPTION } from '@/utils/conn-compat'
-import {
-  meCommands,
-  meCommandsQuiet,
-  PREDEFINE_COLORS,
-  meRandomString,
-  meOk,
-  meErr,
-  meCopy,
-} from '@/utils/util'
+} from '@/utils/conn/conn'
+import { DEFAULT_PROXY_OPTION } from '@/utils/conn/conn-compat'
 const { t } = useI18n()
 // #endregion
 

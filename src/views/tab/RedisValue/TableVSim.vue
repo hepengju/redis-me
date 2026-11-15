@@ -8,14 +8,14 @@ import { useI18n } from 'vue-i18n'
 import type { MeColumn } from '@/components/me-table/column'
 import { shareProvideKey } from '@/types/me-interface'
 import type { RedisVSimItem } from '@/types/tauri-specta'
+import { meCommands, meCopy, meErr } from '@/utils/app/util'
 import {
   IPC_WIRE_FORMAT,
   meFormatViewValue,
   meViewToWire,
   type ViewBytesFormat,
-} from '@/utils/format'
-import { meCommands, meCopy, meErr } from '@/utils/util'
-import { parseVectorInput } from '@/utils/vector'
+} from '@/utils/codec/format'
+import { parseVectorInput } from '@/utils/redis/vector'
 // #endregion
 
 // #region 核心状态

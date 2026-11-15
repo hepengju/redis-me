@@ -5,8 +5,8 @@ import type { FailedFunc, Message, SuccessFunc } from 'vue-web-terminal'
 
 import { handleInputTipsSearch } from '@/plugins/ternimal'
 import type { MeXtermCommandItem } from '@/types/me-interface'
-import { matchAppFullscreenHotkey } from '@/utils/shortcut'
-import { isDark } from '@/utils/util'
+import { matchAppFullscreenHotkey } from '@/utils/app/shortcut'
+import { isDark } from '@/utils/app/util'
 // #endregion
 
 // #region 核心状态

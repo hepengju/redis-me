@@ -33,9 +33,7 @@ import {
   yamlLang,
   zhPhrases,
 } from '@/plugins/codemirror'
-import { detectCodeMode } from '@/utils/detect-code-mode'
-import { redisHighlighting, redisLang } from '@/utils/redis-lang'
-import { displayShortcutKey, type ShortcutKey } from '@/utils/shortcut'
+import { displayShortcutKey, type ShortcutKey } from '@/utils/app/shortcut'
 import {
   ME_CODE_FONT_DEFAULT,
   ME_CODE_FONT_MAX,
@@ -46,7 +44,9 @@ import {
   meCodeLineWrap,
   meCodeShowLineNumbers,
   meCopy,
-} from '@/utils/util'
+} from '@/utils/app/util'
+import { detectCodeMode } from '@/utils/codec/detect-code-mode'
+import { redisHighlighting, redisLang } from '@/utils/redis/redis-lang'
 // #endregion
 
 // #region 核心状态

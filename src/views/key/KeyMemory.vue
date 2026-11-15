@@ -7,8 +7,8 @@ import { useI18n } from 'vue-i18n'
 import type { MeColumn } from '@/components/me-table/column'
 import { shareProvideKey } from '@/types/me-interface'
 import type { RedisKeySize_Serialize } from '@/types/tauri-specta'
-import { useMemoryScan } from '@/utils/memory-scan'
-import { meHumanSize } from '@/utils/util'
+import { meHumanSize } from '@/utils/app/util'
+import { useMemoryScan } from '@/utils/redis/memory-scan'
 
 const { t } = useI18n()
 defineExpose({ open })

@@ -3,7 +3,11 @@ import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import MeShortcut from '@/components/MeShortcut.vue'
-import { getConnGlobalShortcuts, getTerminalShortcuts, getValueShortcuts } from '@/utils/shortcut'
+import {
+  getConnGlobalShortcuts,
+  getTerminalShortcuts,
+  getValueShortcuts,
+} from '@/utils/app/shortcut'
 
 const { t } = useI18n()
 const visible = ref(false)
