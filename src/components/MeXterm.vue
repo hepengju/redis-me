@@ -153,6 +153,16 @@ function readSelection(): string {
   return (document.getSelection()?.toString() ?? '').replaceAll('\u00a0', ' ')
 }
 
+// 选区必须落在本终端内。命令框 textarea 的选中不算，那种交给浏览器复制
+function selectedInTerminal(): string {
+  const sel = document.getSelection()
+  if (!sel || sel.isCollapsed) return ''
+  const root = wrapEl.value
+  const node = sel.anchorNode
+  if (!root || !node || !root.contains(node)) return ''
+  return sel.toString().replaceAll('\u00a0', ' ')
+}
+
 function onMouseDown(e: MouseEvent): void {
   // 右键：按下时选区通常仍在
   if (e.button === 2) selectedOnPointer = readSelection()
@@ -200,12 +210,13 @@ function onMenuCommand(command: unknown): void {
   if (command !== 'font+' && command !== 'font-') menuRef.value?.closeMenu()
 }
 
-// 右键项右侧的快捷键。Mod+C 在终端是清输入，不是复制
+// 右键项右侧的快捷键。Mod+C：有选区复制，否则清输入。Mac 上 mod 显示为 ⌘
 const isMacOS = getOsType() === 'macos'
 function menuShortcut(keys: ShortcutKey[]): string {
   return keys.map(key => displayShortcutKey(key, isMacOS)).join(' + ')
 }
 const menuKeys = {
+  copy: menuShortcut(['mod', 'c']),
   paste: menuShortcut(['mod', 'v']),
   fullscreen: menuShortcut(isMacOS ? ['mod', 'shift', 'f'] : ['F11']),
   lineWrap: menuShortcut(['mod', 'b']),
@@ -239,9 +250,19 @@ function onKeydown(e: KeyboardEvent): void {
     case 'L':
       clearTerminal()
       break
-    case 'C':
+    case 'C': {
+      // 有选区复制；命令框内部选中交给浏览器。否则清输入
+      const selected = selectedInTerminal()
+      if (selected) {
+        e.preventDefault()
+        meCopy(selected, undefined, false)
+        break
+      }
+      const input = document.activeElement
+      if (input instanceof HTMLTextAreaElement && input.selectionStart !== input.selectionEnd) break
       term.setCommand('')
       break
+    }
     case '=':
     case '+':
       e.preventDefault()
@@ -295,6 +316,7 @@ function onKeydown(e: KeyboardEvent): void {
       <el-dropdown-item v-if="menuSelected" command="copy">
         <span class="me-code-menu-row">
           <me-icon class="me-code-menu-label" icon="el-icon-document-copy" :name="t('copy')" />
+          <span class="me-code-menu-key">{{ menuKeys.copy }}</span>
         </span>
       </el-dropdown-item>
       <el-dropdown-item v-if="onPaste" command="paste">
@@ -350,7 +372,7 @@ function onKeydown(e: KeyboardEvent): void {
           <span class="me-code-menu-key">{{ menuKeys.clear }}</span>
         </span>
       </el-dropdown-item>
-      <el-dropdown-item command="clearInput">
+      <el-dropdown-item command="clearInput" :disabled="!!menuSelected">
         <span class="me-code-menu-row">
           <me-icon
             class="me-code-menu-label"
