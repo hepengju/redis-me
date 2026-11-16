@@ -294,8 +294,9 @@ function insertAtCursor(text: string): void {
 
 // vue-web-terminal 初次挂载不会 focus 内部 textarea，Ctrl+V 的 keydown 到不了容器，
 // 需等 setCommand 等路径间接聚焦；这里点击和挂载时通过组件 ref 主动聚焦。
-// 有选区时不抢焦，否则选完立刻 focus 输入框会清掉选区，右键「复制」永远点不了
-function focusTerminalInput(): void {
+// 有选区、或双击的后续 click（detail >= 2）时不抢焦，否则选完立刻 focus 会清掉选区
+function focusTerminalInput(event?: MouseEvent): void {
+  if (event && event.detail >= 2) return
   const sel = document.getSelection()
   if (sel && !sel.isCollapsed && sel.toString()) return
   xtermRef.value?.focus()

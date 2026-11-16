@@ -163,6 +163,11 @@ function onMouseUp(): void {
   selectedOnPointer = readSelection()
 }
 
+function onDblClick(e: MouseEvent): void {
+  // 库把 .t-window 的 dblclick 绑成 _focus(true)，焦点进命令框后浏览器会清掉刚选中的词
+  e.stopPropagation()
+}
+
 function onContextMenu(e: MouseEvent): void {
   // 拦住 vue-web-terminal 自带的右键复制/粘贴，避免再 focus 清选区、与菜单抢事件
   e.preventDefault()
@@ -264,6 +269,7 @@ function onKeydown(e: KeyboardEvent): void {
     :style="wrapStyle"
     @mousedown.capture="onMouseDown"
     @mouseup.capture="onMouseUp"
+    @dblclick.capture="onDblClick"
     @contextmenu.capture="onContextMenu">
     <terminal
       name="terminal"
