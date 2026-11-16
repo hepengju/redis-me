@@ -210,7 +210,7 @@ function onMenuCommand(command: unknown): void {
   if (command !== 'font+' && command !== 'font-') menuRef.value?.closeMenu()
 }
 
-// 右键项右侧的快捷键。Mod+C：有选区复制，否则清输入。Mac 上 mod 显示为 ⌘
+// 右键项右侧的快捷键。Mac：⌘C 复制，Ctrl+C 清输入。Win/Linux 没有 ⌘，两项都显示 Ctrl+C
 const isMacOS = getOsType() === 'macos'
 function menuShortcut(keys: ShortcutKey[]): string {
   return keys.map(key => displayShortcutKey(key, isMacOS)).join(' + ')
@@ -223,7 +223,7 @@ const menuKeys = {
   fontIncrease: menuShortcut(['mod', '=']),
   fontDecrease: menuShortcut(['mod', '-']),
   clear: menuShortcut(['mod', 'l']),
-  clearInput: menuShortcut(['mod', 'c']),
+  clearInput: menuShortcut(isMacOS ? ['Ctrl', 'c'] : ['mod', 'c']),
 }
 // #endregion
 
@@ -251,7 +251,21 @@ function onKeydown(e: KeyboardEvent): void {
       clearTerminal()
       break
     case 'C': {
-      // 有选区复制；命令框内部选中交给浏览器。否则清输入
+      // Mac：⌘C 只复制，Ctrl+C 只清输入。Win/Linux 的 Ctrl+C 有选区则复制，否则清输入
+      if (isMacOS && e.metaKey) {
+        const selected = selectedInTerminal()
+        if (selected) {
+          e.preventDefault()
+          meCopy(selected, undefined, false)
+        }
+        break
+      }
+      if (isMacOS && e.ctrlKey) {
+        e.preventDefault()
+        term.setCommand('')
+        break
+      }
+      if (!e.ctrlKey) break
       const selected = selectedInTerminal()
       if (selected) {
         e.preventDefault()
@@ -372,7 +386,7 @@ function onKeydown(e: KeyboardEvent): void {
           <span class="me-code-menu-key">{{ menuKeys.clear }}</span>
         </span>
       </el-dropdown-item>
-      <el-dropdown-item command="clearInput" :disabled="!!menuSelected">
+      <el-dropdown-item command="clearInput" :disabled="!isMacOS && !!menuSelected">
         <span class="me-code-menu-row">
           <me-icon
             class="me-code-menu-label"
