@@ -61,7 +61,6 @@ const themeIcon = computed(() =>
 const toggleTheme = () => {
   const newTheme = effectiveTheme.value === 'light' ? 'dark' : 'light'
   meTauri.settings.theme = newTheme
-  meOk(newTheme === 'dark' ? t('setting.dark') : t('setting.light'))
 }
 
 // 点击名称切换语言或未来其他功能的快速测试验证
@@ -70,7 +69,6 @@ const toggleName = () => {
     meTauri.settings.language === 'system' ? meTauri.systemLanguage : meTauri.settings.language
   const newLanguage = nowLanguage === 'en' ? 'zhCN' : 'en'
   meTauri.settings.language = newLanguage
-  meOk(newLanguage)
 }
 </script>
 
