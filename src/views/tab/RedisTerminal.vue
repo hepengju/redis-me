@@ -302,7 +302,19 @@ function focusTerminalInput(event?: MouseEvent): void {
   xtermRef.value?.focus()
 }
 
-onMounted(() => nextTick(focusTerminalInput))
+// 页签切走后组件仍挂着，再切回来不会走 onMounted
+function focusCommandInput(): void {
+  nextTick(() => xtermRef.value?.focus())
+}
+
+onMounted(focusCommandInput)
+
+watch(
+  () => share.tabName,
+  name => {
+    if (name === 'terminal') focusCommandInput()
+  },
+)
 
 // 读取剪贴板并粘贴：多行走弹框判断，单行插入光标处
 // macOS WKWebView 会拦截 navigator.clipboard.readText（NotAllowedError），改用 Tauri 剪贴板插件
