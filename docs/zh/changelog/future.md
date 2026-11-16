@@ -1,13 +1,11 @@
 ## Future
 
-- 多个Redis连接之间的键迁移 ✅
-- Linux默认等宽字体 ✅
-- CodeMirror右键菜单 ✅
-- 终端右键菜单 ✅
-- deepin应用商店的上架: 审核未过（deb control 缺 Section，已在 tauri.conf 补 section/priority）
 - 部分简单的操作：放在上面，选中某行后编辑查看
 - 查询工作台: 输入多行文本及回显表格的处理
 - 多个配色主题的选择
+- RDB离线分析与导入
+- 两个Redis服务之间的配置对比
+- 数据类型分布图（已查询键部分）
 - rme 终端执行，类似 redis-cli 的效果
 - MCP接口的设置
 - Linux其他应用商店上线的继续处理
@@ -35,6 +33,11 @@
 
 ### 已完成
 
+- deepin应用商店的上架: ✅
+- 多个Redis连接之间的键迁移 ✅
+- Linux默认等宽字体 ✅
+- CodeMirror右键菜单 ✅
+- 终端右键菜单 ✅
 - Unix Socket 支持（本机直连 / SSH 远端套接字；安装帮助单机 Unix 一键生成）✅️
 - redis-rs 改为 crates.io 的 redis-me-rs，避免每次从 GitHub 拉取 ✅️
 - 复制为命令，重命名键，创建副本 可以也添加在键的右键菜单里面 ✅️
