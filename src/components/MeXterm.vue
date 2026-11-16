@@ -144,6 +144,7 @@ defineExpose({
 // #endregion
 
 // #region 右键菜单
+// macOS 右键会选中旁边的词，这是 WebKit 的惯例（CodeMirror 同样）。不把选区改回去。
 // 右键按下时选区还在；到 contextmenu 时可能已被清掉。mouseup 再记一次，避免仅靠 mousedown 起始空选区
 let selectedOnPointer = ''
 const menuSelected = ref('')

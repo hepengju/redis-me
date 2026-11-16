@@ -200,6 +200,7 @@ let menuSelFrom = 0
 let menuSelTo = 0
 let menuSelText = ''
 
+// macOS 右键会选中旁边的词，这是 WebKit 的惯例（终端同样）。粘贴跟着这次选区，不改回去。
 function onContextMenu(e: MouseEvent) {
   const v = view.value
   if (v) {
