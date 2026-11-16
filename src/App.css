@@ -35,8 +35,8 @@ html {
   /* vscode的默认字体: Menlo, Monaco, 'Courier New', monospace */
   /*
      MacOS: Menlo 支持中英文, Monaco 也支持中英文
-    Window: Consolas/黑体,
-     Linux: Noto Sans Mono/Ubuntu Mono
+    Window: Consolas/黑体
+     Linux: 见 html[data-platform='linux']，不能写在 Menlo/Consolas 后面
      system-ui: 兜底
   */
   --code-font: Menlo, Monaco, Consolas, 'Noto Sans Mono', 'Ubuntu Mono', Consolas, 黑体, system-ui;
@@ -44,6 +44,13 @@ html {
 
 /* Linux WebKitGTK：减轻假粗/发糊（Yaak/JetPilot 同类补丁；勿用于 macOS） */
 html[data-platform='linux'] {
+  /*
+   * fontconfig 的 FcFontMatch 对没安装的家族名也会成功，并返回默认字体（Deepin 是思源黑体）。
+   * WebKitGTK 把这次命中当成该家族可用，不再试后面的名字。
+   * 设置里手选「Noto Sans Mono」时栈里只有它，所以能正常显示；默认栈把 Menlo 放前面就会整段落到思源黑体。
+   */
+  --code-font: 'Noto Sans Mono', 'Ubuntu Mono', monospace;
+
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
