@@ -884,7 +884,7 @@ export default {
     maxClients: 'Max',
     user: 'User',
     command: 'Commands',
-    network: 'Network',
+    network: 'Net',
     maxmemoryLimit: 'Limit',
     maxmemoryUnlimited: 'No limit',
     persistence: 'Persist',
