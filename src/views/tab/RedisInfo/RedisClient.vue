@@ -140,7 +140,7 @@ const clientColumns = computed<MeColumn<RedisClientListRow>[]>(() => [
     formatter: row => String(meHumanSeconds(row.age)),
   }),
   fieldCol('idle', t('redisClient.idle'), {
-    width: 120,
+    width: 140,
     align: 'right',
     formatter: row => String(meHumanSeconds(row.idle)),
   }),
