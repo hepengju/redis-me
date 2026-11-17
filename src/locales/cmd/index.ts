@@ -1,6 +1,6 @@
 import { computed } from 'vue'
 
-import { isZh } from '@/utils/app/util'
+import i18n, { type AppLocale } from '@/locales'
 
 import { enCommands, type CommandHelpRow } from './en'
 import { redisCmdSummaryZhCn } from './zh-cn'
@@ -644,9 +644,19 @@ const enHelp: CommandHelpRow[] = enCommands.map(cmd => {
   return row
 })
 
-const zhHelp: CommandHelpRow[] = enHelp.map(cmd => {
-  const summary = redisCmdSummaryZhCn[cmd.key] ?? cmd.summary
-  return { ...cmd, summary, description: `${summary} @since ${cmd.since} 【${cmd.group}】` }
-})
+/** 命令摘要覆盖层：只译 summary，缺条沿用英文；分组括号仅中文用【】 */
+export const commandSummaryOverlays: Partial<Record<AppLocale, Record<string, string>>> = {
+  zhCN: redisCmdSummaryZhCn,
+}
 
-export const commandHelp = computed(() => (isZh.value ? zhHelp : enHelp))
+function commandHelpFor(locale: string): CommandHelpRow[] {
+  const summaries = commandSummaryOverlays[locale as AppLocale]
+  if (!summaries) return enHelp
+  const groupOf = (group: string) => (locale === 'zhCN' ? `【${group}】` : `[${group}]`)
+  return enHelp.map(cmd => {
+    const summary = summaries[cmd.key] ?? cmd.summary
+    return { ...cmd, summary, description: `${summary} @since ${cmd.since} ${groupOf(cmd.group)}` }
+  })
+}
+
+export const commandHelp = computed(() => commandHelpFor(i18n.global.locale.value))

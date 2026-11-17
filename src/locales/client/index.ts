@@ -1,8 +1,9 @@
-import { computed } from 'vue'
-
-import { isZh } from '@/utils/app/util'
+import { localeOverlay } from '@/locales/overlay'
 
 import { enClientTip } from './en'
 import { zhClientTip } from './zh-cn'
 
-export const clientTip = computed(() => (isZh.value ? zhClientTip : enClientTip))
+/** CLIENT LIST 字段说明覆盖层：英文为底，缺条回英文 */
+export const clientTipOverlays = { zhCN: zhClientTip }
+
+export const clientTip = localeOverlay(enClientTip, clientTipOverlays)

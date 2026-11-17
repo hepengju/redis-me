@@ -1,11 +1,12 @@
-import { computed } from 'vue'
-
-import { isZh } from '@/utils/app/util'
+import { localeOverlay } from '@/locales/overlay'
 
 import { enInfoTip } from './en'
 import { zhInfoTip } from './zh-cn'
 
-export const infoTip = computed(() => (isZh.value ? zhInfoTip : enInfoTip))
+/** INFO 说明覆盖层：英文为底，缺条回英文 */
+export const infoTipOverlays = { zhCN: zhInfoTip }
+
+export const infoTip = localeOverlay(enInfoTip, infoTipOverlays)
 
 /** 命令名、错误前缀随 INFO 变化，说明挂在 *_XXX 模板上 */
 const PREFIX_TEMPLATES: readonly [prefix: string, templateKey: string][] = [

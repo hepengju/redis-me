@@ -1,11 +1,12 @@
-import { computed } from 'vue'
-
-import { isZh } from '@/utils/app/util'
+import { localeOverlay } from '@/locales/overlay'
 
 import { enConfigTip } from './en'
 import { zhConfigTip } from './zh-cn'
 
-export const configTip = computed(() => (isZh.value ? zhConfigTip : enConfigTip))
+/** CONFIG 说明覆盖层：英文为底，缺条回英文 */
+export const configTipOverlays = { zhCN: zhConfigTip }
+
+export const configTip = localeOverlay(enConfigTip, configTipOverlays)
 
 // https://redis.io/docs/latest/operate/oss_and_stack/management/config/
 //
@@ -15,7 +16,7 @@ export const configTip = computed(() => (isZh.value ? zhConfigTip : enConfigTip)
 // 新增版本时请同步维护：
 // 1. src/assets/conf/{Version}.conf（「官网默认配置」原文；下拉列表由 import.meta.glob 自动枚举）
 // 2. redisConfDict / valkeyConfDict（表格「默认值」列对比）
-// 3. zh-cn.ts / en.ts（参数说明 tip；新配置项需补文案）
+// 3. en.ts 为说明底表；其他语言写入 configTipOverlays，缺条回英文
 /** 版本 -> 配置项 -> 默认值 */
 export type RedisVersionConf = Record<string, string>
 export type RedisConfDictRoot = Record<string, RedisVersionConf>

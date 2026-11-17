@@ -26,7 +26,6 @@ import {
   ME_CODE_FONT_MAX,
   ME_CODE_FONT_MIN,
   ME_CODE_FONT_STEP,
-  isZh,
   meCodeFontSize,
   meCodeLineWrap,
   meCodeShowLineNumbers,
@@ -188,7 +187,7 @@ const restAttrs = computed(() => {
   const { class: _c, style: _s, ...rest } = attrs
   return rest as Record<string, unknown>
 })
-const { t } = useI18n()
+const { t, locale } = useI18n()
 
 function copyCode(): void {
   meCopy(props.modelValue)
@@ -357,7 +356,9 @@ const lang = computed(() => {
   if (m === 'redis') return redisLang
   return undefined
 })
-const phrases = computed(() => (isZh.value ? zhPhrases : {}))
+// 英文用 CodeMirror 自带文案；其他语言只覆盖译好的短语
+const codePhrases: Partial<Record<string, Record<string, string>>> = { zhCN: zhPhrases }
+const phrases = computed(() => codePhrases[locale.value] ?? {})
 const extensions = computed(() => {
   const list = [
     meBasicSetup,
