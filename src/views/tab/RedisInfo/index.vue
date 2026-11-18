@@ -20,7 +20,9 @@ import type { RedisInfo } from '@/types/tauri-specta'
 import { bus, INFO_REFRESH, meCommands, meCommandsQuiet, meHumanSize } from '@/utils/app/util'
 import { connEndpoint } from '@/utils/conn'
 import type { MasterStatSource } from '@/utils/redis/command-stats'
+import { readRedisVersion } from '@/utils/redis/latency-stats'
 import { enrichNodeList } from '@/utils/redis/redis-display'
+import { parseVersionNums } from '@/utils/redis/redis-version'
 
 import ClusterTopology from './ClusterTopology.vue'
 import CommandStats from './CommandStats.vue'
@@ -556,6 +558,38 @@ const cmdstatScopeLabel = computed(() =>
 const latencyScopeLabel = computed(() =>
   latencyScope.value === 'masters' ? t('redisInfo.latencyScopeMasters') : currentNodeLabel(),
 )
+
+/** 能读到主版本且低于 7 才标明。读不到版本时悬停保持原样，弹窗空态再说明。 */
+function redisMajor(version: string | null | undefined): number | null {
+  const text = version?.trim()
+  if (!text) return null
+  const major = parseVersionNums(text)[0]
+  return major > 0 ? major : null
+}
+
+function beforeLatencyStats(version: string | null | undefined): boolean {
+  const major = redisMajor(version)
+  return major != null && major < 7
+}
+
+function latencyButtonTip(name: string, old: boolean) {
+  return old ? t('redisInfo.latencyProfileNeed7', { name }) : name
+}
+
+const latencyNodeTip = computed(() =>
+  latencyButtonTip(
+    t('redisInfo.latencyProfileNode'),
+    beforeLatencyStats(dic.value['redis_version']),
+  ),
+)
+
+/** 已返回 INFO 的主节点都能读到版本、且都低于 7 时才改悬停。混有 7+ 时按钮仍按可用功能提示。 */
+const latencyMastersTip = computed(() => {
+  const present = cmdstatSources.value.filter(source => source.info.trim())
+  const old =
+    present.length > 0 && present.every(source => beforeLatencyStats(readRedisVersion(source.info)))
+  return latencyButtonTip(t('redisInfo.latencyProfileMasters'), old)
+})
 // #endregion
 </script>
 
@@ -760,7 +794,7 @@ const latencyScopeLabel = computed(() =>
                 <me-icon
                   class="icon-btn info-footer-icon"
                   icon="el-icon-odometer"
-                  :name="t('redisInfo.latencyProfileMasters')"
+                  :name="latencyMastersTip"
                   hint
                   placement="top"
                   @click="openLatency('masters')" />
@@ -839,7 +873,7 @@ const latencyScopeLabel = computed(() =>
                   <me-icon
                     class="icon-btn info-footer-icon"
                     icon="el-icon-odometer"
-                    :name="t('redisInfo.latencyProfileNode')"
+                    :name="latencyNodeTip"
                     hint
                     placement="top"
                     @click="openLatency('node')" />

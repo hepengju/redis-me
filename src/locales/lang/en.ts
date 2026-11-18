@@ -942,6 +942,7 @@ export default {
     cmdUptimeUnderMinute: '<1m',
     latencyProfile: 'Latency Percentiles',
     latencyProfileNode: "This node's latency percentiles",
+    latencyProfileNeed7: '{name} (Redis 7+)',
     latencyUsecTip: 'Blank when this percentile is absent, not zero',
     latencyNote:
       'p50 is the median; p99 means only 1% of calls were slower. This is the per-call latency distribution, not cumulative time',

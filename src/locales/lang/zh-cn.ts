@@ -928,6 +928,7 @@ export default {
     cmdUptimeUnderMinute: '不足1分钟',
     latencyProfile: '延迟分位',
     latencyProfileNode: '当前节点延迟分位',
+    latencyProfileNeed7: '{name}（Redis 7 起）',
     latencyUsecTip: '没有这个分位则留空，不当成 0',
     latencyNote: 'p50 是中位数；p99 表示只有 1% 的调用更慢。这是单次延迟的分布，不是累计耗时',
     latencyEmptyOld: 'Redis 7 起才有 Latencystats，当前版本是 {version}',

@@ -41,7 +41,7 @@ function percentileValue(name: string): number {
   return Number.isFinite(n) ? n : 0
 }
 
-function readRedisVersion(info: string): string | null {
+export function readRedisVersion(info: string): string | null {
   for (const rawLine of info.split('\n')) {
     const line = rawLine.trim()
     if (!line || line.startsWith('#')) continue

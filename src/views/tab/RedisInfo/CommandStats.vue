@@ -62,9 +62,14 @@ const view = computed(() => {
 
 const rows = computed(() => view.value.rows)
 
-/** 脚注分段，模板用 | 隔开，与节点概览底栏合计一致 */
+/** 脚注分段，模板用 | 隔开，与节点概览底栏合计一致。
+ * 拒绝/失败整列为空时（Redis 7 以前没有这两项）单节点也写一句，避免看起来像没加载。 */
 const noteParts = computed(() => {
-  if (!isMasters.value) return [] as string[]
+  const list = rows.value
+  const rejectBlank = list.length > 0 && list.every(row => row.rejected == null)
+  const failedBlank = list.length > 0 && list.every(row => row.failed == null)
+  const rejectNote = rejectBlank && failedBlank ? t('redisInfo.cmdstatRejectBlank') : ''
+  if (!isMasters.value) return rejectNote ? [rejectNote] : []
   const parts = [
     t('redisInfo.cmdstatNote'),
     ...view.value.nodes.map(item => {
@@ -73,10 +78,7 @@ const noteParts = computed(() => {
       return `${item.label} ${formatUptime(item.uptimeSeconds)}`
     }),
   ]
-  const list = rows.value
-  const rejectBlank = list.length > 0 && list.every(row => row.rejected == null)
-  const failedBlank = list.length > 0 && list.every(row => row.failed == null)
-  if (rejectBlank && failedBlank) parts.push(t('redisInfo.cmdstatRejectBlank'))
+  if (rejectNote) parts.push(rejectNote)
   return parts
 })
 
