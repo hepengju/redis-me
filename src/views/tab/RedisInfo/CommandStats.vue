@@ -1,11 +1,12 @@
 <script setup lang="ts">
 // 命令统计：把已经取回的 INFO commandstats 画成表。不发命令。
 // 传入 sources 时合计这些节点（调用方决定给哪些，信息页只给主节点）；否则解析 info。
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import type { MeColumn } from '@/components/me-table/column'
 import MeOverflowText from '@/components/MeOverflowText.vue'
+import { meHumanNums } from '@/utils/app/util'
 import {
   aggregateMasterCommandStats,
   commandStatRows,
@@ -13,6 +14,9 @@ import {
   type CommandStatRow,
   type MasterStatSource,
 } from '@/utils/redis/command-stats'
+import { formatMsOrUs } from '@/utils/redis/format-ms-or-us'
+
+import TopBars from './TopBars.vue'
 
 const props = defineProps<{
   /** 单节点 INFO 原文 */
@@ -61,6 +65,75 @@ const view = computed(() => {
 })
 
 const rows = computed(() => view.value.rows)
+
+const TOP = 10
+const chartOpen = ref(false)
+/** 图按这一列自己取前 10，不跟表格当前排序 */
+const chartMetric = ref<'usec' | 'calls' | 'avg'>('usec')
+const chartMetricOptions = computed(() => [
+  { label: t('redisInfo.cmdUsecName'), value: 'usec' as const },
+  { label: t('redisInfo.cmdCalls'), value: 'calls' as const },
+  { label: t('redisInfo.cmdAvgName'), value: 'avg' as const },
+])
+const chartTitle = computed(() => {
+  const name = chartMetricOptions.value.find(item => item.value === chartMetric.value)?.label ?? ''
+  return t('redisInfo.top10Of', { name })
+})
+const chartBars = computed(() => {
+  const metric = chartMetric.value
+  return [...rows.value]
+    .sort((a, b) => b[metric] - a[metric] || a.command.localeCompare(b.command))
+    .slice(0, TOP)
+})
+const chartItems = computed(() => {
+  const metric = chartMetric.value
+  const total = chartTotal.value
+  return chartBars.value.map(row => {
+    if (metric === 'avg') {
+      return { label: row.command, value: row.avg / 1000, caption: formatAvgLine(row) }
+    }
+    if (metric === 'usec') {
+      const ms = Math.round(row.usec / 1000)
+      const caption = [`${ms} ms`, formatShare(row.usec, total)].filter(Boolean).join(' · ')
+      return { label: row.command, value: ms, caption }
+    }
+    const share = formatShare(row.calls, total)
+    const caption = [shortNum(row.calls), share].filter(Boolean).join(' · ')
+    const exact = [formatStatNum(row.calls), share].filter(Boolean).join(' · ')
+    return {
+      label: row.command,
+      value: row.calls,
+      caption,
+      tip: exact === caption ? undefined : exact,
+    }
+  })
+})
+
+/** 占比按全部命令算，不只按图里这 10 条。平均耗时不是份额 */
+const chartTotal = computed(() => {
+  const metric = chartMetric.value
+  if (metric === 'avg') return 0
+  return rows.value.reduce((sum, row) => sum + row[metric], 0)
+})
+
+function formatShare(part: number, total: number): string {
+  if (!(total > 0) || !Number.isFinite(part)) return ''
+  const pct = (part / total) * 100
+  const rounded = pct >= 10 ? Math.round(pct) : Math.round(pct * 10) / 10
+  return `${rounded}%`
+}
+
+function shortNum(n: number): string {
+  if (Math.abs(n) < 1000) return formatStatNum(n)
+  return meHumanNums(n, '0', 1).replace(/\.0([KMB])$/, '$1')
+}
+
+function formatAvgLine(row: CommandStatRow): string {
+  return t('redisInfo.chartAvgCalls', {
+    value: formatMsOrUs(row.avg),
+    calls: formatStatNum(row.calls),
+  })
+}
 
 /** 脚注分段，模板用 | 隔开，与节点概览底栏合计一致。
  * 拒绝/失败整列为空时（Redis 7 以前没有这两项）单节点也写一句，避免看起来像没加载。 */
@@ -136,6 +209,15 @@ const columns = computed<MeColumn<CommandStatRow>[]>(() => [
       :columns="columns"
       :default-sort="{ prop: 'usec', order: 'descending' }"
       export-name="commandstats">
+      <template v-if="rows.length" #footer>
+        <me-icon
+          class="icon-btn stat-chart-icon"
+          icon="el-icon-histogram"
+          :name="t('redisInfo.top10Chart')"
+          hint
+          placement="top"
+          @click="chartOpen = true" />
+      </template>
       <template v-if="noteParts.length" #footer-center>
         <div class="cmdstat-note">
           <me-overflow-text :content="noteParts.join(' | ')">
@@ -147,12 +229,43 @@ const columns = computed<MeColumn<CommandStatRow>[]>(() => [
         </div>
       </template>
     </me-table>
+
+    <me-dialog
+      v-model="chartOpen"
+      icon="el-icon-histogram"
+      :title="chartTitle"
+      width="70vw"
+      body-height="60vh">
+      <div class="stat-chart">
+        <el-segmented v-model="chartMetric" :options="chartMetricOptions" />
+        <div class="stat-chart-plot">
+          <TopBars :items="chartItems" />
+        </div>
+      </div>
+    </me-dialog>
   </div>
 </template>
 
 <style scoped lang="scss">
 .redis-command-stats {
   height: 100%;
+  min-height: 0;
+}
+
+.stat-chart-icon {
+  font-size: 16px;
+}
+
+.stat-chart {
+  height: 100%;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.stat-chart-plot {
+  flex: 1;
   min-height: 0;
 }
 

@@ -1,12 +1,13 @@
 <script setup lang="ts">
 // 延迟分位：把已经取回的 INFO latencystats 画成表。不发命令。
 // 传入 sources 时每个分位取这些节点的最大值（调用方决定给哪些，信息页只给主节点）；否则解析 info。
-import { computed } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import type { MeColumn } from '@/components/me-table/column'
 import MeOverflowText from '@/components/MeOverflowText.vue'
 import type { MasterStatSource } from '@/utils/redis/command-stats'
+import { formatMsOrUs } from '@/utils/redis/format-ms-or-us'
 import {
   aggregateMasterLatencyStats,
   parseLatencyStats,
@@ -14,6 +15,8 @@ import {
   type LatencyMaxCell,
 } from '@/utils/redis/latency-stats'
 import { parseVersionNums } from '@/utils/redis/redis-version'
+
+import TopBars from './TopBars.vue'
 
 type LatencyViewRow = { command: string; cells: Record<string, LatencyMaxCell> }
 
@@ -134,6 +137,41 @@ const noteParts = computed(() => {
 
 const labelColumns = computed(() => (isMasters.value ? view.value.percentiles : []))
 
+const TOP = 10
+const chartOpen = ref(false)
+/** 默认最高分位。选项是这份 INFO 里实际有的分位，没有该分位的命令跳过 */
+const chartPercentile = ref('')
+const chartPercentileOptions = computed(() =>
+  view.value.percentiles.map(name => ({ label: name, value: name })),
+)
+watch(
+  () => view.value.percentiles,
+  names => {
+    if (!names.includes(chartPercentile.value)) chartPercentile.value = names.at(-1) ?? ''
+  },
+  { immediate: true },
+)
+const chartBars = computed(() => {
+  const name = chartPercentile.value
+  if (!name) return []
+  return view.value.rows
+    .flatMap(row => {
+      const cell = row.cells[name]
+      if (cell?.usec == null) return []
+      return [{ command: row.command, usec: cell.usec, labels: cell.labels }]
+    })
+    .sort((a, b) => b.usec - a.usec || a.command.localeCompare(b.command))
+    .slice(0, TOP)
+})
+const chartTitle = computed(() => t('redisInfo.top10Of', { name: chartPercentile.value }))
+const chartItems = computed(() =>
+  chartBars.value.map(row => {
+    const caption = formatMsOrUs(row.usec)
+    const tip = row.labels.length ? `${caption} · ${row.labels.join(' ')}` : undefined
+    return { label: row.command, value: row.usec / 1000, caption, tip }
+  }),
+)
+
 function cellOf(row: LatencyViewRow, name: string): LatencyMaxCell | undefined {
   return row.cells[name]
 }
@@ -175,6 +213,15 @@ const columns = computed<MeColumn<LatencyViewRow>[]>(() => {
           </span>
         </template>
       </template>
+      <template v-if="chartBars.length" #footer>
+        <me-icon
+          class="icon-btn stat-chart-icon"
+          icon="el-icon-histogram"
+          :name="t('redisInfo.top10Chart')"
+          hint
+          placement="top"
+          @click="chartOpen = true" />
+      </template>
       <template v-if="noteParts.length" #footer-center>
         <div class="latency-note">
           <me-overflow-text :content="noteParts.join(' | ')">
@@ -186,12 +233,43 @@ const columns = computed<MeColumn<LatencyViewRow>[]>(() => {
         </div>
       </template>
     </me-table>
+
+    <me-dialog
+      v-model="chartOpen"
+      icon="el-icon-histogram"
+      :title="chartTitle"
+      width="70vw"
+      body-height="60vh">
+      <div class="stat-chart">
+        <el-segmented v-model="chartPercentile" :options="chartPercentileOptions" />
+        <div class="stat-chart-plot">
+          <TopBars :items="chartItems" />
+        </div>
+      </div>
+    </me-dialog>
   </div>
 </template>
 
 <style scoped lang="scss">
 .redis-latency-stats {
   height: 100%;
+  min-height: 0;
+}
+
+.stat-chart-icon {
+  font-size: 16px;
+}
+
+.stat-chart {
+  height: 100%;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.stat-chart-plot {
+  flex: 1;
   min-height: 0;
 }
 
