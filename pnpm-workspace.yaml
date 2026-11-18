@@ -9,7 +9,8 @@ allowBuilds:
 # minimumReleaseAge: 0
 
 # vite 别名统一走 catalog：项目仅用 vite-plus（vite.config.ts 从 vite-plus 引入 defineConfig），不直接依赖 vite；
-# override 只作用于插件/vitest 的 vite peer，把它们统一别名到 vite-plus-core，避免 autoInstallPeers 拉入真实 vite@8 造成双实例
+# override 只作用于插件/vitest 的 vite peer，把它们统一别名到 vite-plus-core，避免 autoInstallPeers 拉入真实 vite 造成双实例。
+# vite-plus 1.7 起 core 版本号编码内置 Vite（8.3.8000 = Vite 8.3.8），不再和 vite-plus 同号。
 # （注：不要在 package.json 里再写 vite: catalog: 直接依赖，否则与本 override 在全新解析时冲突、被误解析成 vite@<version>）
 # Codemirror 已不再经 vue-codemirror6 的 peer 引入，无需版本 override
 overrides:
@@ -19,8 +20,8 @@ overrides:
 patchedDependencies:
   java-object-serialization@0.1.2: patches/java-object-serialization@0.1.2.patch
 catalog:
-  vite: npm:@voidzero-dev/vite-plus-core@1.6.0
-  vite-plus: 1.6.0
+  vite: npm:@voidzero-dev/vite-plus-core@8.3.8000
+  vite-plus: 1.7.0
 peerDependencyRules:
   allowAny:
     - vite
