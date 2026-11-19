@@ -10,7 +10,7 @@ import { meHumanNums } from '@/utils/app/util'
 import {
   chartDurationDivisor,
   chartDurationUnit,
-  formatChartDurationAmount,
+  formatChartDuration,
   type ChartDurationUnit,
 } from '@/utils/redis/chart-duration'
 import {
@@ -93,13 +93,6 @@ const chartBars = computed(() => {
     .sort((a, b) => b[metric] - a[metric] || a.command.localeCompare(b.command))
     .slice(0, TOP)
 })
-const DURATION_LABEL: Record<Exclude<ChartDurationUnit, 'ms'>, string> = {
-  s: 'redisInfo.chartDurS',
-  min: 'redisInfo.chartDurMin',
-  h: 'redisInfo.chartDurH',
-  d: 'redisInfo.chartDurD',
-}
-
 /** 总耗时图的单位：这 10 根里最短的正值仍 ≥ 1 的最大档。不到 1 秒则整图保持毫秒。 */
 function usecChartUnit(bars: CommandStatRow[]): ChartDurationUnit {
   let minMs = Infinity
@@ -120,15 +113,11 @@ const chartItems = computed(() => {
     }
     if (metric === 'usec') {
       const ms = row.usec / 1000
-      if (durationUnit === 'ms') {
-        const rounded = Math.round(ms)
-        const caption = [`${rounded} ms`, formatShare(row.usec, total)].filter(Boolean).join(' · ')
-        return { label: row.command, value: rounded, caption }
-      }
-      const amount = formatChartDurationAmount(ms, durationUnit)
-      const text = t(DURATION_LABEL[durationUnit], { n: amount })
-      const caption = [text, formatShare(row.usec, total)].filter(Boolean).join(' · ')
-      return { label: row.command, value: ms / chartDurationDivisor(durationUnit), caption }
+      const caption = [formatChartDuration(ms, durationUnit), formatShare(row.usec, total)]
+        .filter(Boolean)
+        .join(' · ')
+      const value = durationUnit === 'ms' ? Math.round(ms) : ms / chartDurationDivisor(durationUnit)
+      return { label: row.command, value, caption }
     }
     const share = formatShare(row.calls, total)
     const caption = [shortNum(row.calls), share].filter(Boolean).join(' · ')

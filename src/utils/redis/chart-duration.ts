@@ -33,6 +33,9 @@ export function chartDurationDivisor(unit: ChartDurationUnit): number {
   return MS[unit]
 }
 
+/** 与平均耗时的 ms / µs 一样，符号直接写在柱端，不走文案。 */
+const UNIT_LABEL: Record<ChartDurationUnit, string> = { ms: 'ms', s: 's', min: 'm', h: 'h', d: 'd' }
+
 /** 柱端数字。毫秒取整；更大的单位不到 100 留 1 位小数，满 100 取整。 */
 export function formatChartDurationAmount(ms: number, unit: ChartDurationUnit): string {
   if (unit === 'ms') return String(Math.round(ms))
@@ -42,4 +45,8 @@ export function formatChartDurationAmount(ms: number, unit: ChartDurationUnit): 
   if (rounded === 0) return '0'
   if (Number.isInteger(rounded)) return String(rounded)
   return rounded.toFixed(digits)
+}
+
+export function formatChartDuration(ms: number, unit: ChartDurationUnit): string {
+  return `${formatChartDurationAmount(ms, unit)} ${UNIT_LABEL[unit]}`
 }

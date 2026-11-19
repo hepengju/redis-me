@@ -1,6 +1,10 @@
 import { describe, expect, it } from 'vite-plus/test'
 
-import { chartDurationUnit, formatChartDurationAmount } from '@/utils/redis/chart-duration'
+import {
+  chartDurationUnit,
+  formatChartDuration,
+  formatChartDurationAmount,
+} from '@/utils/redis/chart-duration'
 
 describe('chartDurationUnit', () => {
   it('最短柱不到 1 秒时保持毫秒', () => {
@@ -29,5 +33,13 @@ describe('formatChartDurationAmount', () => {
     expect(formatChartDurationAmount(46_632_716, 'min')).toBe('777')
     expect(formatChartDurationAmount(1_733_596, 'min')).toBe('28.9')
     expect(formatChartDurationAmount(4_052_219, 'min')).toBe('67.5')
+  })
+
+  it('柱端单位用 s/m/h/d，与 ms 一样不走文案', () => {
+    expect(formatChartDuration(10_031, 'ms')).toBe('10031 ms')
+    expect(formatChartDuration(59_999, 's')).toBe('60 s')
+    expect(formatChartDuration(46_632_716, 'min')).toBe('777 m')
+    expect(formatChartDuration(3_600_000, 'h')).toBe('1 h')
+    expect(formatChartDuration(86_400_000, 'd')).toBe('1 d')
   })
 })
