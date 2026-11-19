@@ -900,8 +900,11 @@ const latencyMastersTip = computed(() => {
     <template #title-extra>
       <el-text type="info" class="cmdstat-scope">{{ cmdstatScopeLabel }}</el-text>
     </template>
-    <CommandStats v-if="cmdstatScope === 'masters'" :sources="cmdstatSources" />
-    <CommandStats v-else :info="raw" />
+    <CommandStats
+      v-if="cmdstatScope === 'masters'"
+      :sources="cmdstatSources"
+      :scope-label="cmdstatScopeLabel" />
+    <CommandStats v-else :info="raw" :scope-label="cmdstatScopeLabel" />
   </me-dialog>
 
   <me-dialog
@@ -912,8 +915,11 @@ const latencyMastersTip = computed(() => {
     <template #title-extra>
       <el-text type="info" class="cmdstat-scope">{{ latencyScopeLabel }}</el-text>
     </template>
-    <LatencyStats v-if="latencyScope === 'masters'" :sources="cmdstatSources" />
-    <LatencyStats v-else :info="raw" />
+    <LatencyStats
+      v-if="latencyScope === 'masters'"
+      :sources="cmdstatSources"
+      :scope-label="latencyScopeLabel" />
+    <LatencyStats v-else :info="raw" :scope-label="latencyScopeLabel" />
   </me-dialog>
 
   <me-dialog

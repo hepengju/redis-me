@@ -25,6 +25,8 @@ const props = defineProps<{
   info?: string
   /** 要取最大值的节点。传入则忽略 info，并在底栏写各节点运行时间 */
   sources?: MasterStatSource[]
+  /** 与外层表格弹框标题旁同一句：主节点最差，或当前节点 */
+  scopeLabel?: string
 }>()
 
 const { t } = useI18n()
@@ -240,6 +242,9 @@ const columns = computed<MeColumn<LatencyViewRow>[]>(() => {
       :title="chartTitle"
       width="70vw"
       body-height="60vh">
+      <template v-if="scopeLabel" #title-extra>
+        <el-text type="info" class="stat-scope">{{ scopeLabel }}</el-text>
+      </template>
       <div class="stat-chart">
         <el-segmented v-model="chartPercentile" :options="chartPercentileOptions" />
         <div class="stat-chart-plot">
@@ -271,6 +276,12 @@ const columns = computed<MeColumn<LatencyViewRow>[]>(() => {
 .stat-chart-plot {
   flex: 1;
   min-height: 0;
+}
+
+/* 标题补充在弹窗 header 上，弹窗 append-to-body */
+.stat-scope {
+  margin-left: 8px;
+  font-size: 13px;
 }
 
 .latency-cell {
