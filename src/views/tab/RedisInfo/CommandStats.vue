@@ -8,6 +8,12 @@ import type { MeColumn } from '@/components/me-table/column'
 import MeOverflowText from '@/components/MeOverflowText.vue'
 import { meHumanNums } from '@/utils/app/util'
 import {
+  chartDurationDivisor,
+  chartDurationUnit,
+  formatChartDurationAmount,
+  type ChartDurationUnit,
+} from '@/utils/redis/chart-duration'
+import {
   aggregateMasterCommandStats,
   commandStatRows,
   parseCommandStats,
@@ -87,17 +93,42 @@ const chartBars = computed(() => {
     .sort((a, b) => b[metric] - a[metric] || a.command.localeCompare(b.command))
     .slice(0, TOP)
 })
+const DURATION_LABEL: Record<Exclude<ChartDurationUnit, 'ms'>, string> = {
+  s: 'redisInfo.chartDurS',
+  min: 'redisInfo.chartDurMin',
+  h: 'redisInfo.chartDurH',
+  d: 'redisInfo.chartDurD',
+}
+
+/** 总耗时图的单位：这 10 根里最短的正值仍 ≥ 1 的最大档。不到 1 秒则整图保持毫秒。 */
+function usecChartUnit(bars: CommandStatRow[]): ChartDurationUnit {
+  let minMs = Infinity
+  for (const row of bars) {
+    const ms = row.usec / 1000
+    if (ms > 0 && ms < minMs) minMs = ms
+  }
+  return chartDurationUnit(Number.isFinite(minMs) ? minMs : 0)
+}
+
 const chartItems = computed(() => {
   const metric = chartMetric.value
   const total = chartTotal.value
+  const durationUnit = metric === 'usec' ? usecChartUnit(chartBars.value) : 'ms'
   return chartBars.value.map(row => {
     if (metric === 'avg') {
       return { label: row.command, value: row.avg / 1000, caption: formatAvgLine(row) }
     }
     if (metric === 'usec') {
-      const ms = Math.round(row.usec / 1000)
-      const caption = [`${ms} ms`, formatShare(row.usec, total)].filter(Boolean).join(' · ')
-      return { label: row.command, value: ms, caption }
+      const ms = row.usec / 1000
+      if (durationUnit === 'ms') {
+        const rounded = Math.round(ms)
+        const caption = [`${rounded} ms`, formatShare(row.usec, total)].filter(Boolean).join(' · ')
+        return { label: row.command, value: rounded, caption }
+      }
+      const amount = formatChartDurationAmount(ms, durationUnit)
+      const text = t(DURATION_LABEL[durationUnit], { n: amount })
+      const caption = [text, formatShare(row.usec, total)].filter(Boolean).join(' · ')
+      return { label: row.command, value: ms / chartDurationDivisor(durationUnit), caption }
     }
     const share = formatShare(row.calls, total)
     const caption = [shortNum(row.calls), share].filter(Boolean).join(' · ')
