@@ -27,9 +27,9 @@ cmdstat_set:calls=1,usec=7,usec_per_call=7.00
 `
 
 describe('parseCommandStats', () => {
-  it('只读 Commandstats，保留子命令名，并带上 Redis 7 的拒绝和失败', () => {
+  it('只读 Commandstats，命令名大写并把子命令竖线换成空格', () => {
     const rows = parseCommandStats(REDIS7)
-    expect(rows.map(row => row.command)).toEqual(['get', 'command|info', 'FT.LIST'])
+    expect(rows.map(row => row.command)).toEqual(['GET', 'COMMAND INFO', 'FT.LIST'])
     expect(rows[0]).toMatchObject({ calls: 10, usec: 100, rejected: 1, failed: 2 })
     expect(readUptimeSeconds(REDIS7)).toBe(90061)
   })
@@ -37,12 +37,12 @@ describe('parseCommandStats', () => {
   it('Redis 7 以前没有拒绝和失败，留空而不是 0', () => {
     const rows = parseCommandStats(REDIS6)
     expect(rows).toHaveLength(2)
-    expect(rows[0]).toMatchObject({ command: 'get', rejected: null, failed: null })
+    expect(rows[0]).toMatchObject({ command: 'GET', rejected: null, failed: null })
   })
 
   it('平均耗时用总耗时除以次数，并按总耗时从高到低排', () => {
     const rows = commandStatRows(parseCommandStats(REDIS7))
-    expect(rows.map(row => row.command)).toEqual(['get', 'FT.LIST', 'command|info'])
+    expect(rows.map(row => row.command)).toEqual(['GET', 'FT.LIST', 'COMMAND INFO'])
     expect(rows[0]?.avg).toBe(10)
   })
 })
@@ -63,8 +63,8 @@ cmdstat_set:calls=1,usec=7,usec_per_call=7.00,rejected_calls=0,failed_calls=0
 `,
       },
     ])
-    const get = rows.find(row => row.command === 'get')
-    const set = rows.find(row => row.command === 'set')
+    const get = rows.find(row => row.command === 'GET')
+    const set = rows.find(row => row.command === 'SET')
     expect(get).toMatchObject({ calls: 15, usec: 150, rejected: 3, failed: 2 })
     expect(set).toMatchObject({ calls: 1, usec: 7, rejected: 0, failed: 0 })
     expect(commandStatRows([get!])[0]?.avg).toBe(10)
@@ -76,7 +76,7 @@ cmdstat_set:calls=1,usec=7,usec_per_call=7.00,rejected_calls=0,failed_calls=0
       { label: 'M1', node: 'a', info: REDIS7 },
       { label: 'M2', node: 'b', info: REDIS6 },
     ])
-    expect(rows.find(row => row.command === 'get')).toMatchObject({
+    expect(rows.find(row => row.command === 'GET')).toMatchObject({
       calls: 15,
       usec: 150,
       rejected: null,
@@ -89,7 +89,7 @@ cmdstat_set:calls=1,usec=7,usec_per_call=7.00,rejected_calls=0,failed_calls=0
       { label: 'M1', node: 'a', info: REDIS7 },
       { label: 'M2', node: 'b', info: '# Server\nuptime_in_seconds:10\n# Commandstats\n' },
     ])
-    expect(rows.find(row => row.command === 'get')).toMatchObject({ rejected: 1, failed: 2 })
+    expect(rows.find(row => row.command === 'GET')).toMatchObject({ rejected: 1, failed: 2 })
   })
 
   it('INFO 没回来的主节点不参加合计，并标成缺失', () => {
@@ -97,7 +97,7 @@ cmdstat_set:calls=1,usec=7,usec_per_call=7.00,rejected_calls=0,failed_calls=0
       { label: 'M1', node: 'a', info: REDIS7 },
       { label: 'M2', node: 'b', info: '   ' },
     ])
-    expect(rows.find(row => row.command === 'get')).toMatchObject({ calls: 10, usec: 100 })
+    expect(rows.find(row => row.command === 'GET')).toMatchObject({ calls: 10, usec: 100 })
     expect(nodes[1]).toMatchObject({ label: 'M2', missing: true, uptimeSeconds: null })
   })
 })

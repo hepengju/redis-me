@@ -4,7 +4,11 @@
  * 百分位不能相加或平均。多节点时每个分位只取主节点里的最大值，并记下是哪些节点打成的。
  */
 
-import { readUptimeSeconds, type MasterStatSource } from '@/utils/redis/command-stats'
+import {
+  displayCommandName,
+  readUptimeSeconds,
+  type MasterStatSource,
+} from '@/utils/redis/command-stats'
 
 export type LatencyStatRow = {
   command: string
@@ -54,7 +58,7 @@ export function readRedisVersion(info: string): string | null {
   return null
 }
 
-/** 只读 `# Latencystats` 段。命令名保留前缀之后的原文（含 `command|info` 这类子命令）。 */
+/** 只读 `# Latencystats` 段。命令名与命令统计同一套展示名（大写，`|` 换空格）。 */
 export function parseLatencyStats(info: string): LatencyStatsParsed {
   const byCommand = new Map<string, LatencyStatRow>()
   const percentileSet = new Set<string>()
@@ -74,7 +78,7 @@ export function parseLatencyStats(info: string): LatencyStatsParsed {
     if (index <= 0) continue
     const key = line.slice(0, index).trim()
     if (!key.startsWith(PREFIX)) continue
-    const command = key.slice(PREFIX.length)
+    const command = displayCommandName(key.slice(PREFIX.length))
     if (!command) continue
     const usec: Record<string, number> = {}
     for (const [name, raw] of parseFields(line.slice(index + 1))) {

@@ -28,12 +28,12 @@ redis_version:7.0.15
 `
 
 describe('parseLatencyStats', () => {
-  it('只读 Latencystats，保留子命令名，分位按数值从小到大', () => {
+  it('只读 Latencystats，命令名大写并把子命令竖线换成空格', () => {
     const parsed = parseLatencyStats(REDIS7)
     expect(parsed.sectionPresent).toBe(true)
     expect(parsed.redisVersion).toBe('7.2.4')
     expect(parsed.percentiles).toEqual(['p50', 'p99', 'p99.9'])
-    expect(parsed.rows.map(row => row.command)).toEqual(['get', 'FT.LIST', 'command|info', 'set'])
+    expect(parsed.rows.map(row => row.command)).toEqual(['GET', 'FT.LIST', 'COMMAND INFO', 'SET'])
     expect(parsed.rows[0].usec).toEqual({ p50: 1.003, p99: 8.047, 'p99.9': 12.031 })
     expect(parsed.rows[3].usec.p99).toBe(4)
     expect(parsed.rows[3].usec['p99.9']).toBeUndefined()
@@ -60,7 +60,7 @@ latency_percentiles_usec_get:calls=1
 latency_percentiles_usec_set:p50=1.5
 `
     const parsed = parseLatencyStats(info)
-    expect(parsed.rows.map(row => row.command)).toEqual(['set'])
+    expect(parsed.rows.map(row => row.command)).toEqual(['SET'])
     expect(parsed.rows[0].usec).toEqual({ p50: 1.5 })
   })
 })
@@ -90,14 +90,14 @@ describe('aggregateMasterLatencyStats', () => {
       { label: 'M2', node: 'b:7002', info: M2 },
     ])
     expect(aggregated.percentiles).toEqual(['p50', 'p99', 'p99.9'])
-    const get = aggregated.rows.find(row => row.command === 'get')
+    const get = aggregated.rows.find(row => row.command === 'GET')
     expect(get?.cells.p50).toEqual({ usec: 3, labels: ['M2'] })
     expect(get?.cells.p99).toEqual({ usec: 8, labels: ['M1', 'M2'] })
     expect(get?.cells['p99.9']).toEqual({ usec: 20, labels: ['M2'] })
-    const set = aggregated.rows.find(row => row.command === 'set')
+    const set = aggregated.rows.find(row => row.command === 'SET')
     expect(set?.cells.p99).toEqual({ usec: 9, labels: ['M2'] })
     expect(set?.cells['p99.9']).toBeUndefined()
-    expect(aggregated.rows.map(row => row.command)).toEqual(['get', 'set'])
+    expect(aggregated.rows.map(row => row.command)).toEqual(['GET', 'SET'])
     expect(aggregated.nodes.map(node => node.uptimeSeconds)).toEqual([90061, 3600])
   })
 
@@ -107,7 +107,7 @@ describe('aggregateMasterLatencyStats', () => {
       { label: 'M2', node: 'b:7002', info: '   ' },
       { label: 'M3', node: 'c:7003', info: TRACKING_OFF },
     ])
-    expect(aggregated.rows.find(row => row.command === 'get')?.cells['p99.9']).toEqual({
+    expect(aggregated.rows.find(row => row.command === 'GET')?.cells['p99.9']).toEqual({
       usec: 12,
       labels: ['M1'],
     })

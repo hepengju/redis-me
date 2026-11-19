@@ -35,6 +35,14 @@ export type MasterUptime = {
 
 const PREFIX = 'cmdstat_'
 
+/** 统计表和柱形图的命令名。执行不区分大小写，展示跟命令帮助一样用大写；
+ * `|` 只是 INFO 里子命令的分隔符，换成空格后就是实际输入的 `MODULE LIST`。
+ * 参数详情里的 cmdstat_ 原文不走这里。
+ */
+export function displayCommandName(name: string): string {
+  return name.replaceAll('|', ' ').toUpperCase()
+}
+
 function parseFields(value: string): Map<string, string> {
   const map = new Map<string, string>()
   for (const part of value.split(',')) {
@@ -52,7 +60,7 @@ function readNum(map: Map<string, string>, key: string): number | null {
   return Number.isFinite(n) ? n : null
 }
 
-/** 只读 `# Commandstats` 段。命令名保留 `cmdstat_` 之后的原文（含 `command|info` 这类子命令）。 */
+/** 只读 `# Commandstats` 段。命令名转成展示名（大写，`|` 换空格），合计也按这个名字对齐。 */
 export function parseCommandStats(info: string): CommandStat[] {
   const rows: CommandStat[] = []
   let inSection = false
@@ -68,7 +76,7 @@ export function parseCommandStats(info: string): CommandStat[] {
     if (index <= 0) continue
     const key = line.slice(0, index).trim()
     if (!key.startsWith(PREFIX)) continue
-    const command = key.slice(PREFIX.length)
+    const command = displayCommandName(key.slice(PREFIX.length))
     if (!command) continue
     const fields = parseFields(line.slice(index + 1))
     const calls = readNum(fields, 'calls')
