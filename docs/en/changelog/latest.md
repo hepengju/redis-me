@@ -1,5 +1,27 @@
 # 5.x Changelog
 
+## [v5.9.0 - Command Stats](https://mp.weixin.qq.com/s/hlNvXNq9scnhQqQTwQvl9w) <span class="changelog-date">2026-11-22</span>
+
+### ✨ Improvements
+
+- Info: **command stats** and **latency percentiles**, as tables and **Top 10** bar charts
+- Info: Sentinel connections can view the **Sentinel topology**
+- Code area and terminal: **context menus** for common actions
+- Key transfer: after it finishes, **copy failed keys and reasons**
+- Title bar: switch **dark / light** directly
+- Slow log: times shown in the local timezone
+- Installer: packaging refined, images converted to WebP, **size down 33%**
+- Other details
+  - Chinese descriptions for commands, configs, and INFO fields filled in and corrected; missing ones fall back to English
+  - Node overview totals truncate when too long, with the full text on hover, and numbers are rounded
+
+### 🐞 Bug Fixes
+
+- Fixed the Linux code font falling back to Source Han Sans (Noto Sans Mono is preferred)
+- Fixed the terminal selection disappearing right after a double-click word select
+- Fixed the command input not focusing when switching back to the terminal tab
+- Fixed virtual table cells not allowing text selection
+
 ## [v5.8.0 - Transfer Keys](https://mp.weixin.qq.com/s/BmdkRfVzEba5F22tGd9ZaQ) <span class="changelog-date">2026-11-14</span>
 
 ### ✨ Improvements
