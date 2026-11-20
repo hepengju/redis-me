@@ -5,9 +5,10 @@ html {
   -moz-user-select: none; /* Firefox */
 }
 
-/* el-table（v1）用 .cell；el-table-v2（MeTable）数据列用 .me-cell-ellipsis（操作列 .me-cell-slot 只放图标按钮，不列入） */
+/* el-table（v1）用 .cell；el-table-v2（MeTable）数据列：开 tooltip 时包 MeOverflowText（.me-overflow-text），关 tooltip 时用 .me-cell-ellipsis；操作列 .me-cell-slot 只放图标按钮，不列入 */
 .el-descriptions__content,
 .el-table__body-wrapper .el-table__cell .cell,
+.el-table-v2__row-cell .me-overflow-text,
 .el-table-v2__row-cell .me-cell-ellipsis,
 .el-tooltip,
 .el-text,
