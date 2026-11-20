@@ -1,6 +1,6 @@
 <script setup lang="ts">
 /**
- * 官网 Redis Docker 安装助手：复用 src/utils/redis-install-gen.ts，原生表单 + 可复制产物。
+ * 官网 Redis Docker 安装助手：复用 src/utils/redis/redis-install-gen.ts，原生表单 + 可复制产物。
  * 与桌面端 RedisInstall.vue 字段对齐；外链与 TLS 证书入口放在 Markdown 正文。
  */
 import { useData } from 'vitepress'
@@ -9,12 +9,12 @@ import { computed, reactive, ref, watch } from 'vue'
 import type {
   RedisInstallLabels,
   RedisInstallOptions,
-} from '../../../../src/utils/redis-install-gen'
+} from '../../../../src/utils/redis/redis-install-gen'
 import {
   genInstallDefaultPort,
   genInstallPassword,
   genRedisInstall,
-} from '../../../../src/utils/redis-install-gen'
+} from '../../../../src/utils/redis/redis-install-gen'
 import ComboInput from './ComboInput.vue'
 
 const { lang } = useData()

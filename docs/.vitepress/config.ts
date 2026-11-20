@@ -75,7 +75,7 @@ export default defineConfig({
   // srcExclude: ['latest.json', '/zz/**'],
 
   // Windows（Hyper-V/WSL 等）常保留 5172–5271，Vite 默认 5173 会 EACCES
-  // fs.allow：文档页会 import 仓库 src/utils/redis-install-gen.ts
+  // fs.allow：文档页会 import 仓库 src/utils/redis/redis-install-gen.ts
   vite: {
     server: { port: 33333, host: '127.0.0.1', fs: { allow: [repoRoot] } },
     preview: { port: 3333, host: '127.0.0.1' },

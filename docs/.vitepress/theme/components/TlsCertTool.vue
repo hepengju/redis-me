@@ -6,8 +6,8 @@
 import { useData } from 'vitepress'
 import { computed, reactive } from 'vue'
 
-import type { RedisCertLabels } from '../../../../src/utils/redis-install-gen'
-import { genOpensslCertScript } from '../../../../src/utils/redis-install-gen'
+import type { RedisCertLabels } from '../../../../src/utils/redis/redis-install-gen'
+import { genOpensslCertScript } from '../../../../src/utils/redis/redis-install-gen'
 
 const { lang } = useData()
 const isZh = computed(() => lang.value.startsWith('zh'))
