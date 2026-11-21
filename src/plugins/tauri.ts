@@ -7,6 +7,7 @@ import type { App } from 'vue'
 import { normalizeAppLocale } from '@/locales'
 import { commands } from '@/types/tauri-specta'
 import { defaultSettings } from '@/utils/app/settings-defaults'
+import { resolveTabsVisible } from '@/utils/app/tabs'
 import { meLog } from '@/utils/app/util'
 import { checkConnList, type ConnFromStore } from '@/utils/conn/conn-compat'
 
@@ -51,6 +52,8 @@ if (
 }
 if (typeof settings.keyShowMemory !== 'boolean') settings.keyShowMemory = false
 if (typeof settings.keyShowTtl !== 'boolean') settings.keyShowTtl = false
+// 顶栏页签可见集合：清洗未知名称、重复项，清空后回落默认
+settings.tabsVisible = resolveTabsVisible(settings.tabsVisible)
 // delete settings.keyLabel // v3.5+ 移除键名称全称/简称，统一简称
 if (!Array.isArray(settings.connGroups)) settings.connGroups = []
 delete (settings as Record<string, unknown>).connShow // 连接列表只保留分组展示

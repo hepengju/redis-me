@@ -49,8 +49,14 @@ const rules = computed(() => ({
 // Json格式的默认配置
 const confDict = computed(() => (share.capabilities.isValkey ? valkeyConfDict : redisConfDict))
 const dictVersionList = sortVersionsDesc(Object.keys(confDict.value))
-// 默认值字典从 Redis6.2 / Valkey7.2 起；更旧服务回退到最旧字典做对比
-const dictVersion = ref(pickVersionAtOrBelow(serverType.value + props.initVersion, dictVersionList))
+// 默认值字典从 Redis6.2 / Valkey7.2 起；更旧服务回退到最旧字典做对比。
+// 顶栏页签直接挂载时不传 initVersion，回落到当前连接版本
+const dictVersion = ref(
+  pickVersionAtOrBelow(
+    serverType.value + (props.initVersion || share.capabilities.version),
+    dictVersionList,
+  ),
+)
 const dictRaw = computed(
   () => confDict.value[dictVersion.value] as Record<string, string | undefined>,
 )

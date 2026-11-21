@@ -21,6 +21,9 @@ export const defaultSettings = {
   fieldShow: 'auto', // 'table' 始终表格 | 'auto' 默认表格、记住手动切换
   fieldShowView: 'table', // auto 模式下上次手动选择的 json/table，持久化供切换连接/键沿用
   hashFieldTtl: false, // Hash 字段 TTL 列：记住 HTTL 开关，换键/刷新沿用
+  // 顶栏页签的可见集合，渲染顺序固定按 src/utils/app/tabs.ts 的注册顺序。
+  // 只在顶栏「更多页签」菜单里维护，设置页不展示
+  tabsVisible: ['info', 'value', 'terminal', 'memory', 'slow', 'pubsub', 'chart'] as string[],
   // 首页连接分组（见 src/utils/conn.ts）
   connGroups: [] as string[], // 分组名有序列表
   connGroupExpanded: {} as Record<string, boolean>, // 分组折叠状态，键为分组名（''=默认分组）

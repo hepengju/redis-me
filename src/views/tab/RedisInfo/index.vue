@@ -34,6 +34,7 @@ import SentinelTopology from './SentinelTopology.vue'
 // #endregion
 
 // Info 页：INFO all 原文 → 字典/标签表（含 commandstats / latencystats）；弹窗挂 Client / ACL / Config / 命令统计 / 延迟分位 / 拓扑。图表不走这条。
+// 客户端 / ACL / 配置另有同名一级页签，可从顶栏「更多页签」菜单开启，本页仍走弹窗
 
 // #region 共享上下文
 const { t } = useI18n()
@@ -249,7 +250,7 @@ async function initPage() {
 void initPage()
 // #endregion
 
-// #region 弹窗 / 跳转 Tab
+// #region 跳转顶栏页签
 function openTab(name: string) {
   share.tabName = name
 }

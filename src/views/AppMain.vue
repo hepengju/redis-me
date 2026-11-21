@@ -33,6 +33,7 @@ import {
   matchAppFullscreenHotkey,
   matchConnShortcutAction,
 } from '@/utils/app/shortcut'
+import { firstAvailableTab, resolveTabsVisible } from '@/utils/app/tabs'
 import {
   bus,
   CONN_LIST_WINDOWS_SYNC,
@@ -129,8 +130,14 @@ watch(
         share.readonly = !!newConn.readonly
         const capabilities = await meCommands.connect(newConn.id)
         Object.assign(share.capabilities, capabilities)
-        share.tabName =
-          isConnMinimalMode(newConn) || !share.capabilities.infoSupported ? 'value' : 'info'
+        // 落在可见集合里第一个可用页签：用户可能隐藏了信息页，不能再硬编码 info/value
+        share.tabName = firstAvailableTab(resolveTabsVisible(meTauri.settings.tabsVisible), {
+          minimal: isConnMinimalMode(newConn),
+          infoSupported: capabilities.infoSupported,
+          searchSupported: capabilities.redisSearchSupported,
+          memorySupported: capabilities.memoryUsageSupported,
+          aclSupported: capabilities.aclSupported,
+        })
         connPrepared.value = true
       }
     } catch {

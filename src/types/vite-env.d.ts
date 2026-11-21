@@ -22,6 +22,8 @@ declare global {
       fieldShowView?: 'json' | 'table'
       /** Hash 字段 TTL 列上次开关，换键/刷新沿用 */
       hashFieldTtl?: boolean
+      /** 顶栏页签的可见集合，渲染顺序按 src/utils/app/tabs.ts 的注册顺序 */
+      tabsVisible?: string[]
       /** 分组名顺序（与 conn.meta.group 配合） */
       connGroups?: string[]
       /** 各分组是否展开，键 '' 表示默认分组 */
