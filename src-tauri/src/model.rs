@@ -939,6 +939,19 @@ api_model!(RedisSetParam {
 });
 
 // 执行命令
+api_model!(WorkbenchTable {
+    columns: Vec<String>,
+    rows: Vec<Vec<String>>,
+    /// 可点进值页的列。没有键列时为空。
+    key_column: Option<u32>,
+    truncated: bool,
+});
+
+api_model!(WorkbenchExec {
+    text: String,
+    table: Option<WorkbenchTable>,
+});
+
 api_model!(RedisCommand {
     command: String,
     node: Option<String>,

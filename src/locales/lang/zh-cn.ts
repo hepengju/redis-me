@@ -63,6 +63,7 @@ export default {
     highlight: '高亮语言',
     highlightFollow: '跟随内容（{name}）',
     find: '查找替换',
+    run: '执行',
     mode: {
       json: 'JSON',
       yaml: 'YAML',
@@ -1143,16 +1144,31 @@ export default {
   },
 
   redisWorkbench: {
-    results: '执行结果',
+    run: '执行',
     runSelection: '执行选区',
-    runCurrent: '执行当前行',
-    runAll: '执行全部',
-    empty: '当前位置没有可执行的命令',
-    noResult: '执行结果会显示在这里',
-    placeholder: '输入命令。引号外换行是下一条，引号内换行仍属同一条',
-    refresh: '重新执行',
-    ms: '{n} 毫秒',
+    empty: '没有可执行的内容',
+    noResult: '结果展示区',
+    placeholder: `适合多行文本的命令执行；选中一段时，只执行选中的文字。
+
+例如：
+FT.SEARCH idx:bikes *
+LIMIT 0 20
+RETURN 3 key brand price
+
+FT.SEARCH、CLIENT LIST、FT.AGGREGATE、FT.INFO 的结果可以切成表。`,
+    refresh: '刷新',
+    history: '历史命令',
+    pending: '命令标签区',
+    clear: '清空所有执行结果',
+    ms: '耗时：{n}毫秒',
+    len: '长度：{n}',
     truncated: '仅显示前 {n} 行',
+    text: '文本展示',
+    table: '表格展示',
+    key: '键',
+    score: '分数',
+    field: '属性',
+    value: '值',
   },
 
   redisTerminal: {

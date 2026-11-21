@@ -73,6 +73,7 @@ export const commands = {
 	vSim: (id: string, param: RedisVSim_Deserialize, options?: InvokeOptions) => typedError<RedisVSimItem_Serialize[], string>(__TAURI_INVOKE("v_sim", { id, param }, options)),
 	objectInfo: (id: string, key: RedisKey_Deserialize, options?: InvokeOptions) => typedError<RedisObjectInfo_Serialize, string>(__TAURI_INVOKE("object_info", { id, key }, options)),
 	executeCommand: (id: string, param: RedisCommand_Deserialize, options?: InvokeOptions) => typedError<string, string>(__TAURI_INVOKE("execute_command", { id, param }, options)),
+	workbenchExec: (id: string, param: RedisCommand_Deserialize, options?: InvokeOptions) => typedError<WorkbenchExec_Serialize, string>(__TAURI_INVOKE("workbench_exec", { id, param }, options)),
 	aclUsers: (id: string, options?: InvokeOptions) => typedError<string[], string>(__TAURI_INVOKE("acl_users", { id }, options)),
 	aclListUsers: (id: string, options?: InvokeOptions) => typedError<AclUserDetail[], string>(__TAURI_INVOKE("acl_list_users", { id }, options)),
 	aclGetuser: (id: string, username: string, options?: InvokeOptions) => typedError<AclUserDetail, string>(__TAURI_INVOKE("acl_getuser", { id, username }, options)),
@@ -1400,6 +1401,36 @@ export type SystemProxyDetect = {
 	host: string,
 	port: number,
 	hasAuth: boolean,
+};
+
+export type WorkbenchExec = WorkbenchExec_Serialize | WorkbenchExec_Deserialize;
+
+export type WorkbenchExec_Deserialize = {
+	text: string,
+	table?: WorkbenchTable_Deserialize | null,
+};
+
+export type WorkbenchExec_Serialize = {
+	text: string,
+	table: WorkbenchTable_Serialize | null,
+};
+
+export type WorkbenchTable = WorkbenchTable_Serialize | WorkbenchTable_Deserialize;
+
+export type WorkbenchTable_Deserialize = {
+	columns: string[],
+	rows: string[][],
+	/**  可点进值页的列。没有键列时为空。 */
+	keyColumn?: number | null,
+	truncated: boolean,
+};
+
+export type WorkbenchTable_Serialize = {
+	columns: string[],
+	rows: string[][],
+	/**  可点进值页的列。没有键列时为空。 */
+	keyColumn: number | null,
+	truncated: boolean,
 };
 
 export type XInfoConsumer = {

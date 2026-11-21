@@ -15,3 +15,4 @@ pub mod notify;
 pub mod pubsub;
 pub mod search;
 pub mod vector;
+pub mod workbench;

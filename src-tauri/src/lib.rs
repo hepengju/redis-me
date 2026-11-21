@@ -239,6 +239,7 @@ fn tauri_specta_commands() -> Commands<tauri::Wry> {
         v_sim,
         object_info,
         execute_command,
+        workbench_exec,
         acl_users,
         acl_list_users,
         acl_getuser,

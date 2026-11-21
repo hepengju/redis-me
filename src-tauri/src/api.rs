@@ -59,6 +59,7 @@ api_commands!(
     v_sim(param: RedisVSim) -> Vec<RedisVSimItem>;                // Vector Set VSIM 相似度查询
     object_info(key: RedisKey) -> RedisObjectInfo;                // OBJECT 自省（ENCODING/IDLETIME/REFCOUNT/FREQ）
     execute_command(param: RedisCommand) -> String;               // 执行命令
+    workbench_exec(param: RedisCommand) -> WorkbenchExec;         // 工作台：文本 + 点名命令的表
     config_get(pattern: &str, node: Option<String>) -> HashMap<String, String>; // 获取配置
     config_set(key: &str, value: &str, node: Option<String>) -> ();             // 设置配置
     slow_log(count: Option<u64>, node: Option<String>) -> Vec<RedisSlowLog>;    // 慢日志

@@ -288,9 +288,27 @@ pub fn parse_ft_search(
     with_scores: bool,
     vectors: &HashSet<String>,
 ) -> AnyResult<SearchQueryResult> {
+    parse_ft_search_opts(value, with_scores, vectors, false)
+}
+
+/// 工作台用。字段不是合法文本时：长度能对上就按小端 FLOAT32 解开，否则记成二进制长度。
+pub fn parse_ft_search_readable(
+    value: Value,
+    with_scores: bool,
+    vectors: &HashSet<String>,
+) -> AnyResult<SearchQueryResult> {
+    parse_ft_search_opts(value, with_scores, vectors, true)
+}
+
+fn parse_ft_search_opts(
+    value: Value,
+    with_scores: bool,
+    vectors: &HashSet<String>,
+    readable_binary: bool,
+) -> AnyResult<SearchQueryResult> {
     match value {
-        Value::Array(arr) => parse_search_array(arr, with_scores, vectors),
-        Value::Map(map) => parse_search_map(map, vectors),
+        Value::Array(arr) => parse_search_array(arr, with_scores, vectors, readable_binary),
+        Value::Map(map) => parse_search_map(map, vectors, readable_binary),
         _ => bail!(invalid("FT.SEARCH")),
     }
 }
@@ -763,7 +781,11 @@ fn parse_definition(value: Value) -> AnyResult<(String, String)> {
 }
 
 /// 文档字段：RESP2 交替数组，或 RESP3 Map。
-fn field_pairs(value: &Value, vectors: &HashSet<String>) -> AnyResult<Vec<SearchKv>> {
+fn field_pairs(
+    value: &Value,
+    vectors: &HashSet<String>,
+    readable_binary: bool,
+) -> AnyResult<Vec<SearchKv>> {
     match value {
         Value::Nil => Ok(Vec::new()),
         Value::Array(arr) => {
@@ -775,7 +797,7 @@ fn field_pairs(value: &Value, vectors: &HashSet<String>) -> AnyResult<Vec<Search
             while i < arr.len() {
                 let field = text(&arr[i]);
                 out.push(SearchKv {
-                    value: field_text(&field, &arr[i + 1], vectors),
+                    value: field_text(&field, &arr[i + 1], vectors, readable_binary),
                     field,
                 });
                 i += 2;
@@ -787,7 +809,7 @@ fn field_pairs(value: &Value, vectors: &HashSet<String>) -> AnyResult<Vec<Search
             .map(|(k, v)| {
                 let field = text(k);
                 SearchKv {
-                    value: field_text(&field, v, vectors),
+                    value: field_text(&field, v, vectors, readable_binary),
                     field,
                 }
             })
@@ -797,24 +819,41 @@ fn field_pairs(value: &Value, vectors: &HashSet<String>) -> AnyResult<Vec<Search
 }
 
 /// Hash 的 VECTOR 是小端 FLOAT32 二进制。JSON 数组仍是文本，不拆字节。
-fn field_text(name: &str, value: &Value, vectors: &HashSet<String>) -> String {
-    if vectors.contains(name)
-        && let Value::BulkString(bytes) = value
-    {
-        if let Ok(text) = std::str::from_utf8(bytes)
-            && text.trim_start().starts_with('[')
-        {
+fn field_text(
+    name: &str,
+    value: &Value,
+    vectors: &HashSet<String>,
+    readable_binary: bool,
+) -> String {
+    let Value::BulkString(bytes) = value else {
+        return text_sep(value);
+    };
+    if let Ok(text) = std::str::from_utf8(bytes) {
+        if vectors.contains(name) && text.trim_start().starts_with('[') {
             return text.to_string();
         }
-        if let Some(text) = format_f32_le(bytes) {
-            return text;
+        // 合法文本不按浮点拆，避免把 "bike" 这类字段解成数字
+        if !vectors.contains(name) {
+            return text.to_string();
         }
+        if let Some(decoded) = format_f32_le(bytes) {
+            return decoded;
+        }
+        return text.to_string();
+    }
+    if (vectors.contains(name) || readable_binary)
+        && let Some(decoded) = format_f32_le(bytes)
+    {
+        return decoded;
+    }
+    if readable_binary {
+        return format!("(binary {})", bytes.len());
     }
     text_sep(value)
 }
 
 /// 长度是 4 的倍数时，按小端 FLOAT32 拼成 JSON 数组，和 JSON 文档里的向量一样。
-fn format_f32_le(bytes: &[u8]) -> Option<String> {
+pub(crate) fn format_f32_le(bytes: &[u8]) -> Option<String> {
     if bytes.is_empty() || !bytes.len().is_multiple_of(4) {
         return None;
     }
@@ -846,6 +885,7 @@ fn parse_search_array(
     arr: Vec<Value>,
     with_scores: bool,
     vectors: &HashSet<String>,
+    readable_binary: bool,
 ) -> AnyResult<SearchQueryResult> {
     if arr.is_empty() {
         bail!(invalid("FT.SEARCH"));
@@ -873,7 +913,7 @@ fn parse_search_array(
             });
             continue;
         }
-        let fields = field_pairs(&arr[i], vectors)?;
+        let fields = field_pairs(&arr[i], vectors, readable_binary)?;
         i += 1;
         hits.push(SearchHit { key, score, fields });
     }
@@ -884,6 +924,7 @@ fn parse_search_array(
 fn parse_search_map(
     map: Vec<(Value, Value)>,
     vectors: &HashSet<String>,
+    readable_binary: bool,
 ) -> AnyResult<SearchQueryResult> {
     let mut total = 0u64;
     let mut raw_hits: Option<Value> = None;
@@ -907,7 +948,7 @@ fn parse_search_map(
             match k.as_str() {
                 "id" => key = text(&v),
                 "score" => score = Some(text(&v)),
-                "extra_attributes" => fields = field_pairs(&v, vectors)?,
+                "extra_attributes" => fields = field_pairs(&v, vectors, readable_binary)?,
                 _ => {}
             }
         }

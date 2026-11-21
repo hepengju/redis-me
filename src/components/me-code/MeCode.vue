@@ -283,6 +283,7 @@ function onMenuCommand(command: unknown) {
   else if (command === 'fullscreen') fullscreenEditor()
   else if (command === 'lineNumbers') showLineNumbers.value = !showLineNumbers.value
   else if (command === 'lineWrap') lineWrap.value = !lineWrap.value
+  else if (command === 'run') emit('run')
   else if (command === 'find') {
     const v = view.value
     if (v) openSearchPanel(v)
@@ -359,6 +360,7 @@ const menuKeys = {
   fontIncrease: menuShortcut(['mod', '=']),
   fontDecrease: menuShortcut(['mod', '-']),
   find: menuShortcut(['mod', 'f']),
+  run: menuShortcut(['mod', 'Enter']),
 }
 
 function languageChecked(id: string): boolean {
@@ -497,6 +499,9 @@ defineExpose({
     if (!current) return null
     return { ...readCaret(current.state), doc: current.state.doc.toString() }
   },
+  focus() {
+    view.value?.focus()
+  },
 })
 
 onBeforeUnmount(() => {
@@ -563,6 +568,12 @@ watch(
       :teleported="!fullscreenOn"
       :hide-on-click="false"
       @handle-command="onMenuCommand">
+      <el-dropdown-item v-if="runOnModEnter" command="run">
+        <span class="me-code-menu-row">
+          <me-icon class="me-code-menu-label" icon="el-icon-video-play" :name="t('meCode.run')" />
+          <span class="me-code-menu-key">{{ menuKeys.run }}</span>
+        </span>
+      </el-dropdown-item>
       <el-dropdown-item v-if="menuHasSelection && !readOnly" command="cut">
         <span class="me-code-menu-row">
           <me-icon class="me-code-menu-label" icon="el-icon-scissor" :name="t('cut')" />
@@ -706,9 +717,13 @@ watch(
 }
 
 .is-decode-error {
-  /* border 不被 gutter 挡住；勿用 inset shadow */
-  border: 2px solid var(--el-color-danger);
+  /* border 不被 gutter 挡住；勿用 inset shadow。聚焦虚线是 CodeMirror 自带的，这里去掉 */
+  border: 1px dotted var(--el-color-danger);
   box-sizing: border-box;
+
+  :deep(.cm-editor.cm-focused) {
+    outline: none;
+  }
 }
 
 .vue-codemirror {

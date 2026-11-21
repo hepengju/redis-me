@@ -9,6 +9,7 @@ use crate::client::ops::key_scan::{batch_key0, scan_0_batch_count, scan_0_exact,
 use crate::client::ops::notify::{build_notify_patterns, notify_subscribe_node0};
 use crate::client::ops::pubsub::{monitor0, subscribe0};
 use crate::client::ops::search::SearchCmd;
+use crate::client::ops::workbench::finish_workbench;
 use crate::client::state::MeBase;
 use crate::me_client_forwards;
 use crate::model::*;
@@ -295,6 +296,40 @@ impl MeClient for MeCluster {
             &cmd_name,
             &args,
         ))
+    }
+
+    // 查询与 execute_command 相同，多拆出点名命令的表。
+    fn workbench_exec(&self, param: RedisCommand) -> AnyResult<WorkbenchExec> {
+        let (cmd_name, args) = parse_command(param.command.as_str())?;
+        if cmd_name.is_empty() {
+            return Ok(WorkbenchExec {
+                text: String::new(),
+                table: None,
+            });
+        };
+
+        let mut conn = self.get_conn()?;
+        let mut cmd = redis::cmd(cmd_name.as_str());
+        cmd.arg(&args);
+        let value = if param.node.as_deref().unwrap_or("").is_empty()
+            && param.auto_broadcast.unwrap_or(false)
+        {
+            conn.req_command(&cmd)
+        } else {
+            let (route, _) = self.get_node_route(param.node)?;
+            conn.route_command(&cmd, route)
+        };
+        let value = match value {
+            Ok(value) => value,
+            Err(e) => {
+                if is_protocol_desync_error(&e) {
+                    drop(conn);
+                    let _ = self.reconnect();
+                }
+                return Err(e.into());
+            }
+        };
+        Ok(finish_workbench(value, param.output_mode, &cmd_name, &args))
     }
 
     fn config_get(

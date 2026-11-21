@@ -68,6 +68,7 @@ export default {
     highlight: 'Language',
     highlightFollow: 'Detect ({name})',
     find: 'Find Replace',
+    run: 'Run',
     mode: {
       json: 'JSON',
       yaml: 'YAML',
@@ -1164,16 +1165,31 @@ export default {
   },
 
   redisWorkbench: {
-    results: 'Results',
+    run: 'Run',
     runSelection: 'Run selection',
-    runCurrent: 'Run current line',
-    runAll: 'Run all',
-    empty: 'Nothing to run at the cursor',
-    noResult: 'Results show up here',
-    placeholder: 'Type commands. A newline outside quotes starts the next command',
-    refresh: 'Run again',
-    ms: '{n} ms',
+    empty: 'Nothing to run',
+    noResult: 'Result area',
+    placeholder: `For commands that span several lines. A selection runs just the selected text.
+
+Example:
+FT.SEARCH idx:bikes *
+LIMIT 0 20
+RETURN 3 key brand price
+
+FT.SEARCH, CLIENT LIST, FT.AGGREGATE and FT.INFO can be shown as a table.`,
+    refresh: 'Refresh',
+    history: 'Command history',
+    pending: 'Command tags',
+    clear: 'Clear all results',
+    ms: 'Elapsed: {n} ms',
+    len: 'Length: {n}',
     truncated: 'Showing the first {n} lines',
+    text: 'Text view',
+    table: 'Table view',
+    key: 'Key',
+    score: 'Score',
+    field: 'Field',
+    value: 'Value',
   },
 
   redisTerminal: {

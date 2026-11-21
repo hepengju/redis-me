@@ -1,17 +1,35 @@
 <script setup lang="ts">
-// 工作台：上编辑 33%、中结果标签、下文本。阶段 1 只有文本，表在阶段 2。输出固定 Raw。
-import { computed, inject, ref, useTemplateRef, watch } from 'vue'
+// 工作台：全文或选区是一条命令。有表时默认表；CLIENT LIST 和 FT.SEARCH / FT.AGGREGATE / FT.INFO 可切表。
+import {
+  computed,
+  inject,
+  nextTick,
+  onBeforeUnmount,
+  onMounted,
+  ref,
+  useTemplateRef,
+  watch,
+} from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import MeCode, { type MeCodeCaret } from '@/components/me-code/MeCode.vue'
+import type { MeColumn } from '@/components/me-table/column'
 import { isReadonlyCommand } from '@/locales/cmd'
-import { shareProvideKey } from '@/types/me-interface'
-import { bus, DB_SWITCH, formatSpectaErrorForUser, meCommandsQuiet, meWarn } from '@/utils/app/util'
+import { connUiProvideKey, shareProvideKey } from '@/types/me-interface'
+import type { WorkbenchTable } from '@/types/tauri-specta'
+import {
+  bus,
+  DB_SWITCH,
+  formatSpectaErrorForUser,
+  KEY_REFRESH,
+  meCommandsQuiet,
+  meCopy,
+  meWarn,
+} from '@/utils/app/util'
 import { classifyTerminalCommand } from '@/utils/redis/terminal-guard'
 import {
   capResultLines,
-  commandAt,
-  splitWorkbenchScript,
+  collapseWorkbenchSpace,
   workbenchTitle,
 } from '@/utils/redis/workbench-script'
 import {
@@ -21,28 +39,35 @@ import {
 } from '@/utils/redis/workbench-tabs'
 
 const MAX_LINES = 1000
+const HISTORY_LIMIT = 20
 
 const { t } = useI18n()
 const share = inject(shareProvideKey)!
+const connUi = inject(connUiProvideKey)!
 const canEdit = computed(() => !share.readonly)
+
+type WorkbenchRow = Record<string, string>
 
 interface Session {
   script: string
   tabs: WorkbenchTab[]
   activeId: string
+  /** 最近执行的命令，新的在前。关掉结果标签不会清掉。 */
+  history: string[]
 }
 
 /** 按连接记着。切走页签组件还在；换连接互不覆盖。关应用即丢。 */
 const sessions = new Map<string, Session>()
 
 function blankSession(): Session {
-  return { script: '', tabs: [], activeId: '' }
+  return { script: '', tabs: [], activeId: '', history: [] }
 }
 
 const session = ref<Session>(blankSession())
 const running = ref(false)
 const hasSelection = ref(false)
 const editorRef = useTemplateRef<InstanceType<typeof MeCode>>('editorRef')
+const tagsRef = useTemplateRef<HTMLDivElement>('tagsRef')
 let tabSeq = 0
 
 watch(
@@ -58,46 +83,81 @@ watch(
 )
 
 const activeTab = computed(() => session.value.tabs.find(tab => tab.id === session.value.activeId))
+const history = computed(() => session.value.history ?? [])
 const runLabel = computed(() =>
-  t(hasSelection.value ? 'redisWorkbench.runSelection' : 'redisWorkbench.runCurrent'),
+  t(hasSelection.value ? 'redisWorkbench.runSelection' : 'redisWorkbench.run'),
 )
 
 function onCaret(caret: MeCodeCaret) {
   hasSelection.value = !caret.empty
 }
 
-type RunMode = 'main' | 'selection' | 'current' | 'all'
-
-const runMenu: { mode: Exclude<RunMode, 'main'>; label: string }[] = [
-  { mode: 'selection', label: 'redisWorkbench.runSelection' },
-  { mode: 'current', label: 'redisWorkbench.runCurrent' },
-  { mode: 'all', label: 'redisWorkbench.runAll' },
-]
-
-function commandsFor(mode: RunMode): string[] {
-  const caret = editorRef.value?.caret()
-  const doc = caret?.doc ?? session.value.script
-  if (mode === 'all') return splitWorkbenchScript(doc).map(command => command.text)
-  const selected =
-    caret && !caret.empty
-      ? doc.slice(Math.min(caret.from, caret.to), Math.max(caret.from, caret.to))
-      : ''
-  if (mode === 'selection' || (mode === 'main' && selected)) {
-    return splitWorkbenchScript(selected).map(command => command.text)
-  }
-  const hit = commandAt(splitWorkbenchScript(doc), caret?.head ?? doc.length)
-  return hit ? [hit.text] : []
+function focusEditor() {
+  void nextTick(() => editorRef.value?.focus())
 }
 
-function pack(command: string, text: string, error: boolean, started: number): WorkbenchResult {
+/** 标签装不下时用滚轮前后挪，不出现滚动条。 */
+function onTagsWheel(event: WheelEvent) {
+  const el = tagsRef.value
+  if (!el || el.scrollWidth <= el.clientWidth) return
+  event.preventDefault()
+  const delta = Math.abs(event.deltaX) > Math.abs(event.deltaY) ? event.deltaX : event.deltaY
+  el.scrollLeft += delta
+}
+
+function revealActiveTag() {
+  const el = tagsRef.value
+  const current = el?.querySelector<HTMLElement>('.is-current')
+  if (!el || !current) return
+  const view = el.getBoundingClientRect()
+  const box = current.getBoundingClientRect()
+  if (box.left < view.left) el.scrollLeft -= view.left - box.left
+  else if (box.right > view.right) el.scrollLeft += box.right - view.right
+}
+
+onMounted(() => {
+  focusEditor()
+  tagsRef.value?.addEventListener('wheel', onTagsWheel, { passive: false })
+})
+onBeforeUnmount(() => tagsRef.value?.removeEventListener('wheel', onTagsWheel))
+watch(
+  () => session.value.activeId,
+  () => void nextTick(revealActiveTag),
+)
+watch(
+  () => share.tabName,
+  name => {
+    if (name === 'workbench') focusEditor()
+  },
+)
+
+/** 有选区就跑选区，否则跑全文。换行留给 Redis 当参数分隔，不在这里拆成多条。 */
+function commandToRun(): string {
+  const caret = editorRef.value?.caret()
+  const doc = caret?.doc ?? session.value.script
+  if (caret && !caret.empty) {
+    return doc.slice(Math.min(caret.from, caret.to), Math.max(caret.from, caret.to)).trim()
+  }
+  return doc.trim()
+}
+
+function pack(
+  command: string,
+  text: string,
+  error: boolean,
+  started: number,
+  table: WorkbenchTable | null = null,
+): WorkbenchResult {
   const capped = capResultLines(text, MAX_LINES)
   return {
     command,
     title: workbenchTitle(command),
     text: capped.text,
+    len: text.length,
     error,
     ms: Math.round(performance.now() - started),
     truncated: capped.truncated,
+    table,
   }
 }
 
@@ -130,44 +190,56 @@ async function runOne(command: string): Promise<WorkbenchResult> {
   }
   if (!share.conn) return pack(command, 'no connection', true, started)
   try {
-    const data = await meCommandsQuiet.executeCommand(share.conn.id, {
+    const data = await meCommandsQuiet.workbenchExec(share.conn.id, {
       command,
       node: '',
       autoBroadcast: false,
       outputMode: 'raw',
     })
-    return pack(command, data, false, started)
+    return pack(command, data.text, false, started, data.table)
   } catch (error: unknown) {
     return pack(command, formatSpectaErrorForUser(String(error)), true, started)
   }
 }
 
-/** 顺序执行。失败停下。重复命令覆盖原标签，新命令追加。 */
-async function execute(commands: string[]) {
-  if (running.value || commands.length === 0) return
+/** 同一条（空白收成一样）再执行就提到最前。 */
+function rememberHistory(command: string) {
+  const key = collapseWorkbenchSpace(command)
+  if (!key) return
+  const prev = session.value.history ?? []
+  session.value.history = [
+    command,
+    ...prev.filter(item => collapseWorkbenchSpace(item) !== key),
+  ].slice(0, HISTORY_LIMIT)
+}
+
+/** 一次一条。同一段再执行就盖住原标签。 */
+async function execute(command: string) {
+  if (running.value || !command) return
+  rememberHistory(command)
   running.value = true
-  const results: WorkbenchResult[] = []
+  let result: WorkbenchResult
   try {
-    for (const command of commands) {
-      const result = await runOne(command)
-      results.push(result)
-      if (result.error) break
-    }
+    result = await runOne(command)
   } finally {
     running.value = false
   }
-  const applied = applyWorkbenchRun(session.value.tabs, results, () => `wb${(tabSeq += 1)}`)
+  const applied = applyWorkbenchRun(session.value.tabs, result, () => `wb${(tabSeq += 1)}`)
   session.value.tabs = applied.tabs
   session.value.activeId = applied.activeId
 }
 
-function run(mode: RunMode) {
-  const commands = commandsFor(mode)
-  if (commands.length === 0) {
+function run() {
+  const command = commandToRun()
+  if (!command) {
     meWarn(t('redisWorkbench.empty'))
     return
   }
-  void execute(commands)
+  void execute(command)
+}
+
+function runHistory(command: string | number) {
+  if (typeof command === 'string' && command) void execute(command)
 }
 
 function selectTab(id: string) {
@@ -180,12 +252,82 @@ function closeTab(id: string) {
   if (session.value.activeId === id) session.value.activeId = tabs.at(-1)?.id ?? ''
 }
 
-function refreshTab(tab: WorkbenchTab) {
-  void execute([tab.command])
+function clearResults() {
+  session.value.tabs = []
+  session.value.activeId = ''
 }
 
-function onMenuCommand(command: string | number) {
-  if (command === 'selection' || command === 'current' || command === 'all') void run(command)
+function refreshTab(tab: WorkbenchTab) {
+  void execute(tab.command)
+}
+
+function copyResult() {
+  const tab = activeTab.value
+  if (tab) meCopy(tab.text)
+}
+
+function setView(view: string | number | boolean | undefined) {
+  const tab = activeTab.value
+  if (!tab || (view !== 'text' && view !== 'table')) return
+  if (view === 'table' && !tab.table) return
+  tab.view = view
+}
+
+function columnTitle(name: string, command: string): string {
+  const head = command.trim().split(/\s+/, 1)[0]?.toUpperCase() ?? ''
+  if (head === 'FT.INFO' && name === 'field') return t('redisWorkbench.field')
+  if (head === 'FT.INFO' && name === 'value') return t('redisWorkbench.value')
+  if (head === 'FT.SEARCH' && name === 'key') return t('redisWorkbench.key')
+  if (head === 'FT.SEARCH' && name === 'score') return t('redisWorkbench.score')
+  return name
+}
+
+const tableColumns = computed<MeColumn<WorkbenchRow>[]>(() => {
+  const tab = activeTab.value
+  const table = tab?.table
+  if (!tab || !table) return []
+  return table.columns.map((name, index) => ({
+    key: `c${index}`,
+    prop: `c${index}`,
+    title: columnTitle(name, tab.command),
+    minWidth: 140,
+    className: table.keyColumn === index ? 'col-link' : undefined,
+  }))
+})
+
+const tableRows = computed<WorkbenchRow[]>(() => {
+  const rows = activeTab.value?.table?.rows ?? []
+  return rows.map(row => {
+    const item: WorkbenchRow = {}
+    row.forEach((cell, index) => {
+      item[`c${index}`] = cell
+    })
+    return item
+  })
+})
+
+const viewOptions = ['text', 'table']
+
+const showTruncated = computed(() => {
+  const tab = activeTab.value
+  if (!tab) return false
+  return tab.view === 'table' ? !!tab.table?.truncated : tab.truncated
+})
+
+function cellText(row: unknown): string {
+  if (!row || typeof row !== 'object' || !('c0' in row)) return ''
+  const value = (row as WorkbenchRow).c0
+  return typeof value === 'string' ? value : ''
+}
+
+/** 点 FT.SEARCH 的键，打开键值页。 */
+function openDoc(key: string) {
+  if (!key) return
+  const redisKey = { key, bytes: '' }
+  share.redisKey = redisKey
+  share.tabName = 'value'
+  bus.emit(KEY_REFRESH)
+  connUi.scrollKeyToTree(redisKey)
 }
 </script>
 
@@ -199,60 +341,139 @@ function onMenuCommand(command: string | number) {
         run-on-mod-enter
         :placeholder="t('redisWorkbench.placeholder')"
         @caret="onCaret"
-        @run="run('main')" />
+        @run="run()" />
     </div>
-    <div class="wb-mid">
-      <span>{{ t('redisWorkbench.results') }}</span>
-      <div class="wb-tags">
-        <el-tag
-          v-for="tab in session.tabs"
-          :key="tab.id"
-          :type="tab.error ? 'warning' : 'success'"
-          :effect="tab.id === session.activeId ? 'dark' : 'plain'"
-          closable
-          @click="selectTab(tab.id)"
-          @close="closeTab(tab.id)">
-          {{ tab.title }}
-        </el-tag>
+    <div class="wb-bar">
+      <div class="wb-mid">
+        <div ref="tagsRef" class="wb-tags">
+          <span v-if="!session.tabs.length" class="wb-pending">{{
+            t('redisWorkbench.pending')
+          }}</span>
+          <el-tag
+            v-for="tab in session.tabs"
+            :key="tab.id"
+            :class="{ 'is-current': tab.id === session.activeId }"
+            :title="tab.command"
+            :type="tab.error ? 'warning' : 'success'"
+            :effect="tab.id === session.activeId ? 'dark' : 'plain'"
+            closable
+            @click="selectTab(tab.id)"
+            @close="closeTab(tab.id)">
+            {{ tab.title }}
+          </el-tag>
+        </div>
+        <me-icon
+          class="icon-btn wb-icon"
+          :class="{ 'is-disabled': !session.tabs.length }"
+          icon="el-icon-delete"
+          :info="t('redisWorkbench.clear')"
+          @click="clearResults" />
+        <el-dropdown
+          trigger="click"
+          placement="bottom-end"
+          :disabled="!history.length"
+          @command="runHistory">
+          <me-icon
+            class="icon-btn wb-icon"
+            :class="{ 'is-disabled': !history.length }"
+            icon="el-icon-clock"
+            :info="t('redisWorkbench.history')" />
+          <template #dropdown>
+            <el-dropdown-menu>
+              <el-dropdown-item v-for="command in history" :key="command" :command="command">
+                <span class="wb-history-item" :title="command">{{ workbenchTitle(command) }}</span>
+              </el-dropdown-item>
+            </el-dropdown-menu>
+          </template>
+        </el-dropdown>
+        <me-icon
+          class="icon-btn wb-icon"
+          :class="{ 'is-disabled': running }"
+          icon="el-icon-video-play"
+          :info="runLabel"
+          @click="run()" />
       </div>
-      <el-dropdown
-        split-button
-        type="primary"
-        :disabled="running"
-        @click="run('main')"
-        @command="onMenuCommand">
-        <me-icon icon="el-icon-video-play" :info="runLabel" />
-        <template #dropdown>
-          <el-dropdown-menu>
-            <el-dropdown-item v-for="item in runMenu" :key="item.mode" :command="item.mode">{{
-              t(item.label)
-            }}</el-dropdown-item>
-          </el-dropdown-menu>
-        </template>
-      </el-dropdown>
     </div>
     <div class="wb-body">
-      <div v-if="!activeTab" class="wb-empty">{{ t('redisWorkbench.noResult') }}</div>
+      <div v-if="!activeTab" class="wb-empty">
+        <el-empty :description="t('redisWorkbench.noResult')" />
+      </div>
       <div v-else class="wb-pane">
-        <me-code
-          :key="activeTab.id"
-          class="wb-result"
-          :model-value="activeTab.text"
-          mode="text"
-          read-only
-          copyable
-          :error="activeTab.error" />
-        <me-icon
-          class="wb-refresh"
-          icon="el-icon-refresh"
-          :info="t('redisWorkbench.refresh')"
-          @click="refreshTab(activeTab)" />
-        <span class="wb-ms">
-          {{ t('redisWorkbench.ms', { n: activeTab.ms }) }}
-          <template v-if="activeTab.truncated">{{
-            t('redisWorkbench.truncated', { n: MAX_LINES })
-          }}</template>
-        </span>
+        <div class="wb-fill">
+          <me-code
+            v-if="activeTab.view !== 'table'"
+            :key="activeTab.id"
+            class="wb-result"
+            :model-value="activeTab.text"
+            mode="text"
+            read-only
+            :error="activeTab.error" />
+          <me-table
+            v-else
+            class="wb-table"
+            :data="tableRows"
+            :columns="tableColumns"
+            export-name="workbench">
+            <template #cell-c0="{ row }">
+              <el-link
+                v-if="activeTab.table?.keyColumn === 0"
+                type="primary"
+                underline="never"
+                @click="openDoc(cellText(row))">
+                {{ cellText(row) }}
+              </el-link>
+              <template v-else>{{ cellText(row) }}</template>
+            </template>
+          </me-table>
+        </div>
+        <div class="wb-foot">
+          <div class="wb-foot-side">
+            <me-icon
+              class="icon-btn wb-icon"
+              icon="el-icon-document-copy"
+              :info="t('copy')"
+              placement="top"
+              @click="copyResult" />
+            <me-icon
+              class="icon-btn wb-icon"
+              icon="el-icon-refresh-right"
+              :info="t('redisWorkbench.refresh')"
+              placement="top"
+              @click="refreshTab(activeTab)" />
+            <el-divider direction="vertical" />
+            <span class="wb-note">
+              {{ t('redisWorkbench.ms', { n: activeTab.ms }) }}
+              <template v-if="showTruncated">{{
+                t('redisWorkbench.truncated', { n: MAX_LINES })
+              }}</template>
+            </span>
+            <template v-if="!activeTab.error">
+              <el-divider direction="vertical" />
+              <span class="wb-note">{{ t('redisWorkbench.len', { n: activeTab.len }) }}</span>
+            </template>
+          </div>
+          <el-segmented
+            v-if="activeTab.table"
+            class="wb-view"
+            :model-value="activeTab.view"
+            :options="viewOptions"
+            @change="setView">
+            <template #default="scope">
+              <me-icon
+                v-if="scope.item === 'text'"
+                :name="t('redisWorkbench.text')"
+                icon="el-icon-document"
+                hint
+                placement="top" />
+              <me-icon
+                v-else
+                :name="t('redisWorkbench.table')"
+                icon="me-icon-table"
+                hint
+                placement="top" />
+            </template>
+          </el-segmented>
+        </div>
       </div>
     </div>
   </div>
@@ -274,12 +495,72 @@ function onMenuCommand(command: string | number) {
   overflow: hidden;
 }
 
+.wb-bar {
+  flex: none;
+  padding: 8px 0;
+}
+
+/* 标签高 24px。没结果时也留住，避免点执行后这一行变高 */
 .wb-mid {
   display: flex;
   align-items: center;
   gap: 8px;
+  height: 24px;
+}
+
+/* 贴在结果区底部，高度与键值底栏一致。文本/表是否出现都不改这行高度 */
+.wb-foot {
+  height: 30px;
   flex: none;
-  padding: 8px 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  /* 与键值区 .value-main 底边距一致 */
+  margin-top: 8px;
+}
+
+.wb-foot-side {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+
+  /* 图标间距与键值底栏一致；竖线左右距用 el-divider 自带的 8px */
+  > .wb-icon + .wb-icon {
+    margin-left: 5px;
+  }
+}
+
+.wb-history-item {
+  display: block;
+  max-width: 360px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.wb-icon {
+  font-size: 18px;
+
+  &.is-disabled {
+    opacity: 0.4;
+    pointer-events: none;
+  }
+}
+
+.wb-view {
+  height: 26px;
+  min-height: 26px;
+  font-size: 18px;
+
+  :deep(.el-segmented__item) {
+    padding: 0 6px;
+  }
+}
+
+.wb-pending {
+  color: var(--el-text-color-placeholder);
+  white-space: nowrap;
 }
 
 .wb-tags {
@@ -288,11 +569,20 @@ function onMenuCommand(command: string | number) {
   display: flex;
   align-items: center;
   gap: 6px;
-  overflow-x: auto;
-  overflow-y: hidden;
+  overflow: hidden;
 
   :deep(.el-tag) {
+    flex: none;
+    /* 原先标题最多 48 字，宽度大约取一半 */
+    max-width: 16em;
     cursor: pointer;
+  }
+
+  :deep(.el-tag__content) {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 }
 
@@ -300,6 +590,8 @@ function onMenuCommand(command: string | number) {
   flex: 1;
   min-height: 0;
   overflow: hidden;
+  display: flex;
+  flex-direction: column;
 }
 
 .wb-editor,
@@ -308,50 +600,63 @@ function onMenuCommand(command: string | number) {
     height: 100%;
     overflow: hidden;
   }
+}
 
-  /* 内容 min-height:100% 再加内边距，短文本也会撑出右侧滚动条 */
-  :deep(.cm-content) {
-    min-height: 0;
-  }
+/* 铺满后空白处也能点到光标。去掉上下内边距，否则 min-height:100% 会多出一条滚动条 */
+.wb-editor :deep(.cm-content) {
+  min-height: 100%;
+  padding-top: 0;
+  padding-bottom: 0;
+}
+
+.wb-editor :deep(.cm-placeholder) {
+  white-space: pre-wrap;
+  max-width: 100%;
+  line-height: 1.6;
+}
+
+.wb-result :deep(.cm-content) {
+  min-height: 0;
 }
 
 .wb-empty {
-  color: var(--el-text-color-placeholder);
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .wb-pane {
-  position: relative;
-  height: 100%;
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
   overflow: hidden;
 }
 
-.wb-refresh {
-  position: absolute;
-  z-index: 4;
-  right: 36px;
-  bottom: 8px;
-  cursor: pointer;
+.wb-note {
+  white-space: nowrap;
   color: var(--el-text-color-secondary);
-
-  &:hover {
-    color: var(--el-color-primary);
-  }
 }
 
-.wb-ms {
-  position: absolute;
-  z-index: 4;
-  left: 8px;
-  bottom: 6px;
-  display: flex;
-  gap: 8px;
-  padding: 0 4px;
-  color: var(--el-text-color-secondary);
-  background: var(--el-bg-color);
-  pointer-events: none;
+.wb-fill {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
 }
 
-.wb-pane > .wb-result {
+.wb-fill > .wb-table {
+  position: absolute;
+  inset: 0;
+}
+
+.wb-fill :deep(.col-link) {
+  color: var(--el-color-primary);
+}
+
+.wb-fill > .wb-result {
   position: absolute;
   inset: 0;
   opacity: 1;
@@ -359,10 +664,6 @@ function onMenuCommand(command: string | number) {
 
   :deep(*) {
     cursor: text !important;
-  }
-
-  :deep(.me-code-copy) {
-    cursor: pointer !important;
   }
 }
 </style>
