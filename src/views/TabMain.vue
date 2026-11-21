@@ -13,6 +13,7 @@ import RedisSearch from '@/views/tab/RedisSearch.vue'
 import RedisSlow from '@/views/tab/RedisSlow.vue'
 import RedisTerminal from '@/views/tab/RedisTerminal.vue'
 import RedisValue from '@/views/tab/RedisValue/index.vue'
+import RedisWorkbench from '@/views/tab/RedisWorkbench.vue'
 
 const share = inject(shareProvideKey)!
 const minimalMode = computed(() => isConnMinimalMode(share.conn))
@@ -30,12 +31,15 @@ const memoryUsageSupported = computed(() => share.capabilities.memoryUsageSuppor
       </me-tab-pane>
     </template>
 
-    <!-- 值和终端界面: 极简模式下仅显示这两个 -->
+    <!-- 键值、终端、工作台：极简模式也保留 -->
     <me-tab-pane name="value" icon="el-icon-memo">
       <RedisValue />
     </me-tab-pane>
     <me-tab-pane name="terminal" icon="me-icon-terminal" lazy>
       <RedisTerminal />
+    </me-tab-pane>
+    <me-tab-pane name="workbench" icon="el-icon-notebook" lazy>
+      <RedisWorkbench />
     </me-tab-pane>
 
     <!-- 内存、慢查询、监控、发布订阅和图表界面 -->

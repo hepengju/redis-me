@@ -315,7 +315,7 @@ export default {
     dbTip:
       '初始化数据库序号<br/>• 单机支持，连接中切换会自动保存<br/>• 集群需 Valkey 9+，仅连接时指定、不可切换',
     uiModeMinimal: '极简',
-    uiModeTip: '极简模式仅展示键值与终端，适用于 INFO、CONFIG 等命令受限的 ACL 账号',
+    uiModeTip: '极简模式仅展示键值、终端与工作台，适用于 INFO、CONFIG 等命令受限的 ACL 账号',
     readonly: '只读',
     nameRequired: '请输入主机',
     portRequired: '请输入端口',
@@ -440,6 +440,7 @@ export default {
     info: '信息',
     value: '键值',
     terminal: '终端',
+    workbench: '工作台',
     memory: '内存',
     slow: '慢日志',
     monitor: '命令监控',
@@ -1139,6 +1140,19 @@ export default {
     score: '分数',
     dropConfirm: '删除索引 "{name}"？文档键会保留。',
     dropOk: '已删除索引',
+  },
+
+  redisWorkbench: {
+    results: '执行结果',
+    runSelection: '执行选区',
+    runCurrent: '执行当前行',
+    runAll: '执行全部',
+    empty: '当前位置没有可执行的命令',
+    noResult: '执行结果会显示在这里',
+    placeholder: '输入命令。引号外换行是下一条，引号内换行仍属同一条',
+    refresh: '重新执行',
+    ms: '{n} 毫秒',
+    truncated: '仅显示前 {n} 行',
   },
 
   redisTerminal: {

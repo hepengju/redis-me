@@ -306,7 +306,7 @@ export default {
       'Initial database index<br/>• Standalone: switches while connected are auto-saved<br/>• Cluster: Valkey 9+ required; set at connect only, no switching',
     uiModeMinimal: 'Minimal',
     uiModeTip:
-      'Minimal mode shows only Key-Value and Terminal for ACL users without INFO, CONFIG, etc.',
+      'Minimal mode shows only Key-Value, Terminal, and Workbench for ACL users without INFO, CONFIG, etc.',
     sshOption: {
       host: 'Host',
       port: 'Port',
@@ -451,6 +451,7 @@ export default {
     info: 'Info',
     value: 'Value',
     terminal: 'CLI',
+    workbench: 'Workbench',
     memory: 'Mem',
     slow: 'Slow',
     monitor: 'Monitor',
@@ -1160,6 +1161,19 @@ export default {
     score: 'Score',
     dropConfirm: 'Drop index "{name}"? Documents are kept.',
     dropOk: 'Index dropped',
+  },
+
+  redisWorkbench: {
+    results: 'Results',
+    runSelection: 'Run selection',
+    runCurrent: 'Run current line',
+    runAll: 'Run all',
+    empty: 'Nothing to run at the cursor',
+    noResult: 'Results show up here',
+    placeholder: 'Type commands. A newline outside quotes starts the next command',
+    refresh: 'Run again',
+    ms: '{n} ms',
+    truncated: 'Showing the first {n} lines',
   },
 
   redisTerminal: {

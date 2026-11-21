@@ -160,6 +160,8 @@ const props = withDefaults(
     loadingText?: string
     /** 空内容时的占位提示（仅文档为空时显示，同原生 input placeholder） */
     placeholder?: string
+    /** 为 true 时 Mod+Enter 触发 run，不插入换行 */
+    runOnModEnter?: boolean
   }>(),
   {
     modelValue: '',
@@ -170,12 +172,31 @@ const props = withDefaults(
     loading: false,
     loadingText: '',
     placeholder: '',
+    runOnModEnter: false,
   },
 )
 
+export interface MeCodeCaret {
+  from: number
+  to: number
+  head: number
+  empty: boolean
+}
+
+function readCaret(state: EditorState): MeCodeCaret {
+  const sel = state.selection.main
+  return { from: sel.from, to: sel.to, head: sel.head, empty: sel.empty }
+}
+
 // 对外仅暴露 v-model：编辑内容变化时通知父组件
 // （原先靠 attrs 透传 onUpdate:modelValue 给 code-mirror，去掉包装后显式声明）
-const emit = defineEmits<{ 'update:modelValue': [value: string] }>()
+const emit = defineEmits<{
+  'update:modelValue': [value: string]
+  /** 选区变化。工作台用来切换「执行选区 / 执行当前行」 */
+  caret: [caret: MeCodeCaret]
+  /** Mod+Enter。仅 runOnModEnter 时拦截 */
+  run: []
+}>()
 
 // class/style 落到外层包装（撑高度），其余属性透给编辑器
 defineOptions({ inheritAttrs: false })
@@ -379,6 +400,22 @@ const extensions = computed(() => {
     list.push(cmPlaceholder(props.placeholder))
   }
 
+  if (props.runOnModEnter) {
+    list.push(
+      Prec.high(
+        keymap.of([
+          {
+            key: 'Mod-Enter',
+            run: () => {
+              emit('run')
+              return true
+            },
+          },
+        ]),
+      ),
+    )
+  }
+
   if (effectiveMode.value === 'properties' || effectiveMode.value === 'conf') {
     list.push(
       syntaxHighlighting(propertiesLightSyntax),
@@ -437,17 +474,29 @@ onMounted(() => {
     parent: containerEl.value,
     state: EditorState.create({ doc: props.modelValue, extensions: fullExtensions.value }),
     dispatch: (tr, dv) => {
+      const batch = Array.isArray(tr) ? tr : [tr]
       const before = dv.state.doc
-      dv.update(Array.isArray(tr) ? tr : [tr])
+      dv.update(batch)
       // 仅当整批事务前后文档真正变化才 emit：只看末尾事务会漏发「前面改文档、末尾没改」的情况
       if (dv.state.doc !== before) {
         lastEmitted = dv.state.doc.toString()
         emit('update:modelValue', lastEmitted)
       }
+      if (batch.some(item => item.selection)) emit('caret', readCaret(dv.state))
     },
   })
   containerEl.value.addEventListener('compositionend', flushPendingExternal)
   document.addEventListener('fullscreenchange', syncFullscreen)
+  emit('caret', readCaret(view.value.state))
+})
+
+defineExpose({
+  /** 当前文档和选区。工作台执行时读这一份，不依赖 v-model 的滞后 */
+  caret(): (MeCodeCaret & { doc: string }) | null {
+    const current = view.value
+    if (!current) return null
+    return { ...readCaret(current.state), doc: current.state.doc.toString() }
+  },
 })
 
 onBeforeUnmount(() => {

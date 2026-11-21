@@ -8,11 +8,12 @@ import MeIcon from '@/components/MeIcon.vue'
 import NodeList from '@/components/MeNodeList.vue'
 import MeSelectUpDownIcon from '@/components/MeSelectUpDownIcon.vue'
 import MeShortcut from '@/components/MeShortcut.vue'
-import { commandHelp, isReadonlyCommand, parseCommandName } from '@/locales/cmd'
+import { commandHelp, isReadonlyCommand } from '@/locales/cmd'
 import { shareProvideKey } from '@/types/me-interface'
 import type { CliOutputMode } from '@/types/tauri-specta'
 import { getTerminalShortcuts } from '@/utils/app/shortcut'
 import { bus, DB_SWITCH, formatSpectaErrorForUser, meCopy, meCommandsQuiet } from '@/utils/app/util'
+import { classifyTerminalCommand } from '@/utils/redis/terminal-guard'
 import CommandHelp from '@/views/tools/CommandHelp.vue'
 // #endregion
 
@@ -59,37 +60,8 @@ function formatCommandResult(data: string): string {
 let pasteEntered = false
 let pasteDone: (() => void) | null = null
 
-// 订阅类：命令会把共享连接切进订阅态、消息以 push 帧回流，污染后续读写 → 引导到发布订阅面板
-const subscribeCmds = new Set([
-  'SUBSCRIBE',
-  'PSUBSCRIBE',
-  'SSUBSCRIBE',
-  'UNSUBSCRIBE',
-  'PUNSUBSCRIBE',
-  'SUNSUBSCRIBE',
-])
-// 阻塞/独占类：会挂住共享连接直到超时，界面其它操作一起卡死 → 终端不支持
-const blockingCmds = new Set([
-  'MONITOR',
-  'BLPOP',
-  'BRPOP',
-  'BLMOVE',
-  'BLMOVEM',
-  'BRPOPLPUSH',
-  'BLMPOP',
-  'BZMPOP',
-  'BZPOPMIN',
-  'BZPOPMAX',
-  'WAIT',
-])
-
 // SELECT：走后端 select_db 同步 self.db，更新 share.conn.db 并通知键区，避免只改连接不改界面
-async function handleSelect(command: string): Promise<string> {
-  const arg = command.trim().split(/\s+/)[1]
-  const db = Number(arg)
-  if (arg === undefined || arg === '' || !Number.isInteger(db) || db < 0) {
-    return colorText('var(--el-color-error)', '(error) ERR invalid DB index')
-  }
+async function handleSelect(db: number): Promise<string> {
   if (!share.conn) return colorText('var(--el-color-error)', '(error) no connection')
   try {
     // 末尾传 false 关闭错误弹窗，集群切库等失败统一在终端内联回显，不另弹框
@@ -104,18 +76,20 @@ async function handleSelect(command: string): Promise<string> {
 
 // 命中会话态命令返回适配后的输出；普通命令返回 null，继续走后端 executeCommand
 async function adaptCommand(command: string): Promise<string | null> {
-  const name = parseCommandName(command)
-  if (subscribeCmds.has(name)) {
+  const kind = classifyTerminalCommand(command)
+  if (kind === 'subscribe') {
     return colorText('var(--el-color-error)', `(error) ${t('redisTerminal.unsupportedSubscribe')}`)
   }
-  if (blockingCmds.has(name)) {
-    const key =
-      name === 'MONITOR' ? 'redisTerminal.unsupportedMonitor' : 'redisTerminal.unsupportedBlocking'
-    return colorText('var(--el-color-error)', `(error) ${t(key)}`)
+  if (kind === 'monitor') {
+    return colorText('var(--el-color-error)', `(error) ${t('redisTerminal.unsupportedMonitor')}`)
   }
-  if (name === 'SELECT') {
-    return handleSelect(command)
+  if (kind === 'blocking') {
+    return colorText('var(--el-color-error)', `(error) ${t('redisTerminal.unsupportedBlocking')}`)
   }
+  if (kind === 'select-invalid') {
+    return colorText('var(--el-color-error)', '(error) ERR invalid DB index')
+  }
+  if (kind && typeof kind === 'object') return handleSelect(kind.select)
   return null
 }
 
