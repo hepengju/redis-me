@@ -14,6 +14,7 @@ import { useI18n } from 'vue-i18n'
 
 import MeCode, { type MeCodeCaret } from '@/components/me-code/MeCode.vue'
 import type { MeColumn } from '@/components/me-table/column'
+import MeOverflowText from '@/components/MeOverflowText.vue'
 import { isReadonlyCommand } from '@/locales/cmd'
 import { connUiProvideKey, shareProvideKey } from '@/types/me-interface'
 import type { WorkbenchTable } from '@/types/tauri-specta'
@@ -24,7 +25,6 @@ import {
   KEY_REFRESH,
   meCommandsQuiet,
   meCopy,
-  meWarn,
 } from '@/utils/app/util'
 import { classifyTerminalCommand } from '@/utils/redis/terminal-guard'
 import {
@@ -65,7 +65,8 @@ function blankSession(): Session {
 
 const session = ref<Session>(blankSession())
 const running = ref(false)
-const hasSelection = ref(false)
+const selFrom = ref(0)
+const selTo = ref(0)
 const editorRef = useTemplateRef<InstanceType<typeof MeCode>>('editorRef')
 const tagsRef = useTemplateRef<HTMLDivElement>('tagsRef')
 let tabSeq = 0
@@ -76,7 +77,8 @@ watch(
     if (prev) sessions.set(prev, session.value)
     const next = (id && sessions.get(id)) || blankSession()
     session.value = next
-    hasSelection.value = false
+    selFrom.value = 0
+    selTo.value = 0
     if (id) sessions.set(id, next)
   },
   { immediate: true },
@@ -84,12 +86,24 @@ watch(
 
 const activeTab = computed(() => session.value.tabs.find(tab => tab.id === session.value.activeId))
 const history = computed(() => session.value.history ?? [])
+const hasSelection = computed(() => selFrom.value !== selTo.value)
 const runLabel = computed(() =>
   t(hasSelection.value ? 'redisWorkbench.runSelection' : 'redisWorkbench.run'),
 )
+/** 空白选区或空白全文都不能执行，按钮直接禁用。 */
+const canRun = computed(() => {
+  const doc = session.value.script
+  if (hasSelection.value) {
+    const from = Math.min(selFrom.value, selTo.value)
+    const to = Math.max(selFrom.value, selTo.value)
+    return doc.slice(from, to).trim().length > 0
+  }
+  return doc.trim().length > 0
+})
 
 function onCaret(caret: MeCodeCaret) {
-  hasSelection.value = !caret.empty
+  selFrom.value = caret.from
+  selTo.value = caret.to
 }
 
 function focusEditor() {
@@ -230,11 +244,9 @@ async function execute(command: string) {
 }
 
 function run() {
+  if (!canRun.value) return
   const command = commandToRun()
-  if (!command) {
-    meWarn(t('redisWorkbench.empty'))
-    return
-  }
+  if (!command) return
   void execute(command)
 }
 
@@ -353,13 +365,12 @@ function openDoc(key: string) {
             v-for="tab in session.tabs"
             :key="tab.id"
             :class="{ 'is-current': tab.id === session.activeId }"
-            :title="tab.command"
             :type="tab.error ? 'warning' : 'success'"
-            :effect="tab.id === session.activeId ? 'dark' : 'plain'"
+            :effect="tab.id === session.activeId ? 'light' : 'plain'"
             closable
             @click="selectTab(tab.id)"
             @close="closeTab(tab.id)">
-            {{ tab.title }}
+            <me-overflow-text :content="tab.command" pre />
           </el-tag>
         </div>
         <me-icon
@@ -388,7 +399,7 @@ function openDoc(key: string) {
         </el-dropdown>
         <me-icon
           class="icon-btn wb-icon"
-          :class="{ 'is-disabled': running }"
+          :class="{ 'is-disabled': running || !canRun }"
           icon="el-icon-video-play"
           :info="runLabel"
           @click="run()" />
@@ -575,14 +586,29 @@ function openDoc(key: string) {
     flex: none;
     /* 原先标题最多 48 字，宽度大约取一半 */
     max-width: 16em;
+    overflow: hidden;
     cursor: pointer;
   }
 
+  /* light 的底色已经标出当前项，边框补回和 plain 一样的深度 */
+  :deep(.el-tag.is-current.el-tag--success) {
+    --el-tag-border-color: var(--el-color-success-light-5);
+  }
+
+  :deep(.el-tag.is-current.el-tag--warning) {
+    --el-tag-border-color: var(--el-color-warning-light-5);
+  }
+
   :deep(.el-tag__content) {
+    flex: 1;
     min-width: 0;
     overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
+  }
+
+  /* 宽度受标签限制，MeOverflowText 才能测出是否被省略 */
+  :deep(.me-overflow-text) {
+    display: block;
+    max-width: 100%;
   }
 }
 

@@ -102,7 +102,6 @@ pub trait MeClient: Send + Sync {
 
     // 命令
     fn execute_command(&self, param: RedisCommand) -> AnyResult<String>;
-    /// 工作台一次执行：文本，以及点名命令的表。
     fn workbench_exec(&self, param: RedisCommand) -> AnyResult<WorkbenchExec>;
     fn get_key_as_command(&self, key: RedisKey) -> AnyResult<String>;
     fn get_field_as_command(&self, param: RedisFieldAsCommand) -> AnyResult<String>;

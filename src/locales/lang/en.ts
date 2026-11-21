@@ -1167,7 +1167,6 @@ export default {
   redisWorkbench: {
     run: 'Run',
     runSelection: 'Run selection',
-    empty: 'Nothing to run',
     noResult: 'Result area',
     placeholder: `For commands that span several lines. A selection runs just the selected text.
 

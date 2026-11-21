@@ -1146,7 +1146,6 @@ export default {
   redisWorkbench: {
     run: '执行',
     runSelection: '执行选区',
-    empty: '没有可执行的内容',
     noResult: '结果展示区',
     placeholder: `适合多行文本的命令执行；选中一段时，只执行选中的文字。
 

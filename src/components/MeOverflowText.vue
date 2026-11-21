@@ -3,7 +3,7 @@
 // 内容变化时复位；过长文本跳过 scrollWidth 测量（几乎必截断）。
 import { ref, watch } from 'vue'
 
-const props = defineProps<{ content: string }>()
+const props = withDefaults(defineProps<{ content: string; pre?: boolean }>(), { pre: false })
 
 const tooltipDisabled = ref(true)
 
@@ -33,7 +33,8 @@ function updateTooltipDisabled(e: MouseEvent): void {
     placement="top"
     :persistent="false"
     :show-after="300"
-    :disabled="tooltipDisabled">
+    :disabled="tooltipDisabled"
+    :popper-class="pre ? 'me-overflow-text-pre' : undefined">
     <div class="me-overflow-text" @mouseenter="updateTooltipDisabled">
       <slot>{{ content }}</slot>
     </div>
@@ -46,5 +47,13 @@ function updateTooltipDisabled(e: MouseEvent): void {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+</style>
+
+<style lang="scss">
+/* 挂到 body 上，保留原文换行 */
+.me-overflow-text-pre {
+  white-space: pre-wrap;
+  max-width: 480px;
 }
 </style>
