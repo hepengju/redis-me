@@ -15,8 +15,8 @@ export const TAB_NAMES = [
   'search',
   'workbench',
   'client',
-  'monitor',
   'notify',
+  'monitor',
 ] as const
 
 export type TabName = (typeof TAB_NAMES)[number]

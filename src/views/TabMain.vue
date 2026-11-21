@@ -49,8 +49,8 @@ const TAB_META: Record<TabName, { icon: string; component: Component; lazy?: boo
   search: { icon: 'el-icon-search', component: RedisSearch, lazy: true },
   workbench: { icon: 'me-icon-copy-command', component: RedisWorkbench, lazy: true },
   client: { icon: 'me-icon-conn', component: RedisClient, lazy: true },
-  monitor: { icon: 'el-icon-monitor', component: RedisMonitor, lazy: true },
   notify: { icon: 'el-icon-bell', component: RedisNotify, lazy: true },
+  monitor: { icon: 'el-icon-monitor', component: RedisMonitor, lazy: true },
 }
 
 /** 可用性：极简模式只留键值/终端/工作台；其余按 INFO / ACL / RediSearch / MEMORY USAGE 能力位 */

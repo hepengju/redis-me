@@ -34,18 +34,14 @@ const outputModeOptions: { value: CliOutputMode; labelKey: string }[] = [
 const outputMode = ref<CliOutputMode>('raw')
 
 // 待颜色的文本
-function colorText(color: string, text: string, bold = false): string {
-  return bold
-    ? `<span style="color: ${color}; font-weight: bold">${text}</span>`
-    : `<span style="color: ${color}">${text}</span>`
+function colorText(color: string, text: string): string {
+  return `<span style="color: ${color}">${text}</span>`
 }
 
 const autoBroadcast = ref(true)
 const node = ref('')
 const prefix = computed(() => (node.value ? node.value + '> ' : '$ '))
-const welcome = computed(() =>
-  t('redisTerminal.welcome', { RedisME: colorText(share.color, 'RedisME', true) }),
-)
+const welcome = computed(() => t('redisTerminal.welcome'))
 
 // 成功输出统一绿色；raw 空结果保留空行占位
 function formatCommandResult(data: string): string {

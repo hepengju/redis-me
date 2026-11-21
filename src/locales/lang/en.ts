@@ -307,7 +307,7 @@ export default {
       'Initial database index<br/>• Standalone: switches while connected are auto-saved<br/>• Cluster: Valkey 9+ required; set at connect only, no switching',
     uiModeMinimal: 'Minimal',
     uiModeTip:
-      'Minimal mode shows only Key-Value, Terminal, and Workbench for ACL users without INFO, CONFIG, etc.',
+      'Minimal mode shows only Key-Value, Console, and Workbench for ACL users without INFO, CONFIG, etc.',
     sshOption: {
       host: 'Host',
       port: 'Port',
@@ -451,9 +451,9 @@ export default {
   tabMain: {
     info: 'Info',
     value: 'Value',
-    terminal: 'CLI',
-    memory: 'Mem',
-    slow: 'Slow',
+    terminal: 'Console',
+    memory: 'Memory',
+    slow: 'SlowLog',
     pubsub: 'PubSub',
     chart: 'Chart',
     acl: 'Users',
@@ -461,8 +461,8 @@ export default {
     search: 'Search',
     workbench: 'Workbench',
     client: 'Clients',
-    monitor: 'Monitor',
     notify: 'Keyspace',
+    monitor: 'Monitor',
     resetVisible: 'Restore Default',
   },
 
@@ -1200,7 +1200,7 @@ FT.SEARCH, CLIENT LIST, FT.AGGREGATE and FT.INFO can be shown as a table.`,
 ① When automatic broadcasting is enabled and no node is selected, commands such as CONFIG SET will be executed on all nodes<br>
 ② Usually there is no need to specify a node. Manual node specification is only required in special scenarios such as viewing the configuration of a specific node
     `,
-    welcome: 'Welcome to {RedisME} Terminal',
+    welcome: 'Welcome to Redis Console',
     pasteMultiTitle: 'Multiple lines detected',
     pasteMultiHint: 'Run as one command, or run each line ({n} in total)',
     pasteAsOne: 'One command',
