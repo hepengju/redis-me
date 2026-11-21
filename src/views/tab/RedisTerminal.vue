@@ -23,14 +23,14 @@ const { t } = useI18n()
 const share = inject(shareProvideKey)!
 const canEdit = computed(() => !share.readonly)
 
-// 终端输出格式（对齐 redis-cli --raw / --json / --csv；每次进入默认 TTY）
+// 终端输出格式（对齐 redis-cli --raw / --json / --csv；每次进入默认 Raw）
 const outputModeOptions: { value: CliOutputMode; labelKey: string }[] = [
-  { value: 'standard', labelKey: 'redisTerminal.outputStandard' },
   { value: 'raw', labelKey: 'redisTerminal.outputRaw' },
+  { value: 'standard', labelKey: 'redisTerminal.outputStandard' },
   { value: 'json', labelKey: 'redisTerminal.outputJson' },
   { value: 'csv', labelKey: 'redisTerminal.outputCsv' },
 ]
-const outputMode = ref<CliOutputMode>('standard')
+const outputMode = ref<CliOutputMode>('raw')
 
 // 待颜色的文本
 function colorText(color: string, text: string, bold = false): string {
