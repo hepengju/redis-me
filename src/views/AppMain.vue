@@ -10,7 +10,6 @@ import {
   provide,
   reactive,
   ref,
-  shallowReactive,
   useTemplateRef,
   watch,
 } from 'vue'
@@ -20,13 +19,12 @@ import {
   appProvideKey,
   connUiProvideKey,
   shareProvideKey,
-  type AppMainInject,
   type ConnListWindowsSyncPayload,
   type ConnShortcutAction,
   type UiConn,
 } from '@/types/me-interface'
 import type { ConnConfig, RedisKey_Deserialize } from '@/types/tauri-specta'
-import { checkAppUpdate } from '@/utils/app/app-update'
+import { checkAppUpdate, meCheckUpdate } from '@/utils/app/app-update'
 import { openNewWindow, toggleAppFullscreen } from '@/utils/app/app-window'
 import {
   isAppFullscreenHotkeyBlocked,
@@ -36,6 +34,7 @@ import {
 import { firstAvailableTab, resolveTabsVisible } from '@/utils/app/tabs'
 import {
   bus,
+  CHECK_UPDATE,
   CONN_LIST_WINDOWS_SYNC,
   CONN_REFRESH,
   meCommands,
@@ -176,19 +175,31 @@ onMounted(
 
 // #region 自动更新
 
-// shallowReactive：`Update` 含私有字段，deep reactive 会解成普通对象导致与 `AppMainInject` 不兼容
-const app = shallowReactive<AppMainInject>({
-  update: null,
-  downloading: false,
-  downloadPercentage: 0,
-})
-provide(appProvideKey, app)
+// 更新状态由 App.vue provide，标题栏与这里共用
+const app = inject(appProvideKey)!
 async function checkAutoUpdate(): Promise<void> {
   if (meTauri.isAppStore) return
   if (!meTauri.settings.autoUpdate) return
   app.update = await checkAppUpdate().catch((): null => null)
 }
 onMounted(checkAutoUpdate)
+
+// 顶部栏检查更新图标与本组件非父子关系，经 bus 触发，与设置里的「检查更新」同一条路径
+let updateCheckPending = false
+async function checkUpdateNow(): Promise<void> {
+  if (meTauri.isAppStore || updateCheckPending || app.downloading) return
+  updateCheckPending = true
+  try {
+    await meCheckUpdate(false, app)
+  } finally {
+    updateCheckPending = false
+  }
+}
+function onCheckUpdate(): void {
+  void checkUpdateNow()
+}
+onMounted(() => bus.on(CHECK_UPDATE, onCheckUpdate))
+onUnmounted(() => bus.off(CHECK_UPDATE, onCheckUpdate))
 // #endregion
 
 // #region 面板操作
@@ -342,7 +353,7 @@ function onSplitterBarMouseDown(e: MouseEvent): void {
 
 <style scoped lang="scss">
 .redis-main {
-  height: calc(100% - 30px);
+  height: calc(100% - 32px);
   padding: 0 8px 8px 8px;
   flex: 1;
 

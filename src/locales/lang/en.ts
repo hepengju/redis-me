@@ -428,6 +428,7 @@ export default {
     deleteKey: 'Delete [{key}]?',
     checking: 'Checking for update, wait a moment...',
     updateHint: 'New version v{version}, Update?',
+    updateReady: 'New version v{version}',
     changelog: 'ChangeLog',
     changelogUrl: 'https://www.hepengju.com/changelog/latest.html',
     downloadDown: 'Download done, install now?',

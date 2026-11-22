@@ -1,16 +1,18 @@
 <script setup lang="ts">
 import { getCurrentWindow } from '@tauri-apps/api/window'
 import { type as getOsType, version as getOsVersion } from '@tauri-apps/plugin-os'
-import { computed, inject, ref } from 'vue'
+import { computed, inject, ref, toRaw } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import { shareProvideKey } from '@/types/me-interface'
-import { bus, meLog, meOk, OPEN_SETTING } from '@/utils/app/util'
+import { appProvideKey, shareProvideKey } from '@/types/me-interface'
+import { meDownloadUpdate } from '@/utils/app/app-update'
+import { bus, CHECK_UPDATE, meLog, meOk, meOpenUrl, OPEN_SETTING } from '@/utils/app/util'
 
 const { t } = useI18n()
 
 // 共享数据：与 AppMain 共用 App.vue provide 的同一份
 const share = inject(shareProvideKey)!
+const app = inject(appProvideKey)!
 
 // 切换只读/可写（顶部栏锁图标）
 function changeReadonly(): void {
@@ -42,6 +44,9 @@ meLog(
   'tahoePlus=',
   isMacOSTahoePlus,
 )
+// 应用商店安装由商店负责更新，标题栏不放检查更新入口
+const isAppStore = meTauri.isAppStore
+
 const marginLeft = computed(() => {
   if (isFullScreen.value) return '10px'
   if (!isMacOS) return '10px'
@@ -61,6 +66,22 @@ const themeIcon = computed(() =>
 const toggleTheme = () => {
   const newTheme = effectiveTheme.value === 'light' ? 'dark' : 'light'
   meTauri.settings.theme = newTheme
+}
+
+function openGithub(): void {
+  meOpenUrl('https://github.com/hepengju/redis-me')
+}
+
+// 已有新版本时只显示左侧「更新」按钮；检查更新图标藏起，避免同一图形出现两次
+const hasUpdate = computed(() => !!app.update?.version)
+const updateTip = computed(() => t('util.updateReady', { version: app.update?.version ?? '' }))
+function onCheckUpdate(): void {
+  bus.emit(CHECK_UPDATE)
+}
+function downloadUpdate(): void {
+  const update = app.update
+  if (!update?.version || app.downloading) return
+  void meDownloadUpdate(false, toRaw(update), app)
 }
 
 // 点击名称切换语言或未来其他功能的快速测试验证
@@ -83,24 +104,66 @@ const toggleName = () => {
       <div style="margin-left: 5px; font-size: 12px" @click="toggleName">RedisME</div>
     </div>
     <div class="title-right">
-      <!-- 功能图标单独成组，彼此间距大于到窗口按钮的距离 -->
+      <!-- 已发现新版本：图标组最左侧，点击直接下载；此时藏起检查更新图标 -->
+      <div v-if="!isAppStore && hasUpdate" class="update-ready">
+        <me-button
+          type="primary"
+          size="small"
+          icon="me-icon-check-update"
+          placement="bottom"
+          :info="updateTip"
+          :disabled="app.downloading"
+          @click="downloadUpdate"
+          >{{ t('setting.update') }}</me-button
+        >
+      </div>
+      <!-- 功能图标各占 32px 方块并紧挨成组，与窗口按钮之间留出空隙 -->
       <div class="title-actions">
         <!-- 只读/可写 -->
         <me-icon
           v-if="share.conn"
           class="action-icon"
           :icon="share.readonly ? 'me-icon-lock' : 'me-icon-unlock'"
+          :name="share.readonly ? t('appMain.readonly') : t('appMain.writable')"
+          hint
+          placement="bottom"
           @click="changeReadonly" />
         <!-- 深浅色：太阳=浅色，月亮=深色 -->
-        <me-icon class="action-icon" :icon="themeIcon" @click="toggleTheme" />
+        <me-icon
+          class="action-icon"
+          :icon="themeIcon"
+          :name="t('setting.theme')"
+          hint
+          placement="bottom"
+          @click="toggleTheme" />
+        <!-- 检查更新：仅非应用商店版本，且还没有新版本 -->
+        <me-icon
+          v-if="!isAppStore && !hasUpdate"
+          class="action-icon"
+          icon="me-icon-check-update"
+          :name="t('setting.updateNow')"
+          hint
+          placement="bottom"
+          @click="onCheckUpdate" />
+        <!-- GitHub：打开仓库主页 -->
+        <me-icon
+          class="action-icon"
+          icon="me-icon-github"
+          name="GitHub"
+          hint
+          placement="bottom"
+          @click="openGithub" />
         <!-- 设置：弹窗挂在 KeyHeader，兄弟组件间经 bus 通知打开 -->
         <me-icon
           class="action-icon"
           icon="el-icon-setting"
+          :name="t('setting.title')"
+          hint
+          placement="bottom"
           :style="{ marginRight: isMacOS ? '15px' : '-5px' }"
           @click="bus.emit(OPEN_SETTING)" />
       </div>
-      <div style="font-size: 12px" v-if="!isMacOS">
+      <div class="title-buttons" v-if="!isMacOS">
         <me-icon
           icon="me-icon-window-minimize"
           class="title-button normal-btn"
@@ -126,35 +189,61 @@ const toggleName = () => {
 
 <style scoped lang="scss">
 .title-bar {
-  height: 30px;
+  height: 32px;
   user-select: none;
 
   .title-right {
     display: flex;
     align-items: center;
+    align-self: stretch;
     gap: 10px;
+  }
+
+  /* 窗口按钮拉满标题栏高度，悬停背景与标题栏上下对齐 */
+  .title-buttons {
+    display: flex;
+    align-self: stretch;
+    height: 100%;
+    font-size: 12px;
   }
 
   .title-actions {
     display: flex;
     align-items: center;
-    gap: 14px;
+    align-self: stretch;
+    height: 100%;
   }
 
-  /* 顶部栏功能图标（只读锁、深浅色、设置） */
+  /* 有新版本时的按钮，比 32px 标题栏矮一截，避免贴满整条 */
+  .update-ready {
+    display: flex;
+    align-items: center;
+
+    :deep(.el-button) {
+      height: 24px;
+      padding: 0 10px;
+    }
+  }
+
+  /* 顶部栏功能图标（只读锁、深浅色、检查更新、GitHub、设置）：32×32 方块紧挨，悬停背景与窗口按钮同色 */
   .action-icon {
+    width: 32px;
+    height: 100%;
+    flex: 0 0 32px;
     font-size: 16px;
     cursor: pointer;
     color: var(--el-color-info);
+    justify-content: center;
 
     &:hover {
       color: var(--el-color-primary);
+      background: var(--el-color-info-light-7);
     }
   }
 
   .title-button {
     width: 40px;
-    height: 30px;
+    height: 100%;
     display: inline-flex;
     justify-content: center;
     align-items: center;

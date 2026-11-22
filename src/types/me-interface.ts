@@ -59,7 +59,7 @@ export interface AppMainShare {
   capabilities: ServerCapabilities
 }
 
-/** AppMain 注入的更新/下载状态（与 `appProvideKey` 配对） */
+/** App.vue 持有的更新/下载状态（与 `appProvideKey` 配对） */
 export interface AppMainInject extends MeAppUpdateState {
   update: Update | null
 }
@@ -67,7 +67,7 @@ export interface AppMainInject extends MeAppUpdateState {
 /** 与 `App.vue` 中 `provide(shareProvideKey, share)` 配对，子组件使用 `inject(shareProvideKey)!` */
 export const shareProvideKey: InjectionKey<AppMainShare> = Symbol('redis-me.share')
 
-/** 与 `AppMain` 中 `provide(appProvideKey, app)` 配对，子组件使用 `inject(appProvideKey)!` */
+/** 与 `App.vue` 中 `provide(appProvideKey, app)` 配对，子组件使用 `inject(appProvideKey)!` */
 export const appProvideKey: InjectionKey<AppMainInject> = Symbol('redis-me.app')
 
 /** ConnEmpty / 全局快捷键：新增连接、导入、全屏、设置等（由 AppMain provide） */

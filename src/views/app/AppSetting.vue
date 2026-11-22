@@ -353,13 +353,13 @@ async function resetWindowSize() {
                   :show-after="400">
                   <el-segmented v-model="settings.updateSource" :options="updateSourceList" />
                 </el-tooltip>
-                <el-button
+                <me-button
                   plain
-                  @click="checkUpdate"
+                  icon="me-icon-check-update"
                   :loading="loading"
-                  icon="el-icon-check"
                   :disabled="app.downloading"
-                  >{{ t('setting.updateNow') }}</el-button
+                  @click="checkUpdate"
+                  >{{ t('setting.updateNow') }}</me-button
                 >
               </div>
             </div>

@@ -1,9 +1,15 @@
 <script setup lang="ts">
 import { type as getOsType } from '@tauri-apps/plugin-os'
-import { provide, reactive, shallowRef, watch } from 'vue'
+import { provide, reactive, shallowReactive, shallowRef, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import { shareProvideKey, type AppMainShare, type UiConn } from '@/types/me-interface'
+import {
+  appProvideKey,
+  shareProvideKey,
+  type AppMainInject,
+  type AppMainShare,
+  type UiConn,
+} from '@/types/me-interface'
 import { isDark } from '@/utils/app/util'
 import AppResize from '@/views/app/AppResize.vue'
 import AppTitle from '@/views/app/AppTitle.vue'
@@ -41,6 +47,15 @@ const share = reactive<AppMainShare>({
   },
 })
 provide(shareProvideKey, share)
+
+// 更新状态同样放在父组件：标题栏要在已有新版本时显示「更新」按钮，AppMain 负责检查与下载
+// shallowReactive：Update 含私有字段，deep reactive 会解成普通对象
+const app = shallowReactive<AppMainInject>({
+  update: null,
+  downloading: false,
+  downloadPercentage: 0,
+})
+provide(appProvideKey, app)
 
 /** 供 CSS 按平台作用：Linux WebKitGTK 字体补丁等（非 WebView 自动注入） */
 const osType = getOsType()

@@ -7,7 +7,7 @@ import type { ElMessageBoxOptions } from 'element-plus'
 import { h } from 'vue'
 
 import i18n from '@/locales'
-import type { MeAppUpdateState } from '@/types/me-interface'
+import type { AppMainInject, MeAppUpdateState } from '@/types/me-interface'
 import {
   DoNothing,
   meCommands,
@@ -90,7 +90,7 @@ export async function checkAppUpdate(): Promise<Update | null> {
   })
 }
 
-export async function meCheckUpdate(quiet = true, app: MeAppUpdateState): Promise<void> {
+export async function meCheckUpdate(quiet = true, app: AppMainInject): Promise<void> {
   if (window?.meTauri?.isAppStore) {
     meLog('应用商店内部的应用更新，忽略检查接口')
     return
@@ -102,8 +102,11 @@ export async function meCheckUpdate(quiet = true, app: MeAppUpdateState): Promis
 
   const update = await checkAppUpdate().catch(DoNothing)
   if (update) {
+    // 记下结果，标题栏「更新」按钮保持显示；点该按钮直接下载，不再重新检查
+    app.update = update
     await meDownloadUpdate(quiet, update, app)
   } else if (update === null) {
+    app.update = null
     if (!quiet) {
       ElMessage.success(t('util.latestVersion'))
     }

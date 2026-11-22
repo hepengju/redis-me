@@ -1,7 +1,7 @@
 <script setup lang="ts">
 // #region 导入
 import { debounce } from 'lodash'
-import { computed, inject, ref, toRaw } from 'vue'
+import { computed, inject, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import {
@@ -11,7 +11,6 @@ import {
   type ConnShortcutAction,
   type UiConn,
 } from '@/types/me-interface'
-import { meDownloadUpdate } from '@/utils/app/app-update'
 import { buildExportFileName, saveTextExport } from '@/utils/app/export'
 import { meConfirm, meOk, mePrompt, meWarn } from '@/utils/app/util'
 import {
@@ -171,12 +170,8 @@ async function exportConn(): Promise<void> {
   )
 }
 
+// 下载进度仍读这份状态；新版本入口在标题栏「更新」按钮，这里不再放 New
 const app = inject(appProvideKey)!
-function clickNew(): void {
-  const u = app.update
-  if (!u) return
-  void meDownloadUpdate(false, toRaw(u), app)
-}
 // #endregion
 </script>
 
@@ -193,7 +188,6 @@ function clickNew(): void {
         </el-button>
       </div>
       <div class="me-flex">
-        <me-icon icon="me-icon-new" class="icon-new" @click="clickNew" v-if="app.update?.version" />
         <el-dropdown placement="bottom-start" @command="handleCommand" style="margin-right: 10px">
           <el-button>...</el-button>
           <template #dropdown>
@@ -256,13 +250,6 @@ function clickNew(): void {
 
   .header {
     margin-bottom: 10px;
-
-    .icon-new {
-      margin: 0 10px;
-      font-size: 30px;
-      color: var(--el-color-danger);
-      cursor: pointer;
-    }
   }
 
   .conn-empty-wrap,

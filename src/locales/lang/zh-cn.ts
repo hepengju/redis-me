@@ -417,6 +417,7 @@ export default {
     deleteKey: '确定删除键【{key}】吗？',
     checking: '检查更新中，请稍后...',
     updateHint: '有新版本 v{version}，是否升级？',
+    updateReady: '新版本 v{version}',
     changelog: '更新日志',
     changelogUrl: 'https://www.hepengju.com/zh/changelog/latest.html',
     downloadDown: '下载完成，是否立刻安装？',
