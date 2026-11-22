@@ -1172,7 +1172,8 @@ export default {
     run: 'Run',
     runSelection: 'Run selection',
     noResult: 'Result area',
-    placeholder: `For commands that span several lines. A selection runs just the selected text.
+    placeholder: `For commands that span several lines.
+A selection runs just the selected text.
 
 Example:
 FT.SEARCH idx:bikes *

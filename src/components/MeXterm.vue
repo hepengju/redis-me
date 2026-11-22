@@ -227,6 +227,24 @@ const menuKeys = {
 }
 // #endregion
 
+// 提示开着时，回车接受当前项并关掉列表；关掉后再按回车才执行。Ctrl+回车仍是换行。
+// 库把执行绑在输入框 keyup 上，没有选中接口，所以在更外层拦住，并复用它自己的点击和 Esc。
+function onTipEnter(e: KeyboardEvent): void {
+  if (e.isComposing || e.ctrlKey || e.metaKey || e.altKey) return
+  if (e.key !== 'Enter' && e.key !== 'Tab') return
+  if (e.key === 'Enter' && e.shiftKey) return
+  const root = wrapEl.value
+  if (!root?.querySelector('.t-cmd-tips')) return
+  if (e.key === 'Enter') {
+    root.querySelector<HTMLElement>('.t-cmd-tips-item-active')?.click()
+    e.preventDefault()
+    e.stopPropagation()
+  }
+  window.dispatchEvent(
+    new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true }),
+  )
+}
+
 // #region 键盘事件
 function onKeydown(e: KeyboardEvent): void {
   const term = terminalRef.value
@@ -305,7 +323,8 @@ function onKeydown(e: KeyboardEvent): void {
     @mousedown.capture="onMouseDown"
     @mouseup.capture="onMouseUp"
     @dblclick.capture="onDblClick"
-    @contextmenu.capture="onContextMenu">
+    @contextmenu.capture="onContextMenu"
+    @keyup.capture="onTipEnter">
     <terminal
       name="terminal"
       ref="terminal"

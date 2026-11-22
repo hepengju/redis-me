@@ -27,6 +27,7 @@ import {
   meCommandsQuiet,
   meCopy,
 } from '@/utils/app/util'
+import { redisWorkbenchCompletion } from '@/utils/redis/redis-complete'
 import { classifyTerminalCommand } from '@/utils/redis/terminal-guard'
 import {
   capResultLines,
@@ -72,6 +73,8 @@ const running = ref(false)
 const selFrom = ref(0)
 const selTo = ref(0)
 const editorRef = useTemplateRef<InstanceType<typeof MeCode>>('editorRef')
+/** 命令和键名提示。保持同一份扩展，避免输入时弹层被拆掉。 */
+const editorExtensions = redisWorkbenchCompletion()
 const tagsRef = useTemplateRef<HTMLDivElement>('tagsRef')
 let tabSeq = 0
 
@@ -356,6 +359,7 @@ function openDoc(key: string) {
         v-model="session.script"
         mode="text"
         run-on-mod-enter
+        :extra-extensions="editorExtensions"
         :placeholder="t('redisWorkbench.placeholder')"
         @caret="onCaret"
         @run="run()" />

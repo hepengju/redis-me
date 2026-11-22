@@ -2,7 +2,7 @@
 // #region 导入
 import { syntaxHighlighting } from '@codemirror/language'
 import { openSearchPanel } from '@codemirror/search'
-import { Prec, EditorState, StateEffect } from '@codemirror/state'
+import { Prec, EditorState, StateEffect, type Extension } from '@codemirror/state'
 import { EditorView, keymap, lineNumbers, placeholder as cmPlaceholder } from '@codemirror/view'
 import { readText } from '@tauri-apps/plugin-clipboard-manager'
 import { type as getOsType } from '@tauri-apps/plugin-os'
@@ -162,6 +162,8 @@ const props = withDefaults(
     placeholder?: string
     /** 为 true 时 Mod+Enter 触发 run，不插入换行 */
     runOnModEnter?: boolean
+    /** 额外的 CodeMirror 扩展。调用方保持引用稳定，避免编辑器反复重建。 */
+    extraExtensions?: Extension[]
   }>(),
   {
     modelValue: '',
@@ -429,6 +431,7 @@ const extensions = computed(() => {
   if (effectiveMode.value === 'markdown') list.push(syntaxHighlighting(markdownHeadingSyntax))
   // 跟语言包各挂一次。只放在 LanguageSupport 里时，这个编辑器仍会落到默认高亮。
   if (effectiveMode.value === 'redis') list.push(redisHighlighting)
+  if (props.extraExtensions) list.push(...props.extraExtensions)
   return list
 })
 

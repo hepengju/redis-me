@@ -299,7 +299,10 @@ export function terminalHintInput(command: string, cursorIndex: unknown): string
  * 是否仍在输入命令名（含 CONFIG GET 等多词子命令）。
  * 已进入参数（HGET 的 field、MSET 的 value）时为 false，避免回退成命令列表。
  */
-export function isTypingTerminalCommandName(input: string, commandKeys: string[]): boolean {
+export function isTypingTerminalCommandName(
+  input: string,
+  commandKeys: readonly string[],
+): boolean {
   const raw = input.trimStart()
   if (!raw) return true
   const endsWithSpace = /\s$/.test(raw)
@@ -397,6 +400,40 @@ export interface TerminalKeyHintDescriptions {
   favorite: string
 }
 
+export interface RankedKeyHint {
+  name: string
+  formatted: string
+  source: TerminalKeyHintSource
+}
+
+/** 键名提示的排序。收藏优先，其次前缀、包含位置、更短的名字。最多 20 条。 */
+export function rankTerminalKeyHints(
+  prefix: string,
+  entries: readonly TerminalKeyHintEntry[],
+): RankedKeyHint[] {
+  const prefixLower = prefix.toLowerCase()
+  return entries
+    .filter(entry => !prefixLower || entry.name.toLowerCase().includes(prefixLower))
+    .map(entry => ({ entry, score: scoreKeyName(entry.name, prefix, entry.source) }))
+    .sort((a, b) => {
+      for (let i = 0; i < a.score.length; i++) {
+        if (a.score[i] !== b.score[i]) {
+          const av = a.score[i] ?? 0
+          const bv = b.score[i] ?? 0
+          if (i === 0 || i === 1) return bv - av
+          return av - bv
+        }
+      }
+      return 0
+    })
+    .slice(0, 20)
+    .map(({ entry }) => ({
+      name: entry.name,
+      formatted: formatRedisKeyForTerminal(entry.name),
+      source: entry.source,
+    }))
+}
+
 /** 从提示源生成终端提示项；commandHelp 用于右侧命令说明，避免只剩 key 时出现空面板 */
 export function buildTerminalKeyHintTips(
   ctx: TerminalKeyHintContext,
@@ -404,35 +441,15 @@ export function buildTerminalKeyHintTips(
   descriptions: TerminalKeyHintDescriptions,
   commandHelp?: Pick<Command, 'title' | 'group' | 'usage' | 'description'>,
 ): InputTipItem[] {
-  const prefix = ctx.keyPrefix
-  const prefixLower = prefix.toLowerCase()
-
-  const matched = entries
-    .filter(entry => !prefixLower || entry.name.toLowerCase().includes(prefixLower))
-    .map(entry => ({ entry, score: scoreKeyName(entry.name, prefix, entry.source) }))
-    .sort((a, b) => {
-      for (let i = 0; i < a.score.length; i++) {
-        if (a.score[i] !== b.score[i]) {
-          if (i === 0 || i === 1) return b.score[i] - a.score[i]
-          return a.score[i] - b.score[i]
-        }
-      }
-      return 0
-    })
-    .slice(0, 20)
-
-  return matched.map(({ entry }) => {
-    const formattedKey = formatRedisKeyForTerminal(entry.name)
-    return {
-      content: highlightKeyName(entry.name, prefix),
-      description: entry.source === 'favorite' ? descriptions.favorite : descriptions.scanned,
-      command: {
-        key: `${ctx.commandPrefix}${formattedKey}`,
-        title: commandHelp?.title,
-        group: commandHelp?.group,
-        usage: commandHelp?.usage,
-        description: commandHelp?.description,
-      } satisfies Command,
-    }
-  })
+  return rankTerminalKeyHints(ctx.keyPrefix, entries).map(item => ({
+    content: highlightKeyName(item.name, ctx.keyPrefix),
+    description: item.source === 'favorite' ? descriptions.favorite : descriptions.scanned,
+    command: {
+      key: `${ctx.commandPrefix}${item.formatted}`,
+      title: commandHelp?.title,
+      group: commandHelp?.group,
+      usage: commandHelp?.usage,
+      description: commandHelp?.description,
+    } satisfies Command,
+  }))
 }

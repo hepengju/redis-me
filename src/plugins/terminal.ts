@@ -4,6 +4,7 @@ import { createTerminal } from 'vue-web-terminal'
 
 import i18n from '@/locales'
 import type { MeXtermCommandItem } from '@/types/me-interface'
+import { rankCommandHints } from '@/utils/redis/command-hints'
 import {
   buildTerminalKeyHintTips,
   isTypingTerminalCommandName,
@@ -93,134 +94,16 @@ export const handleInputTipsSearch: InputTipsSearchHandlerFunc = (
     return
   }
 
-  const inputTrimmed = input.trim()
-
-  if (!inputTrimmed) {
+  if (!input.trim()) {
     callback([], true)
     return
   }
 
-  const inputParts = inputTrimmed.split(/\s+/).filter(p => p)
-  const firstWord = inputParts[0].toLowerCase()
-  const normalizedInput = inputParts.join(' ').toUpperCase()
-
-  let matchedCommands: MeXtermCommandItem[] = []
-
-  if (inputParts.length === 1) {
-    matchedCommands = store.filter(cmd => cmd.key.toLowerCase().includes(firstWord))
-  } else {
-    let found = store.filter(cmd =>
-      cmd.key.replace(/\s+/g, ' ').toUpperCase().startsWith(normalizedInput),
-    )
-
-    if (found.length === 0) {
-      for (let i = inputParts.length - 1; i > 0; i--) {
-        const shortInput = inputParts.slice(0, i).join(' ').toUpperCase()
-        found = store.filter(cmd =>
-          cmd.key.replace(/\s+/g, ' ').toUpperCase().startsWith(shortInput),
-        )
-        if (found.length > 0) break
-      }
-    }
-
-    matchedCommands =
-      found.length > 0 ? found : store.filter(cmd => cmd.key.toLowerCase().includes(firstWord))
-  }
-
-  const matchArray = matchedCommands.map(cmd => {
-    const cmdKey = cmd.key
-    const cmdKeyLower = cmdKey.toLowerCase()
-    const score: [number, number, number, number, number] = [0, 0, 0, 0, 0]
-
-    if (firstWord.length === cmdKey.length) {
-      score[0] = 1
-    } else {
-      score[1] = cmdKey.includes(inputParts[0]) ? 1 : 0
-      score[2] = cmdKeyLower.indexOf(firstWord)
-      let count = 0
-      let idx = cmdKeyLower.indexOf(firstWord)
-      while (idx !== -1) {
-        count++
-        idx = cmdKeyLower.indexOf(firstWord, idx + firstWord.length)
-      }
-      score[3] = count
-      score[4] = cmdKey.length
-    }
-
-    let content = cmdKey
-    const highlights: { start: number; end: number }[] = []
-
-    inputParts.forEach(part => {
-      const partLower = part.toLowerCase()
-      let startIdx = cmdKeyLower.indexOf(partLower)
-
-      while (startIdx !== -1) {
-        highlights.push({ start: startIdx, end: startIdx + part.length })
-        startIdx = cmdKeyLower.indexOf(partLower, startIdx + part.length)
-      }
-    })
-
-    highlights.sort((a, b) => a.start - b.start)
-
-    const merged: { start: number; end: number }[] = []
-    if (highlights.length > 0) {
-      let current = highlights[0]
-      for (let i = 1; i < highlights.length; i++) {
-        if (highlights[i].start < current.end) {
-          current.end = Math.max(current.end, highlights[i].end)
-        } else {
-          merged.push(current)
-          current = highlights[i]
-        }
-      }
-      merged.push(current)
-    }
-
-    let result = ''
-    let lastIndex = 0
-    merged.forEach(range => {
-      result += cmdKey.substring(lastIndex, range.start)
-      result += `<span class="t-cmd-key">${cmdKey.substring(range.start, range.end)}</span>`
-      lastIndex = range.end
-    })
-    content = result + cmdKey.substring(lastIndex)
-
-    return { item: cmd, content, score }
-  })
-
-  matchArray.sort((a, b) => {
-    const scoreA = a.score
-    const scoreB = b.score
-
-    if (scoreA[0] === 1 && scoreA[0] === scoreB[0]) {
-      return 0
-    }
-    if (scoreA[0] === 1) {
-      return -1
-    }
-    if (scoreB[0] === 1) {
-      return 1
-    }
-    if (scoreA[1] === scoreB[1]) {
-      let res = scoreA[2] - scoreB[2]
-      if (res === 0) {
-        res = scoreB[3] - scoreA[3]
-        if (res === 0) {
-          res = scoreA[4] - scoreB[4]
-        }
-      }
-      return res
-    }
-    return scoreB[1] - scoreA[1]
-  })
-
-  const tips = matchArray
-    .slice(0, 20)
-    .map(m => ({
-      content: m.content,
-      description: m.item.summary ?? m.item.description ?? m.item.usage ?? '',
-      command: m.item as Command,
-    }))
+  const tips = rankCommandHints(input, store).map(match => ({
+    content: match.html,
+    description: match.item.summary ?? match.item.description ?? match.item.usage ?? '',
+    command: match.item as Command,
+  }))
 
   callback(tips, tips.length > 0)
 }
