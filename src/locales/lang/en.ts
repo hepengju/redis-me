@@ -1201,7 +1201,7 @@ FT.SEARCH, CLIENT LIST, FT.AGGREGATE and FT.INFO can be shown as a table.`,
 ① When automatic broadcasting is enabled and no node is selected, commands such as CONFIG SET will be executed on all nodes<br>
 ② Usually there is no need to specify a node. Manual node specification is only required in special scenarios such as viewing the configuration of a specific node
     `,
-    welcome: 'Welcome to Redis Console',
+    welcome: 'Welcome to {RedisME} Console',
     pasteMultiTitle: 'Multiple lines detected',
     pasteMultiHint: 'Run as one command, or run each line ({n} in total)',
     pasteAsOne: 'One command',

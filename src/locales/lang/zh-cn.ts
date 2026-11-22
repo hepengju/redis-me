@@ -1179,7 +1179,7 @@ FT.SEARCH、CLIENT LIST、FT.AGGREGATE、FT.INFO 的结果可以切成表。`,
 ① 自动广播开启且没有选择节点时 CONFIG SET 和 SLOWLOG RESET 等命令会在所有节点执行<br>
 ② 正常情况下无需指定节点，仅在查看特定节点配置等特殊场景可手动指定节点
     `,
-    welcome: '欢迎使用 Redis 终端',
+    welcome: '欢迎使用 {RedisME} 终端',
     pasteMultiTitle: '检测到多行文本',
     pasteMultiHint: '请确认作为单条命令执行，还是每行命令单独执行（共{n}条）',
     pasteAsOne: '单条命令',

@@ -33,15 +33,18 @@ const outputModeOptions: { value: CliOutputMode; labelKey: string }[] = [
 ]
 const outputMode = ref<CliOutputMode>('raw')
 
-// 待颜色的文本
-function colorText(color: string, text: string): string {
-  return `<span style="color: ${color}">${text}</span>`
+// 待颜色的文本；欢迎语里的产品名额外加粗
+function colorText(color: string, text: string, bold = false): string {
+  const weight = bold ? '; font-weight: bold' : ''
+  return `<span style="color: ${color}${weight}">${text}</span>`
 }
 
 const autoBroadcast = ref(true)
 const node = ref('')
 const prefix = computed(() => (node.value ? node.value + '> ' : '$ '))
-const welcome = computed(() => t('redisTerminal.welcome'))
+const welcome = computed(() =>
+  t('redisTerminal.welcome', { RedisME: colorText(share.color, 'RedisME', true) }),
+)
 
 // 成功输出统一绿色；raw 空结果保留空行占位
 function formatCommandResult(data: string): string {
