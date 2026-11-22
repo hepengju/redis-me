@@ -175,7 +175,8 @@ export async function meDownloadUpdate(
           meConfirm(t('util.downloadDown'), async () => await update.install(), manualCloseOptions)
         } else {
           await update.downloadAndInstall(downloadingHandle)
-          // macOS：relaunch 会与 single-instance 竞态，改走 Rust 延迟 open 重启
+          // macOS：relaunch 会与 single-instance 竞态，改走 Rust 延迟 open 重启。
+          // Linux 仍用 relaunch()，依赖 capabilities 里的 process:allow-restart。
           meConfirm(
             t('util.updateDone'),
             async () => {

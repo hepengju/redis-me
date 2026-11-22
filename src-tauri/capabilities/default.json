@@ -29,6 +29,7 @@
     "fs:allow-resource-read-recursive",
     { "identifier": "fs:allow-exists", "allow": [{ "path": "$APPDATA/*" }] },
     "os:default",
+    "process:allow-restart",
     "system-fonts:default",
     "clipboard-manager:allow-read-text",
     "clipboard-manager:allow-write-text",
