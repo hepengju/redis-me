@@ -1,4 +1,8 @@
 /// Windows 先塞应用清单，再跑 Tauri 的构建脚本。
+///
+/// 绕过 tauri#13419：2.7 只把清单链进主程序，`cargo test` 缺 Common Controls v6，
+/// 加载即退出（0xc0000139）。tauri-build >= 2.8.0（#16320）已默认链进测试，
+/// 升级后删掉本文件的 Windows 分支和 `windows-app-manifest.xml`，改回 `tauri_build::build()`。
 fn main() {
     #[cfg(windows)]
     add_manifest();

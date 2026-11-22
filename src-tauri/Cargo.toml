@@ -15,6 +15,8 @@ name = "redis_me_lib"
 crate-type = ["staticlib", "cdylib", "rlib"]
 
 [build-dependencies]
+# Windows 测试清单绕过见 build.rs / windows-app-manifest.xml。
+# 升到 tauri-build >= 2.8.0（https://github.com/tauri-apps/tauri/pull/16320）时一并删掉。
 tauri-build = { version = "2", features = [] }
 
 [dependencies]
