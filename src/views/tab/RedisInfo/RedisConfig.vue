@@ -242,15 +242,15 @@ async function configSet() {
           </el-dropdown>
         </div>
       </div>
-      <div class="me-flex">
+      <div class="me-flex" style="margin-left: 10px; min-width: 0">
         <el-segmented v-model="showType" :options="showTypeOptions"></el-segmented>
-        <el-select v-model="dictVersion" style="width: 120px; margin: 0 10px">
+        <el-select v-model="dictVersion" style="width: 120px; flex-shrink: 0; margin: 0 10px">
           <el-option v-for="item in dictVersionList" :key="item" :label="item" :value="item" />
         </el-select>
         <el-input
           v-model="keyword"
           :placeholder="t('redisConfig.keyword')"
-          style="width: 250px; margin-right: 10px"
+          style="width: 250px; min-width: 0; margin-right: 10px"
           clearable />
         <el-button icon="el-icon-search" @click="refresh" type="primary" :loading="loading" />
       </div>
@@ -354,6 +354,8 @@ async function configSet() {
   flex-direction: column;
 
   .header {
+    min-width: 0;
+
     :deep(.el-input-group__prepend) {
       padding: 0 14px;
     }
