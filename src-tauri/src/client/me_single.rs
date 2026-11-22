@@ -9,7 +9,7 @@ use crate::client::ops::key_scan::{batch_key0, scan_0_batch_count, scan_0_exact,
 use crate::client::ops::notify::{build_notify_patterns, notify_subscribe_node0};
 use crate::client::ops::pubsub::{monitor0, subscribe0};
 use crate::client::ops::search::SearchCmd;
-use crate::client::ops::workbench::finish_workbench;
+use crate::client::ops::workbench::{finish_workbench, vector_fields_for_search};
 use crate::client::state::MeBase;
 use crate::me_client_forwards;
 use crate::model::*;
@@ -220,7 +220,15 @@ impl MeClient for MeSingle {
                 return Err(e.into());
             }
         };
-        Ok(finish_workbench(value, param.output_mode, &cmd, &args))
+        // 和查询同一条连接。FT.INFO 失败时向量字段为空，二进制只写长度。
+        let vectors = vector_fields_for_search(&cmd, &args, |info| info.query(&mut conn));
+        Ok(finish_workbench(
+            value,
+            param.output_mode,
+            &cmd,
+            &args,
+            &vectors,
+        ))
     }
 
     fn config_get(

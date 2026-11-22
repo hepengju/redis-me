@@ -14,6 +14,7 @@ import { useI18n } from 'vue-i18n'
 
 import MeCode, { type MeCodeCaret } from '@/components/me-code/MeCode.vue'
 import type { MeColumn } from '@/components/me-table/column'
+import NodeList from '@/components/MeNodeList.vue'
 import MeOverflowText from '@/components/MeOverflowText.vue'
 import { isReadonlyCommand } from '@/locales/cmd'
 import { connUiProvideKey, shareProvideKey } from '@/types/me-interface'
@@ -54,13 +55,16 @@ interface Session {
   activeId: string
   /** 最近执行的命令，新的在前。关掉结果标签不会清掉。 */
   history: string[]
+  /** 集群：没选节点且开启时走 redis-rs 路由；指定节点则钉在该节点。单机忽略。 */
+  autoBroadcast: boolean
+  node: string
 }
 
 /** 按连接记着。切走页签组件还在；换连接互不覆盖。关应用即丢。 */
 const sessions = new Map<string, Session>()
 
 function blankSession(): Session {
-  return { script: '', tabs: [], activeId: '', history: [] }
+  return { script: '', tabs: [], activeId: '', history: [], autoBroadcast: true, node: '' }
 }
 
 const session = ref<Session>(blankSession())
@@ -206,8 +210,9 @@ async function runOne(command: string): Promise<WorkbenchResult> {
   try {
     const data = await meCommandsQuiet.workbenchExec(share.conn.id, {
       command,
-      node: '',
-      autoBroadcast: false,
+      // 单机没有节点栏。集群跟终端一样：勾选广播且不选节点走命令路由，选了节点就只打那一个。
+      node: share.conn.cluster ? session.value.node : '',
+      autoBroadcast: share.conn.cluster ? session.value.autoBroadcast : true,
       outputMode: 'raw',
     })
     return pack(command, data.text, false, started, data.table)
@@ -354,6 +359,16 @@ function openDoc(key: string) {
         :placeholder="t('redisWorkbench.placeholder')"
         @caret="onCaret"
         @run="run()" />
+      <!-- 与终端一样：浮在输入区右上角。只在集群出现。 -->
+      <div v-if="share.conn?.cluster" class="wb-node me-flex">
+        <el-tooltip raw-content :content="t('redisTerminal.broadcastHint')" placement="top">
+          <el-checkbox
+            v-model="session.autoBroadcast"
+            :label="t('redisTerminal.autoBroadcast')"
+            style="margin-left: 10px" />
+        </el-tooltip>
+        <node-list v-model="session.node" clearable style="margin-left: 10px" />
+      </div>
     </div>
     <div class="wb-bar">
       <div class="wb-mid">
@@ -500,10 +515,19 @@ function openDoc(key: string) {
 }
 
 .wb-editor {
+  position: relative;
   flex: none;
   height: 33%;
   min-height: 0;
   overflow: hidden;
+}
+
+/* 与终端 .node 相同：浮在输入区右上角，盖在编辑器上 */
+.wb-node {
+  position: absolute;
+  top: 0;
+  right: 0;
+  z-index: 10;
 }
 
 .wb-bar {

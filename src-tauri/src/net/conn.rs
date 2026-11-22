@@ -96,7 +96,12 @@ fn select_monitored_master<'a>(
     masters
         .iter()
         .find(|item| map_field(item, "name") == master_name)
-        .ok_or_else(|| AppError::SentinelMasterNotFound { name: master_name.into() }.into())
+        .ok_or_else(|| {
+            AppError::SentinelMasterNotFound {
+                name: master_name.into(),
+            }
+            .into()
+        })
 }
 
 /// Redis 5 起叫 REPLICAS，更早只有 SLAVES。权限错误不退回，避免多打一枪。

@@ -9,7 +9,7 @@ use crate::client::ops::key_scan::{batch_key0, scan_0_batch_count, scan_0_exact,
 use crate::client::ops::notify::{build_notify_patterns, notify_subscribe_node0};
 use crate::client::ops::pubsub::{monitor0, subscribe0};
 use crate::client::ops::search::SearchCmd;
-use crate::client::ops::workbench::finish_workbench;
+use crate::client::ops::workbench::{finish_workbench, vector_fields_for_search};
 use crate::client::state::MeBase;
 use crate::me_client_forwards;
 use crate::model::*;
@@ -309,15 +309,20 @@ impl MeClient for MeCluster {
         };
 
         let mut conn = self.get_conn()?;
+        let broadcast =
+            param.node.as_deref().unwrap_or("").is_empty() && param.auto_broadcast.unwrap_or(false);
+        // 指定节点或关掉广播时钉住这一次的路由。FT.INFO 和查询必须打到同一节点。
+        let route = if broadcast {
+            None
+        } else {
+            Some(self.get_node_route(param.node)?.0)
+        };
         let mut cmd = redis::cmd(cmd_name.as_str());
         cmd.arg(&args);
-        let value = if param.node.as_deref().unwrap_or("").is_empty()
-            && param.auto_broadcast.unwrap_or(false)
-        {
-            conn.req_command(&cmd)
+        let value = if let Some(route) = &route {
+            conn.route_command(&cmd, route.clone())
         } else {
-            let (route, _) = self.get_node_route(param.node)?;
-            conn.route_command(&cmd, route)
+            conn.req_command(&cmd)
         };
         let value = match value {
             Ok(value) => value,
@@ -329,7 +334,20 @@ impl MeClient for MeCluster {
                 return Err(e.into());
             }
         };
-        Ok(finish_workbench(value, param.output_mode, &cmd_name, &args))
+        let vectors = vector_fields_for_search(&cmd_name, &args, |info| {
+            if let Some(route) = &route {
+                conn.route_command(info, route.clone())
+            } else {
+                conn.req_command(info)
+            }
+        });
+        Ok(finish_workbench(
+            value,
+            param.output_mode,
+            &cmd_name,
+            &args,
+            &vectors,
+        ))
     }
 
     fn config_get(

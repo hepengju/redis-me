@@ -282,6 +282,35 @@ pub fn parse_ft_info(name: &str, value: Value) -> AnyResult<SearchIndexInfo> {
     })
 }
 
+/// `FT.INFO` 里类型是 VECTOR 的字段。结果里的名字可能是 attribute，也可能是 identifier，两个都收。
+/// 回复形状不对时当没有向量字段，不让制表失败。
+pub fn vector_field_names(value: &Value) -> HashSet<String> {
+    let Ok(pairs) = as_pairs(value.clone()) else {
+        return HashSet::new();
+    };
+    let mut names = HashSet::new();
+    for (key, val) in pairs {
+        if !key.eq_ignore_ascii_case("attributes") {
+            continue;
+        }
+        let Ok(fields) = parse_attributes(val) else {
+            return names;
+        };
+        for field in fields {
+            if !field.field_type.eq_ignore_ascii_case("VECTOR") {
+                continue;
+            }
+            if !field.attribute.is_empty() {
+                names.insert(field.attribute);
+            }
+            if !field.identifier.is_empty() {
+                names.insert(field.identifier);
+            }
+        }
+    }
+    names
+}
+
 /// `FT.SEARCH`：RESP2 数组或 RESP3 Map。`vectors` 里的字段按小端 FLOAT32 解开。
 pub fn parse_ft_search(
     value: Value,
@@ -841,7 +870,8 @@ fn field_text(
         }
         return text.to_string();
     }
-    if (vectors.contains(name) || readable_binary)
+    // 只有 schema 标明的向量才按浮点拆。其它二进制不猜，避免把任意 4 字节当成数字。
+    if vectors.contains(name)
         && let Some(decoded) = format_f32_le(bytes)
     {
         return decoded;
@@ -991,6 +1021,36 @@ mod tests {
         assert!(!field.options.to_ascii_lowercase().contains("weight"));
         assert!(field.options.contains("WITHSUFFIXTRIE"));
         assert!(field.options.split_whitespace().any(|w| w == "SORTABLE"));
+    }
+
+    /// 向量字段收 attribute 和 identifier。普通字段不收。
+    #[test]
+    fn vector_field_names_keep_attribute_and_identifier() {
+        let value = Value::Array(vec![
+            b("attributes"),
+            Value::Array(vec![
+                Value::Array(vec![
+                    b("identifier"),
+                    b("$.embedding"),
+                    b("attribute"),
+                    b("embedding"),
+                    b("type"),
+                    b("VECTOR"),
+                ]),
+                Value::Array(vec![
+                    b("identifier"),
+                    b("title"),
+                    b("attribute"),
+                    b("title"),
+                    b("type"),
+                    b("TEXT"),
+                ]),
+            ]),
+        ]);
+        let names = vector_field_names(&value);
+        assert!(names.contains("embedding"));
+        assert!(names.contains("$.embedding"));
+        assert!(!names.contains("title"));
     }
 
     /// 读出列表用到的标量和字段，原文按终端 JSON 保留。

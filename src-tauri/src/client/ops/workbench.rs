@@ -1,8 +1,9 @@
-//! 工作台表格。只认命令名，不按回复形状猜。向量按数字解开，其它二进制只写长度。
+//! 工作台表格。只认命令名，不按回复形状猜。
+//! FT.SEARCH 的向量字段由调用方按 FT.INFO 传入，按小端 FLOAT32 解开；其它二进制只写长度。
 
 use redis::Value;
 
-use crate::client::ops::search::{format_f32_le, parse_ft_search_readable};
+use crate::client::ops::search::{parse_ft_search_readable, vector_field_names};
 use crate::model::{CliOutputMode, WorkbenchExec, WorkbenchTable};
 use crate::support::tty::redis_value_to_cli_display;
 use std::collections::HashSet;
@@ -15,21 +16,48 @@ pub fn finish_workbench(
     mode: Option<CliOutputMode>,
     cmd: &str,
     args: &[Vec<u8>],
+    vectors: &HashSet<String>,
 ) -> WorkbenchExec {
-    let table = table_for(&value, cmd, args);
+    let table = table_for(&value, cmd, args, vectors);
     WorkbenchExec {
         text: redis_value_to_cli_display(value, mode, cmd, args),
         table,
     }
 }
 
-fn table_for(value: &Value, cmd: &str, args: &[Vec<u8>]) -> Option<WorkbenchTable> {
+/// `FT.SEARCH` 的索引名在第一个参数。向同一条连接再要一次 `FT.INFO`。
+/// 失败就当没有向量字段：表仍能出，二进制只写长度。
+pub fn vector_fields_for_search(
+    cmd: &str,
+    args: &[Vec<u8>],
+    mut run: impl FnMut(&redis::Cmd) -> redis::RedisResult<Value>,
+) -> HashSet<String> {
+    if !cmd.eq_ignore_ascii_case("FT.SEARCH") {
+        return HashSet::new();
+    }
+    let Some(index) = args.first().filter(|index| !index.is_empty()) else {
+        return HashSet::new();
+    };
+    let mut info = redis::cmd("FT.INFO");
+    info.arg(index);
+    match run(&info) {
+        Ok(value) => vector_field_names(&value),
+        Err(_) => HashSet::new(),
+    }
+}
+
+fn table_for(
+    value: &Value,
+    cmd: &str,
+    args: &[Vec<u8>],
+    vectors: &HashSet<String>,
+) -> Option<WorkbenchTable> {
     let name = cmd.to_ascii_uppercase();
     if name == "CLIENT" && arg_is(args, 0, "LIST") {
         return client_list_table(value);
     }
     match name.as_str() {
-        "FT.SEARCH" => search_table(value, args),
+        "FT.SEARCH" => search_table(value, args, vectors),
         "FT.AGGREGATE" => aggregate_table(value),
         "FT.INFO" => info_table(value),
         _ => None,
@@ -42,13 +70,10 @@ fn arg_is(args: &[Vec<u8>], index: usize, expect: &str) -> bool {
         .is_some_and(|s| s.eq_ignore_ascii_case(expect))
 }
 
-/// 合法文本原样。向量字节按小端 FLOAT32 解开。别的二进制只写长度，不写替换字符。
+/// 合法文本原样。这里不猜向量，只在已知 VECTOR 字段上解开。别的二进制只写长度。
 fn bulk_cell(bytes: &[u8]) -> String {
     if let Ok(text) = std::str::from_utf8(bytes) {
         return text.to_string();
-    }
-    if let Some(text) = format_f32_le(bytes) {
-        return text;
     }
     format!("(binary {})", bytes.len())
 }
@@ -116,13 +141,17 @@ fn client_list_table(value: &Value) -> Option<WorkbenchTable> {
     rows_from_pairs(columns, parsed, None)
 }
 
-fn search_table(value: &Value, args: &[Vec<u8>]) -> Option<WorkbenchTable> {
+fn search_table(
+    value: &Value,
+    args: &[Vec<u8>],
+    vectors: &HashSet<String>,
+) -> Option<WorkbenchTable> {
     // 前两个参数是索引和查询，不把查询词当成 WITHSCORES。
     let with_scores = args
         .iter()
         .skip(2)
         .any(|b| std::str::from_utf8(b).is_ok_and(|s| s.eq_ignore_ascii_case("WITHSCORES")));
-    let page = parse_ft_search_readable(value.clone(), with_scores, &HashSet::new()).ok()?;
+    let page = parse_ft_search_readable(value.clone(), with_scores, vectors).ok()?;
     let mut columns = vec!["key".to_string()];
     if page.hits.iter().any(|hit| hit.score.is_some()) {
         columns.push("score".to_string());
@@ -308,11 +337,50 @@ mod tests {
                 Value::BulkString(1.5f32.to_le_bytes().to_vec()),
             ]),
         ]);
-        let done = finish_workbench(value, Some(CliOutputMode::Raw), "FT.SEARCH", &[]);
+        let mut vectors = HashSet::new();
+        vectors.insert("vector_embeddings".to_string());
+        let done = finish_workbench(value, Some(CliOutputMode::Raw), "FT.SEARCH", &[], &vectors);
         let table = done.table.unwrap();
         assert_eq!(table.columns, ["key", "brand", "vector_embeddings"]);
         assert_eq!(table.rows[0], ["bikes:1", "nHill", "[1.5]"]);
         assert_eq!(table.key_column, Some(0));
+    }
+
+    /// 0 和 0.5 的小端字节是合法 UTF-8。只有字段名在 schema 里才解开，不靠「非法 UTF-8」来猜。
+    #[test]
+    fn named_ascii_vector_is_decoded() {
+        let mut bytes = Vec::new();
+        bytes.extend(0.0f32.to_le_bytes());
+        bytes.extend(0.5f32.to_le_bytes());
+        let value = Value::Array(vec![
+            Value::Int(1),
+            b("bikes:1"),
+            Value::Array(vec![
+                b("brand"),
+                b("nHill"),
+                b("vector_embeddings"),
+                Value::BulkString(bytes),
+            ]),
+        ]);
+        let mut vectors = HashSet::new();
+        vectors.insert("vector_embeddings".to_string());
+        let table = search_table(&value, &[], &vectors).unwrap();
+        assert_eq!(table.rows[0], ["bikes:1", "nHill", "[0, 0.5]"]);
+    }
+
+    /// 没标成向量的二进制，长度凑满 4 也不拆成浮点。
+    #[test]
+    fn unnamed_aligned_binary_stays_a_length() {
+        let value = Value::Array(vec![
+            Value::Int(1),
+            b("doc"),
+            Value::Array(vec![
+                b("blob"),
+                Value::BulkString(vec![0xff, 0xfe, 0xfd, 0xfc]),
+            ]),
+        ]);
+        let table = search_table(&value, &[], &HashSet::new()).unwrap();
+        assert_eq!(table.rows[0], ["doc", "(binary 4)"]);
     }
 
     #[test]
@@ -322,7 +390,7 @@ mod tests {
             b("doc"),
             Value::Array(vec![b("blob"), Value::BulkString(vec![0xff, 0xfe])]),
         ]);
-        let table = search_table(&value, &[]).unwrap();
+        let table = search_table(&value, &[], &HashSet::new()).unwrap();
         assert_eq!(table.rows[0], ["doc", "(binary 2)"]);
     }
 
@@ -334,7 +402,7 @@ mod tests {
             Value::Array(vec![b("brand"), b("nHill")]),
         ]);
         let args = vec![b"idx".to_vec(), b"WITHSCORES".to_vec()];
-        let table = search_table(&value, &args).unwrap();
+        let table = search_table(&value, &args, &HashSet::new()).unwrap();
         assert_eq!(table.columns, ["key", "brand"]);
     }
 
@@ -347,7 +415,7 @@ mod tests {
             Value::Array(vec![b("brand"), b("nHill")]),
         ]);
         let args = vec![b"idx".to_vec(), b"*".to_vec(), b"WITHSCORES".to_vec()];
-        let table = search_table(&value, &args).unwrap();
+        let table = search_table(&value, &args, &HashSet::new()).unwrap();
         assert_eq!(table.columns, ["key", "score", "brand"]);
         assert_eq!(table.rows[0], ["bikes:1", "1.5", "nHill"]);
     }
@@ -367,7 +435,7 @@ mod tests {
                 ])]),
             ),
         ]);
-        let table = search_table(&value, &[]).unwrap();
+        let table = search_table(&value, &[], &HashSet::new()).unwrap();
         assert_eq!(table.columns, ["key", "brand"]);
         assert_eq!(table.rows[0], ["bikes:1", "nHill"]);
         assert_eq!(table.key_column, Some(0));
@@ -380,7 +448,7 @@ mod tests {
             b("bikes:1"),
             Value::Array(vec![b("brand"), b("nHill")]),
         ]);
-        let table = search_table(&value, &[]).unwrap();
+        let table = search_table(&value, &[], &HashSet::new()).unwrap();
         assert_eq!(table.columns, ["key", "brand"]);
         assert_eq!(table.rows[0], ["bikes:1", "nHill"]);
         assert_eq!(table.key_column, Some(0));
@@ -388,7 +456,7 @@ mod tests {
 
     #[test]
     fn get_is_not_a_table() {
-        assert!(table_for(&b("hello"), "GET", &[]).is_none());
+        assert!(table_for(&b("hello"), "GET", &[], &HashSet::new()).is_none());
     }
 
     #[test]
@@ -430,10 +498,21 @@ mod tests {
     fn other_commands_stay_text() {
         let pairs = Value::Array(vec![b("a"), b("1")]);
         for cmd in ["GET", "HGETALL", "INFO", "KEYS", "JSON.GET", "FT.PROFILE"] {
-            assert!(table_for(&pairs, cmd, &[]).is_none(), "{cmd}");
+            assert!(
+                table_for(&pairs, cmd, &[], &HashSet::new()).is_none(),
+                "{cmd}"
+            );
         }
-        assert!(table_for(&b("id=1"), "CLIENT", &[b"KILL".to_vec()]).is_none());
-        assert!(table_for(&b("id=1 addr=a"), "client", &[b"list".to_vec()]).is_some());
+        assert!(table_for(&b("id=1"), "CLIENT", &[b"KILL".to_vec()], &HashSet::new()).is_none());
+        assert!(
+            table_for(
+                &b("id=1 addr=a"),
+                "client",
+                &[b"list".to_vec()],
+                &HashSet::new()
+            )
+            .is_some()
+        );
     }
 
     #[test]
@@ -459,5 +538,33 @@ mod tests {
             [vec!["index_name".to_string(), "idx".to_string()]]
         );
         assert!(table.key_column.is_none());
+    }
+
+    #[test]
+    fn search_asks_ft_info_for_vector_names() {
+        let info = Value::Array(vec![
+            b("attributes"),
+            Value::Array(vec![Value::Array(vec![
+                b("identifier"),
+                b("vector_embeddings"),
+                b("attribute"),
+                b("vector_embeddings"),
+                b("type"),
+                b("VECTOR"),
+            ])]),
+        ]);
+        let names = vector_fields_for_search("ft.search", &[b"idx".to_vec()], |_| Ok(info.clone()));
+        assert!(names.contains("vector_embeddings"));
+        let skipped = vector_fields_for_search("GET", &[b"idx".to_vec()], |_| {
+            panic!("非 FT.SEARCH 不应再查 FT.INFO");
+        });
+        assert!(skipped.is_empty());
+        let missing = vector_fields_for_search("FT.SEARCH", &[b"idx".to_vec()], |_| {
+            Err(redis::RedisError::from((
+                redis::ErrorKind::Parse,
+                "unknown index",
+            )))
+        });
+        assert!(missing.is_empty());
     }
 }

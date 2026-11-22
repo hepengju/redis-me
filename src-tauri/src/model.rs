@@ -1146,12 +1146,12 @@ api_model!(MonitorEvent {
 api_model!(
     /// 键空间通知事件：后端把 `__keyspace@`/`__keyevent@` 频道解析成 DB/键/事件后推给前端
     NotifyEvent {
-        id: String,        // 连接 id，前端按此过滤
-        datetime: String,  // 与 SubscribeEvent 同格式
-        node: String,      // 集群节点地址；单机为空串
-        db: u16,           // 解析自频道
-        key: String,       // 解析后的键（display string）
-        event: String,     // 事件名，如 del / set / expired
+        id: String,       // 连接 id，前端按此过滤
+        datetime: String, // 与 SubscribeEvent 同格式
+        node: String,     // 集群节点地址；单机为空串
+        db: u16,          // 解析自频道
+        key: String,      // 解析后的键（display string）
+        event: String,    // 事件名，如 del / set / expired
     }
 );
 
@@ -1356,7 +1356,10 @@ mod tests {
         let bare_json = serde_json::to_value(&bare).unwrap();
         let typed_json = serde_json::to_value(&with_type).unwrap();
         assert_eq!(bare_json.get("type").and_then(|v| v.as_str()), Some(""));
-        assert_eq!(typed_json.get("type").and_then(|v| v.as_str()), Some("string"));
+        assert_eq!(
+            typed_json.get("type").and_then(|v| v.as_str()),
+            Some("string")
+        );
         let back: RedisKeySize = serde_json::from_value(bare_json).unwrap();
         assert!(back.key_type.is_empty());
     }
