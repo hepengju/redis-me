@@ -16,7 +16,7 @@ export function normalizeAppLocale(raw: string | null | undefined): AppLocale {
 // 创建 i18n
 const i18n = createI18n({
   legacy: false,
-  globalInjection: false, // 全局模式，可以直接使用 $t, 本应用统一使用t函数
+  globalInjection: false, // 不注入 $t，组件内统一用 useI18n() 的 t
   locale: 'en',
   fallbackLocale: 'en',
   messages: { zhCN, en },

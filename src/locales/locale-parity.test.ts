@@ -139,3 +139,12 @@ describe('说明字典按语言回退', () => {
     expect(clientTip.value.id).toBe(enClientTip.id)
   })
 })
+
+/** 只给 tsc 看：分开声明的覆盖层多写键时应报错，函数本身不调用。 */
+function overlayExtraKeyIsTypeError(): void {
+  const english = { a: 'en-a', b: 'en-b' }
+  const zh = { a: 'zh-a', extra: 'nope' }
+  // @ts-expect-error 覆盖层不能出现底表没有的键
+  mergeLocaleOverlay('zhCN', english, { zhCN: zh })
+}
+void overlayExtraKeyIsTypeError
