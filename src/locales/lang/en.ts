@@ -307,7 +307,7 @@ export default {
       'Initial database index<br/>• Standalone: switches while connected are auto-saved<br/>• Cluster: Valkey 9+ required; set at connect only, no switching',
     uiModeMinimal: 'Minimal',
     uiModeTip:
-      'Minimal mode shows only Key-Value, Console, and Workbench for ACL users without INFO, CONFIG, etc.',
+      'Minimal mode shows only Key-Value, Terminal, and Workbench for ACL users without INFO, CONFIG, etc.',
     sshOption: {
       host: 'Host',
       port: 'Port',
@@ -451,10 +451,10 @@ export default {
   tabMain: {
     info: 'Info',
     value: 'Value',
-    terminal: 'Console',
+    terminal: 'Terminal',
     memory: 'Memory',
-    slow: 'SlowLog',
-    pubsub: 'PubSub',
+    slow: 'Slowlog',
+    pubsub: 'Pub/Sub',
     chart: 'Chart',
     acl: 'Users',
     config: 'Config',
@@ -1201,7 +1201,7 @@ FT.SEARCH, CLIENT LIST, FT.AGGREGATE and FT.INFO can be shown as a table.`,
 ① When automatic broadcasting is enabled and no node is selected, commands such as CONFIG SET will be executed on all nodes<br>
 ② Usually there is no need to specify a node. Manual node specification is only required in special scenarios such as viewing the configuration of a specific node
     `,
-    welcome: 'Welcome to {RedisME} Console',
+    welcome: 'Welcome to {RedisME} Terminal',
     pasteMultiTitle: 'Multiple lines detected',
     pasteMultiHint: 'Run as one command, or run each line ({n} in total)',
     pasteAsOne: 'One command',
@@ -1210,7 +1210,7 @@ FT.SEARCH, CLIENT LIST, FT.AGGREGATE and FT.INFO can be shown as a table.`,
     readonlyHint: 'Executing commands is temporarily not supported in read-only mode',
     readonlyWriteHint: 'Write or non-readonly commands are not allowed in read-only mode',
     unsupportedSubscribe:
-      'Subscription commands are not supported here, please use the "PubSub" panel',
+      'Subscription commands are not supported here, please use the "Pub/Sub" panel',
     unsupportedMonitor: 'MONITOR is not supported here, please use the "Monitor" panel',
     unsupportedBlocking: 'Blocking commands are not supported in the terminal',
     autoCopyHint: 'Auto Copy Command Result',

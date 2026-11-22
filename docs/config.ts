@@ -55,7 +55,7 @@ function sidebarGuide() {
         { text: 'Custom Codec', link: '/usage/codec' },
         { text: 'Terminal', link: '/usage/terminal' },
         { text: 'Memory', link: '/usage/memory' },
-        { text: 'SlowLog', link: '/usage/slowlog' },
+        { text: 'Slowlog', link: '/usage/slowlog' },
         { text: 'Monitor', link: '/usage/monitor' },
         { text: 'Pub/Sub', link: '/usage/pubsub' },
         { text: 'Chart', link: '/usage/chart' },
