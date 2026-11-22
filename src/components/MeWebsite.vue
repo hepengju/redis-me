@@ -1,10 +1,9 @@
 <script setup lang="ts">
-// #region 导入
 // 跳转到官网: Redis中英文/Valkey中英文；可选 command 拼具体命令文档路径
-import { isZh, meOpenUrl } from '@/utils/app/util'
-// #endregion
+import { computed } from 'vue'
 
-// #region 核心状态
+import { isZh, meOpenUrl } from '@/utils/app/util'
+
 // 与 `<me-website to="…">`、DOC_PATHS 键一致（供外部 props）
 const DOC_PATHS = {
   info: { redis: '/docs/latest/commands/info/', valkey: '/commands/info/' },
@@ -61,9 +60,7 @@ const WEB_ORIGIN = {
 } as const
 
 type SiteCmd = keyof typeof WEB_ORIGIN
-// #endregion
 
-// #region 面板操作
 // 官网路径统一：空格转连字符、小写，如 OBJECT ENCODING → object-encoding
 function commandSlug(name: string): string {
   return name.trim().toLowerCase().replace(/\s+/g, '-')
@@ -84,28 +81,37 @@ function handleCommand(cmd: string): void {
   const suffix = props.command ? `${commandSlug(props.command)}/` : ''
   meOpenUrl(base + path + suffix)
 }
-// #endregion
+
+/** 下拉项：无对应文档路径的站点不显示（如部分主题没有 Valkey 页） */
+const sites = computed(() => {
+  const items: { cmd: SiteCmd; icon: string; name: string }[] = [
+    { cmd: 'redis', icon: 'me-icon-redis', name: 'Redis' },
+  ]
+  if (isZh.value) items.push({ cmd: 'redisZh', icon: 'me-icon-redis', name: 'Redis 中文' })
+  if (sitePath('valkey')) items.push({ cmd: 'valkey', icon: 'me-icon-valkey', name: 'Valkey' })
+  if (isZh.value && sitePath('valkeyZh')) {
+    items.push({ cmd: 'valkeyZh', icon: 'me-icon-valkey', name: 'Valkey 中文' })
+  }
+  return items
+})
 </script>
 
 <template>
   <el-dropdown @command="handleCommand" trigger="hover" :placement :style="{ marginLeft }">
     <el-link v-if="label" type="primary" :underline="false">{{ label }}</el-link>
-    <me-icon v-else class="icon-btn" icon="me-icon-link" style="font-size: 14px" />
+    <me-icon v-else class="icon-btn me-website-icon" icon="me-icon-link" />
     <template #dropdown>
       <el-dropdown-menu>
-        <el-dropdown-item command="redis">
-          <me-icon icon="me-icon-redis" name="Redis" />
-        </el-dropdown-item>
-        <el-dropdown-item v-if="isZh" command="redisZh">
-          <me-icon icon="me-icon-redis" name="Redis 中文" />
-        </el-dropdown-item>
-        <el-dropdown-item v-if="sitePath('valkey')" command="valkey">
-          <me-icon icon="me-icon-valkey" name="Valkey" />
-        </el-dropdown-item>
-        <el-dropdown-item v-if="isZh && sitePath('valkeyZh')" command="valkeyZh">
-          <me-icon icon="me-icon-valkey" name="Valkey 中文" />
+        <el-dropdown-item v-for="site in sites" :key="site.cmd" :command="site.cmd">
+          <me-icon :icon="site.icon" :name="site.name" />
         </el-dropdown-item>
       </el-dropdown-menu>
     </template>
   </el-dropdown>
 </template>
+
+<style scoped lang="scss">
+.me-website-icon {
+  font-size: 14px;
+}
+</style>

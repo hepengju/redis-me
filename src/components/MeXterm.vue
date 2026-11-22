@@ -5,6 +5,7 @@ import { computed, onBeforeUnmount, onMounted, ref, useTemplateRef } from 'vue'
 import { useI18n } from 'vue-i18n'
 import type { FailedFunc, Message, SuccessFunc } from 'vue-web-terminal'
 
+import MeCodeMenuRow from '@/components/me-code/MeCodeMenuRow.vue'
 import MeCodeSubmenu from '@/components/me-code/MeCodeSubmenu.vue'
 import { handleInputTipsSearch } from '@/plugins/terminal'
 import type { MeXtermCommandItem } from '@/types/me-interface'
@@ -347,83 +348,54 @@ function onKeydown(e: KeyboardEvent): void {
       :hide-on-click="false"
       @handle-command="onMenuCommand">
       <el-dropdown-item v-if="menuSelected" command="copy">
-        <span class="me-code-menu-row">
-          <me-icon class="me-code-menu-label" icon="el-icon-document-copy" :name="t('copy')" />
-          <span class="me-code-menu-key">{{ menuKeys.copy }}</span>
-        </span>
+        <MeCodeMenuRow icon="el-icon-document-copy" :name="t('copy')" :shortcut="menuKeys.copy" />
       </el-dropdown-item>
       <el-dropdown-item v-if="onPaste" command="paste">
-        <span class="me-code-menu-row">
-          <me-icon class="me-code-menu-label" icon="el-icon-document-add" :name="t('paste')" />
-          <span class="me-code-menu-key">{{ menuKeys.paste }}</span>
-        </span>
+        <MeCodeMenuRow icon="el-icon-document-add" :name="t('paste')" :shortcut="menuKeys.paste" />
       </el-dropdown-item>
       <el-dropdown-item command="fullscreen" :divided="!!menuSelected || !!onPaste">
-        <span class="me-code-menu-row">
-          <me-icon
-            class="me-code-menu-label"
-            icon="me-icon-window-maximize"
-            :name="t('meCode.fullscreen')" />
-          <span class="me-code-menu-key">{{ menuKeys.fullscreen }}</span>
-        </span>
+        <MeCodeMenuRow
+          icon="me-icon-window-maximize"
+          :name="t('meCode.fullscreen')"
+          :shortcut="menuKeys.fullscreen" />
       </el-dropdown-item>
       <el-dropdown-item command="lineWrap">
-        <span class="me-code-menu-row">
-          <me-icon
-            class="me-code-menu-label"
-            icon="me-icon-line-wrap"
-            :name="t('meCode.lineWrap')" />
-          <span class="me-code-menu-key">{{ menuKeys.lineWrap }}</span>
-        </span>
+        <MeCodeMenuRow
+          icon="me-icon-line-wrap"
+          :name="t('meCode.lineWrap')"
+          :shortcut="menuKeys.lineWrap" />
       </el-dropdown-item>
       <MeCodeSubmenu keep-open icon="me-icon-font-size" :title="fontTitle" @command="onMenuCommand">
         <el-dropdown-item command="font+" :disabled="fontSizePx >= ME_XTERM_FONT_MAX">
-          <span class="me-code-menu-row">
-            <me-icon
-              class="me-code-menu-label"
-              icon="el-icon-zoom-in"
-              :name="t('meCode.fontIncrease')" />
-            <span class="me-code-menu-key">{{ menuKeys.fontIncrease }}</span>
-          </span>
+          <MeCodeMenuRow
+            icon="el-icon-zoom-in"
+            :name="t('meCode.fontIncrease')"
+            :shortcut="menuKeys.fontIncrease" />
         </el-dropdown-item>
         <el-dropdown-item command="font-" :disabled="fontSizePx <= ME_XTERM_FONT_MIN">
-          <span class="me-code-menu-row">
-            <me-icon
-              class="me-code-menu-label"
-              icon="el-icon-zoom-out"
-              :name="t('meCode.fontDecrease')" />
-            <span class="me-code-menu-key">{{ menuKeys.fontDecrease }}</span>
-          </span>
+          <MeCodeMenuRow
+            icon="el-icon-zoom-out"
+            :name="t('meCode.fontDecrease')"
+            :shortcut="menuKeys.fontDecrease" />
         </el-dropdown-item>
       </MeCodeSubmenu>
       <el-dropdown-item command="clear">
-        <span class="me-code-menu-row">
-          <me-icon
-            class="me-code-menu-label"
-            icon="el-icon-delete"
-            :name="t('redisTerminal.keyShort.clearScreen')" />
-          <span class="me-code-menu-key">{{ menuKeys.clear }}</span>
-        </span>
+        <MeCodeMenuRow
+          icon="el-icon-delete"
+          :name="t('redisTerminal.keyShort.clearScreen')"
+          :shortcut="menuKeys.clear" />
       </el-dropdown-item>
       <el-dropdown-item command="clearInput" :disabled="!isMacOS && !!menuSelected">
-        <span class="me-code-menu-row">
-          <me-icon
-            class="me-code-menu-label"
-            icon="el-icon-document-remove"
-            :name="t('redisTerminal.keyShort.clearInput')" />
-          <span class="me-code-menu-key">{{ menuKeys.clearInput }}</span>
-        </span>
+        <MeCodeMenuRow
+          icon="el-icon-document-remove"
+          :name="t('redisTerminal.keyShort.clearInput')"
+          :shortcut="menuKeys.clearInput" />
       </el-dropdown-item>
     </me-context>
   </div>
 </template>
 
 <style lang="scss">
-/* 提示颜色 */
-//.t-prompt {
-//  color: var(--el-color-primary);
-//}
-
 /* 提示行：左侧命令完整显示，右侧说明过长时省略 */
 .t-cmd-tips-item {
   display: flex !important;
@@ -467,8 +439,6 @@ function onKeydown(e: KeyboardEvent): void {
 }
 
 .t-window {
-  /* 库内 z-index:1 会隔离层叠上下文，导致补全(100)盖不过 help(99)；unset 后同层比较 */
-  /* z-index: unset !important; */
   padding: 5px 5px 5px 20px !important;
   background-color: #efefef !important;
 }

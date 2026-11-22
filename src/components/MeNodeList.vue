@@ -8,17 +8,19 @@ const { t } = useI18n()
 
 const share = inject(shareProvideKey)!
 const node = defineModel<string>()
-const emit = defineEmits(['update:modelValue'])
 
-const props = defineProps({
-  /** 集群模式下默认选中第一个 master（nodeList 异步就绪后也会补设） */
-  initNode: { type: Boolean, default: false },
-})
+const props = withDefaults(
+  defineProps<{
+    /** 集群模式下默认选中第一个 master（nodeList 异步就绪后也会补设） */
+    initNode?: boolean
+  }>(),
+  { initNode: false },
+)
 
 function tryInitNode() {
   if (!props.initNode || node.value) return
   const master = share.nodeList.find(item => item.isMaster)
-  if (master?.node) emit('update:modelValue', master.node)
+  if (master?.node) node.value = master.node
 }
 
 /** 选中态与下拉项文案一致：host:port | M1 */
@@ -31,10 +33,10 @@ watch(() => share.nodeList, tryInitNode, { immediate: true })
 
 <template>
   <el-select
+    v-if="share.conn?.cluster"
     v-model="node"
-    style="width: 220px"
-    :placeholder="t('nodeList.placeholder')"
-    v-if="share.conn?.cluster">
+    class="me-node-list"
+    :placeholder="t('nodeList.placeholder')">
     <!-- 终端/配置/慢日志/监控/客户端/信息：选具体节点 -->
     <el-option
       v-for="item in share.nodeList"
@@ -50,3 +52,9 @@ watch(() => share.nodeList, tryInitNode, { immediate: true })
     </el-option>
   </el-select>
 </template>
+
+<style scoped lang="scss">
+.me-node-list {
+  width: 220px;
+}
+</style>

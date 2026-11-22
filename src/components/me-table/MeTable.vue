@@ -354,14 +354,17 @@ const v2RowEventHandlers = computed(() => {
 })
 // #endregion
 
+// 列按 key 建索引：单元格/表头渲染时多次取同一列，避免每次都扫 columns
+const columnsByKey = computed(() => new Map(props.columns.map(col => [col.key, col])))
+
 function meColumnOf(key: unknown): MeColumn | undefined {
-  return props.columns.find(c => c.key === key)
+  if (typeof key === 'string') return columnsByKey.value.get(key)
+  return props.columns.find(col => col.key === key)
 }
 
 // 纯插槽列（操作列等无取值源、不进导出的列）：包裹层撑满单元格但不裁剪（el-table 的 .cell 也不裁溢出内容），
 // 插槽内靠 space-between / space-evenly 铺满整格的布局（操作图标）与旧版一致
-function isPlainSlotColumn(key: unknown): boolean {
-  const col = meColumnOf(key)
+function isPlainSlotColumn(col: MeColumn | undefined): boolean {
   return !!col && !isExportableColumn(col)
 }
 
@@ -427,62 +430,70 @@ defineExpose({
             :row-event-handlers="v2RowEventHandlers"
             @column-sort="handleV2ColumnSort">
             <template #cell="{ column, cellData, rowData, rowIndex }">
-              <el-checkbox
-                v-if="meColumnOf(column.key)?.selection"
-                :model-value="isRowSelected(rowData)"
-                @change="(v: boolean) => toggleRowSelected(rowData, v)" />
-              <div v-else-if="isPlainSlotColumn(column.key)" class="me-cell-slot">
-                <slot
-                  :name="`cell-${String(column.key)}`"
-                  :row="rowData"
-                  :index="rowIndex"
-                  :value="cellData" />
-              </div>
-              <!-- 开 tooltip：全文进 DOM/气泡；disabled 按格隔离。具名插槽须自带回退文本（空 slot 传给子组件时其子默认插槽不生效） -->
-              <me-overflow-text
-                v-else-if="showOverflowTooltip"
-                :content="cellText(meColumnOf(column.key), rowData, rowIndex, cellData)">
-                <slot
-                  :name="`cell-${String(column.key)}`"
-                  :row="rowData"
-                  :index="rowIndex"
-                  :value="cellData">
-                  {{ cellText(meColumnOf(column.key), rowData, rowIndex, cellData) }}
-                </slot>
-              </me-overflow-text>
-              <div v-else class="me-cell-ellipsis">
-                <slot
-                  :name="`cell-${String(column.key)}`"
-                  :row="rowData"
-                  :index="rowIndex"
-                  :value="cellData">
-                  {{ displayCellText(meColumnOf(column.key), rowData, rowIndex, cellData) }}
-                </slot>
-              </div>
+              <!-- 单元素 v-for：本格只解析一次列描述 -->
+              <template v-for="col in [meColumnOf(column.key)]" :key="String(column.key)">
+                <el-checkbox
+                  v-if="col?.selection"
+                  :model-value="isRowSelected(rowData)"
+                  @change="(v: boolean) => toggleRowSelected(rowData, v)" />
+                <div v-else-if="isPlainSlotColumn(col)" class="me-cell-slot">
+                  <slot
+                    :name="`cell-${String(column.key)}`"
+                    :row="rowData"
+                    :index="rowIndex"
+                    :value="cellData" />
+                </div>
+                <!-- 开 tooltip：全文进 DOM/气泡；disabled 按格隔离。具名插槽须自带回退文本（空 slot 传给子组件时其子默认插槽不生效） -->
+                <template v-else-if="showOverflowTooltip">
+                  <me-overflow-text
+                    v-for="text in [cellText(col, rowData, rowIndex, cellData)]"
+                    :key="String(column.key)"
+                    :content="text">
+                    <slot
+                      :name="`cell-${String(column.key)}`"
+                      :row="rowData"
+                      :index="rowIndex"
+                      :value="cellData">
+                      {{ text }}
+                    </slot>
+                  </me-overflow-text>
+                </template>
+                <div v-else class="me-cell-ellipsis">
+                  <slot
+                    :name="`cell-${String(column.key)}`"
+                    :row="rowData"
+                    :index="rowIndex"
+                    :value="cellData">
+                    {{ displayCellText(col, rowData, rowIndex, cellData) }}
+                  </slot>
+                </div>
+              </template>
             </template>
             <template #header-cell="{ column }">
-              <el-checkbox
-                v-if="meColumnOf(column.key)?.selection"
-                :model-value="isAllSelected"
-                :indeterminate="isSomeSelected"
-                @change="(v: boolean) => toggleSelectAll(v)" />
-              <slot v-else :name="`header-${String(column.key)}`" :column="meColumnOf(column.key)">
-                <!-- 三者互斥：有 filterOptions 只渲染筛选面板（含标题），否则回退标题（可选 headerTip） -->
-                <me-column-filter
-                  v-if="meColumnOf(column.key) && colFilterable(meColumnOf(column.key)!)"
-                  :title="column.title"
-                  :center="meColumnOf(column.key)?.filterCenter"
-                  :options="colFilterOptions(meColumnOf(column.key)!)"
-                  :model-value="colFilters[String(column.key)] ?? []"
-                  @update:model-value="updateColFilter(String(column.key), $event)" />
-                <el-tooltip
-                  v-else-if="column.headerTip"
-                  :content="column.headerTip"
-                  placement="top">
-                  <span>{{ column.title }}</span>
-                </el-tooltip>
-                <span v-else>{{ column.title }}</span>
-              </slot>
+              <template v-for="col in [meColumnOf(column.key)]" :key="String(column.key)">
+                <el-checkbox
+                  v-if="col?.selection"
+                  :model-value="isAllSelected"
+                  :indeterminate="isSomeSelected"
+                  @change="(v: boolean) => toggleSelectAll(v)" />
+                <slot v-else :name="`header-${String(column.key)}`" :column="col">
+                  <!-- 三者互斥：有筛选只渲染筛选面板（含标题），否则回退标题（可选 headerTip） -->
+                  <me-column-filter
+                    v-if="col && colFilterable(col)"
+                    :title="column.title"
+                    :center="col.filterCenter"
+                    :options="colFilterOptions(col)"
+                    :model-value="colFilters[String(column.key)] ?? []"
+                    @update:model-value="updateColFilter(String(column.key), $event)" />
+                  <el-tooltip
+                    v-else-if="column.headerTip"
+                    :content="column.headerTip"
+                    placement="top">
+                    <span>{{ column.title }}</span>
+                  </el-tooltip>
+                  <span v-else>{{ column.title }}</span>
+                </slot>
+              </template>
             </template>
             <!-- 空态描述可定制（未传时用 EP 默认 ElEmpty 文案）；总数与右区（#footer 插槽主动作 + 导出）进表格自带 #footer（固定行，高度从主体扣除） -->
             <template #empty>

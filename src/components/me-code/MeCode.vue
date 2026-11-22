@@ -47,6 +47,7 @@ import {
 import { detectCodeMode } from '@/utils/codec/detect-code-mode'
 import { redisHighlighting, redisLang } from '@/utils/redis/redis-lang'
 
+import MeCodeMenuRow from './MeCodeMenuRow.vue'
 import MeCodeSubmenu from './MeCodeSubmenu.vue'
 // #endregion
 
@@ -572,74 +573,47 @@ watch(
       :hide-on-click="false"
       @handle-command="onMenuCommand">
       <el-dropdown-item v-if="runOnModEnter" command="run">
-        <span class="me-code-menu-row">
-          <me-icon class="me-code-menu-label" icon="el-icon-video-play" :name="t('meCode.run')" />
-          <span class="me-code-menu-key">{{ menuKeys.run }}</span>
-        </span>
+        <MeCodeMenuRow icon="el-icon-video-play" :name="t('meCode.run')" :shortcut="menuKeys.run" />
       </el-dropdown-item>
       <el-dropdown-item v-if="menuHasSelection && !readOnly" command="cut">
-        <span class="me-code-menu-row">
-          <me-icon class="me-code-menu-label" icon="el-icon-scissor" :name="t('cut')" />
-          <span class="me-code-menu-key">{{ menuKeys.cut }}</span>
-        </span>
+        <MeCodeMenuRow icon="el-icon-scissor" :name="t('cut')" :shortcut="menuKeys.cut" />
       </el-dropdown-item>
       <el-dropdown-item v-if="menuHasSelection" command="copy">
-        <span class="me-code-menu-row">
-          <me-icon class="me-code-menu-label" icon="el-icon-document-copy" :name="t('copy')" />
-          <span class="me-code-menu-key">{{ menuKeys.copy }}</span>
-        </span>
+        <MeCodeMenuRow icon="el-icon-document-copy" :name="t('copy')" :shortcut="menuKeys.copy" />
       </el-dropdown-item>
       <el-dropdown-item v-if="!readOnly" command="paste">
-        <span class="me-code-menu-row">
-          <me-icon class="me-code-menu-label" icon="el-icon-document-add" :name="t('paste')" />
-          <span class="me-code-menu-key">{{ menuKeys.paste }}</span>
-        </span>
+        <MeCodeMenuRow icon="el-icon-document-add" :name="t('paste')" :shortcut="menuKeys.paste" />
       </el-dropdown-item>
       <el-dropdown-item command="fullscreen" :divided="menuHasSelection || !readOnly">
-        <span class="me-code-menu-row">
-          <me-icon
-            class="me-code-menu-label"
-            icon="me-icon-window-maximize"
-            :name="t('meCode.fullscreen')" />
-          <span class="me-code-menu-key">{{ menuKeys.fullscreen }}</span>
-        </span>
+        <MeCodeMenuRow
+          icon="me-icon-window-maximize"
+          :name="t('meCode.fullscreen')"
+          :shortcut="menuKeys.fullscreen" />
       </el-dropdown-item>
       <el-dropdown-item command="lineNumbers">
-        <span class="me-code-menu-row">
-          <me-icon
-            class="me-code-menu-label"
-            icon="me-icon-line-number"
-            :name="t('meCode.lineNumbers')" />
-          <span class="me-code-menu-key">{{ menuKeys.lineNumbers }}</span>
-        </span>
+        <MeCodeMenuRow
+          icon="me-icon-line-number"
+          :name="t('meCode.lineNumbers')"
+          :shortcut="menuKeys.lineNumbers" />
       </el-dropdown-item>
       <el-dropdown-item command="lineWrap">
-        <span class="me-code-menu-row">
-          <me-icon
-            class="me-code-menu-label"
-            icon="me-icon-line-wrap"
-            :name="t('meCode.lineWrap')" />
-          <span class="me-code-menu-key">{{ menuKeys.lineWrap }}</span>
-        </span>
+        <MeCodeMenuRow
+          icon="me-icon-line-wrap"
+          :name="t('meCode.lineWrap')"
+          :shortcut="menuKeys.lineWrap" />
       </el-dropdown-item>
       <MeCodeSubmenu keep-open icon="me-icon-font-size" :title="fontTitle" @command="onMenuCommand">
         <el-dropdown-item command="font+" :disabled="fontSizePx >= ME_CODE_FONT_MAX">
-          <span class="me-code-menu-row">
-            <me-icon
-              class="me-code-menu-label"
-              icon="el-icon-zoom-in"
-              :name="t('meCode.fontIncrease')" />
-            <span class="me-code-menu-key">{{ menuKeys.fontIncrease }}</span>
-          </span>
+          <MeCodeMenuRow
+            icon="el-icon-zoom-in"
+            :name="t('meCode.fontIncrease')"
+            :shortcut="menuKeys.fontIncrease" />
         </el-dropdown-item>
         <el-dropdown-item command="font-" :disabled="fontSizePx <= ME_CODE_FONT_MIN">
-          <span class="me-code-menu-row">
-            <me-icon
-              class="me-code-menu-label"
-              icon="el-icon-zoom-out"
-              :name="t('meCode.fontDecrease')" />
-            <span class="me-code-menu-key">{{ menuKeys.fontDecrease }}</span>
-          </span>
+          <MeCodeMenuRow
+            icon="el-icon-zoom-out"
+            :name="t('meCode.fontDecrease')"
+            :shortcut="menuKeys.fontDecrease" />
         </el-dropdown-item>
       </MeCodeSubmenu>
       <MeCodeSubmenu
@@ -669,10 +643,7 @@ watch(
         </el-dropdown-item>
       </MeCodeSubmenu>
       <el-dropdown-item command="find">
-        <span class="me-code-menu-row">
-          <me-icon class="me-code-menu-label" icon="me-icon-search" :name="t('meCode.find')" />
-          <span class="me-code-menu-key">{{ menuKeys.find }}</span>
-        </span>
+        <MeCodeMenuRow icon="me-icon-search" :name="t('meCode.find')" :shortcut="menuKeys.find" />
       </el-dropdown-item>
     </me-context>
   </div>

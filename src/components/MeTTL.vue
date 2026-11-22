@@ -4,6 +4,7 @@ import { useIntervalFn, useNow } from '@vueuse/core'
 import { computed, nextTick, ref, useTemplateRef, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import MeTtlModeSelect from '@/components/MeTtlModeSelect.vue'
 import { meHumanSeconds } from '@/utils/app/util'
 import {
   formatUtcOffset,
@@ -230,13 +231,11 @@ function disabledPastDate(d: Date) {
 
     <el-input v-if="mode === 'duration'" v-model.number="amount" :disabled>
       <template #prepend>
-        <el-select v-model="modeSelect" :disabled :style="modeSelectStyle">
-          <el-option
-            v-for="opt in modeOptions"
-            :key="opt.value"
-            :label="opt.label"
-            :value="opt.value" />
-        </el-select>
+        <MeTtlModeSelect
+          v-model="modeSelect"
+          :disabled
+          :select-style="modeSelectStyle"
+          :options="modeOptions" />
       </template>
       <template #append>
         <el-select v-model="unit" :disabled :style="unitSelectStyle">
@@ -250,13 +249,11 @@ function disabledPastDate(d: Date) {
 
     <div v-else class="me-ttl-at el-input-group el-input-group--prepend">
       <div class="el-input-group__prepend">
-        <el-select v-model="modeSelect" :disabled :style="modeSelectStyle">
-          <el-option
-            v-for="opt in modeOptions"
-            :key="opt.value"
-            :label="opt.label"
-            :value="opt.value" />
-        </el-select>
+        <MeTtlModeSelect
+          v-model="modeSelect"
+          :disabled
+          :select-style="modeSelectStyle"
+          :options="modeOptions" />
       </div>
       <el-date-picker
         v-model="atDate"
@@ -298,23 +295,26 @@ function disabledPastDate(d: Date) {
   }
 }
 
-// prepend/append 里的 select：取消默认 padding，触发器撑满高度、文字垂直居中
+// prepend/append 里的 select：取消默认 padding，触发器撑满高度、文字垂直居中。
+// 模式选择抽到子组件后，选择器必须整段 :deep，wrapper 才不会被本组件的 scope id 滤掉
 :deep(.el-input-group__prepend),
 :deep(.el-input-group__append) {
   padding: 0;
+}
 
-  .el-select {
-    margin: 0;
-    height: var(--el-component-size);
-  }
+:deep(.el-input-group__prepend .el-select),
+:deep(.el-input-group__append .el-select) {
+  margin: 0;
+  height: var(--el-component-size);
+}
 
-  .el-select__wrapper {
-    min-height: var(--el-component-size);
-    height: var(--el-component-size);
-    box-shadow: none;
-    background-color: transparent;
-    padding: 0 11px;
-  }
+:deep(.el-input-group__prepend .el-select__wrapper),
+:deep(.el-input-group__append .el-select__wrapper) {
+  min-height: var(--el-component-size);
+  height: var(--el-component-size);
+  box-shadow: none;
+  background-color: transparent;
+  padding: 0 11px;
 }
 
 :deep(.el-date-editor.is-error .el-input__wrapper) {
