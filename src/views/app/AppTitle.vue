@@ -59,7 +59,7 @@ const effectiveTheme = computed(() =>
 )
 // 浅色太阳、深色月亮，表示当前主题
 const themeIcon = computed(() =>
-  effectiveTheme.value === 'dark' ? 'el-icon-moon' : 'el-icon-sunny',
+  effectiveTheme.value === 'dark' ? 'me-icon-moon' : 'el-icon-sunny',
 )
 
 // 在浅色 / 深色之间切换（跟随系统时按当前生效主题取反，并写成显式主题）
