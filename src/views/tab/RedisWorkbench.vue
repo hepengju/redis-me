@@ -388,7 +388,7 @@ function openDoc(key: string) {
             v-for="tab in session.tabs"
             :key="tab.id"
             :class="{ 'is-current': tab.id === session.activeId }"
-            :type="tab.error ? 'warning' : 'success'"
+            :type="tab.error ? 'danger' : 'success'"
             :effect="tab.id === session.activeId ? 'light' : 'plain'"
             closable
             @click="selectTab(tab.id)"
@@ -628,8 +628,10 @@ function openDoc(key: string) {
     --el-tag-border-color: var(--el-color-success-light-5);
   }
 
-  :deep(.el-tag.is-current.el-tag--warning) {
-    --el-tag-border-color: var(--el-color-warning-light-5);
+  /* 出错标签用点线红框，和下方回显区 is-decode-error 一致 */
+  :deep(.el-tag.el-tag--danger) {
+    border-style: dotted;
+    --el-tag-border-color: var(--el-color-danger);
   }
 
   :deep(.el-tag__content) {
