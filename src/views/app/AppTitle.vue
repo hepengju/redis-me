@@ -117,7 +117,7 @@ const toggleName = () => {
           >{{ t('setting.update') }}</me-button
         >
       </div>
-      <!-- 功能图标各占 32px 方块并紧挨成组，与窗口按钮之间留出空隙 -->
+      <!-- 功能图标各占 32px 方块并紧挨成组，右侧与窗口按钮背景贴齐 -->
       <div class="title-actions">
         <!-- 只读/可写 -->
         <me-icon
@@ -160,7 +160,7 @@ const toggleName = () => {
           :name="t('setting.title')"
           hint
           placement="bottom"
-          :style="{ marginRight: isMacOS ? '15px' : '-5px' }"
+          :style="isMacOS ? { marginRight: '15px' } : undefined"
           @click="bus.emit(OPEN_SETTING)" />
       </div>
       <div class="title-buttons" v-if="!isMacOS">
@@ -199,11 +199,12 @@ const toggleName = () => {
     gap: 10px;
   }
 
-  /* 窗口按钮拉满标题栏高度，悬停背景与标题栏上下对齐 */
+  /* 窗口按钮拉满标题栏高度，悬停背景与标题栏上下对齐；负边距抵消 gap，与设置图标贴齐 */
   .title-buttons {
     display: flex;
     align-self: stretch;
     height: 100%;
+    margin-left: -10px;
     font-size: 12px;
   }
 
