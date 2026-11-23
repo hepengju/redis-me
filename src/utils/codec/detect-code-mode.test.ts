@@ -38,6 +38,18 @@ describe('detectCodeMode', () => {
     expect(detectCodeMode('[warn] something happened')).toBe('json')
   })
 
+  it('INFO：成片 key:value（冒号后无空格）判 properties，不被 # 段头当成 markdown', () => {
+    expect(
+      detectCodeMode(
+        '# Server\nredis_version:8.0.0\nredis_mode:standalone\n\n# Clients\nconnected_clients:1\n',
+      ),
+    ).toBe('properties')
+    // 单行链接不是 properties
+    expect(detectCodeMode('see https://a.com\nand https://b.com\n')).toBe('text')
+    expect(detectCodeMode('OK')).toBe('text')
+    expect(detectCodeMode('field1\nvalue1\nfield2\nvalue2')).toBe('text')
+  })
+
   it('纯文本与空内容落到 text', () => {
     expect(detectCodeMode('')).toBe('text')
     expect(detectCodeMode('   \n  ')).toBe('text')

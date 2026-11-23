@@ -1,11 +1,13 @@
 /**
  * 值区展示语法简易推断（wire 解码之后的纯文本层，与 detect-view-format 的编解码识别互补）。
  * 只做轻量特征判断，不做完整解析：误判代价仅是配色风格不同，可接受。
- * 优先级：INI → JSON / XML → YAML / Markdown（按命中行数计分，同分偏向 YAML）→ 纯文本。
+ * 优先级：INI → JSON / XML → INFO·properties → YAML / Markdown（按命中行数计分，同分偏向 YAML）→ 纯文本。
  * - INI：首行 `[section]` 且存在 `key=value` 行（抢在 json 的 `[` 起始规则前，否则配置片段会被误判 json）。
  * - JSON：去空白后以 { 或 [ 开头即判（不要求尾部配对，半截/解码失败的值也维持 json 上色）。
  *   方括号开头的日志文本属已知误判，代价仅是颜色不对，换取规则简单。
  * - XML：起始 `<` 即判（报文/配置片段特征极强，几乎无误判面；legacy-modes 有现成 xml 模式）。
+ * - INFO / properties：成片 `key:value`（冒号后紧接值）。YAML 要求冒号后有空格，故不抢；
+ *   须先于 Markdown，否则 INFO 的 `# Server` 段头会被当成标题。
  * - YAML：`---` 文档头，或成片的 `key:` / `- ` 行。
  * - Markdown：# 标题、``` 围栏、[a](b) 链接、**加粗** 等明显特征；纯文本误判成
  *   markdown 只是部分字符着色，观感仍优于整片单色。
@@ -20,6 +22,8 @@ const YAML_LINE_RES = [YAML_KEY_RE, /^\s*-\s+[\w"']/]
 /** INI：段头 `[name]` 独占一行；`key=value` 行用于与方括号开头的日志文本区分 */
 const INI_SECTION_RE = /^\[[\w .-]+\]$/
 const INI_KV_RE = /^\s*[\w.$-]+\s*=/
+/** INFO / Java properties：整行 `key:value`，冒号后无空格。排除 `https://` 这种单行链接 */
+const PROPS_KV_RE = /^\s*(?!https?:)[\w.$-]+:\S/
 /** markdown 特征：标题 / 围栏 / 列表 / 引用 / 加粗 / 链接 / 分隔线 */
 const MD_LINE_RES: RegExp[] = [
   /^#{1,6}\s+\S/,
@@ -57,6 +61,8 @@ export function detectCodeMode(text: string): CodeMode {
   if (trimmed[0] === '<') return 'xml'
 
   const head = lines.slice(0, 200).join('\n')
+  // 至少 3 行才定形，避免一两行 `key:value` 把普通说明带跑
+  if (countMatches(head, [PROPS_KV_RE], 3) >= 3) return 'properties'
   const yamlScore =
     (YAML_DOC_START_RE.test(lines[0]) ? 2 : 0) + countMatches(head, YAML_LINE_RES, 3)
   const mdScore = countMatches(head, MD_LINE_RES, 3)

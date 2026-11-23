@@ -434,12 +434,13 @@ function openDoc(key: string) {
       </div>
       <div v-else class="wb-pane">
         <div class="wb-fill">
+          <!-- 回显已是 CLI 文本，没有原始字节可做编码识别。按内容特征推断 json/yaml/xml 等 -->
           <me-code
             v-if="activeTab.view !== 'table'"
             :key="activeTab.id"
             class="wb-result"
             :model-value="activeTab.text"
-            mode="text"
+            mode="auto"
             read-only
             :error="activeTab.error" />
           <me-table
