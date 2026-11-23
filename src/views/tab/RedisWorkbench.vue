@@ -365,7 +365,11 @@ function openDoc(key: string) {
         @run="run()" />
       <!-- 与终端一样：浮在输入区右上角。只在集群出现。 -->
       <div v-if="share.conn?.cluster" class="wb-node me-flex">
-        <el-tooltip raw-content :content="t('redisTerminal.broadcastHint')" placement="top">
+        <el-tooltip
+          raw-content
+          :content="t('redisTerminal.broadcastHint')"
+          placement="top"
+          popper-style="max-width: 420px">
           <el-checkbox
             v-model="session.autoBroadcast"
             :label="t('redisTerminal.autoBroadcast')"

@@ -338,7 +338,11 @@ onUnmounted(() => {
 
     <!-- 集群节点 -->
     <div class="node me-flex" v-if="share.conn?.cluster">
-      <el-tooltip raw-content :content="t('redisTerminal.broadcastHint')" placement="top">
+      <el-tooltip
+        raw-content
+        :content="t('redisTerminal.broadcastHint')"
+        placement="top"
+        popper-style="max-width: 420px">
         <el-checkbox
           v-model="autoBroadcast"
           :label="t('redisTerminal.autoBroadcast')"

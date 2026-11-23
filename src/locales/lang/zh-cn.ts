@@ -1176,10 +1176,8 @@ FT.SEARCH、CLIENT LIST、FT.AGGREGATE、FT.INFO 的结果可以切成表。`,
   },
 
   redisTerminal: {
-    broadcastHint: `
-① 自动广播开启且没有选择节点时 CONFIG SET 和 SLOWLOG RESET 等命令会在所有节点执行<br>
-② 正常情况下无需指定节点，仅在查看特定节点配置等特殊场景可手动指定节点
-    `,
+    broadcastHint:
+      '<b>开启选项</b><br>未指定节点时：<br>· 带键命令（GET、SET）只打到该键所在节点<br>· INFO、DBSIZE、FLUSHDB 打到所有主节点<br>· CONFIG SET、SLOWLOG 打到所有节点<br>· CONFIG GET、CLIENT LIST 打到随机一个节点<br>指定节点后，只打那一个。<br><br><b>关闭选项</b><br>未指定节点时，全部打到随机一个主节点。<br>指定节点后，只打那一个。',
     welcome: '欢迎使用 {RedisME} 终端',
     pasteMultiTitle: '检测到多行文本',
     pasteMultiHint: '请确认作为单条命令执行，还是每行命令单独执行（共{n}条）',

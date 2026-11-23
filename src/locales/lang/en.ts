@@ -1198,10 +1198,8 @@ FT.SEARCH, CLIENT LIST, FT.AGGREGATE and FT.INFO can be shown as a table.`,
   },
 
   redisTerminal: {
-    broadcastHint: `
-① When automatic broadcasting is enabled and no node is selected, commands such as CONFIG SET will be executed on all nodes<br>
-② Usually there is no need to specify a node. Manual node specification is only required in special scenarios such as viewing the configuration of a specific node
-    `,
+    broadcastHint:
+      '<b>Option on</b><br>When no node is selected:<br>· Key commands (GET, SET) go to the node that owns the key<br>· INFO, DBSIZE, FLUSHDB go to all primary nodes<br>· CONFIG SET, SLOWLOG go to all nodes<br>· CONFIG GET, CLIENT LIST go to one random node<br>A selected node gets the command alone.<br><br><b>Option off</b><br>With no node selected, every command goes to one random primary.<br>A selected node gets the command alone.',
     welcome: 'Welcome to {RedisME} Terminal',
     pasteMultiTitle: 'Multiple lines detected',
     pasteMultiHint: 'Run as one command, or run each line ({n} in total)',
