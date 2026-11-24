@@ -945,7 +945,7 @@ const latencyMastersTip = computed(() => {
 
   <me-dialog
     v-model="dialog.config"
-    icon="el-icon-wallet"
+    icon="el-icon-set-up"
     :title="t('redisInfo.runConfig')"
     width="80vw"
     :close-on-press-escape="false"

@@ -37,7 +37,7 @@ const RESET_COMMAND = 'reset-tabs'
 
 /** 页签注册表：键值/信息不 lazy（切连接后立即要可见），其余首次进入再挂载 */
 const TAB_META: Record<TabName, { icon: string; component: Component; lazy?: boolean }> = {
-  info: { icon: 'el-icon-calendar', component: RedisInfo },
+  info: { icon: 'el-icon-info-filled', component: RedisInfo },
   value: { icon: 'el-icon-memo', component: RedisValue },
   terminal: { icon: 'me-icon-terminal', component: RedisTerminal, lazy: true },
   memory: { icon: 'me-icon-memory', component: RedisMemory, lazy: true },
@@ -45,12 +45,12 @@ const TAB_META: Record<TabName, { icon: string; component: Component; lazy?: boo
   pubsub: { icon: 'me-icon-pubsub', component: RedisPubsub, lazy: true },
   chart: { icon: 'el-icon-data-line', component: RedisChart, lazy: true },
   acl: { icon: 'el-icon-user', component: RedisACL, lazy: true },
-  config: { icon: 'el-icon-wallet', component: RedisConfig, lazy: true },
+  config: { icon: 'el-icon-set-up', component: RedisConfig, lazy: true },
   search: { icon: 'el-icon-search', component: RedisSearch, lazy: true },
-  workbench: { icon: 'me-icon-copy-command', component: RedisWorkbench, lazy: true },
+  workbench: { icon: 'el-icon-monitor', component: RedisWorkbench, lazy: true },
   client: { icon: 'me-icon-conn', component: RedisClient, lazy: true },
   notify: { icon: 'el-icon-bell', component: RedisNotify, lazy: true },
-  monitor: { icon: 'el-icon-monitor', component: RedisMonitor, lazy: true },
+  monitor: { icon: 'me-icon-copy-command', component: RedisMonitor, lazy: true },
 }
 
 /** 可用性：极简模式只留键值/终端/工作台；其余按 INFO / ACL / RediSearch / MEMORY USAGE 能力位 */
