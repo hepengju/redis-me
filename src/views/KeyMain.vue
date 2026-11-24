@@ -2059,7 +2059,7 @@ async function searchKeysAll(): Promise<void> {
               <el-dropdown-item command="toggleKeySort" v-if="keyShowTree">
                 <me-icon
                   :name="sortByCount ? t('keyMain.sortByAlphabet') : t('keyMain.sortByCount')"
-                  icon="me-icon-alphabet"></me-icon>
+                  :icon="sortByCount ? 'me-icon-alphabet' : 'me-icon-rank'"></me-icon>
               </el-dropdown-item>
               <el-dropdown-item
                 v-if="favoriteMode && hasAnyFavorite"

@@ -203,7 +203,7 @@ const clientColumns = computed<MeColumn<RedisClientListRow>[]>(() => [
             <me-icon
               v-if="canEdit"
               :info="t('redisClient.killClientHint')"
-              icon="el-icon-CircleCloseFilled"
+              icon="me-icon-conn-close"
               class="icon-btn"
               @click="killClient(row)" />
           </div>

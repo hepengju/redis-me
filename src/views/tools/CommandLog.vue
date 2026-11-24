@@ -397,7 +397,7 @@ function clearLogs() {
     @closed="onDialogClosed">
     <template #header>
       <div class="me-flex" style="align-items: flex-end; gap: 12px">
-        <me-icon class="command-log-title" icon="el-icon-document" :name="t('commandLog.title')" />
+        <me-icon class="command-log-title" icon="me-icon-log" :name="t('commandLog.title')" />
         <span class="command-log-description">{{ t('commandLog.description') }}</span>
       </div>
     </template>

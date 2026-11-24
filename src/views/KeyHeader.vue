@@ -135,7 +135,7 @@ async function handleCommand(command: string): Promise<void> {
               <me-icon :name="t('keyHeader.closeConn')" icon="el-icon-circle-close" />
             </el-dropdown-item>
             <el-dropdown-item command="commandLog">
-              <me-icon :name="t('keyHeader.commandLog')" icon="el-icon-document" />
+              <me-icon :name="t('keyHeader.commandLog')" icon="me-icon-log" />
             </el-dropdown-item>
           </template>
 

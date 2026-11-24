@@ -901,7 +901,7 @@ watch(
             :class="{ 'is-hidden': allSlavesHidden }"
             text
             type="info"
-            icon="el-icon-moon"
+            icon="me-icon-moon"
             placement="left"
             @click="toggleGroup(slaveLegend)">
             <template #content>
