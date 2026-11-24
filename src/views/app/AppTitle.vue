@@ -153,14 +153,14 @@ const toggleName = () => {
           hint
           placement="bottom"
           @click="openGithub" />
-        <!-- 设置：弹窗挂在 KeyHeader，兄弟组件间经 bus 通知打开。macOS 无窗口按钮，右侧 13px 与内容区右缘对齐（主区域 8px + 页面 5px） -->
+        <!-- 设置：弹窗挂在 KeyHeader，兄弟组件间经 bus 通知打开。macOS 无窗口按钮，右侧 8px 与页签「更多」等图标字形对齐（内容右缘 8+5=13，再减设置热区比更多宽出的 (32-22)/2） -->
         <me-icon
           class="action-icon"
           icon="el-icon-setting"
           :name="t('setting.title')"
           hint
           placement="bottom"
-          :style="isMacOS ? { marginRight: '13px' } : undefined"
+          :style="isMacOS ? { marginRight: '8px' } : undefined"
           @click="bus.emit(OPEN_SETTING)" />
       </div>
       <div class="title-buttons" v-if="!isMacOS">
