@@ -42,7 +42,7 @@ const props = withDefaults(
     to: DocTopic
     // 命令名（如 ACL CAT），拼到 to 对应路径后：acl-cat/
     command?: string
-    // 有值时用 el-link 展示文案，否则用外链图标
+    // 有值时用 el-link 展示文案，否则用浏览器图标（点击后在浏览器打开官网）
     label?: string
     placement?: string
     marginLeft?: string
@@ -99,7 +99,7 @@ const sites = computed(() => {
 <template>
   <el-dropdown @command="handleCommand" trigger="hover" :placement :style="{ marginLeft }">
     <el-link v-if="label" type="primary" :underline="false">{{ label }}</el-link>
-    <me-icon v-else class="icon-btn me-website-icon" icon="me-icon-link" />
+    <me-icon v-else class="icon-btn me-website-icon" icon="me-icon-website" />
     <template #dropdown>
       <el-dropdown-menu>
         <el-dropdown-item v-for="site in sites" :key="site.cmd" :command="site.cmd">
@@ -112,6 +112,6 @@ const sites = computed(() => {
 
 <style scoped lang="scss">
 .me-website-icon {
-  font-size: 14px;
+  font-size: 16px;
 }
 </style>
