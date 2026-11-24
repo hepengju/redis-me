@@ -556,6 +556,9 @@ const cmdstatScopeLabel = computed(() =>
   cmdstatScope.value === 'masters' ? t('redisInfo.commandProfileScopeMasters') : currentNodeLabel(),
 )
 
+/** 原文弹窗标题旁的节点：集群带短标签，如 M1 10.0.0.1:7000 */
+const rawNodeLabel = computed(() => currentNodeLabel())
+
 const latencyScopeLabel = computed(() =>
   latencyScope.value === 'masters' ? t('redisInfo.latencyScopeMasters') : currentNodeLabel(),
 )
@@ -776,7 +779,7 @@ const latencyMastersTip = computed(() => {
                   </me-overflow-text>
                 </div>
               </template>
-              <!-- 拓扑、命令统计、延迟分位：紧挨更多菜单 -->
+              <!-- 拓扑在最左；官网、原文、命令统计、延迟分位紧挨更多菜单。原文是当前选中节点 -->
               <template #footer>
                 <me-icon
                   class="icon-btn info-footer-icon"
@@ -785,6 +788,14 @@ const latencyMastersTip = computed(() => {
                   hint
                   placement="top"
                   @click="dialog.topology = true" />
+                <me-website to="info" />
+                <me-icon
+                  class="icon-btn info-footer-icon"
+                  icon="el-icon-document"
+                  :name="t('redisInfo.rawInfo')"
+                  hint
+                  placement="top"
+                  @click="dialog.raw = true" />
                 <me-icon
                   class="icon-btn info-footer-icon"
                   icon="el-icon-data-analysis"
@@ -846,9 +857,8 @@ const latencyMastersTip = computed(() => {
                 :keyword="keyword"
                 :columns="infoColumns"
                 export-name="info">
-                <!-- 官网在左，原文、命令统计、延迟分位紧挨更多菜单 -->
+                <!-- 哨兵拓扑在最左；官网、原文、命令统计、延迟分位紧挨更多菜单 -->
                 <template #footer>
-                  <me-website to="info" />
                   <me-icon
                     v-if="isSentinel"
                     class="icon-btn info-footer-icon"
@@ -857,9 +867,10 @@ const latencyMastersTip = computed(() => {
                     hint
                     placement="top"
                     @click="dialog.topology = true" />
+                  <me-website to="info" />
                   <me-icon
                     class="icon-btn info-footer-icon"
-                    icon="el-icon-tickets"
+                    icon="el-icon-document"
                     :name="t('redisInfo.rawInfo')"
                     hint
                     placement="top"
@@ -888,7 +899,10 @@ const latencyMastersTip = computed(() => {
   </div>
 
   <!-- 本域弹窗：原文 / 命令统计 / 延迟分位 / Client / ACL / Config -->
-  <me-dialog v-model="dialog.raw" icon="el-icon-tickets" title="Info" width="60vw">
+  <me-dialog v-model="dialog.raw" icon="el-icon-document" title="Info" width="60vw">
+    <template v-if="rawNodeLabel" #title-extra>
+      <el-text type="info" class="cmdstat-scope">{{ rawNodeLabel }}</el-text>
+    </template>
     <!-- 单向绑定：弹窗里改字不写回，关掉即丢 -->
     <me-code :modelValue="raw" mode="properties" />
   </me-dialog>
