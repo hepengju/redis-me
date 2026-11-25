@@ -8,10 +8,11 @@ const { t } = useI18n()
 
 const share = inject(shareProvideKey)!
 const node = defineModel<string>()
+const emit = defineEmits<{ change: [value: string] }>()
 
 const props = withDefaults(
   defineProps<{
-    /** 集群模式下默认选中第一个 master（nodeList 异步就绪后也会补设） */
+    /** 集群模式下默认选中第一个 master（nodeList 异步就绪后也会补设，并抛 change 让调用方重拉数据） */
     initNode?: boolean
   }>(),
   { initNode: false },
@@ -20,7 +21,9 @@ const props = withDefaults(
 function tryInitNode() {
   if (!props.initNode || node.value) return
   const master = share.nodeList.find(item => item.isMaster)
-  if (master?.node) node.value = master.node
+  if (!master?.node) return
+  node.value = master.node
+  emit('change', master.node)
 }
 
 /** 选中态与下拉项文案一致：host:port | M1 */
@@ -36,7 +39,8 @@ watch(() => share.nodeList, tryInitNode, { immediate: true })
     v-if="share.conn?.cluster"
     v-model="node"
     class="me-node-list"
-    :placeholder="t('nodeList.placeholder')">
+    :placeholder="t('nodeList.placeholder')"
+    @change="(value: string) => emit('change', value)">
     <!-- 终端/配置/慢日志/监控/客户端/信息：选具体节点 -->
     <el-option
       v-for="item in share.nodeList"

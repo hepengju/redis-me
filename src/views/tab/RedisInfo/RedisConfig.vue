@@ -9,7 +9,6 @@ import NodeList from '@/components/MeNodeList.vue'
 import { configTip as tips, redisConfDict, valkeyConfDict } from '@/locales/config'
 import { shareProvideKey } from '@/types/me-interface'
 import { meCopy, meCommands, meOk } from '@/utils/app/util'
-import { enrichNodeList } from '@/utils/redis/redis-display'
 import { pickVersionAtOrBelow, sortVersionsDesc } from '@/utils/redis/redis-version'
 // #endregion
 
@@ -176,17 +175,6 @@ watch(
   },
 )
 
-// 页签不传节点。集群空值看不出是哪一台，取列表第一项（M1）；列表还没装好时自己拉一次
-async function ensureClusterNode() {
-  if (!share.conn?.cluster || node.value) return
-  if (!share.nodeList.length) {
-    const raw = await meCommands.nodeList(share.conn.id)
-    share.nodeList = enrichNodeList(raw || [])
-  }
-  const first = share.nodeList[0]?.node
-  if (first) node.value = first
-}
-
 async function apiConfigGet() {
   const data = await meCommands.configGet(share.conn!.id, '*', node.value)
   dataList.value = sortBy(
@@ -198,7 +186,7 @@ async function apiConfigGet() {
 async function refresh() {
   loading.value = true
   try {
-    await ensureClusterNode()
+    // 集群页签的节点由 node-list 的 init-node 补上后再拉，避免空节点打到随机实例
     if (share.conn?.cluster && !node.value) return
     await apiConfigGet()
   } finally {
@@ -267,7 +255,7 @@ async function configRewrite() {
     <div class="me-flex header">
       <div class="header-left">
         <el-segmented v-model="showType" :options="showTypeOptions" />
-        <node-list v-model="node" @change="refresh" />
+        <node-list v-model="node" init-node @change="refresh" />
       </div>
       <div class="header-right">
         <el-select v-model="dictVersion" style="width: 120px; flex-shrink: 0">
