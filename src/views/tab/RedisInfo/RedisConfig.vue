@@ -226,17 +226,20 @@ async function configSet() {
 
 <template>
   <div class="redis-config">
+    <!-- 全部/差异始终贴左，节点紧随其后（单机不渲染）；版本与筛选靠右，避免两端对齐把左边挤开 -->
     <div class="me-flex header">
-      <node-list v-model="node" @change="refresh" />
-      <div class="me-flex" style="margin-left: 10px; min-width: 0">
-        <el-segmented v-model="showType" :options="showTypeOptions"></el-segmented>
-        <el-select v-model="dictVersion" style="width: 120px; flex-shrink: 0; margin: 0 10px">
+      <div class="header-left">
+        <el-segmented v-model="showType" :options="showTypeOptions" />
+        <node-list v-model="node" @change="refresh" />
+      </div>
+      <div class="header-right">
+        <el-select v-model="dictVersion" style="width: 120px; flex-shrink: 0">
           <el-option v-for="item in dictVersionList" :key="item" :label="item" :value="item" />
         </el-select>
         <el-input
           v-model="keyword"
           :placeholder="t('redisConfig.keyword')"
-          style="width: 250px; min-width: 0; margin-right: 10px"
+          style="width: 250px; min-width: 0"
           clearable />
         <el-button icon="el-icon-search" @click="refresh" type="primary" :loading="loading" />
       </div>
@@ -355,10 +358,27 @@ async function configSet() {
 
   .header {
     min-width: 0;
+    align-items: center;
 
     :deep(.el-input-group__prepend) {
       padding: 0 14px;
     }
+  }
+
+  .header-left,
+  .header-right {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-width: 0;
+  }
+
+  .header-left {
+    flex-shrink: 0;
+  }
+
+  .header-right {
+    margin-left: 10px;
   }
 
   .table {
