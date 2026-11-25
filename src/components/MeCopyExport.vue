@@ -50,7 +50,7 @@ async function onCommand(command: string): Promise<void> {
 </script>
 
 <template>
-  <el-dropdown :disabled="!data.length" trigger="click" :placement="placement" @command="onCommand">
+  <el-dropdown :disabled="!data.length" trigger="hover" :placement="placement" @command="onCommand">
     <slot />
     <template #dropdown>
       <el-dropdown-menu>

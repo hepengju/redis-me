@@ -227,21 +227,7 @@ async function configSet() {
 <template>
   <div class="redis-config">
     <div class="me-flex header">
-      <div>
-        <div class="me-flex">
-          <node-list v-model="node" style="margin-right: 10px" @change="refresh" />
-          <el-dropdown @command="handleCommand">
-            <el-button plain icon="el-icon-notebook">{{ t('redisConfig.reference') }}</el-button>
-            <template #dropdown>
-              <el-dropdown-menu>
-                <el-dropdown-item :command="item" v-for="item in configVersionList">{{
-                  item
-                }}</el-dropdown-item>
-              </el-dropdown-menu>
-            </template>
-          </el-dropdown>
-        </div>
-      </div>
+      <node-list v-model="node" @change="refresh" />
       <div class="me-flex" style="margin-left: 10px; min-width: 0">
         <el-segmented v-model="showType" :options="showTypeOptions"></el-segmented>
         <el-select v-model="dictVersion" style="width: 120px; flex-shrink: 0; margin: 0 10px">
@@ -273,9 +259,23 @@ async function configSet() {
             style="justify-content: center"
             @click="editConfig(row)" />
         </template>
-        <!-- 官网：紧挨合计行「更多」左侧 -->
+        <!-- 官网、参考配置紧挨合计行「更多」左侧；参考悬停列出各版本 conf -->
         <template #footer>
           <me-website to="config" />
+          <el-dropdown trigger="hover" placement="top-end" @command="handleCommand">
+            <me-icon class="icon-btn config-ref-icon" icon="el-icon-reading" />
+            <template #dropdown>
+              <!-- 标题条对齐数据编码下拉的 header：加粗正文色 + 底部分隔，无图标 -->
+              <div class="config-ref-header">
+                <el-text style="font-weight: bold">{{ t('redisConfig.referenceConfig') }}</el-text>
+              </div>
+              <el-dropdown-menu>
+                <el-dropdown-item v-for="item in configVersionList" :key="item" :command="item">
+                  {{ item }}
+                </el-dropdown-item>
+              </el-dropdown-menu>
+            </template>
+          </el-dropdown>
         </template>
       </me-table>
     </div>
@@ -375,6 +375,21 @@ async function configSet() {
     :deep(.col-tip-info) {
       color: var(--el-color-info);
     }
+
+    // 底栏参考图标与「更多」、官网对齐
+    .config-ref-icon {
+      font-size: 16px;
+    }
   }
+}
+
+// 下拉挂到 body，标题不能套在 .redis-config 里面，否则选择器对不上
+// 尺寸对齐 el-select 的 .el-select-dropdown__header
+.config-ref-header {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 10px;
+  border-bottom: 1px solid var(--el-border-color-light);
 }
 </style>

@@ -776,7 +776,7 @@ export default {
   redisConfig: {
     total: 'Total',
     noConfig: 'No Config File',
-    reference: 'Reference',
+    referenceConfig: 'Reference Config',
     keyword: 'Filter (Param / Value / Tip)',
     param: 'Param',
     value: 'Value',
