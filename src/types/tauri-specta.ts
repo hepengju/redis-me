@@ -93,6 +93,7 @@ export const commands = {
 	keyPttl: (id: string, keys: RedisKey_Deserialize[], options?: InvokeOptions) => typedError<number[], string>(__TAURI_INVOKE("key_pttl", { id, keys }, options)),
 	configGet: (id: string, pattern: string, node: string | null, options?: InvokeOptions) => typedError<{ [key in string]: string }, string>(__TAURI_INVOKE("config_get", { id, pattern, node }, options)),
 	configSet: (id: string, key: string, value: string, node: string | null, options?: InvokeOptions) => typedError<null, string>(__TAURI_INVOKE("config_set", { id, key, value, node }, options)),
+	configRewrite: (id: string, node: string | null, options?: InvokeOptions) => typedError<null, string>(__TAURI_INVOKE("config_rewrite", { id, node }, options)),
 	clientList: (id: string, node: string | null, clientType: string | null, options?: InvokeOptions) => typedError<RedisClientInfo_Serialize[], string>(__TAURI_INVOKE("client_list", { id, node, clientType }, options)),
 	publish: (id: string, channel: string, message: string, msgFmt: BytesFormat | null, options?: InvokeOptions) => typedError<null, string>(__TAURI_INVOKE("publish", { id, channel, message, msgFmt }, options)),
 	subscribe: (id: string, channel: string | null, options?: InvokeOptions) => typedError<null, string>(__TAURI_INVOKE("subscribe", { id, channel }, options)),

@@ -385,6 +385,26 @@ impl MeClient for MeCluster {
         Ok(())
     }
 
+    fn config_rewrite(&self, node: Option<String>) -> AnyResult<()> {
+        let cmd = resolve_command_name(&self.conf, "config");
+        let mut conn = self.get_conn()?;
+        if "*" == node.clone().unwrap_or_default() {
+            let route = RoutingInfo::MultiNode((
+                MultipleNodeRoutingInfo::AllNodes,
+                Some(ResponsePolicy::AllSucceeded),
+            ));
+            let mut cfg = redis::cmd(&cmd);
+            let cfg_cmd = cfg.arg("rewrite");
+            let _ = conn.route_command(cfg_cmd, route)?;
+        } else {
+            let (route, _) = self.get_node_route(node)?;
+            let mut cfg = redis::cmd(&cmd);
+            let cfg_cmd = cfg.arg("rewrite");
+            let _ = conn.route_command(cfg_cmd, route)?;
+        }
+        Ok(())
+    }
+
     fn slow_log(&self, count: Option<u64>, node: Option<String>) -> AnyResult<Vec<RedisSlowLog>> {
         let mut conn = self.get_conn()?;
         let mut logs = vec![];

@@ -9,6 +9,7 @@ import NodeList from '@/components/MeNodeList.vue'
 import { configTip as tips, redisConfDict, valkeyConfDict } from '@/locales/config'
 import { shareProvideKey } from '@/types/me-interface'
 import { meCopy, meCommands, meOk } from '@/utils/app/util'
+import { enrichNodeList } from '@/utils/redis/redis-display'
 import { pickVersionAtOrBelow, sortVersionsDesc } from '@/utils/redis/redis-version'
 // #endregion
 
@@ -34,6 +35,10 @@ const formRef = useTemplateRef('formRef')
 const editLoading = ref(false)
 const editShow = ref(false)
 const form = reactive({ param: '', value: '', autoBroadcast: true })
+const rewriteShow = ref(false)
+const rewriteLoading = ref(false)
+/** 集群写入范围：当前节点 / 全部节点。单机忽略 */
+const rewriteScope = ref<'node' | 'all'>('node')
 // #endregion
 
 // #region 计算属性
@@ -165,9 +170,22 @@ function handleCommand(command: string) {
 watch(
   () => props.initNode,
   v => {
+    if (!v || v === node.value) return
     node.value = v
+    void refresh()
   },
 )
+
+// 页签不传节点。集群空值看不出是哪一台，取列表第一项（M1）；列表还没装好时自己拉一次
+async function ensureClusterNode() {
+  if (!share.conn?.cluster || node.value) return
+  if (!share.nodeList.length) {
+    const raw = await meCommands.nodeList(share.conn.id)
+    share.nodeList = enrichNodeList(raw || [])
+  }
+  const first = share.nodeList[0]?.node
+  if (first) node.value = first
+}
 
 async function apiConfigGet() {
   const data = await meCommands.configGet(share.conn!.id, '*', node.value)
@@ -180,6 +198,8 @@ async function apiConfigGet() {
 async function refresh() {
   loading.value = true
   try {
+    await ensureClusterNode()
+    if (share.conn?.cluster && !node.value) return
     await apiConfigGet()
   } finally {
     loading.value = false
@@ -221,6 +241,23 @@ async function configSet() {
     }
   })
 }
+
+function openRewrite() {
+  rewriteScope.value = 'node'
+  rewriteShow.value = true
+}
+
+async function configRewrite() {
+  rewriteLoading.value = true
+  try {
+    const target = share.conn?.cluster && rewriteScope.value === 'all' ? '*' : node.value
+    await meCommands.configRewrite(share.conn!.id, target || null)
+    meOk(t('redisConfig.rewriteOk'))
+    rewriteShow.value = false
+  } finally {
+    rewriteLoading.value = false
+  }
+}
 // #endregion
 </script>
 
@@ -241,7 +278,6 @@ async function configSet() {
           :placeholder="t('redisConfig.keyword')"
           style="width: 250px; min-width: 0"
           clearable />
-        <el-button icon="el-icon-search" @click="refresh" type="primary" :loading="loading" />
       </div>
     </div>
 
@@ -262,11 +298,26 @@ async function configSet() {
             style="justify-content: center"
             @click="editConfig(row)" />
         </template>
-        <!-- 官网、参考配置紧挨合计行「更多」左侧；参考悬停列出各版本 conf -->
+        <!-- 官网、刷新、写入在左；参考配置紧挨「更多」左侧 -->
         <template #footer>
           <me-website to="config" />
+          <me-icon
+            class="icon-btn config-footer-icon"
+            icon="el-icon-refresh"
+            :name="t('refresh')"
+            hint
+            placement="top"
+            @click="refresh" />
+          <me-icon
+            v-if="canEdit"
+            class="icon-btn config-footer-icon"
+            icon="el-icon-document-checked"
+            :name="t('redisConfig.rewrite')"
+            hint
+            placement="top"
+            @click="openRewrite" />
           <el-dropdown trigger="hover" placement="top-end" @command="handleCommand">
-            <me-icon class="icon-btn config-ref-icon" icon="el-icon-reading" />
+            <me-icon class="icon-btn config-footer-icon" icon="el-icon-reading" />
             <template #dropdown>
               <!-- 标题条对齐数据编码下拉的 header：加粗正文色 + 底部分隔，无图标 -->
               <div class="config-ref-header">
@@ -292,12 +343,13 @@ async function configSet() {
       <me-code :modelValue="configRaw" mode="properties" />
     </me-dialog>
 
-    <el-dialog
-      :title="t('redisConfig.configSet')"
-      v-model="editShow"
-      align-center
-      width="480px"
-      draggable>
+    <el-dialog v-model="editShow" align-center width="480px" draggable>
+      <template #header>
+        <div class="edit-dialog-header">
+          <span class="el-dialog__title">{{ t('redisConfig.configSet') }}</span>
+          <el-text type="info" size="small">{{ t('redisConfig.runtimeOnly') }}</el-text>
+        </div>
+      </template>
       <el-form ref="formRef" :model="form" :rules="rules" label-width="80px">
         <el-form-item :label="t('redisConfig.param')">
           <el-input v-model="form.param" disabled />
@@ -340,6 +392,29 @@ async function configSet() {
             <el-button @click="editShow = false">{{ t('cancel') }}</el-button>
             <el-button type="primary" :loading="editLoading" @click="configSet">{{
               t('save')
+            }}</el-button>
+          </div>
+        </div>
+      </template>
+    </el-dialog>
+
+    <el-dialog
+      :title="t('redisConfig.rewrite')"
+      v-model="rewriteShow"
+      align-center
+      width="440px"
+      draggable>
+      <el-text>{{ t('redisConfig.rewriteTip') }}</el-text>
+      <el-radio-group v-if="share.conn?.cluster" v-model="rewriteScope" class="rewrite-scope">
+        <el-radio value="node">{{ t('redisConfig.rewriteNode') }}</el-radio>
+        <el-radio value="all">{{ t('redisConfig.rewriteAll') }}</el-radio>
+      </el-radio-group>
+      <template #footer>
+        <div class="me-dialog-footer">
+          <div class="footer-btns">
+            <el-button @click="rewriteShow = false">{{ t('cancel') }}</el-button>
+            <el-button type="primary" :loading="rewriteLoading" @click="configRewrite">{{
+              t('ok')
             }}</el-button>
           </div>
         </div>
@@ -396,8 +471,8 @@ async function configSet() {
       color: var(--el-color-info);
     }
 
-    // 底栏参考图标与「更多」、官网对齐
-    .config-ref-icon {
+    // 底栏图标与「更多」、官网对齐
+    .config-footer-icon {
       font-size: 16px;
     }
   }
@@ -405,6 +480,20 @@ async function configSet() {
 
 // 下拉挂到 body，标题不能套在 .redis-config 里面，否则选择器对不上
 // 尺寸对齐 el-select 的 .el-select-dropdown__header
+// 修改弹框挂到 body，标题行同样不能套在 .redis-config 里面
+.rewrite-scope {
+  display: flex;
+  margin-top: 12px;
+}
+
+.edit-dialog-header {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  min-width: 0;
+  padding-right: 28px;
+}
+
 .config-ref-header {
   display: flex;
   align-items: center;

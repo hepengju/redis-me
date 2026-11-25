@@ -109,6 +109,8 @@ pub trait MeClient: Send + Sync {
     // 配置与诊断
     fn config_get(&self, pattern: &str, node: Option<String>) -> AnyResult<HashMap<String, String>>;
     fn config_set(&self, key: &str, value: &str, node: Option<String>) -> AnyResult<()>;
+    /// 把当前运行配置写回配置文件（CONFIG REWRITE）。`node` 为 `*` 时集群写全部节点。
+    fn config_rewrite(&self, node: Option<String>) -> AnyResult<()>;
     fn slow_log(&self, count: Option<u64>, node: Option<String>) -> AnyResult<Vec<RedisSlowLog>>;
     fn memory_usage_keys(&self, keys: &[RedisKey], size_limit: u64, need_key_type: bool) -> AnyResult<Vec<RedisKeySize>>;
     fn client_list(&self, node: Option<String>, client_type: Option<String>) -> AnyResult<Vec<RedisClientInfo>>;

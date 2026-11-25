@@ -62,6 +62,7 @@ api_commands!(
     workbench_exec(param: RedisCommand) -> WorkbenchExec;         // 工作台：文本 + 点名命令的表
     config_get(pattern: &str, node: Option<String>) -> HashMap<String, String>; // 获取配置
     config_set(key: &str, value: &str, node: Option<String>) -> ();             // 设置配置
+    config_rewrite(node: Option<String>) -> ();                                 // 运行配置写回文件
     slow_log(count: Option<u64>, node: Option<String>) -> Vec<RedisSlowLog>;    // 慢日志
     memory_usage(param: RedisMemoryParam) -> RedisMemoryResult;                 // 内存分析（一轮）
     key_memory(keys: Vec<RedisKey>) -> Vec<Option<u64>>;                        // 键列表批量 MEMORY USAGE

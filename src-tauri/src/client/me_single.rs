@@ -254,6 +254,13 @@ impl MeClient for MeSingle {
         Ok(())
     }
 
+    fn config_rewrite(&self, _node: Option<String>) -> AnyResult<()> {
+        let cmd = resolve_command_name(&self.conf, "config");
+        let mut conn = self.get_conn()?;
+        let _: () = redis::cmd(&cmd).arg("rewrite").query(&mut conn)?;
+        Ok(())
+    }
+
     fn slow_log(&self, count: Option<u64>, _node: Option<String>) -> AnyResult<Vec<RedisSlowLog>> {
         let mut conn = self.get_conn()?;
         let mut logs = vec![];

@@ -259,6 +259,7 @@ fn tauri_specta_commands() -> Commands<tauri::Wry> {
         key_pttl,
         config_get,
         config_set,
+        config_rewrite,
         client_list,
         publish,
         subscribe,
