@@ -7,7 +7,7 @@ import { useI18n } from 'vue-i18n'
 import type { MeColumn } from '@/components/me-table/column'
 import NodeList from '@/components/MeNodeList.vue'
 import { configTip as tips, redisConfDict, valkeyConfDict } from '@/locales/config'
-import { shareProvideKey } from '@/types/me-interface'
+import { shareProvideKey, type EnrichedRedisNode } from '@/types/me-interface'
 import { meCopy, meCommands, meOk } from '@/utils/app/util'
 import { pickVersionAtOrBelow, sortVersionsDesc } from '@/utils/redis/redis-version'
 // #endregion
@@ -38,6 +38,16 @@ const rewriteShow = ref(false)
 const rewriteLoading = ref(false)
 /** 集群写入范围：当前节点 / 全部节点。单机忽略 */
 const rewriteScope = ref<'node' | 'all'>('node')
+/** 节点配置差异：null 表示该节点 CONFIG GET 没有这项（与空字符串区分） */
+interface NodeDiffRow {
+  param: string
+  values: Record<string, string | null>
+}
+const diffShow = ref(false)
+const diffLoading = ref(false)
+const diffReady = ref(false)
+const diffNodes = ref<EnrichedRedisNode[]>([])
+const diffRows = ref<NodeDiffRow[]>([])
 // #endregion
 
 // #region 计算属性
@@ -70,6 +80,20 @@ const showTypeOptions = [
   { label: t('redisConfig.diff'), value: 'Diff' },
 ]
 const showType = ref('All')
+const diffColumns = computed<MeColumn<NodeDiffRow>[]>(() => [
+  { key: 'param', prop: 'param', title: t('redisConfig.param'), minWidth: 200, fixed: 'left' },
+  ...diffNodes.value.map((item, index) => ({
+    key: `node-${index}`,
+    title: item.shortLabel,
+    headerTip: item.node,
+    minWidth: 140,
+    sortable: false,
+    formatter: (row: NodeDiffRow) => {
+      const value = row.values[item.node]
+      return value == null ? t('redisConfig.nodeDiffAbsent') : value
+    },
+  })),
+])
 // 「全部/差异」业务预筛交给 MeTable filter 谓词（页面传全量 dataList，MeTable 内部过滤）；关键词 param/value/tip 由 searchable + keyword 处理
 const diffFilter = (row: unknown): boolean => {
   if (showType.value === 'All') return true
@@ -183,6 +207,49 @@ async function apiConfigGet() {
   )
 }
 
+/** 各节点同一项取值不完全相同（含某节点没有这项）才进入差异表 */
+function buildNodeDiffRows(
+  nodes: EnrichedRedisNode[],
+  maps: Record<string, string>[],
+): NodeDiffRow[] {
+  const params = new Set<string>()
+  for (const map of maps) {
+    for (const param of Object.keys(map)) params.add(param)
+  }
+  const rows: NodeDiffRow[] = []
+  for (const param of params) {
+    const values: Record<string, string | null> = {}
+    const uniq = new Set<string | null>()
+    nodes.forEach((item, index) => {
+      const map = maps[index]
+      const value = map != null && Object.hasOwn(map, param) ? map[param] : null
+      values[item.node] = value
+      uniq.add(value)
+    })
+    if (uniq.size > 1) rows.push({ param, values })
+  }
+  return sortBy(rows, 'param')
+}
+
+async function openNodeDiff() {
+  const nodes = share.nodeList
+  if (!share.conn?.cluster || !nodes.length) return
+  diffNodes.value = nodes.map(item => ({ ...item }))
+  diffRows.value = []
+  diffReady.value = false
+  diffShow.value = true
+  diffLoading.value = true
+  try {
+    const maps = await Promise.all(
+      diffNodes.value.map(item => meCommands.configGet(share.conn!.id, '*', item.node)),
+    )
+    diffRows.value = buildNodeDiffRows(diffNodes.value, maps)
+    diffReady.value = true
+  } finally {
+    diffLoading.value = false
+  }
+}
+
 async function refresh() {
   loading.value = true
   try {
@@ -286,9 +353,8 @@ async function configRewrite() {
             style="justify-content: center"
             @click="editConfig(row)" />
         </template>
-        <!-- 官网、刷新、写入在左；参考配置紧挨「更多」左侧 -->
+        <!-- 刷新在最左；官网、节点差异、写入随后；参考配置紧挨「更多」左侧 -->
         <template #footer>
-          <me-website to="config" />
           <me-icon
             class="icon-btn config-footer-icon"
             icon="el-icon-refresh"
@@ -296,10 +362,19 @@ async function configRewrite() {
             hint
             placement="top"
             @click="refresh" />
+          <me-website to="config" />
+          <me-icon
+            v-if="share.conn?.cluster"
+            class="icon-btn config-footer-icon"
+            icon="me-icon-diff"
+            :name="t('redisConfig.nodeDiff')"
+            hint
+            placement="top"
+            @click="openNodeDiff" />
           <me-icon
             v-if="canEdit"
             class="icon-btn config-footer-icon"
-            icon="el-icon-document-checked"
+            icon="me-icon-write"
             :name="t('redisConfig.rewrite')"
             hint
             placement="top"
@@ -385,6 +460,20 @@ async function configRewrite() {
         </div>
       </template>
     </el-dialog>
+
+    <me-dialog
+      v-model="diffShow"
+      icon="me-icon-diff"
+      :title="t('redisConfig.nodeDiff')"
+      width="80vw">
+      <div class="node-diff" v-loading="diffLoading">
+        <me-table
+          :data="diffRows"
+          :columns="diffColumns"
+          export-name="node-diff"
+          :empty-text="diffReady ? t('redisConfig.nodeDiffEmpty') : ' '" />
+      </div>
+    </me-dialog>
 
     <el-dialog
       :title="t('redisConfig.rewrite')"
@@ -480,6 +569,10 @@ async function configRewrite() {
   gap: 12px;
   min-width: 0;
   padding-right: 28px;
+}
+
+.node-diff {
+  height: 100%;
 }
 
 .config-ref-header {
