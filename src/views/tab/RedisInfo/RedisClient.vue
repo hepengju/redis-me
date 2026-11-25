@@ -9,6 +9,7 @@ import { clientTip as tips } from '@/locales/client'
 import { shareProvideKey } from '@/types/me-interface'
 import type { RedisClientInfo, RedisCommand } from '@/types/tauri-specta'
 import { meConfirm, meCopy, meHumanSeconds, meCommands, meOk } from '@/utils/app/util'
+import { enrichNodeList } from '@/utils/redis/redis-display'
 // `client_list` 实际载荷字段齐全；`Required` 与 specta 在 `#[serde(default)]` 下生成的可选字段对齐
 type RedisClientListRow = Required<RedisClientInfo>
 // #endregion
@@ -33,13 +34,28 @@ const tipMap = computed(() => tips.value as Record<string, string | undefined>)
 watch(
   () => props.initNode,
   v => {
+    if (!v || v === node.value) return
     node.value = v
+    void refresh()
   },
 )
+
+// 页签不传节点。集群空值看不出是哪一台，取列表第一项（M1）；列表还没装好时自己拉一次
+async function ensureClusterNode() {
+  if (!share.conn?.cluster || node.value) return
+  if (!share.nodeList.length) {
+    const raw = await meCommands.nodeList(share.conn.id)
+    share.nodeList = enrichNodeList(raw || [])
+  }
+  const first = share.nodeList[0]?.node
+  if (first) node.value = first
+}
 
 async function refresh() {
   loading.value = true
   try {
+    await ensureClusterNode()
+    if (share.conn?.cluster && !node.value) return
     dataList.value = (await meCommands.clientList(
       share.conn!.id,
       node.value,
