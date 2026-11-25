@@ -182,7 +182,7 @@ function cellOf(row: LatencyViewRow, name: string): LatencyMaxCell | undefined {
 const columns = computed<MeColumn<LatencyViewRow>[]>(() => {
   const tip = isMasters.value ? t('redisInfo.latencyUsecTipMasters') : t('redisInfo.latencyUsecTip')
   return [
-    { key: 'command', prop: 'command', title: t('redisInfo.command') },
+    { key: 'command', prop: 'command', title: t('redisInfo.cmdName') },
     ...view.value.percentiles.map(name => ({
       key: name,
       prop: name,

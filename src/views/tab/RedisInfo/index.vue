@@ -109,7 +109,8 @@ function infoField(key: string, format: (n: number) => string): string {
   const n = parseFloat(v)
   return Number.isNaN(n) ? '--' : format(n)
 }
-const opsPerSec = computed(() => infoField('instantaneous_ops_per_sec', n => `${n}/s`))
+// 中文标签带 /s、英文用 Ops，数值都不再缀单位
+const opsPerSec = computed(() => infoField('instantaneous_ops_per_sec', n => String(n)))
 const networkInKbps = computed(() => infoField('instantaneous_input_kbps', n => n.toFixed(2)))
 const networkOutKbps = computed(() => infoField('instantaneous_output_kbps', n => n.toFixed(2)))
 const networkUnavailable = computed(
@@ -402,7 +403,7 @@ const overviewColumns = computed<MeColumn<OverviewRow>[]>(() => [
     title: t('redisInfo.command'),
     width: 90,
     align: 'right',
-    formatter: row => `${formatOps(row.ops)}/s`,
+    formatter: row => formatOps(row.ops),
   },
   {
     key: 'memory',
@@ -414,7 +415,7 @@ const overviewColumns = computed<MeColumn<OverviewRow>[]>(() => [
   },
 ])
 
-/** 底栏合计段：模板用 | 隔开。网络、内存取整，少占宽度；节点行仍保留两位小数 */
+/** 底栏合计段：模板用 | 隔开。短标签 + 网络/内存取整，默认窗口英文也能单行放下；节点行仍保留两位小数 */
 const overviewSummaryParts = computed(() => {
   const rows = overviewRows.value
   if (!rows.length) return [] as string[]
@@ -430,7 +431,7 @@ const overviewSummaryParts = computed(() => {
   return [
     `${t('redisInfo.summaryMasterKeys')} ${sum.keys}`,
     `${t('redisInfo.summaryClients')} ${sum.clients}`,
-    `${t('redisInfo.command')} ${formatOps(sum.ops)}/s`,
+    `${t('redisInfo.command')} ${formatOps(sum.ops)}`,
     `${t('redisInfo.network')} ↓ ${formatKbps(sum.netIn, 0)} ↑ ${formatKbps(sum.netOut, 0)} kb/s`,
     `${t('redisInfo.memory')} ${meHumanSize(sum.memory, '0B', 0)}`,
   ]
@@ -1024,7 +1025,7 @@ const latencyMastersTip = computed(() => {
     margin-right: 15px;
   }
 
-  // 英文标签 Commands 比中文略长，13% 会挤
+  // 三列标签占比；Ops 比旧 Commands 短，14% 留余量
   :deep(.el-descriptions__body tr:first-child > .el-descriptions__label) {
     width: 14%;
   }
@@ -1185,7 +1186,7 @@ const latencyMastersTip = computed(() => {
   // 标签与数字同一文本节点，避免分 span 后中文/数字基线错位
 
   .sum-sep {
-    margin: 0 10px;
+    margin: 0 6px;
   }
 }
 

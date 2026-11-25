@@ -878,7 +878,9 @@ export default {
     connectedClients: '连接数',
     maxClients: '限制',
     user: '用户',
-    command: '命令',
+    // instantaneous_ops_per_sec → 命令/s；命令名列表见 cmdName
+    command: '命令/s',
+    cmdName: '命令',
     network: '网络',
     maxmemoryLimit: '限制',
     maxmemoryUnlimited: '未限制',
@@ -911,7 +913,8 @@ export default {
     node: '节点',
     networkUp: '↑ kb/s',
     networkDown: '↓ kb/s',
-    summaryMasterKeys: '主节点键合计',
+    // 底栏合计：与英文同步用短标签，默认窗口宽度下尽量单行完整显示
+    summaryMasterKeys: '主节点键',
     summaryClients: '连接',
     commandProfile: '命令统计',
     commandProfileNode: '当前节点命令统计',

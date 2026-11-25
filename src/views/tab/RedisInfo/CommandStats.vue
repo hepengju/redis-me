@@ -179,7 +179,7 @@ const noteParts = computed(() => {
 
 // 不写 width：六列都是弹性列，按同样权重平分弹窗宽度
 const columns = computed<MeColumn<CommandStatRow>[]>(() => [
-  { key: 'command', prop: 'command', title: t('redisInfo.command') },
+  { key: 'command', prop: 'command', title: t('redisInfo.cmdName') },
   {
     key: 'calls',
     prop: 'calls',

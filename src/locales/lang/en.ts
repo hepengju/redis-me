@@ -890,7 +890,9 @@ export default {
     connectedClients: 'Clients',
     maxClients: 'Max',
     user: 'User',
-    command: 'Commands',
+    // instantaneous_ops_per_sec；口语常用 Ops 指吞吐，不加 /s；命令名列表见 cmdName
+    command: 'Ops',
+    cmdName: 'Command',
     network: 'Net',
     maxmemoryLimit: 'Limit',
     maxmemoryUnlimited: 'No limit',
@@ -924,7 +926,8 @@ export default {
     node: 'Node',
     networkUp: '↑ kb/s',
     networkDown: '↓ kb/s',
-    summaryMasterKeys: 'Master keys',
+    // 底栏合计：英文标签偏长，用短词避免默认窗口宽度下截断（M.Keys = 主节点键，勿写成 Masters 以免被当成节点数）
+    summaryMasterKeys: 'M.Keys',
     summaryClients: 'Clients',
     commandProfile: 'Command Stats',
     commandProfileNode: "This node's command stats",
