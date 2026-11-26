@@ -724,7 +724,7 @@ onUnmounted(() => window.removeEventListener('keydown', onEscapeKey, true))
             :info="vectorsetType ? t('redisValue.copyVector') : t('redisValue.copyValue')"
             class="icon-btn"
             style="font-size: 18px; margin-left: 5px"
-            :icon="vectorsetType ? 'el-icon-document-copy' : 'el-icon-document'"
+            icon="el-icon-document-copy"
             @click="meCopy(form.fieldValue)" />
           <me-icon
             v-if="supportsFieldRefresh"

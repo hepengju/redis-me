@@ -359,7 +359,7 @@ async function configRewrite() {
             style="justify-content: center"
             @click="editConfig(row)" />
         </template>
-        <!-- 刷新在最左；官网、节点差异、写入随后；参考配置紧挨「更多」左侧 -->
+        <!-- 刷新在最左；节点差异、写入随后；官网紧挨参考配置左侧，参考配置紧挨「更多」 -->
         <template #footer>
           <me-icon
             class="icon-btn config-footer-icon"
@@ -368,7 +368,6 @@ async function configRewrite() {
             hint
             placement="top"
             @click="refreshByButton" />
-          <me-website to="config" />
           <me-icon
             v-if="share.conn?.cluster"
             class="icon-btn config-footer-icon"
@@ -385,6 +384,7 @@ async function configRewrite() {
             hint
             placement="top"
             @click="openRewrite" />
+          <me-website to="config" />
           <el-dropdown trigger="hover" placement="top-end" @command="handleCommand">
             <me-icon class="icon-btn config-footer-icon" icon="el-icon-reading" />
             <template #dropdown>
@@ -487,7 +487,13 @@ async function configRewrite() {
       align-center
       width="440px"
       draggable>
-      <el-text>{{ t('redisConfig.rewriteTip') }}</el-text>
+      <el-text class="rewrite-tip">
+        {{ t('redisConfig.rewriteTipBefore') }}
+        <el-tag size="small" effect="plain" disable-transitions class="rewrite-cmd">
+          CONFIG REWRITE
+        </el-tag>
+        {{ t('redisConfig.rewriteTipAfter') }}
+      </el-text>
       <el-radio-group v-if="share.conn?.cluster" v-model="rewriteScope" class="rewrite-scope">
         <el-radio value="node">{{ t('redisConfig.rewriteNode') }}</el-radio>
         <el-radio value="all">{{ t('redisConfig.rewriteAll') }}</el-radio>
@@ -567,6 +573,15 @@ async function configRewrite() {
 .rewrite-scope {
   display: flex;
   margin-top: 12px;
+}
+
+.rewrite-tip {
+  line-height: 1.7;
+}
+
+.rewrite-cmd {
+  margin-left: 4px;
+  vertical-align: middle;
 }
 
 .edit-dialog-header {

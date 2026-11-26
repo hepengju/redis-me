@@ -790,8 +790,9 @@ export default {
     configSet: 'Config Set',
     runtimeOnly: 'Runtime only. Lost after restart',
     rewrite: 'Write Config',
-    rewriteTip:
-      'Runs CONFIG REWRITE to write the whole runtime config back to the config file. Comments and layout may change. Fails when the file is not writable.',
+    rewriteTipBefore: 'Runs',
+    rewriteTipAfter:
+      ' to write the whole runtime config back to the config file. Comments and layout may change. Fails when the file is not writable.',
     rewriteNode: 'This Node',
     rewriteAll: 'All Nodes',
     rewriteOk: 'Config file written',

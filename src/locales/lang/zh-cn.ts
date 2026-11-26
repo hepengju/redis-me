@@ -778,8 +778,9 @@ export default {
     configSet: '修改配置',
     runtimeOnly: '只修改运行中的配置，重启后失效',
     rewrite: '写入配置文件',
-    rewriteTip:
-      '执行 CONFIG REWRITE，把当前运行配置全部写回配置文件。注释和原有排版可能被改写；没有可写配置文件时会失败。',
+    rewriteTipBefore: '执行',
+    rewriteTipAfter:
+      '，把当前运行配置全部写回配置文件。注释和原有排版可能被改写；没有可写配置文件时会失败。',
     rewriteNode: '当前节点',
     rewriteAll: '全部节点',
     rewriteOk: '已写入配置文件',

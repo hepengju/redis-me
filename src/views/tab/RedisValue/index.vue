@@ -2166,7 +2166,7 @@ onUnmounted(() => {
                   <me-icon icon="el-icon-document-copy" :name="t('keyTree.copyKey')" />
                 </el-dropdown-item>
                 <el-dropdown-item command="copyValue">
-                  <me-icon icon="el-icon-document" :name="t('redisValue.copyValue')" />
+                  <me-icon icon="el-icon-document-copy" :name="t('redisValue.copyValue')" />
                 </el-dropdown-item>
                 <el-dropdown-item command="copyAsCommand" :disabled="copyAsCommandLoading">
                   <me-icon icon="me-icon-copy-command" :name="t('redisValue.copyAsCommand')" />
@@ -2653,7 +2653,7 @@ onUnmounted(() => {
                         </el-dropdown-item>
                         <el-dropdown-item command="copyValue">
                           <me-icon
-                            :icon="vectorsetType ? 'el-icon-document-copy' : 'el-icon-document'"
+                            icon="el-icon-document-copy"
                             :name="
                               vectorsetType
                                 ? t('redisValue.copyElement')
@@ -2721,7 +2721,7 @@ onUnmounted(() => {
             style="font-size: 18px; margin-left: 5px"
             :info="t('redisValue.copyValue')"
             class="icon-btn"
-            icon="el-icon-document"
+            icon="el-icon-document-copy"
             @click="meCopy(showValue)"
             placement="top-start" />
 
