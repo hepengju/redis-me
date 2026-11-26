@@ -783,6 +783,7 @@ export default {
     rewriteNode: '当前节点',
     rewriteAll: '全部节点',
     rewriteOk: '已写入配置文件',
+    refreshOk: '配置已刷新',
     valueRequired: 'value不能为空',
     command: '命令',
     autoBroadcast: '广播',

@@ -776,7 +776,7 @@ export default {
   redisConfig: {
     total: 'Total',
     noConfig: 'No Config File',
-    referenceConfig: 'Reference Config',
+    referenceConfig: 'Reference',
     keyword: 'Filter (Param / Value / Tip)',
     param: 'Param',
     value: 'Value',
@@ -795,6 +795,7 @@ export default {
     rewriteNode: 'This Node',
     rewriteAll: 'All Nodes',
     rewriteOk: 'Config file written',
+    refreshOk: 'Config refreshed',
     valueRequired: 'value required',
     command: 'Command',
     autoBroadcast: 'Broadcast',

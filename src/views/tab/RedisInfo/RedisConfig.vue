@@ -262,6 +262,12 @@ async function refresh() {
 }
 refresh()
 
+// 手动点击刷新按钮：加载很快，完成后给出提示，让用户确认已刷新
+async function refreshByButton() {
+  await refresh()
+  meOk(t('redisConfig.refreshOk'))
+}
+
 // 差异行标记：配置值与默认值不一致时加类，颜色由包裹层 --me-config-diff 变量提供
 function diffRowClass(row: unknown): string {
   const r = row as ConfigTableRow
@@ -361,7 +367,7 @@ async function configRewrite() {
             :name="t('refresh')"
             hint
             placement="top"
-            @click="refresh" />
+            @click="refreshByButton" />
           <me-website to="config" />
           <me-icon
             v-if="share.conn?.cluster"
