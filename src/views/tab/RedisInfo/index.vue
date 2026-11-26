@@ -23,13 +23,13 @@ import type { MasterStatSource } from '@/utils/redis/command-stats'
 import { readRedisVersion } from '@/utils/redis/latency-stats'
 import { enrichNodeList } from '@/utils/redis/redis-display'
 import { parseVersionNums } from '@/utils/redis/redis-version'
+import RedisACL from '@/views/tab/RedisACL/index.vue'
+import RedisClient from '@/views/tab/RedisClient.vue'
+import RedisConfig from '@/views/tab/RedisConfig.vue'
 
 import ClusterTopology from './ClusterTopology.vue'
 import CommandStats from './CommandStats.vue'
 import LatencyStats from './LatencyStats.vue'
-import RedisACL from './RedisACL.vue'
-import RedisClient from './RedisClient.vue'
-import RedisConfig from './RedisConfig.vue'
 import SentinelTopology from './SentinelTopology.vue'
 // #endregion
 
