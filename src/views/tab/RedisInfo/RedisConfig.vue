@@ -359,7 +359,7 @@ async function configRewrite() {
             style="justify-content: center"
             @click="editConfig(row)" />
         </template>
-        <!-- 刷新在最左；节点差异、写入随后；官网紧挨参考配置左侧，参考配置紧挨「更多」 -->
+        <!-- 刷新在最左；节点差异、写入、参考配置随后；官网紧挨「更多」 -->
         <template #footer>
           <me-icon
             class="icon-btn config-footer-icon"
@@ -384,7 +384,6 @@ async function configRewrite() {
             hint
             placement="top"
             @click="openRewrite" />
-          <me-website to="config" />
           <el-dropdown trigger="hover" placement="top-end" @command="handleCommand">
             <me-icon class="icon-btn config-footer-icon" icon="el-icon-reading" />
             <template #dropdown>
@@ -399,6 +398,7 @@ async function configRewrite() {
               </el-dropdown-menu>
             </template>
           </el-dropdown>
+          <me-website to="config" />
         </template>
       </me-table>
     </div>

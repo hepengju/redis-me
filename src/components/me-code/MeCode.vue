@@ -558,13 +558,17 @@ watch(
     <div v-if="props.loading" class="me-code-loading">
       <me-icon icon="el-icon-loading" :name="props.loadingText" />
     </div>
-    <me-icon
-      v-if="props.copyable"
-      class="me-code-copy"
-      icon="el-icon-document-copy"
-      :info="t('copy')"
-      placement="top"
-      @click="copyCode" />
+    <!-- 右下角动作簇：调用方插槽（如官网文档）在前，内置复制图标在后 -->
+    <div v-if="props.copyable || $slots.actions" class="me-code-actions">
+      <slot name="actions" />
+      <me-icon
+        v-if="props.copyable"
+        class="me-code-copy"
+        icon="el-icon-document-copy"
+        :info="t('copy')"
+        placement="top"
+        @click="copyCode" />
+    </div>
     <!-- 全屏时菜单留在包裹层内；平时挂到 body，避免被父级 overflow 裁掉 -->
     <me-context
       ref="menuRef"
@@ -672,12 +676,18 @@ watch(
   }
 }
 
-/* 右下角复制图标（仅 copyable 时展示） */
-.me-code-copy {
+/* 右下角动作簇（复制图标 + 调用方 #actions 插槽） */
+.me-code-actions {
   position: absolute;
   bottom: 8px;
   right: 8px;
   z-index: 4;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.me-code-copy {
   cursor: pointer;
   color: var(--el-text-color-secondary);
 

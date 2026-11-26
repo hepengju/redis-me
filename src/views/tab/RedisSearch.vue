@@ -1000,13 +1000,17 @@ onUnmounted(() => {
       <div class="create-body">
         <div style="margin-bottom: 12px">
           <el-text type="info">{{ t('redisSearch.createHint') }}</el-text>
-          <me-website to="ftCreate" margin-left="10px" />
         </div>
         <me-code
           v-model="createDraft"
           mode="redis"
           copyable
-          style="flex: 1; min-height: 0; height: auto" />
+          style="flex: 1; min-height: 0; height: auto">
+          <!-- 官网文档入口：代码区右下角，复制图标左侧 -->
+          <template #actions>
+            <me-website to="ftCreate" />
+          </template>
+        </me-code>
       </div>
       <template #footer>
         <el-button @click="createVisible = false">{{ t('cancel') }}</el-button>
@@ -1034,13 +1038,17 @@ onUnmounted(() => {
       <div class="create-body">
         <div style="margin-bottom: 12px">
           <el-text type="info">{{ t('redisSearch.alterHint') }}</el-text>
-          <me-website to="ftAlter" margin-left="10px" />
         </div>
         <me-code
           v-model="alterDraft"
           mode="redis"
           copyable
-          style="flex: 1; min-height: 0; height: auto" />
+          style="flex: 1; min-height: 0; height: auto">
+          <!-- 官网文档入口：代码区右下角，复制图标左侧 -->
+          <template #actions>
+            <me-website to="ftAlter" />
+          </template>
+        </me-code>
       </div>
       <template #footer>
         <el-button @click="alterVisible = false">{{ t('cancel') }}</el-button>

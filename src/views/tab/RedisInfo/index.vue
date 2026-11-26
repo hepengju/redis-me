@@ -780,7 +780,7 @@ const latencyMastersTip = computed(() => {
                   </me-overflow-text>
                 </div>
               </template>
-              <!-- 拓扑在最左；官网、原文、命令统计、延迟分位紧挨更多菜单。原文是当前选中节点 -->
+              <!-- 拓扑在最左；原文、命令统计、延迟分位随后，官网紧挨「更多」。原文是当前选中节点 -->
               <template #footer>
                 <me-icon
                   class="icon-btn info-footer-icon"
@@ -789,7 +789,6 @@ const latencyMastersTip = computed(() => {
                   hint
                   placement="top"
                   @click="dialog.topology = true" />
-                <me-website to="info" />
                 <me-icon
                   class="icon-btn info-footer-icon"
                   icon="el-icon-document"
@@ -811,6 +810,7 @@ const latencyMastersTip = computed(() => {
                   hint
                   placement="top"
                   @click="openLatency('masters')" />
+                <me-website to="info" />
               </template>
               <template #cell-node="{ row }">
                 <div class="node-overview-node">
@@ -858,7 +858,7 @@ const latencyMastersTip = computed(() => {
                 :keyword="keyword"
                 :columns="infoColumns"
                 export-name="info">
-                <!-- 哨兵拓扑在最左；官网、原文、命令统计、延迟分位紧挨更多菜单 -->
+                <!-- 哨兵拓扑在最左；原文、命令统计、延迟分位随后，官网紧挨「更多」 -->
                 <template #footer>
                   <me-icon
                     v-if="isSentinel"
@@ -868,7 +868,6 @@ const latencyMastersTip = computed(() => {
                     hint
                     placement="top"
                     @click="dialog.topology = true" />
-                  <me-website to="info" />
                   <me-icon
                     class="icon-btn info-footer-icon"
                     icon="el-icon-document"
@@ -890,6 +889,7 @@ const latencyMastersTip = computed(() => {
                     hint
                     placement="top"
                     @click="openLatency('node')" />
+                  <me-website to="info" />
                 </template>
               </me-table>
             </div>
