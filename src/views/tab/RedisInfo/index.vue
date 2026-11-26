@@ -522,10 +522,11 @@ function openLatency(scope: 'node' | 'masters') {
   dialog.latency = true
 }
 
+/** 弹窗标题旁的节点，与节点下拉一致：host:port | S3 */
 function currentNodeLabel(): string {
   const addr = node.value || infoNode.value
   const row = overviewRows.value.find(item => item.node === addr)
-  if (row?.shortLabel) return `${row.shortLabel} ${row.node}`
+  if (row?.shortLabel) return `${row.node} | ${row.shortLabel}`
   return addr
 }
 
@@ -557,7 +558,6 @@ const cmdstatScopeLabel = computed(() =>
   cmdstatScope.value === 'masters' ? t('redisInfo.commandProfileScopeMasters') : currentNodeLabel(),
 )
 
-/** 原文弹窗标题旁的节点：集群带短标签，如 M1 10.0.0.1:7000 */
 const rawNodeLabel = computed(() => currentNodeLabel())
 
 const latencyScopeLabel = computed(() =>
