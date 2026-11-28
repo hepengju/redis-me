@@ -1,0 +1,72 @@
+# core24：二进制需要 GLIBC_2.39；gnome 扩展从 core24 起才接 gpu-2404，并清掉包内旧 Mesa。
+# WebKit 用 gnome-46-2404 里的，不要 stage，也不要写 layout。
+# 本地：先打 deb，再在仓库根目录 snapcraft pack（LXD，不要 --destructive-mode）。
+name: redis-me
+title: RedisME
+base: core24
+version: '6.0.0' # 与 package.json 保持一致
+summary: Redis / Valkey desktop client
+description: |
+  RedisME is a desktop GUI for Redis and Valkey.
+  Connect, browse keys, edit values, and manage multiple connections.
+license: GPL-3.0
+website: https://www.hepengju.com
+source-code: https://github.com/hepengju/redis-me
+contact: he_pengju@163.com
+icon: snap/gui/redis-me.png
+
+grade: stable
+confinement: strict
+
+# 平台名就是架构时，build-on / build-for 默认为 amd64
+platforms:
+  amd64:
+
+# 总线名是 identifier + ".SingleInstance"
+slots:
+  single-instance:
+    interface: dbus
+    bus: session
+    name: com.hepengju.redis.SingleInstance
+
+plugs:
+  single-instance-plug:
+    interface: dbus
+    bus: session
+    name: com.hepengju.redis.SingleInstance
+
+apps:
+  redis-me:
+    extensions: [gnome]
+    command: usr/bin/RedisME
+    desktop: usr/share/applications/redis-me.desktop
+    # wayland / x11 / desktop / opengl 由 gnome 扩展补上
+    plugs:
+      - home
+      - network
+      - unity7
+      - removable-media # 导入导出额外挂载点
+      - single-instance-plug
+    slots:
+      - single-instance
+
+parts:
+  redis-me:
+    plugin: nil
+    source: snap
+    build-packages: [dpkg]
+    override-build: |
+      # Snapcraft 9 不注入版本号变量，按文件名取唯一的 amd64 deb
+      shopt -s nullglob
+      debs=( "$CRAFT_PROJECT_DIR"/src-tauri/target/release/bundle/deb/RedisME_*_amd64.deb )
+      if [ "${#debs[@]}" -ne 1 ]; then
+        echo "需要恰好一个 amd64 deb，实际 ${#debs[@]} 个" >&2
+        exit 1
+      fi
+      dpkg -x "${debs[0]}" "$CRAFT_PART_INSTALL/"
+      cp "$CRAFT_PART_INSTALL"/usr/share/applications/*.desktop \
+        "$CRAFT_PART_INSTALL/usr/share/applications/redis-me.desktop"
+      sed -i \
+        -e 's|^Exec=.*|Exec=redis-me %U|' \
+        -e 's|^Icon=.*|Icon=/usr/share/icons/hicolor/128x128/apps/RedisME.png|' \
+        "$CRAFT_PART_INSTALL/usr/share/applications/redis-me.desktop"
