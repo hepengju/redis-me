@@ -1,6 +1,7 @@
 # core24：二进制需要 GLIBC_2.39；gnome 扩展从 core24 起才接 gpu-2404，并清掉包内旧 Mesa。
 # WebKit 用 gnome-46-2404 里的，不要 stage，也不要写 layout。
-# 本地：先打 deb，再在仓库根目录 snapcraft pack（LXD，不要 --destructive-mode）。
+# deb 从已公开的 GitHub Release 下载，不使用本机文件。
+# Release 必须已发布（草稿没有公开地址）。本地在仓库根目录 snapcraft pack（LXD，不要 --destructive-mode）。
 name: redis-me
 title: RedisME
 base: core24
@@ -18,9 +19,11 @@ icon: snap/gui/redis-me.png
 grade: stable
 confinement: strict
 
-# 平台名就是架构时，build-on / build-for 默认为 amd64
+# 平台名就是架构时，build-on / build-for 默认与平台名相同。
+# amd64 机器只打 amd64；arm64 要在 arm64 机器上打。
 platforms:
   amd64:
+  arm64:
 
 # 总线名是 identifier + ".SingleInstance"
 slots:
@@ -54,16 +57,20 @@ parts:
   redis-me:
     plugin: nil
     source: snap
-    build-packages: [dpkg]
+    build-packages: [dpkg, curl, ca-certificates]
     override-build: |
-      # Snapcraft 9 不注入版本号变量，按文件名取唯一的 amd64 deb
-      shopt -s nullglob
-      debs=( "$CRAFT_PROJECT_DIR"/src-tauri/target/release/bundle/deb/RedisME_*_amd64.deb )
-      if [ "${#debs[@]}" -ne 1 ]; then
-        echo "需要恰好一个 amd64 deb，实际 ${#debs[@]} 个" >&2
+      # Snapcraft 9 脚本里没有版本变量，从本文件的 version 取
+      arch="${CRAFT_ARCH_BUILD_FOR:?CRAFT_ARCH_BUILD_FOR 为空}"
+      ver=$(awk '/^version:/{gsub(/['\''"]/,"",$2); print $2; exit}' "$CRAFT_PROJECT_DIR/snap/snapcraft.yaml")
+      if [ -z "$ver" ]; then
+        echo "snapcraft.yaml 里没有 version" >&2
         exit 1
       fi
-      dpkg -x "${debs[0]}" "$CRAFT_PART_INSTALL/"
+      url="https://github.com/hepengju/redis-me/releases/download/v${ver}/RedisME_${ver}_${arch}.deb"
+      deb="$CRAFT_PART_BUILD/RedisME_${ver}_${arch}.deb"
+      echo "下载 ${url}"
+      curl -fL --retry 3 --retry-delay 2 -o "$deb" "$url"
+      dpkg -x "$deb" "$CRAFT_PART_INSTALL/"
       cp "$CRAFT_PART_INSTALL"/usr/share/applications/*.desktop \
         "$CRAFT_PART_INSTALL/usr/share/applications/redis-me.desktop"
       sed -i \
