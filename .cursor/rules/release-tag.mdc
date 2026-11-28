@@ -1,5 +1,5 @@
 ---
-description: 用户说「发版 + 版本号」时自动打 tag 并推送 GitHub 触发 Release Actions
+description: 用户说「发版 + 版本号」时核对 package.json 与 snapcraft.yaml 版本一致，再打 tag 推送 GitHub
 alwaysApply: true
 ---
 
@@ -11,9 +11,10 @@ alwaysApply: true
 
 1. 版本号格式：`vX.Y.Z`（如 `v3.6.0`）；用户只给 `3.6.0` 时补上 `v` 前缀。
 2. **对比 `package.json` 的 `version`**：读取当前值（如 `"3.6.0"`，无 `v` 前缀），与用户说的版本号对比（去掉 `v` 后比较）。**不一致时明确提示两者分别是什么，停止打 tag**，等用户确认或先改版本后再发版。
-3. `git status`：工作区应干净；有未提交改动时先告知用户，不要擅自打 tag。
-4. `git tag -l`：确认该 tag 尚不存在；已存在则停止并说明。
-5. 当前 HEAD 应为待发版提交（通常 changelog 已更新）。
+3. **对比 `snap/snapcraft.yaml` 的 `version`**：必须与 `package.json` 相同（都无 `v` 前缀）。商店构建用它拼 GitHub Release 的 deb 地址：`v<version>/RedisME_<version>_<arch>.deb`。**不一致时指出两个值，停止打 tag。** 改完后要提交并推送到 `origin/master`，商店构建的是已推送的提交。
+4. `git status`：工作区应干净；有未提交改动时先告知用户，不要擅自打 tag。
+5. `git tag -l`：确认该 tag 尚不存在；已存在则停止并说明。
+6. 当前 HEAD 应为待发版提交（通常 changelog 已更新）。
 
 ## 执行命令
 
@@ -34,6 +35,13 @@ git push origin vX.Y.Z
 完成后告知用户：
 - tag 名与指向的 commit
 - Actions 查看地址：https://github.com/hepengju/redis-me/actions
+- Snap 还要等 GitHub Release 从草稿点成公开，再到 snapcraft.io 对这个提交手动构建；构建和审核完成后，在商店网页的 Releases 页把该版本的 amd64、arm64 发到通道
+
+## Snap 商店
+
+打 tag 不会把 snap 送进商店。`snapcraft.yaml` 的 `version` 在打 tag 之前就改好并推上去。
+
+发布通道用商店网页，不用在本机执行 `snapcraft release <修订版号>`：打开该 snap 的 Releases 页，把这次构建出来的 amd64 和 arm64 选中，发到 edge 或 stable。网页上能看到修订版号，任意电脑的浏览器都可以操作。
 
 ## 不在此流程内（除非用户另提）
 
