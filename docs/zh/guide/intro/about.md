@@ -1,6 +1,8 @@
 # RedisME
 
-一个现代、轻量、跨平台的 Redis 桌面客户端
+一个现代、轻量、跨平台的 Redis 桌面客户端。
+
+应用 ID：`com.hepengju.redis`
 
 ## 功能
 

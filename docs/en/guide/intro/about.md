@@ -1,6 +1,8 @@
 # RedisME
 
-A modern, lightweight, cross-platform Redis desktop manager
+A modern, lightweight, cross-platform Redis desktop manager.
+
+Application ID: `com.hepengju.redis`
 
 ## Features
 

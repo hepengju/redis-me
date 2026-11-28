@@ -23,16 +23,16 @@ Flathub 不接受 AI 编写或 AI 协助编写的 manifest。披露也不豁免�
 
 ## 已经定下来的事
 
-| 项                | 值                                                                                                                                     |
-| ----------------- | -------------------------------------------------------------------------------------------------------------------------------------- |
-| App ID            | `com.hepengju.redis`                                                                                                                   |
-| 运行时            | `org.gnome.Platform` / `org.gnome.Sdk`。2026-11 的 Tauri 文档写的是 **51**。提交前用下面的 `remote-ls` 核对，过期就改，不要写死旧的 47 |
-| 扩展              | `org.freedesktop.Sdk.Extension.rust-stable`、`org.freedesktop.Sdk.Extension.node24`。分支跟运行时走；builder 找不到时再查实际分支      |
-| 二进制            | 沙箱里 `/app/bin/RedisME`，`command` 就写 `RedisME`                                                                                    |
-| 桌面文件 / 图标名 | `com.hepengju.redis`，不要用 `RedisME`                                                                                                 |
-| 许可证            | 与 `snap/snapcraft.yaml` 一致，SPDX 用 `GPL-3.0-only`                                                                                  |
-| 源码              | `https://github.com/hepengju/redis-me`，钉 tag **和** 完整 commit                                                                      |
-| 官网              | `https://www.hepengju.com` 必须能打开，页面上能看到 RedisME 和这个 App ID                                                              |
+| 项                | 值                                                                                                                                          |
+| ----------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
+| App ID            | `com.hepengju.redis`                                                                                                                        |
+| 运行时            | `org.gnome.Platform` / `org.gnome.Sdk`，分支 **51**（2026-11-28 本机 `remote-ls` 已核对，49 和 50 也还在）                                  |
+| 扩展              | `org.freedesktop.Sdk.Extension.rust-stable//26.08`、`org.freedesktop.Sdk.Extension.node24//26.08`。GNOME Sdk 51 的扩展版本是 26.08，不是 51 |
+| 二进制            | 沙箱里 `/app/bin/RedisME`，`command` 就写 `RedisME`                                                                                         |
+| 桌面文件 / 图标名 | `com.hepengju.redis`，不要用 `RedisME`                                                                                                      |
+| 许可证            | 与 `snap/snapcraft.yaml` 一致，SPDX 用 `GPL-3.0-only`                                                                                       |
+| 源码              | `https://github.com/hepengju/redis-me`，钉 tag **和** 完整 commit                                                                           |
+| 官网              | `https://www.hepengju.com` 必须能打开，页面上能看到 RedisME 和这个 App ID                                                                   |
 
 商店版检测已经做完：`src-tauri/src/support/app_store.rs` 看到 `FLATPAK_ID` 或 `/.flatpak-info` 就关掉 Tauri 自更新。Flatpak 会自己设置 `FLATPAK_ID`。
 
@@ -42,12 +42,12 @@ GitHub 账号要开 2FA，否则合并后收不到应用仓的写权限。
 
 导入导出走文件选择器（门户）。选中的文件由门户授权，不需要家目录。
 
-| 要                                                                 | 原因                                                                         |
-| ------------------------------------------------------------------ | ---------------------------------------------------------------------------- |
-| `share=ipc`、`socket=wayland`、`socket=fallback-x11`、`device=dri` | 窗口                                                                         |
-| `share=network`                                                    | 连 Redis、SSH、手填的代理                                                    |
-| `filesystem=/tmp`                                                  | 本机 Unix socket 常见位置                                                    |
-| `own-name=org.com_hepengju_redis.SingleInstance`                   | 单实例。这是 Snap 配方里的名字；写进 manifest 前用下面的 `busctl` 再确认一次 |
+| 要                                                                 | 原因                                                                                                                                                |
+| ------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `share=ipc`、`socket=wayland`、`socket=fallback-x11`、`device=dri` | 窗口                                                                                                                                                |
+| `share=network`                                                    | 连 Redis、SSH、手填的代理                                                                                                                           |
+| `filesystem=/tmp`                                                  | 本机 Unix socket 常见位置                                                                                                                           |
+| `own-name=com.hepengju.redis.SingleInstance`                       | 单实例。应用 identifier 加 `.SingleInstance`，与 `snap/snapcraft.yaml` 里的会话总线名一致。写进 manifest 前仍用下面的 `busctl` 对一下正在运行的进程 |
 
 不要要 `filesystem=home`、`filesystem=host`，也不要把宿主机的 `sh` 暴露进来。
 
@@ -95,13 +95,14 @@ flatpak install -y --user flathub org.flatpak.Builder
 flatpak remote-ls --user flathub --columns=ref | grep -E 'org\.gnome\.(Platform|Sdk)/|Sdk\.Extension\.(rust-stable|node24)'
 ```
 
-安装与 `org.gnome.Sdk` 同一分支的 Platform、Sdk，以及 rust-stable、node24 两个扩展。下面用 `51` 作占位，以 `remote-ls` 的结果替换。
+2026-11-28 已核对：Platform / Sdk 用 `51`，两个扩展用 `26.08`（跟 Sdk 51 的 `org.freedesktop.Sdk.Extension` 版本一致，不要写成 `//51`）。
 
 ```bash
 flatpak install -y --user flathub \
+  org.flatpak.Builder \
   org.gnome.Platform//51 org.gnome.Sdk//51 \
-  org.freedesktop.Sdk.Extension.rust-stable \
-  org.freedesktop.Sdk.Extension.node24
+  org.freedesktop.Sdk.Extension.rust-stable//26.08 \
+  org.freedesktop.Sdk.Extension.node24//26.08
 ```
 
 生成器（版本跟 Flathub 当前推荐走，不要用发行版自带的旧 `flatpak-builder`）：
@@ -120,9 +121,9 @@ flatpak-node-generator pnpm pnpm-lock.yaml \
 
 工作目录用 `~/flathub-redisme/`，与 redis-me 仓库分开。里面放你手写的 `com.hepengju.redis.yml` 和两份 json。
 
-`pnpm-lock.yaml` 现在是 lockfileVersion 9.0，包管理器是 **pnpm 12.6.0**（见 `package.json` 的 `devEngines`）。生成器若拒绝这个 pnpm 版本或 store 格式，先停在这里解决。不要退回包装 deb。生成器的 `--help` 里若有 store 版本参数，按它的说明选，不要猜。
+`pnpm-lock.yaml` 是 lockfileVersion 9.0，包管理器是 **pnpm 12.6.0**（见 `package.json` 的 `devEngines`）。2026-11-28 已用 `flatpak-node-generator pnpm --pnpm-store-version v11` 生成过，生成器接受这份 lock。v11 对应当前 pnpm 12 的 store（本机 `~/.local/share/pnpm/store/v11` 有 `index.db`）。不要改回默认的 v10，也不要退回包装 deb。
 
-pnpm 本体不在 Node 扩展里。manifest 的 sources 再加一份与 `package.json` 完全同版本的 tarball：`https://registry.npmjs.org/pnpm/-/pnpm-12.6.0.tgz`。解压后先 `find` 到 `pnpm.cjs`。npm 的 tarball 顶层通常多一层 `package/`。
+pnpm 本体不在 Node 扩展里。manifest 的 sources 再加一份与 `package.json` 完全同版本的 tarball：`https://registry.npmjs.org/pnpm/-/pnpm-12.6.0.tgz`。解压后顶层是 `package/`。pnpm 12 的包里没有 `pnpm.cjs`：`package/pnpm` 是壳脚本，用 Node 跑时入口是 `package/bin/pnpm.mjs`。写构建命令前在解压目录里再 `find` 一次确认。
 
 ### 构建脚本要做的事
 
